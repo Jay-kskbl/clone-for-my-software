@@ -89,21 +89,21 @@ BARRY zou/
   -   按 `env_check/README.md` 跑完 00–05，得到 `env_check/env_report.md`
   -   根据报告填写附录 A13（分词器）、A14（是否需要降级预案）、OCR/CLIP 模型规格
   -   完成标准：报告 §6 的决策全部填写
-- [ ] **T01 仓库骨架** ⭐
+- [x] **T01 仓库骨架** ⭐
   -   按 §2 建目录；`backend/pyproject.toml`（ruff + pytest）；`.gitignore`（含 `.venv-*`、`models/`、`storage/`、`.env`）
   -   `deploy/docker-compose.yml`：PostgreSQL + OpenSearch（分词插件按 T00 结论）
   -   `config.py`：从环境变量读取，启动时检查必填项并给出可读错误；`.env.example`
   -   `GET /health`：分别报告数据库、OpenSearch、CLIP 服务的状态（不可用时如实报告，而不是报错退出）
   -   🧪 缺失必填配置时启动失败且错误信息明确
-- [ ] **T02 数据契约** 🔒⭐
+- [x] **T02 数据契约** 🔒⭐
   -   `shared/contracts`：`ParsedDocument`、`TextBlock`、`SourceLocator`（四种类型）、`Chunk`、`OCRResult`、`SearchHit`、`ChannelResult`
   -   `shared/ids`：`chunk_id`、`image_id` 生成与解析函数
   -   🧪 每种 locator 的序列化往返；ID 生成确定性（同输入同输出）
-- [ ] **T03 数据库模型与迁移** 🔒⭐
+- [x] **T03 数据库模型与迁移** 🔒⭐
   -   SQLAlchemy 模型：User、Document、DocumentShare、Tag、DocumentTag、ProcessingTask、DocumentChunk、ImageAsset、OCRResult、ImageEmbedding、SearchLog、ExperimentRun
   -   Alembic 初始迁移；`docs/data-model.md`（ER 图 + 字段说明）
   -   🧪 迁移能在空库上升级、降级
-- [ ] **T04 设计文档**
+- [x] **T04 设计文档**
   -   `docs/architecture.md`（分层图、模块表、数据流，可直接取自 GLOBAL §3.2）
   -   `docs/api.md`（接口清单：路径、方法、权限、请求/响应结构、错误码）
   -   `docs/decisions.md`（把附录 A 和 T00 结论落成文字，论文可直接引用）
@@ -229,4 +229,8 @@ BARRY zou/
 
 | 任务 | 完成日期 | commit | 备注 |
 |---|---|---|---|
-| | | | |
+| T00 | 部分完成（2026-11-13） | — | 硬件、OCR、CLIP 已实测并写入 decisions.md §2；OpenSearch、分词（A13/A14）、并发内存未测试（Barry 决定不在本机使用 Docker），清单见 env_check/未测试/清单.md；OCR/CLIP 规格待 Barry 选定 |
+| T01 | 2026-11-13 | 待 Barry 确认 | 单元测试 13 项通过；docker-compose 只校验了语法，容器未实际启动；OpenSearch 中文分词插件待 T00 结论（A13） |
+| T02 | 2026-11-13 | 待 Barry 确认 | shared 包测试 93 项通过 |
+| T03 | 2026-11-13 | 待 Barry 确认 | 后端测试 30 项通过，其中 13 项集成测试在本地 PostgreSQL 16.15 上运行；未在 docker-compose 的 postgres:16.6 容器上运行 |
+| T04 | 2026-11-13 | 待提交（本机暂无 git） | 三份文档完成；Barry 于 2026-11-13 确认方案（含 api.md 的接口设计与 D12、D13），里程碑“方案评审”通过。遗留：decisions.md §2 中 OpenSearch、分词（A13）、降级预案（A14）、并发内存未测试，须在 T13 开始前确定；OCR/CLIP 规格分别在 T17、T20 开始前选定 |
