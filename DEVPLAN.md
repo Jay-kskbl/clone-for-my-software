@@ -27,8 +27,8 @@ claude          # 在项目根目录启动 Claude Code
 ③ 审计划                  涉及数据契约、数据库表、索引结构的任务，先切到 Plan 模式（Shift+Tab）只出计划
 ④ 批准 → 实现             Claude 小步修改、写测试、跑测试
 ⑤ 自己验证一次            按 Claude 给的命令亲手跑一遍（答辩时你要能讲清楚）
-⑥ /finish-task           Claude 按 GLOBAL §11.3 汇报、勾选 DEVPLAN、提出 commit
-⑦ 你确认后 commit         一个任务一个 commit；里程碑打 tag（mvp-0、mvp-1、mvp-2）
+⑥ /finish-task           Claude 按 GLOBAL §11.3 汇报、勾选 DEVPLAN、自动 commit 并补填 commit 编号
+⑦ 一个任务一个 commit      不 push；里程碑打 tag（mvp-0、mvp-1、mvp-2）由你确认
 ```
 
 ### 1.3 和 Claude Code 协作的规则
@@ -49,6 +49,7 @@ BARRY zou/
 ├── CLAUDE.md  GLOBAL.md  DEVPLAN.md
 ├── .claude/commands/          next-task.md  finish-task.md
 ├── docs/                      architecture.md  data-model.md  api.md  env_report.md  decisions.md
+│                              untested.md（未测试清单）  downloads.md（下载与安装记录）
 ├── env_check/                 阶段一环境实测脚本
 ├── shared/                    【所有环境共用】数据契约(§3.5)、ID 规则、任务领取库 —— 只依赖 pydantic + psycopg
 ├── backend/                   【main 环境】
@@ -129,7 +130,7 @@ BARRY zou/
   -   🧪 **并发：** 两个 Worker 不会领到同一任务
   -   🧪 **幂等：** 同一任务执行两次，结果不重复
   -   🧪 超过最大重试次数后标记为 `failed` 并保存原因
-- [ ] **T08 M2 文档管理** ⭐
+- [x] **T08 M2 文档管理** ⭐
   -   上传（大小、格式、文件名长度限制）→ 存储 → 写 Document → 创建 parse 任务
   -   列表（分页、只列可访问文档）、下载、软删除（创建清理任务）、共享、标签
   -   🧪 上传中途失败不留半成品；删除后列表和下载都不可见；非法类型被拒绝
@@ -235,5 +236,6 @@ BARRY zou/
 | T03 | 2026-11-13 | 62f3201 | 后端测试 30 项通过，其中 13 项集成测试在本地 PostgreSQL 16.15 上运行；未在 docker-compose 的 postgres:16.6 容器上运行 |
 | T04 | 2026-11-13 | 403664d | 三份文档完成；Barry 于 2026-11-13 确认方案（含 api.md 的接口设计与 D12、D13），里程碑“方案评审”通过。遗留：decisions.md §2 中 OpenSearch、分词（A13）、降级预案（A14）、并发内存未测试，须在 T13 开始前确定；OCR/CLIP 规格分别在 T17、T20 开始前选定 |
 | T05 | 2026-11-13 | b39f3dd | 后端测试 74 项通过（其中存储 54 项、配置新增 3 项），13 项集成测试因未设置 TEST_DATABASE_URL 未运行（与本任务无关）；接口为 stage/commit/discard 两步写入 + put 简便方法；支持 pdf/png/jpg/docx/xlsx 五种类型；进程被强杀时残留的临时文件尚无清理入口，留给 T18 |
-| T06 | 2026-11-13 | （待提交） | 已执行：不需要数据库的测试 113 项通过（T06 新增 37 项：密码哈希、令牌、未登录 401、参数校验 422、数据库不可用 503）。**未测试（Not Tested）**：`tests/integration/test_auth.py` 中 19 项需要 PostgreSQL 的测试（注册登录全流程、重名 409、访问他人文档 403、管理员可见全部、共享后可见与取消共享后不可见、软删除不可见、create-admin 命令），原因是本机没有 PostgreSQL，按 GLOBAL“测试执行限制”不安装；已对这部分代码和测试做人工复核，未发现问题。T03 的 13 项迁移测试同样未测试 |
-| T07 | 2026-11-13 | （待提交） | 计划经 Barry 批准后实现。已执行：后端测试 135 项通过（T07 新增 22 项：子进程执行的正常/异常/超时/崩溃/租约丢失，主循环的分发/回写/处理 N 个后退出/数据库出错不崩溃，配置校验）。**未测试（Not Tested）**：`tests/integration/test_task_queue.py` 的 18 项，包括 DEVPLAN 要求的全部四项 🧪（崩溃恢复、并发不重复领取、幂等、超过重试上限标记 failed），原因是本机没有 PostgreSQL，按 GLOBAL“测试执行限制”不安装；已逐条复核 SQL 与测试逻辑，未发现问题。内存上限在 macOS 上不生效（decisions.md D16）。里程碑“基础系统”要求 T07 四项测试全部通过，目前不满足 |
+| T06 | 2026-11-13 | 56e8336 | 已执行：不需要数据库的测试 113 项通过（T06 新增 37 项：密码哈希、令牌、未登录 401、参数校验 422、数据库不可用 503）。**未测试（Not Tested）**：`tests/integration/test_auth.py` 中 19 项需要 PostgreSQL 的测试（注册登录全流程、重名 409、访问他人文档 403、管理员可见全部、共享后可见与取消共享后不可见、软删除不可见、create-admin 命令），原因是本机没有 PostgreSQL，按 GLOBAL“测试执行限制”不安装；已对这部分代码和测试做人工复核，未发现问题。T03 的 13 项迁移测试同样未测试 |
+| T07 | 2026-11-13 | 56e8336 | 计划经 Barry 批准后实现。已执行：后端测试 135 项通过（T07 新增 22 项：子进程执行的正常/异常/超时/崩溃/租约丢失，主循环的分发/回写/处理 N 个后退出/数据库出错不崩溃，配置校验）。**未测试（Not Tested）**：`tests/integration/test_task_queue.py` 的 18 项，包括 DEVPLAN 要求的全部四项 🧪（崩溃恢复、并发不重复领取、幂等、超过重试上限标记 failed），原因是本机没有 PostgreSQL，按 GLOBAL“测试执行限制”不安装；已逐条复核 SQL 与测试逻辑，未发现问题。内存上限在 macOS 上不生效（decisions.md D16）。里程碑“基础系统”要求 T07 四项测试全部通过，目前不满足 |
+| T08 | 2026-11-13 | （待提交） | 已执行：后端测试 188 项通过（T08 新增 53 项：文件名与标签规范化、上传各步骤失败后不留文件（用假的数据库会话模拟）、全部路由未登录 401、Content-Length 超限 413、配置校验）。**未测试（Not Tested）**：`tests/integration/test_documents.py` 的 41 项，包括 DEVPLAN 要求的三项 🧪 在真实数据库上的版本（上传中途失败不留半成品、删除后列表和下载都不可见、非法类型被拒绝），以及列表、分页、共享、标签、任务重试；原因是本机没有 PostgreSQL，按 GLOBAL“测试执行限制”不安装；已逐条复核代码与测试。新增依赖 python-multipart 由 Barry 单独批准（decisions.md D19）。至此共 91 项数据库集成测试未测试。未测试项的逐项清单见 `docs/untested.md`，下载记录见 `docs/downloads.md` |

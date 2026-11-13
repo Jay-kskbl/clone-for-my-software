@@ -66,3 +66,14 @@ def get_accessible_document(session: Session, user: User, document_id: uuid.UUID
     if not can_access(session, user, doc):
         raise ForbiddenError("无权访问该文档")
     return doc
+
+
+def get_owned_document(session: Session, user: User, document_id: uuid.UUID) -> Document:
+    """按 ID 取一个 user 有权管理（删除、共享、改标签）的文档：必须是 owner 或管理员。
+
+    被共享者只有只读和检索权限，这里返回 ForbiddenError（docs/api.md §1.1）。
+    """
+    doc = get_accessible_document(session, user, document_id)
+    if user.role != ADMIN_ROLE and doc.owner_id != user.id:
+        raise ForbiddenError("只有文档的 owner 可以执行该操作")
+    return doc

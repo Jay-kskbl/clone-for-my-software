@@ -23,7 +23,7 @@ def _closed_port() -> int:
 
 
 @pytest.fixture
-def client():
+def client(tmp_path):
     # 数据库地址指向一个没有服务的端口：这些测试要么根本不该碰数据库，要么就是在测数据库不可用
     port = _closed_port()
     settings = Settings(
@@ -32,6 +32,7 @@ def client():
         opensearch_url=f"http://127.0.0.1:{port}",
         clip_service_url=f"http://127.0.0.1:{port}",
         jwt_secret=SECRET,
+        storage_root=tmp_path / "storage",
     )
     with TestClient(create_app(settings)) as c:
         yield c

@@ -42,3 +42,25 @@ class NotFoundError(AppError):
 class UsernameTakenError(AppError):
     status_code = 409
     code = "USERNAME_TAKEN"
+
+
+class TaskNotRetryableError(AppError):
+    status_code = 409
+    code = "TASK_NOT_RETRYABLE"
+
+
+class FileTooLargeError(AppError):
+    status_code = 413
+    code = "FILE_TOO_LARGE"
+
+
+class UnsupportedFileTypeError(AppError):
+    status_code = 415
+    code = "UNSUPPORTED_FILE_TYPE"
+
+
+class RequestInvalidError(AppError):
+    """请求内容不合法，但不是字段格式问题（那一类由 FastAPI 的参数校验直接返回 422）。"""
+
+    status_code = 422
+    code = "VALIDATION_ERROR"

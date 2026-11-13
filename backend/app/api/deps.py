@@ -3,14 +3,16 @@
 from collections.abc import Iterator
 from typing import Annotated
 
-from fastapi import Depends, Request
+from fastapi import Depends, Query, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.config import Settings
-from app.core.errors import UnauthenticatedError
+from app.core.errors import ForbiddenError, UnauthenticatedError
 from app.core.security import InvalidTokenError, decode_access_token
 from app.db.models import User
+from app.modules.auth.permissions import ADMIN_ROLE
+from app.modules.storage import LocalStorage
 
 # auto_error=False：缺少或格式不对的 Authorization 头由下面统一转成 401 和项目的错误结构，
 # 而不是 FastAPI 默认的响应。
@@ -27,7 +29,12 @@ def get_session(request: Request) -> Iterator[Session]:
         yield session
 
 
+def get_storage(request: Request) -> LocalStorage:
+    return request.app.state.storage
+
+
 SettingsDep = Annotated[Settings, Depends(get_settings)]
+StorageDep = Annotated[LocalStorage, Depends(get_storage)]
 SessionDep = Annotated[Session, Depends(get_session)]
 
 
@@ -57,3 +64,27 @@ def current_user(
 
 
 CurrentUser = Annotated[User, Depends(current_user)]
+
+
+def require_admin(user: CurrentUser) -> User:
+    if user.role != ADMIN_ROLE:
+        raise ForbiddenError("需要管理员权限")
+    return user
+
+
+AdminUser = Annotated[User, Depends(require_admin)]
+
+
+class Pagination:
+    """分页参数（docs/api.md §1）：page 从 1 开始，page_size 最大 100。"""
+
+    def __init__(
+        self,
+        page: Annotated[int, Query(ge=1)] = 1,
+        page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    ) -> None:
+        self.page = page
+        self.page_size = page_size
+
+
+PaginationDep = Annotated[Pagination, Depends()]

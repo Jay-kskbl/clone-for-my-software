@@ -13,11 +13,13 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.api import auth, health
+from app.api import auth, documents, health, tasks
 from app.api.errors import register_error_handlers
+from app.api.upload_limit import UploadSizeLimitMiddleware
 from app.config import Settings, load_settings
 from app.core.errors import ConfigError
 from app.db.session import make_engine, make_session_factory
+from app.modules.storage import LocalStorage
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -40,7 +42,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title="智能文档管理系统 API", lifespan=lifespan)
     app.state.settings = settings
     app.state.session_factory = make_session_factory(engine)
+    # 启动时就创建存储目录：目录不可写的问题在启动时暴露，而不是等到第一次上传
+    app.state.storage = LocalStorage(settings.storage_root)
     register_error_handlers(app)
+    app.add_middleware(
+        UploadSizeLimitMiddleware, path="/api/documents", max_bytes=settings.upload_max_bytes
+    )
     app.include_router(health.router)
     app.include_router(auth.router)
+    app.include_router(documents.router)
+    app.include_router(tasks.router)
     return app

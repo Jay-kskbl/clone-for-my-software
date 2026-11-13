@@ -69,13 +69,16 @@ def session(migrated_engine: Engine):
 
 
 @pytest.fixture
-def app(migrated_engine: Engine, test_database_url: str) -> FastAPI:
+def app(migrated_engine: Engine, test_database_url: str, tmp_path) -> FastAPI:
     settings = Settings(
         _env_file=None,
         database_url=test_database_url,
         opensearch_url="http://127.0.0.1:1",
         clip_service_url="http://127.0.0.1:1",
         jwt_secret="integration-test-secret-not-used-anywhere-else-0123456789",
+        storage_root=tmp_path / "storage",
+        # 上限调小，测试“超大文件”不必真的造一个 50 MB 的文件
+        upload_max_bytes=64 * 1024,
     )
     return create_app(settings)
 

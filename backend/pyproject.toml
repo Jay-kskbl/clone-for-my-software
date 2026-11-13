@@ -15,6 +15,7 @@ dependencies = [
     "alembic==1.20.1",           # 数据库迁移
     "pyjwt==2.15.1",             # 签发和校验登录令牌（JWT）
     "argon2-cffi==25.1.0",       # 密码哈希（Argon2id）
+    "python-multipart==0.0.33",  # 解析 multipart/form-data 上传（FastAPI 的 UploadFile 需要）
 ]
 
 [project.optional-dependencies]

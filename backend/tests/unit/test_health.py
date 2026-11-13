@@ -19,7 +19,7 @@ def _closed_port() -> int:
 
 
 @pytest.fixture
-def settings() -> Settings:
+def settings(tmp_path) -> Settings:
     port = _closed_port()
     return Settings(
         _env_file=None,
@@ -27,6 +27,7 @@ def settings() -> Settings:
         opensearch_url=f"http://127.0.0.1:{port}",
         clip_service_url=f"http://127.0.0.1:{port}",
         jwt_secret="unit-test-secret-not-used-anywhere-else-0123456789",
+        storage_root=tmp_path / "storage",
         health_check_timeout_seconds=1,
     )
 

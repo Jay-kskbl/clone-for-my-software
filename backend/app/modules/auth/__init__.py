@@ -5,6 +5,7 @@ from app.modules.auth.permissions import (
     accessible_filter,
     can_access,
     get_accessible_document,
+    get_owned_document,
 )
 from app.modules.auth.service import authenticate, create_user
 
@@ -15,4 +16,5 @@ __all__ = [
     "can_access",
     "create_user",
     "get_accessible_document",
+    "get_owned_document",
 ]

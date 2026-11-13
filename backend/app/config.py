@@ -6,6 +6,7 @@ from pydantic import Field, SecretStr, ValidationError, field_validator, model_v
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.core.errors import ConfigError
+from app.modules.storage.filetype import SUPPORTED_TYPES
 
 # backend/app/config.py → 项目根目录
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -30,6 +31,26 @@ class Settings(BaseSettings):
     storage_root: Path = Field(
         default=PROJECT_ROOT / "storage", description="上传文件的存储根目录（M3）"
     )
+
+    # ---- 上传限制（M2，GLOBAL §6.8）----
+    upload_max_bytes: int = Field(default=50 * 1024 * 1024, gt=0, description="单个文件大小上限")
+    upload_max_filename_chars: int = Field(default=255, gt=0, le=255)
+    # 允许上传的类型，逗号分隔的扩展名；只能从存储模块支持的类型里选
+    upload_allowed_types: str = Field(default="pdf,docx,xlsx,png,jpg")
+
+    @field_validator("upload_allowed_types")
+    @classmethod
+    def _allowed_types_known(cls, value: str) -> str:
+        known = {t.ext for t in SUPPORTED_TYPES}
+        chosen = [part.strip().lower() for part in value.split(",") if part.strip()]
+        unknown = sorted(set(chosen) - known)
+        if not chosen or unknown:
+            raise ValueError(f"只能是 {'、'.join(sorted(known))} 中的一个或多个，用逗号分隔")
+        return ",".join(chosen)
+
+    @property
+    def upload_allowed_extensions(self) -> frozenset[str]:
+        return frozenset(self.upload_allowed_types.split(","))
 
     # ---- Worker（M4，附录 A3）----
     # 租约时长：太短会误回收仍在正常处理的任务，太长则 Worker 崩溃后恢复慢

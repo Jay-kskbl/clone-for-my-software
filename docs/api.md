@@ -51,7 +51,17 @@
 | 503 | `SEARCH_UNAVAILABLE` | 检索引擎不可用。**不是**“没有搜到”——没有结果时返回 200 和空列表 |
 | 503 | `DATABASE_UNAVAILABLE` | 数据库不可用 |
 
-上传大小上限、允许的格式、文件名长度上限都来自配置，具体默认值在 T08 确定后补到这里。
+上传限制都来自配置（`.env`），默认值如下：
+
+| 限制 | 配置项 | 默认值 | 超出时 |
+|---|---|---|---|
+| 单个文件大小 | `UPLOAD_MAX_BYTES` | 50 MB | 413 `FILE_TOO_LARGE` |
+| 允许的类型 | `UPLOAD_ALLOWED_TYPES` | pdf、docx、xlsx、png、jpg | 415 `UNSUPPORTED_FILE_TYPE` |
+| 文件名长度 | `UPLOAD_MAX_FILENAME_CHARS` | 255 个字符 | 422 `VALIDATION_ERROR` |
+| 单个标签长度 | —（与数据库列一致） | 64 个字符 | 422 `VALIDATION_ERROR` |
+| 每个文档的标签数 | — | 20 个 | 422 `VALIDATION_ERROR` |
+
+类型按文件内容识别，与扩展名和浏览器上报的类型无关。旧版 `.doc`、`.xls` 不支持。
 
 ## 2. 接口总览
 
@@ -61,20 +71,20 @@
 | POST | `/api/auth/register` | 公开 | 注册普通用户 | T06（已实现） |
 | POST | `/api/auth/login` | 公开 | 登录，获取令牌 | T06（已实现） |
 | GET | `/api/auth/me` | 登录 | 当前用户信息 | T06（已实现） |
-| POST | `/api/documents` | 登录 | 上传文件 | T08 |
-| GET | `/api/documents` | 登录 | 列出可访问的文档 | T08 |
-| GET | `/api/documents/{id}` | 可访问 | 文档详情 | T08 |
-| GET | `/api/documents/{id}/download` | 可访问 | 下载原文件 | T08 |
+| POST | `/api/documents` | 登录 | 上传文件 | T08（已实现） |
+| GET | `/api/documents` | 登录 | 列出可访问的文档 | T08（已实现） |
+| GET | `/api/documents/{id}` | 可访问 | 文档详情 | T08（已实现） |
+| GET | `/api/documents/{id}/download` | 可访问 | 下载原文件 | T08（已实现） |
 | GET | `/api/documents/{id}/text` | 可访问 | 抽取出的文本（Word / Excel 预览用） | T16 |
-| DELETE | `/api/documents/{id}` | owner | 删除（软删除，立即不可见） | T08 |
-| GET | `/api/documents/{id}/shares` | owner | 查看共享给了谁 | T08 |
-| POST | `/api/documents/{id}/shares` | owner | 共享给指定用户 | T08 |
-| DELETE | `/api/documents/{id}/shares/{user_id}` | owner | 取消共享 | T08 |
-| PUT | `/api/documents/{id}/tags` | owner | 设置文档的标签（整体替换） | T08 |
-| GET | `/api/tags` | 登录 | 当前用户可访问文档上用到的标签 | T08 |
-| GET | `/api/documents/{id}/tasks` | 可访问 | 该文档的处理任务及状态 | T08 |
-| POST | `/api/tasks/{id}/retry` | owner | 重试一个失败的任务 | T08 |
-| GET | `/api/tasks` | 管理员 | 全部任务，可按状态、类型过滤 | T08 |
+| DELETE | `/api/documents/{id}` | owner | 删除（软删除，立即不可见） | T08（已实现） |
+| GET | `/api/documents/{id}/shares` | owner | 查看共享给了谁 | T08（已实现） |
+| POST | `/api/documents/{id}/shares` | owner | 共享给指定用户 | T08（已实现） |
+| DELETE | `/api/documents/{id}/shares/{user_id}` | owner | 取消共享 | T08（已实现） |
+| PUT | `/api/documents/{id}/tags` | owner | 设置文档的标签（整体替换） | T08（已实现） |
+| GET | `/api/tags` | 登录 | 当前用户可访问文档上用到的标签 | T08（已实现） |
+| GET | `/api/documents/{id}/tasks` | 可访问 | 该文档的处理任务及状态 | T08（已实现） |
+| POST | `/api/tasks/{id}/retry` | owner | 重试一个失败的任务 | T08（已实现） |
+| GET | `/api/tasks` | 管理员 | 全部任务，可按状态、类型过滤 | T08（已实现） |
 | POST | `/api/search` | 登录 | 检索 | T15、T22 |
 
 ## 3. 健康检查
@@ -185,6 +195,10 @@
 
 上传失败时不会留下文件或数据库记录。
 
+- 文件名中的目录部分和控制字符会被去掉；文件名只用于展示和检索，不参与存储路径
+- 标签会去掉首尾空白并去重
+- `Content-Length` 明显超过上限的请求在读取请求体之前就被拒绝（413）
+
 ### 5.3 GET /api/documents
 
 列出当前用户可访问的文档：自己上传的、别人共享的；管理员可见全部。
@@ -202,7 +216,7 @@
 
 返回原文件的字节流。PDF 的在线预览（pdf.js）和图片的显示也使用这个接口。
 
-- 响应 200：文件流；`Content-Type` 为识别出的真实类型；`Content-Disposition` 带原始文件名
+- 响应 200：文件流；`Content-Type` 为识别出的真实类型；`Content-Disposition` 带原始文件名（`attachment`；中文文件名用 `filename*=UTF-8''…` 携带）
 - 错误：403、404
 
 ### 5.6 GET /api/documents/{id}/text
@@ -284,6 +298,8 @@
 
 - 响应 200：`Task`（`status` 为 `pending`）
 - 错误：403；404；409 `TASK_NOT_RETRYABLE`
+- 被共享者可以查看任务，但不能重试（403）
+- 文档已被删除时，其任务（此时只有清理任务有意义）只有管理员可以重试；其他人得到 404
 
 ### 6.3 GET /api/tasks
 
