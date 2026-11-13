@@ -1,0 +1,34 @@
+[project]
+name = "docmgr-shared"
+version = "0.1.0"
+description = "所有环境（main / ocr / clip）共用：数据契约、ID 规则、任务领取库"
+requires-python = ">=3.11"
+# 这个包会被装进三个虚拟环境，依赖必须保持最少（DEVPLAN §2：只依赖 pydantic + psycopg）。
+dependencies = [
+    "pydantic==2.14.3", # 数据契约
+]
+
+[project.optional-dependencies]
+dev = ["pytest==9.2.0"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+# 本目录自身就是 shared 包（import shared.contracts / shared.ids）
+[tool.setuptools]
+packages = ["shared", "shared.contracts"]
+package-dir = { "shared" = "." }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["shared"]
