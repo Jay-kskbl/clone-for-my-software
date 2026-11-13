@@ -13,6 +13,8 @@ dependencies = [
     "httpx==0.28.1",             # 调用 OpenSearch / CLIP 服务（带超时）
     "sqlalchemy==2.1.8",         # ORM 与表结构定义
     "alembic==1.20.1",           # 数据库迁移
+    "pyjwt==2.15.1",             # 签发和校验登录令牌（JWT）
+    "argon2-cffi==25.1.0",       # 密码哈希（Argon2id）
 ]
 
 [project.optional-dependencies]

@@ -10,12 +10,20 @@ REQUIRED = {
     "DATABASE_URL": "postgresql://u:secret-pw@localhost:5432/db",
     "OPENSEARCH_URL": "http://localhost:9200",
     "CLIP_SERVICE_URL": "http://localhost:8001",
+    "JWT_SECRET": "unit-test-secret-not-used-anywhere-else-0123456789",
 }
 
 
 @pytest.fixture
 def clean_env(monkeypatch):
-    for name in [*REQUIRED, "HEALTH_CHECK_TIMEOUT_SECONDS", "STORAGE_ROOT"]:
+    for name in [
+        *REQUIRED,
+        "HEALTH_CHECK_TIMEOUT_SECONDS",
+        "STORAGE_ROOT",
+        "ACCESS_TOKEN_EXPIRE_SECONDS",
+        "WORKER_LEASE_SECONDS",
+        "WORKER_HEARTBEAT_SECONDS",
+    ]:
         monkeypatch.delenv(name, raising=False)
     return monkeypatch
 
@@ -126,3 +134,13 @@ def test_absolute_storage_root_kept(clean_env, tmp_path):
     clean_env.setenv("STORAGE_ROOT", str(tmp_path))
 
     assert load_settings(env_file=None).storage_root == tmp_path
+
+
+def test_cross_field_error_is_reported_readably(clean_env):
+    for name, value in REQUIRED.items():
+        clean_env.setenv(name, value)
+    clean_env.setenv("WORKER_LEASE_SECONDS", "10")
+    clean_env.setenv("WORKER_HEARTBEAT_SECONDS", "9")
+
+    with pytest.raises(ConfigError, match="WORKER_HEARTBEAT_SECONDS"):
+        load_settings(env_file=None)

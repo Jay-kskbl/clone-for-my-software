@@ -8,12 +8,16 @@
 """
 
 import sys
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.api import health
+from app.api import auth, health
+from app.api.errors import register_error_handlers
 from app.config import Settings, load_settings
 from app.core.errors import ConfigError
+from app.db.session import make_engine, make_session_factory
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -25,7 +29,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             print(exc, file=sys.stderr)
             raise SystemExit(1) from exc
 
-    app = FastAPI(title="智能文档管理系统 API")
+    # 创建引擎不会立刻连接数据库：数据库没启动时服务仍能起来，由 /health 如实报告
+    engine = make_engine(settings.database_url)
+
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+        yield
+        engine.dispose()
+
+    app = FastAPI(title="智能文档管理系统 API", lifespan=lifespan)
     app.state.settings = settings
+    app.state.session_factory = make_session_factory(engine)
+    register_error_handlers(app)
     app.include_router(health.router)
+    app.include_router(auth.router)
     return app

@@ -11,9 +11,13 @@ from pathlib import Path
 import pytest
 from alembic import command
 from alembic.config import Config
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 from sqlalchemy import Engine, inspect, text
 
-from app.db.session import make_engine
+from app.config import Settings
+from app.db.session import make_engine, make_session_factory
+from app.main import create_app
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 
@@ -55,3 +59,28 @@ def empty_engine(test_database_url: str):
 def migrated_engine(empty_engine: Engine, alembic_config: Config) -> Engine:
     command.upgrade(alembic_config, "head")
     return empty_engine
+
+
+@pytest.fixture
+def session(migrated_engine: Engine):
+    """已迁移的测试库上的一个数据库会话。"""
+    with make_session_factory(migrated_engine)() as s:
+        yield s
+
+
+@pytest.fixture
+def app(migrated_engine: Engine, test_database_url: str) -> FastAPI:
+    settings = Settings(
+        _env_file=None,
+        database_url=test_database_url,
+        opensearch_url="http://127.0.0.1:1",
+        clip_service_url="http://127.0.0.1:1",
+        jwt_secret="integration-test-secret-not-used-anywhere-else-0123456789",
+    )
+    return create_app(settings)
+
+
+@pytest.fixture
+def client(app: FastAPI):
+    with TestClient(app) as c:
+        yield c

@@ -6,6 +6,7 @@ requires-python = ">=3.11"
 # 这个包会被装进三个虚拟环境，依赖必须保持最少（DEVPLAN §2：只依赖 pydantic + psycopg）。
 dependencies = [
     "pydantic==2.14.3", # 数据契约
+    "psycopg[binary]==3.3.9", # 任务队列（shared/tasks.py）直接访问 PostgreSQL
 ]
 
 [project.optional-dependencies]

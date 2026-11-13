@@ -76,10 +76,10 @@ flowchart TB
 | — | 数据契约与 ID | 模块间唯一的数据交换格式 | `shared/contracts`、`shared/ids.py` | 是 | T02 | 已完成 |
 | — | 数据库模型与迁移 | 表结构 | `backend/app/db` | — | T03 | 已完成 |
 | — | 配置与健康检查 | 环境变量 → 配置；`GET /health` | `backend/app/config.py`、`api/health.py` | — | T01 | 已完成 |
-| M1 | 认证与权限 | user → 可访问的 document_id 集合；`can_access(user, doc)` | `backend/app/modules/auth` | — | T06 | 未开始 |
+| M1 | 认证与权限 | user → 可访问的 document_id 集合；`can_access(user, doc)` | `backend/app/modules/auth` | — | T06 | 已完成（数据库集成测试未测试） |
 | M2 | 文档管理 | API 请求 → Document 记录；软删除；创建任务 | `backend/app/modules/documents` | — | T08 | 未开始 |
 | M3 | 存储抽象 | 字节流 → `storage_key`；按 key 读取、删除 | `backend/app/modules/storage` | 是 | T05 | 已完成 |
-| M4 | 任务框架 | 任务 → 状态流转（领取、租约、重试、幂等） | `shared/tasks`、`backend/app/worker` | — | T07 | 未开始 |
+| M4 | 任务框架 | 任务 → 状态流转（领取、租约、重试、幂等） | `shared/tasks.py`、`backend/app/worker` | — | T07 | 已完成（数据库集成测试未测试） |
 | M5 | 文档解析 | 文件路径 → `ParsedDocument`（纯函数） | `backend/app/modules/parsing` | 是 | T09、T11 | 未开始 |
 | M6 | OCR | 图片 → `OCRResult` | `services/ocr_worker` | 是 | T17 | 未开始 |
 | M7 | 切分 | `ParsedDocument` → `Chunk[]`（纯函数） | `backend/app/modules/chunking` | 是 | T12 | 未开始 |

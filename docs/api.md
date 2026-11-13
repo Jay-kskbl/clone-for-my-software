@@ -58,9 +58,9 @@
 | 方法 | 路径 | 权限 | 说明 | 任务 |
 |---|---|---|---|---|
 | GET | `/health` | 公开 | 各依赖服务的状态 | T01 ✅ |
-| POST | `/api/auth/register` | 公开 | 注册普通用户 | T06 |
-| POST | `/api/auth/login` | 公开 | 登录，获取令牌 | T06 |
-| GET | `/api/auth/me` | 登录 | 当前用户信息 | T06 |
+| POST | `/api/auth/register` | 公开 | 注册普通用户 | T06（已实现） |
+| POST | `/api/auth/login` | 公开 | 登录，获取令牌 | T06（已实现） |
+| GET | `/api/auth/me` | 登录 | 当前用户信息 | T06（已实现） |
 | POST | `/api/documents` | 登录 | 上传文件 | T08 |
 | GET | `/api/documents` | 登录 | 列出可访问的文档 | T08 |
 | GET | `/api/documents/{id}` | 可访问 | 文档详情 | T08 |
@@ -113,12 +113,17 @@
 - 请求：`{ "username": "barry", "password": "…" }`
 - 响应 201：`User`
 - 错误：409 `USERNAME_TAKEN`；422 `VALIDATION_ERROR`（用户名或密码不符合长度、字符要求）
+- 用户名：3–32 个字符，只允许英文字母、数字、下划线 `_`、点 `.`、连字符 `-`，区分大小写
+- 密码：8–128 个字符
+- 请求中出现其他字段（例如 `role`）返回 422，不会被忽略
 
 ### 4.3 POST /api/auth/login
 
 - 请求：`{ "username": "barry", "password": "…" }`
 - 响应 200：`{ "access_token": "…", "token_type": "bearer", "expires_in": 3600 }`（`expires_in` 单位为秒，值来自配置）
 - 错误：401 `INVALID_CREDENTIALS`
+- 令牌中只包含用户 ID 和过期时间。角色每次请求都从数据库读取，账号被删除后其令牌立即失效
+- 没有登出和刷新接口：令牌到期后重新登录
 
 ### 4.4 GET /api/auth/me
 

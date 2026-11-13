@@ -26,6 +26,7 @@ def settings() -> Settings:
         database_url=f"postgresql://u:secret-pw@127.0.0.1:{port}/db",
         opensearch_url=f"http://127.0.0.1:{port}",
         clip_service_url=f"http://127.0.0.1:{port}",
+        jwt_secret="unit-test-secret-not-used-anywhere-else-0123456789",
         health_check_timeout_seconds=1,
     )
 
