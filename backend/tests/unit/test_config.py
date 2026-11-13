@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.config import load_settings
+from app.config import PROJECT_ROOT, load_settings
 from app.core.errors import ConfigError
 from app.main import create_app
 
@@ -15,7 +15,7 @@ REQUIRED = {
 
 @pytest.fixture
 def clean_env(monkeypatch):
-    for name in [*REQUIRED, "HEALTH_CHECK_TIMEOUT_SECONDS"]:
+    for name in [*REQUIRED, "HEALTH_CHECK_TIMEOUT_SECONDS", "STORAGE_ROOT"]:
         monkeypatch.delenv(name, raising=False)
     return monkeypatch
 
@@ -102,3 +102,27 @@ def test_app_startup_fails_with_readable_message(clean_env, capsys, monkeypatch,
     stderr = capsys.readouterr().err
     assert "缺少必填环境变量" in stderr
     assert "DATABASE_URL" in stderr
+
+
+def test_storage_root_defaults_to_project_storage_dir(clean_env):
+    for name, value in REQUIRED.items():
+        clean_env.setenv(name, value)
+    clean_env.delenv("STORAGE_ROOT", raising=False)
+
+    assert load_settings(env_file=None).storage_root == PROJECT_ROOT / "storage"
+
+
+def test_relative_storage_root_resolved_against_project_root(clean_env):
+    for name, value in REQUIRED.items():
+        clean_env.setenv(name, value)
+    clean_env.setenv("STORAGE_ROOT", "data/files")
+
+    assert load_settings(env_file=None).storage_root == PROJECT_ROOT / "data" / "files"
+
+
+def test_absolute_storage_root_kept(clean_env, tmp_path):
+    for name, value in REQUIRED.items():
+        clean_env.setenv(name, value)
+    clean_env.setenv("STORAGE_ROOT", str(tmp_path))
+
+    assert load_settings(env_file=None).storage_root == tmp_path

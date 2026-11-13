@@ -4,7 +4,7 @@
 # 模型文件、用户上传文件、实验运行产物：体积大，且不属于代码
 models/
 env_check/models/
-storage/
+/storage/
 env_check/results/history/
 env_check/samples/
 

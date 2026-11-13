@@ -113,7 +113,7 @@ BARRY zou/
 
 ### 阶段二：基础系统（W4–W6）
 
-- [ ] **T05 M3 存储抽象** ⭐
+- [x] **T05 M3 存储抽象** ⭐
   -   `put(stream) -> StoredFile(storage_key, sha256, size)`；`open(key)`；`delete(key)`
   -   先写临时文件、校验后再移动到 `{yyyy}/{document_id}/{sha256}.{ext}`
   -   文件魔数校验（不信任扩展名和 MIME）
@@ -234,3 +234,4 @@ BARRY zou/
 | T02 | 2026-11-13 | 43f7589 | shared 包测试 93 项通过 |
 | T03 | 2026-11-13 | 62f3201 | 后端测试 30 项通过，其中 13 项集成测试在本地 PostgreSQL 16.15 上运行；未在 docker-compose 的 postgres:16.6 容器上运行 |
 | T04 | 2026-11-13 | 403664d | 三份文档完成；Barry 于 2026-11-13 确认方案（含 api.md 的接口设计与 D12、D13），里程碑“方案评审”通过。遗留：decisions.md §2 中 OpenSearch、分词（A13）、降级预案（A14）、并发内存未测试，须在 T13 开始前确定；OCR/CLIP 规格分别在 T17、T20 开始前选定 |
+| T05 | 2026-11-13 | （待提交） | 后端测试 74 项通过（其中存储 54 项、配置新增 3 项），13 项集成测试因未设置 TEST_DATABASE_URL 未运行（与本任务无关）；接口为 stage/commit/discard 两步写入 + put 简便方法；支持 pdf/png/jpg/docx/xlsx 五种类型；进程被强杀时残留的临时文件尚无清理入口，留给 T18 |

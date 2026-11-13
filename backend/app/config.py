@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from pydantic import Field, ValidationError
+from pydantic import Field, ValidationError, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.core.errors import ConfigError
@@ -23,6 +23,15 @@ class Settings(BaseSettings):
 
     # ---- 可选 ----
     health_check_timeout_seconds: float = Field(default=2.0, gt=0)
+    storage_root: Path = Field(
+        default=PROJECT_ROOT / "storage", description="上传文件的存储根目录（M3）"
+    )
+
+    @field_validator("storage_root")
+    @classmethod
+    def _storage_root_absolute(cls, value: Path) -> Path:
+        # 相对路径一律相对项目根目录，不随启动时的工作目录变化
+        return value if value.is_absolute() else PROJECT_ROOT / value
 
 
 def load_settings(env_file: Path | None = DEFAULT_ENV_FILE) -> Settings:

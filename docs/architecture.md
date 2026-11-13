@@ -78,7 +78,7 @@ flowchart TB
 | — | 配置与健康检查 | 环境变量 → 配置；`GET /health` | `backend/app/config.py`、`api/health.py` | — | T01 | 已完成 |
 | M1 | 认证与权限 | user → 可访问的 document_id 集合；`can_access(user, doc)` | `backend/app/modules/auth` | — | T06 | 未开始 |
 | M2 | 文档管理 | API 请求 → Document 记录；软删除；创建任务 | `backend/app/modules/documents` | — | T08 | 未开始 |
-| M3 | 存储抽象 | 字节流 → `storage_key`；按 key 读取、删除 | `backend/app/modules/storage` | 是 | T05 | 未开始 |
+| M3 | 存储抽象 | 字节流 → `storage_key`；按 key 读取、删除 | `backend/app/modules/storage` | 是 | T05 | 已完成 |
 | M4 | 任务框架 | 任务 → 状态流转（领取、租约、重试、幂等） | `shared/tasks`、`backend/app/worker` | — | T07 | 未开始 |
 | M5 | 文档解析 | 文件路径 → `ParsedDocument`（纯函数） | `backend/app/modules/parsing` | 是 | T09、T11 | 未开始 |
 | M6 | OCR | 图片 → `OCRResult` | `services/ocr_worker` | 是 | T17 | 未开始 |
