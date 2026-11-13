@@ -23,6 +23,7 @@ def clean_env(monkeypatch):
         "ACCESS_TOKEN_EXPIRE_SECONDS",
         "WORKER_LEASE_SECONDS",
         "WORKER_HEARTBEAT_SECONDS",
+        "PDF_OCR_MIN_CHARS",
     ]:
         monkeypatch.delenv(name, raising=False)
     return monkeypatch
@@ -143,4 +144,15 @@ def test_cross_field_error_is_reported_readably(clean_env):
     clean_env.setenv("WORKER_HEARTBEAT_SECONDS", "9")
 
     with pytest.raises(ConfigError, match="WORKER_HEARTBEAT_SECONDS"):
+        load_settings(env_file=None)
+
+
+def test_pdf_ocr_threshold_default_and_bounds(clean_env):
+    for name, value in REQUIRED.items():
+        clean_env.setenv(name, value)
+
+    assert load_settings(env_file=None).pdf_ocr_min_chars == 20
+
+    clean_env.setenv("PDF_OCR_MIN_CHARS", "0")
+    with pytest.raises(ConfigError, match="PDF_OCR_MIN_CHARS"):
         load_settings(env_file=None)

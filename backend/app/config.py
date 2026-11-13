@@ -52,6 +52,11 @@ class Settings(BaseSettings):
     def upload_allowed_extensions(self) -> frozenset[str]:
         return frozenset(self.upload_allowed_types.split(","))
 
+    # ---- 解析（M5）----
+    # PDF 某页文本层的有效字符数低于它、且页面上有图片或图形时，该页走 OCR（GLOBAL §2 P1）。
+    # 属于检索实验参数：每次实验随结果一起记录（GLOBAL §8.2）
+    pdf_ocr_min_chars: int = Field(default=20, ge=1)
+
     # ---- Worker（M4，附录 A3）----
     # 租约时长：太短会误回收仍在正常处理的任务，太长则 Worker 崩溃后恢复慢
     worker_lease_seconds: float = Field(default=60.0, gt=0)

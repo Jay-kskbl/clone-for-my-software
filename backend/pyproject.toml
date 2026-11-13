@@ -16,6 +16,8 @@ dependencies = [
     "pyjwt==2.15.1",             # 签发和校验登录令牌（JWT）
     "argon2-cffi==25.1.0",       # 密码哈希（Argon2id）
     "python-multipart==0.0.33",  # 解析 multipart/form-data 上传（FastAPI 的 UploadFile 需要）
+    # PDF 解析（M5）。锁在 1.x：2.x 会强制带入 onnxruntime、numpy 等本项目用不到的包
+    "pymupdf==1.28.2",
 ]
 
 [project.optional-dependencies]

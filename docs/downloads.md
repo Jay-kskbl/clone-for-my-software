@@ -1,6 +1,6 @@
 # 下载与安装记录
 
-更新日期：2026-11-13（T08 完成后）
+更新日期：2026-11-13（T09 完成后）
 
 这里登记开发过程中**从网络下载到本机的全部内容**：是什么、从哪里来、装在哪里、占多大、为什么需要、谁批准的。
 GLOBAL.md 规定不安装任何新内容；确实需要时先问 Barry，批准后在这里登记。
@@ -24,14 +24,16 @@ GLOBAL.md 规定不安装任何新内容；确实需要时先问 Barry，批准�
 | 4 | 2026-11-13 22:41 | cffi | 2.1.1 | PyPI | `cffi/`、`_cffi_backend.cpython-311-darwin.so` | 约 1.04 MB | argon2-cffi-bindings 的依赖 | T06 | 同上，随 #2 自动安装 |
 | 5 | 2026-11-13 22:41 | pycparser | 3.12 | PyPI | `pycparser/` | 约 558 KB | cffi 的依赖 | T06 | 同上，随 #2 自动安装 |
 | 6 | 2026-11-13 23:01 | python-multipart | 0.0.33 | PyPI | `python_multipart/`、`multipart/` | 约 199 KB | 解析 `multipart/form-data` 上传 | T08 | Barry 于 2026-11-13 批准（`decisions.md` D19） |
+| 7 | 2026-11-13 23:13 | PyMuPDF | 1.28.2 | PyPI | `pymupdf/`、`fitz/` | 约 58.1 MB（下载的安装包 23.9 MB） | PDF 解析（M5） | T09 | Barry 于 2026-11-13 批准，并选定 1.28.2 而不是 2.1（`decisions.md` D21） |
 
-合计：6 个包，安装后约 2.2 MB。
+合计：7 个包，安装后约 60.3 MB。
 
 说明：
 
-- #1、#2、#6 是直接依赖，版本锁定在 `backend/pyproject.toml`。#3–#5 是 pip 按依赖关系自动带进来的，没有单独锁定版本。
+- #1、#2、#6、#7 是直接依赖，版本锁定在 `backend/pyproject.toml`。#3–#5 是 pip 按依赖关系自动带进来的，没有单独锁定版本。
 - pip 会把下载过的安装包另存一份在用户级缓存 `~/Library/Caches/pip/` 里，那一份的大小没有单独统计。
 - T05、T07 没有下载任何内容。
+- #7 没有带入任何附加依赖。
 
 ## 3. 没有下载、但曾经考虑过的
 
