@@ -1,0 +1,6 @@
+# OCR 环境：不要与 requirements-clip.txt 装进同一个虚拟环境
+# 先不锁版本，安装后由 setup_envs.sh 生成 results/freeze-ocr.txt 记录实际版本
+paddlepaddle
+paddleocr
+pillow
+psutil

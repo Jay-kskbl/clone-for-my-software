@@ -1,0 +1,26 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+.venv*/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# 密钥与本地配置（只提交 .env.example）
+.env
+.env.*
+!.env.example
+
+# 模型权重、用户文件存储、实验运行产物
+models/
+env_check/models/
+storage/
+env_check/results/history/
+env_check/samples/
+
+# 前端
+node_modules/
+dist/

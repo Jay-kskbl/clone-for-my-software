@@ -1,0 +1,23 @@
+# 仅用于本机环境实测（单节点、关闭安全插件、只绑定 127.0.0.1）。
+# 正式开发时的 compose 文件放在项目仓库中，不要直接沿用这里的"关闭安全插件"设置到对外暴露的环境。
+services:
+  opensearch:
+    build:
+      context: .
+      args:
+        OPENSEARCH_VERSION: ${OPENSEARCH_VERSION:-2.19.1}
+    container_name: envcheck-opensearch
+    environment:
+      - discovery.type=single-node
+      - DISABLE_SECURITY_PLUGIN=true
+      - DISABLE_INSTALL_DEMO_CONFIG=true
+      - bootstrap.memory_lock=false
+      # 堆内存：先用 1g 测；若出现 OOM 或明显卡顿，改成 2g 再测一次并记录
+      - OPENSEARCH_JAVA_OPTS=-Xms${OS_HEAP:-1g} -Xmx${OS_HEAP:-1g}
+    ports:
+      - "127.0.0.1:9200:9200"
+    volumes:
+      - envcheck-os-data:/usr/share/opensearch/data
+
+volumes:
+  envcheck-os-data:

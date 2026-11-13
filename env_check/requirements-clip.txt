@@ -1,0 +1,7 @@
+# CLIP 环境：不要与 requirements-ocr.txt 装进同一个虚拟环境
+# 先不锁版本，安装后由 setup_envs.sh 生成 results/freeze-clip.txt 记录实际版本
+torch
+torchvision
+cn_clip
+pillow
+psutil
