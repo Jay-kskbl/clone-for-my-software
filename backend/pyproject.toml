@@ -1,0 +1,40 @@
+[project]
+name = "docmgr-backend"
+version = "0.1.0"
+description = "基于多模态信息检索的智能文档管理系统 —— 后端（main 环境）"
+requires-python = ">=3.11"
+# 只放 main 环境的依赖；PaddleOCR / PyTorch 分别属于 ocr、clip 环境，不得写在这里（GLOBAL §3.4）。
+dependencies = [
+    "fastapi==0.162.5",          # HTTP 接口
+    "uvicorn[standard]==0.54.0", # ASGI 服务器
+    "pydantic==2.14.3",          # 数据结构校验
+    "pydantic-settings==2.16.2", # 从环境变量读取配置
+    "psycopg[binary]==3.3.9",    # PostgreSQL 驱动
+    "httpx==0.28.1",             # 调用 OpenSearch / CLIP 服务（带超时）
+    "sqlalchemy==2.1.8",         # ORM 与表结构定义
+    "alembic==1.20.1",           # 数据库迁移
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.2.0",
+    "ruff==0.17.5",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]

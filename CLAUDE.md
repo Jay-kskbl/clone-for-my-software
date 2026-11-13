@@ -25,4 +25,19 @@
 
 ## 常用命令
 
-（T01 完成后由 Claude 补充：启动依赖服务、启动后端、启动 Worker、运行测试、运行前端。）
+首次准备（项目根目录）：
+
+```bash
+cp .env.example .env                                  # 然后修改其中的密码
+python -m venv .venv-main
+.venv-main/bin/pip install -e "shared[dev]" -e "backend[dev]"   # Windows：.venv-main\Scripts\pip
+```
+
+- 启动依赖服务（项目根目录）：`docker compose --env-file .env -f deploy/docker-compose.yml up -d`
+- 启动后端（`backend/` 目录，main 环境）：`uvicorn app.main:create_app --factory --reload`，然后访问 `http://127.0.0.1:8000/health`
+- 数据库迁移（`backend/` 目录，main 环境）：`alembic upgrade head`；说明见 `docs/data-model.md` §4
+- 运行测试（main 环境）：在 `backend/` 和 `shared/` 目录下分别执行 `pytest`
+- 集成测试需要专用的空测试库：先建库 `docmgr_test`，再设置 `TEST_DATABASE_URL`（见 `.env.example`）；不设置时这些测试被跳过，算“未运行”
+- 代码检查（`backend/`、`shared/` 目录分别执行）：`ruff check . && ruff format --check .`
+- 启动 Worker：T07 完成后补充
+- 运行前端：T10 完成后补充

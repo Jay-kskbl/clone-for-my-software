@@ -1,26 +1,32 @@
-# macOS
-.DS_Store
-
-# Python
-__pycache__/
-*.pyc
+# 虚拟环境（main / ocr / clip 三套）
 .venv*/
-*.egg-info/
-.pytest_cache/
-.ruff_cache/
 
-# 密钥与本地配置（只提交 .env.example）
-.env
-.env.*
-!.env.example
-
-# 模型权重、用户文件存储、实验运行产物
+# 模型文件、用户上传文件、实验运行产物：体积大，且不属于代码
 models/
 env_check/models/
 storage/
 env_check/results/history/
 env_check/samples/
 
+# 本地配置与密钥：只提交 .env.example
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
 # 前端
 node_modules/
 dist/
+
+# 编辑器与系统
+.idea/
+.vscode/
+.DS_Store
