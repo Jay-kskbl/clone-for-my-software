@@ -1,0 +1,22 @@
+{
+  "script": "00_sysinfo",
+  "saved_at": "2026-11-13T14:30:28+09:00",
+  "time": "2026-11-13T14:30:28+09:00",
+  "os": "macOS-26.6.2-arm64-arm-64bit",
+  "machine": "arm64",
+  "python": "3.11.18",
+  "python_executable": "/Users/davidlaid/Desktop/BARRY zou/env_check/.venv-main/bin/python",
+  "cpu_count": 10,
+  "cpu_model": "Apple M4",
+  "total_mem_gb": 24.0,
+  "available_mem_gb": 8.9,
+  "disk_free_gb": 341.4,
+  "tools": {
+    "docker": null,
+    "docker_compose": null,
+    "java": "The operation couldn’t be completed. Unable to locate a Java Runtime.",
+    "node": null,
+    "psql": null,
+    "git": "xcode-select: note: No developer tools were found, requesting install."
+  }
+}

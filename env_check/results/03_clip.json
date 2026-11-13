@@ -1,0 +1,97 @@
+{
+  "script": "03_clip",
+  "saved_at": "2026-11-13T14:41:32+09:00",
+  "errors": [],
+  "model_name": "ViT-B-16",
+  "torch_version": "2.15.0",
+  "cn_clip_version": "unknown",
+  "rss_before_load_mb": 297.8,
+  "model_load_s": 2.376,
+  "device": "cpu",
+  "rss_after_load_mb": 1405.8,
+  "model_files": [
+    ".cache",
+    "clip_cn_vit-b-16.pt"
+  ],
+  "embedding_dim": 512,
+  "text_encode_ms": {
+    "p50": 20.1885,
+    "p95": 20.4864,
+    "n": 50
+  },
+  "image_encode": {
+    "images": 35,
+    "batch": 8,
+    "total_s": 1.133,
+    "images_per_s": 30.9
+  },
+  "sanity": [
+    {
+      "query": "一张纯红色的图片",
+      "expected": "clip_red.png",
+      "top1": "clip_red.png",
+      "correct": true,
+      "scores": [
+        0.4977,
+        0.4622,
+        0.4764,
+        0.4052,
+        0.3502
+      ]
+    },
+    {
+      "query": "一张纯蓝色的图片",
+      "expected": "clip_blue.png",
+      "top1": "clip_blue.png",
+      "correct": true,
+      "scores": [
+        0.4615,
+        0.498,
+        0.4675,
+        0.4066,
+        0.3519
+      ]
+    },
+    {
+      "query": "一张纯绿色的图片",
+      "expected": "clip_green.png",
+      "top1": "clip_green.png",
+      "correct": true,
+      "scores": [
+        0.4493,
+        0.4672,
+        0.4942,
+        0.4011,
+        0.3532
+      ]
+    },
+    {
+      "query": "黑色背景上的一个白色圆形",
+      "expected": "clip_circle.png",
+      "top1": "clip_circle.png",
+      "correct": true,
+      "scores": [
+        0.3775,
+        0.3761,
+        0.3749,
+        0.5092,
+        0.3408
+      ]
+    },
+    {
+      "query": "一张印满黑色文字的白纸",
+      "expected": "clip_text.png",
+      "top1": "clip_circle.png",
+      "correct": false,
+      "scores": [
+        0.3741,
+        0.3716,
+        0.3694,
+        0.4003,
+        0.3742
+      ]
+    }
+  ],
+  "sanity_top1_acc": 0.8,
+  "peak_rss_mb": 2025.1
+}

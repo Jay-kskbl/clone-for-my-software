@@ -1,0 +1,45 @@
+{
+  "script": "02_ocr",
+  "saved_at": "2026-11-13T14:33:53+09:00",
+  "errors": [],
+  "mobile_requested": false,
+  "paddle_version": "3.3.1",
+  "paddleocr_version": "3.7.0",
+  "paddle_device": "cpu",
+  "rss_before_load_mb": 353.9,
+  "model_load_s": 46.2979,
+  "api": "3.x predict API + 默认模型",
+  "rss_after_load_mb": 1037.7,
+  "per_image": [
+    {
+      "file": "ocr_clean.png",
+      "avg_s": 0.7022,
+      "min_s": 0.7,
+      "max_s": 0.7039,
+      "mean_conf": 0.993,
+      "text": "智能文档管理系统设计与实现\n第三章 检索模块\n2024年度财务报告摘要",
+      "cer": 0.0
+    },
+    {
+      "file": "ocr_small.png",
+      "avg_s": 0.5438,
+      "min_s": 0.5418,
+      "max_s": 0.5457,
+      "mean_conf": 0.994,
+      "text": "发票号码12345678 开票日期2024年3月5日\n购买方名称：某某科技有限公司金额980.00元",
+      "cer": 0.0
+    },
+    {
+      "file": "ocr_lowq.png",
+      "avg_s": 0.6164,
+      "min_s": 0.6129,
+      "max_s": 0.6187,
+      "mean_conf": 0.9998,
+      "text": "会议纪要：讨论图文跨模态检索与结果融合方案\n参会人员：张三李四王五",
+      "cer": 0.0
+    }
+  ],
+  "avg_s_per_image": 0.6208,
+  "avg_cer": 0.0,
+  "peak_rss_mb": 1121.5
+}
