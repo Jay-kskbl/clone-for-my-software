@@ -70,6 +70,12 @@ class Settings(BaseSettings):
     # 图片的像素数（宽 × 高）上限，超过就拒绝处理：解码后每个像素要占 3–4 字节内存
     parse_image_max_pixels: int = Field(default=100_000_000, gt=0)
 
+    # ---- 切分（M7）----
+    # 一个片段最多多少个字符（中文一个字、英文一个字母都算一个），以及相邻片段重叠多少个字符。
+    # 属于检索实验参数：每次实验随结果一起记录（GLOBAL §8.2）；改动后 parse_version 随之变化
+    chunk_max_chars: int = Field(default=500, ge=50, le=10_000)
+    chunk_overlap_chars: int = Field(default=50, ge=0)
+
     # ---- Worker（M4，附录 A3）----
     # 租约时长：太短会误回收仍在正常处理的任务，太长则 Worker 崩溃后恢复慢
     worker_lease_seconds: float = Field(default=60.0, gt=0)
@@ -83,6 +89,13 @@ class Settings(BaseSettings):
     worker_memory_limit_mb: int = Field(default=2048, gt=0)
     # 处理多少个任务后 Worker 主动退出，由外层重新拉起
     worker_max_tasks: int = Field(default=50, gt=0)
+
+    @model_validator(mode="after")
+    def _overlap_shorter_than_chunk(self) -> "Settings":
+        # 重叠超过片段的一半时，相邻片段大部分内容相同，索引膨胀、同一段文字反复计分
+        if self.chunk_overlap_chars * 2 > self.chunk_max_chars:
+            raise ValueError("CHUNK_OVERLAP_CHARS 不能超过 CHUNK_MAX_CHARS 的一半")
+        return self
 
     @model_validator(mode="after")
     def _heartbeat_shorter_than_lease(self) -> "Settings":

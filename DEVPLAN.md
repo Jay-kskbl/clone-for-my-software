@@ -150,7 +150,7 @@ BARRY zou/
   -   Word（段落级 locator）、Excel（工作表 + 单元格范围 locator）、图片（只做元数据，交给 OCR）
   -   zip 炸弹防护（解压总大小和文件数上限）、解析超时
   -   🧪 每种格式至少 2 个 fixture，外加 1 个畸形文件
-- [ ] **T12 M7 切分**
+- [x] **T12 M7 切分**
   -   切分长度、重叠长度由配置控制；每个 chunk 带 locator；Excel 按行组切分
   -   🧪 切分后拼接覆盖原文；locator 正确；参数变化时 `parse_version` 变化
 - [ ] **T13 M8 文本索引** 🔒
@@ -229,8 +229,13 @@ BARRY zou/
   - 文档被软删除后，它尚未执行的 parse 任务仍在队列里。T14 的处理函数开头要检查文档是否已删除。
   - 重试任务（`POST /api/tasks/{id}/retry`）目前不改文档状态，规则同样在 T14 定。
   - （T11 补充）四个解析器的入口各自独立（`parse_pdf`、`parse_docx`、`parse_xlsx`、`parse_image`），没有统一的“按类型分发”函数，T14 写处理函数时按文档的类型选择，并把配置里的上限传进去。图片要另外调用 `read_image_info` 取宽高写入 `image_assets`，`parse_image` 的 `image_id` 用 `make_image_id(document_id)` 生成。
-- **给 T12 的衔接提醒**
-  - Word 的表格被拆成逐单元格的段落块，Excel 是一行一个块（单元格之间用制表符）。切分时怎么合并、合并后的 locator 取哪一个（Excel 需要把多行的范围并成一个矩形），T12 要定。
+- **给 T14、T17 的衔接提醒（T12 补充）**
+  - parse 任务处理函数里：用配置构造 `ChunkingParams`；用 `make_parse_version` 算出版本号，PDF 要把 `pdf_ocr_min_chars` 作为 `parser_options` 传进去；再调用 `chunk_document`。
+  - 正文片段和各页 OCR 片段共用同一个 `{document_id}:{parse_version}:{seq}` 序号空间。OCR 任务是分页、分次执行的，每次的 `seq_start` 必须互不重叠，并且是确定性的（重复执行时序号相同）。这个分配规则 T14 要定，例如按 OCR 对象在 `ocr_targets` 里的位置预留区间。
+  - OCR Worker 在 ocr 环境里，不能导入 backend。如果 T17 要在 OCR Worker 里切分，先把 `backend/app/modules/chunking` 移到 `shared`（它只依赖 shared 和标准库）；也可以让 OCR Worker 只写 OCRResult，由通用 Worker 切分。二选一在 T17 定。
+- **待实验决定（T12 记录）**
+  - 是否给每个 Excel 片段补上该工作表的表头行：片段里只有数据、没有列名，按“列名 + 值”的方式搜索可能搜不到后面的行。补表头会让表头词在同一文件里重复计分。阶段五用实验比较。
+  - Word 片段只定位到起始段落。如果实验或演示发现跳转偏差影响使用，再考虑给 `DocxParaLocator` 增加结束段落字段（数据契约变更，需 Barry 批准）。
 - **评测数据收集时顺带做**
   - 用几份真实的 Word、Excel（由 Office 或 WPS 保存）和手机照片过一遍 T11 的解析器，结果记到 `docs/untested.md` §4 对应的行。
 - **安全方面，本科毕设范围内可以不做，但答辩可能被问到**
@@ -264,3 +269,4 @@ BARRY zou/
 | T10 | 2026-11-14 | e5209a5 | 登录/注册页、文件列表（含处理状态与自动刷新）、上传、下载、删除、共享。已执行：类型检查通过、30 项前端单元测试通过、生产构建成功；在浏览器里对着临时的模拟接口把全部功能人工点了一遍。**未测试（Not Tested）**：与真实后端的联调（本机没有 PostgreSQL，真实后端的登录等接口无法运行）；页面组件没有自动化测试。新下载：Node.js 26.13.1（装在项目内 .tools/node/）和 131 个 npm 包，Barry 批准，已登记到 docs/downloads.md。里程碑“基础系统”未达成 |
 | T05–T10 核查 | 2026-11-14 | a0872dc | Barry 要求的整体核查。方法：重跑全部测试与代码检查；从真实应用导出接口清单，与 api.md 和前端类型逐项对照（17 个接口、全部字段一致）；启动真实后端和前端开发代理，用 curl 走通不需要数据库的路径；通读各模块之间的衔接。发现并修复 5 处：① 超大上传经代理时用户看到 502 而不是 413；② 解析器标记的“不可重试”在子进程边界丢失；③ `.env.example` 里的示例 JWT 密钥长度合格，原样复制也能启动；④ 存储和 Worker 各有一处代码在 Windows 上会直接报错；⑤ `.gitignore` 的 `models/` 规则会误忽略任何同名目录。新增 7 项测试，后端现为 216 项通过。未修、留作后续的事项记在 §4。91 项数据库集成测试和前后端联调仍未测试，里程碑“基础系统”仍未达成 |
 | T11 | 2026-11-14 | 3bd66e9 | Word、Excel、图片三个解析器，zip 炸弹防护（解压后总大小、条目数、加密条目），图片像素数上限与截断检查。已执行：后端测试 288 项通过（T11 新增 72 项：Word 18、Excel 19、图片 23、zip 检查 11、配置 1），全部在本机实际执行，没有未测试项；代码检查通过。每种格式的 fixture 都不少于 2 个，畸形文件包括 zip 炸弹、谎报大小的条目、截断、XML 损坏、缺主部件、互相冒充、伪造表格范围、像素炸弹。新增依赖 python-docx 1.2.0、openpyxl 3.1.5（带入 lxml、et-xmlfile）由 Barry 批准，已登记到 docs/downloads.md；规则与局限见 decisions.md D24。新增三个配置项（PARSE_ZIP_MAX_TOTAL_BYTES、PARSE_ZIP_MAX_ENTRIES、PARSE_IMAGE_MAX_PIXELS）。解析超时沿用 Worker 子进程边界的超时（T07），解析器内部没有另做；解析器尚未接入 Worker（T14）。测试文件都是现场生成的，未用 Office 实际保存的文件和真实照片验证，已记入 docs/untested.md §4 |
+| T12 | 2026-11-14 | （待填） | 切分模块 `chunk_document` / `chunk_blocks`、`split_spans`、`make_parse_version`。规则见 decisions.md D25：PDF 页和图片不合并；Word 相邻段落、Excel 同一工作表相邻行按整块打包；Word 定位到起始段落，Excel 用外接矩形；打包时整块重叠，超长块按字符重叠并优先在换行、句末处断开；parse_version 由算法版本、切分参数、解析器名称和版本、解析参数确定性算出。新增配置 CHUNK_MAX_CHARS（500）、CHUNK_OVERLAP_CHARS（50）。已执行：后端测试 336 项通过（T12 新增 48 项：切分 47、配置 1），全部在本机实际执行，没有未测试项；代码检查通过。三项 🧪 都有对应测试，并用 T11 解析器生成的 docx、xlsx 做了衔接测试。没有新下载。切分尚未接入 Worker（T14）；正文与 OCR 片段的序号分配留给 T14/T17，记在 §4。实施过程中另一个会话（T11 实施 fork）曾在同一目录短暂做 T12，已由它撤回自己的改动；提交前逐个核对过文件内容，并重跑了全部测试 |

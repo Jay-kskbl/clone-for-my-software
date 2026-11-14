@@ -190,3 +190,22 @@ def test_parse_limits_defaults_and_bounds(clean_env):
         with pytest.raises(ConfigError, match=name):
             load_settings(env_file=None)
         clean_env.delenv(name)
+
+
+def test_chunking_defaults_and_bounds(clean_env):
+    for name, value in REQUIRED.items():
+        clean_env.setenv(name, value)
+
+    settings = load_settings(env_file=None)
+    assert (settings.chunk_max_chars, settings.chunk_overlap_chars) == (500, 50)
+
+    clean_env.setenv("CHUNK_MAX_CHARS", "49")
+    with pytest.raises(ConfigError, match="CHUNK_MAX_CHARS"):
+        load_settings(env_file=None)
+
+    clean_env.setenv("CHUNK_MAX_CHARS", "100")
+    clean_env.setenv("CHUNK_OVERLAP_CHARS", "50")
+    assert load_settings(env_file=None).chunk_overlap_chars == 50
+    clean_env.setenv("CHUNK_OVERLAP_CHARS", "51")
+    with pytest.raises(ConfigError, match="CHUNK_OVERLAP_CHARS"):
+        load_settings(env_file=None)
