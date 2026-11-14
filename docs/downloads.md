@@ -1,6 +1,6 @@
 # 下载与安装记录
 
-更新日期：2026-11-14（T10 完成后）
+更新日期：2026-11-14（T11 完成后）
 
 这里登记开发过程中**从网络下载到本机的全部内容**：是什么、从哪里来、装在哪里、占多大、为什么需要、谁批准的。
 GLOBAL.md 规定不安装任何新内容；确实需要时先问 Barry，批准后在这里登记。
@@ -27,12 +27,16 @@ GLOBAL.md 规定不安装任何新内容；确实需要时先问 Barry，批准�
 | 5 | 2026-11-13 22:41 | pycparser | 3.12 | PyPI | `pycparser/` | 约 558 KB | cffi 的依赖 | T06 | 同上，随 #2 自动安装 |
 | 6 | 2026-11-13 23:01 | python-multipart | 0.0.33 | PyPI | `python_multipart/`、`multipart/` | 约 199 KB | 解析 `multipart/form-data` 上传 | T08 | Barry 于 2026-11-13 批准（`decisions.md` D19） |
 | 7 | 2026-11-13 23:13 | PyMuPDF | 1.28.2 | PyPI | `pymupdf/`、`fitz/` | 约 58.1 MB（下载的安装包 23.9 MB） | PDF 解析（M5） | T09 | Barry 于 2026-11-13 批准，并选定 1.28.2 而不是 2.1（`decisions.md` D21） |
+| 17 | 2026-11-14 13:27 | python-docx | 1.2.0 | PyPI | `docx/` | 约 2.3 MB | Word 解析（M5） | T11 | Barry 于 2026-11-14 批准（`decisions.md` D24） |
+| 18 | 2026-11-14 13:27 | lxml | 6.1.3 | PyPI | `lxml/` | 约 19.1 MB（下载的安装包 8.6 MB） | python-docx 的依赖（XML 解析）；openpyxl 检测到它时也会使用 | T11 | 同上，随 #17 自动安装 |
+| 19 | 2026-11-14 13:27 | openpyxl | 3.1.5 | PyPI | `openpyxl/` | 约 2.0 MB | Excel 解析（M5） | T11 | Barry 于 2026-11-14 批准（`decisions.md` D24） |
+| 20 | 2026-11-14 13:27 | et-xmlfile | 2.0.0 | PyPI | `et_xmlfile/` | 约 92 KB | openpyxl 的依赖 | T11 | 同上，随 #19 自动安装 |
 
-小计：7 个包，安装后约 60.3 MB。
+小计：11 个包，安装后约 83.8 MB。编号 8–16 是下面的 Node.js 和 npm 包。
 
 说明：
 
-- #1、#2、#6、#7 是直接依赖，版本锁定在 `backend/pyproject.toml`。#3–#5 是 pip 按依赖关系自动带进来的，没有单独锁定版本。
+- #1、#2、#6、#7、#17、#19 是直接依赖，版本锁定在 `backend/pyproject.toml`。#3–#5、#18、#20 是 pip 按依赖关系自动带进来的，没有单独锁定版本。python-docx 还依赖 typing_extensions，环境里已有 4.16.0，没有重新下载。
 - pip 会把下载过的安装包另存一份在用户级缓存 `~/Library/Caches/pip/` 里，那一份的大小没有单独统计。
 - T05、T07 没有下载任何内容。#7 没有带入任何附加依赖。
 
@@ -72,7 +76,7 @@ Barry 于 2026-11-14 批准。
 
 ### 2.4 合计
 
-T05 至 T10：Python 包约 60 MB，Node.js 约 222 MB，npm 包约 183 MB，共约 465 MB。
+T05 至 T11：Python 包约 84 MB，Node.js 约 222 MB，npm 包约 183 MB，共约 489 MB。
 
 ## 3. 没有下载、但曾经考虑过的
 

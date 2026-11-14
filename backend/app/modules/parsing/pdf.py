@@ -20,6 +20,7 @@ import pymupdf
 from shared.contracts import ParsedDocument, PdfPageLocator, TextBlock
 
 from app.modules.parsing.errors import ParseError
+from app.modules.parsing.text import clean_text
 
 PARSER_NAME = "pymupdf"
 
@@ -27,12 +28,6 @@ PARSER_NAME = "pymupdf"
 def effective_char_count(text: str) -> int:
     """有效字符数：不计空白字符。扫描件的文本层常常只有零星的空格和换行。"""
     return sum(1 for ch in text if not ch.isspace())
-
-
-def _clean(text: str) -> str:
-    # 去掉空字符（PostgreSQL 的 text 类型不能保存它）和每行末尾的空白
-    lines = [line.rstrip() for line in text.replace("\x00", "").splitlines()]
-    return "\n".join(lines).strip()
 
 
 def _has_graphics(page: pymupdf.Page) -> bool:
@@ -80,7 +75,7 @@ def parse_pdf(path: Path, *, ocr_min_chars: int) -> ParsedDocument:
             locator = PdfPageLocator(page=index + 1)
             try:
                 page = doc.load_page(index)
-                text = _clean(page.get_text("text"))
+                text = clean_text(page.get_text("text"))
                 chars = effective_char_count(text)
                 if chars >= ocr_min_chars:
                     blocks.append(TextBlock(text=text, locator=locator))

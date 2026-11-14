@@ -174,3 +174,19 @@ def test_env_example_itself_does_not_pass_as_a_working_config(clean_env):
     # 防止示例文件和上面的检查脱节：把 .env.example 当作 .env 用，必须在 JWT_SECRET 上失败
     with pytest.raises(ConfigError, match="JWT_SECRET"):
         load_settings(env_file=PROJECT_ROOT / ".env.example")
+
+
+def test_parse_limits_defaults_and_bounds(clean_env):
+    for name, value in REQUIRED.items():
+        clean_env.setenv(name, value)
+
+    settings = load_settings(env_file=None)
+    assert settings.parse_zip_max_total_bytes == 200 * 1024 * 1024
+    assert settings.parse_zip_max_entries == 5000
+    assert settings.parse_image_max_pixels == 100_000_000
+
+    for name in ("PARSE_ZIP_MAX_TOTAL_BYTES", "PARSE_ZIP_MAX_ENTRIES", "PARSE_IMAGE_MAX_PIXELS"):
+        clean_env.setenv(name, "0")
+        with pytest.raises(ConfigError, match=name):
+            load_settings(env_file=None)
+        clean_env.delenv(name)

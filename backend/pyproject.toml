@@ -18,6 +18,8 @@ dependencies = [
     "python-multipart==0.0.33",  # 解析 multipart/form-data 上传（FastAPI 的 UploadFile 需要）
     # PDF 解析（M5）。锁在 1.x：2.x 会强制带入 onnxruntime、numpy 等本项目用不到的包
     "pymupdf==1.28.2",
+    "python-docx==1.2.0",        # Word 解析（M5）
+    "openpyxl==3.1.5",           # Excel 解析（M5）
 ]
 
 [project.optional-dependencies]

@@ -64,6 +64,11 @@ class Settings(BaseSettings):
     # PDF 某页文本层的有效字符数低于它、且页面上有图片或图形时，该页走 OCR（GLOBAL §2 P1）。
     # 属于检索实验参数：每次实验随结果一起记录（GLOBAL §8.2）
     pdf_ocr_min_chars: int = Field(default=20, ge=1)
+    # docx / xlsx 是 zip：解压后的总大小和文件数超过上限就拒绝解析（zip 炸弹，GLOBAL §7.2）
+    parse_zip_max_total_bytes: int = Field(default=200 * 1024 * 1024, gt=0)
+    parse_zip_max_entries: int = Field(default=5000, gt=0)
+    # 图片的像素数（宽 × 高）上限，超过就拒绝处理：解码后每个像素要占 3–4 字节内存
+    parse_image_max_pixels: int = Field(default=100_000_000, gt=0)
 
     # ---- Worker（M4，附录 A3）----
     # 租约时长：太短会误回收仍在正常处理的任务，太长则 Worker 崩溃后恢复慢
