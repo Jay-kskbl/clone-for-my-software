@@ -105,7 +105,7 @@ T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器�
 | 解析超时对真实解析器的作用 | 超时在 Worker 子进程边界执行，机制本身有测试（`test_worker_runner.py`）；但解析器要到 T14 才接入 Worker，“一个真的卡住的解析被杀掉”还没有端到端跑过 | `decisions.md` D24 |
 | 切分参数对检索效果的影响 | 默认 500 字、重叠 50 字是经验值。“片段长度、重叠、是否给 Excel 片段补表头”对 B1、B2 的影响要到阶段五才有数据 | `decisions.md` D25 |
 | zip 与像素上限的默认值 | 200 MB、5000 个条目、1 亿像素都是经验值；没有用接近上限的真实大文件测过解析时的内存和耗时 | `decisions.md` D24 |
-| OpenSearch、中文分词、并发内存 | T00 环境实测中未完成的部分 | `env_check/未测试/清单.md` |
+| OpenSearch、中文分词、并发内存 | T00 环境实测中未完成的部分。补测步骤见第 6 节 | `env_check/未测试/清单.md` |
 
 ## 5. 补测方法
 
@@ -122,3 +122,220 @@ T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器�
 4. 有失败的话先修；全部通过后更新本文件和 DEVPLAN §5。
 
 在另一台机器上补测时，把那台机器的系统和 PostgreSQL 版本一起记下来。
+
+## 6. OpenSearch 相关的未测试项与补测步骤
+
+更新日期：2026-11-14（T13 开始前）
+
+### 6.1 为什么没测
+
+本机（Apple M4，24 GB 内存，macOS 26.6.2）上没有能运行 OpenSearch 的环境：
+
+- Barry 决定不在本机安装和运行 Docker；
+- 本机没有 Java 运行时（`/usr/bin/java` 只是系统占位程序，执行时提示找不到 Java）；
+- OpenSearch 官方没有发布 macOS 的正式安装包（2026-11-14 查询，只找到面向开发者的快照构建）。
+
+按 GLOBAL.md“测试执行限制”，这些测试不在本机强行执行，也不为它们安装任何东西，统一登记在这里。
+
+### 6.2 未测试项
+
+| 编号 | 项目 | 用什么测 | 要回答的问题 | 影响 |
+|---|---|---|---|---|
+| OS-1 | OpenSearch 能否启动，版本、插件列表 | `env_check/01_check_opensearch.py` | OpenSearch 2.19.1 能否稳定运行 | T13、T21 |
+| OS-2 | 中文分词对比：standard / smartcn / IK | 同上 | 附录 A13 选哪个分词器 | T13 的 mapping，`deploy/docker-compose.yml` 的镜像 |
+| OS-3 | BM25 查询结果与延迟 | 同上 | 基线延迟量级 | T15 |
+| OS-4 | 带权限过滤的精确向量检索（`script_score`） | 同上 | 附录 A12 的做法在 2.19.1 上能否运行 | T21 |
+| OS-5 | JVM 堆（1g，必要时 2g）与内存占用 | 同上 | 堆大小；附录 A14 是否启用降级预案 | T13、T21 |
+| OS-6 | 四个组件同时运行时的总内存与 swap | `env_check/04_mem_snapshot.py` | 一台机器能否同时运行全部组件 | 开发时是否按需启停 CLIP |
+| OS-7 | 项目自己的 `deploy/docker-compose.yml` 能否启动，`/health` 是否报告 OpenSearch 为 ok | Docker + 后端 | T01 的 compose 文件和健康检查在真实容器上是否正确 | T01 |
+| OS-8 | T13 文本索引的集成测试（重复索引不产生重复数据、删除后查不到等） | T13 写好的集成测试 | T13 的 🧪 | T13，T14 起所有依赖索引的任务 |
+
+OS-1 至 OS-6 与 `env_check/未测试/清单.md` 的 1–6 项一一对应。OS-8 的测试文件名和运行开关在 T13 完成后补到这里。
+
+### 6.3 测试机器要求
+
+- 能运行 Docker 的电脑：Docker Desktop（macOS / Windows）或 Docker Engine（Linux）都可以。不必是本机——Barry 决定本机不装 Docker。
+- 内存至少 8 GB，Docker 可用内存设为 4 GB 以上（Docker Desktop：Settings → Resources → Memory）。
+- 能访问 Docker Hub（拉取 `opensearchproject/opensearch:2.19.1`）。构建实测镜像时，容器内要能从 OpenSearch 官方地址下载 analysis-smartcn 插件。
+- Python 3.11。
+- **下载提醒：** 下面的步骤会下载 Docker 镜像（OpenSearch 官方镜像 1 GB 左右）、smartcn 插件和 Python 包 psutil。按 CLAUDE.md，下载前先确认，下载后登记到 `docs/downloads.md`，并写明是在哪台机器上装的。
+
+### 6.4 详细步骤
+
+以下命令都在**测试机器**上执行。`<项目目录>` 指测试机器上本仓库的根目录（用 `git clone` 或直接拷贝整个目录都可以）。
+
+**第 0 步：记录测试机器**
+
+```bash
+cd <项目目录>/env_check
+python3.11 -m venv .venv-main
+.venv-main/bin/pip install -r requirements-main.txt
+.venv-main/bin/python 00_sysinfo.py
+```
+
+```bash
+mv results/00_sysinfo.json results/00_sysinfo.testbox.json
+git checkout -- results/00_sysinfo.json   # 恢复仓库里开发机的那份；不是 git 克隆的，就从开发机拷一份回来
+```
+
+`00_sysinfo.py` 记下测试机器的 CPU、内存和系统版本，但它固定写到 `results/00_sysinfo.json`，会盖掉仓库里开发机的那份，所以运行后立刻改名，再把开发机的恢复回来。在另一台机器上测得的延迟和内存不代表开发机，写进论文时要注明是哪台机器。
+
+**第 1 步（可选）：决定是否同时测 IK**
+
+1. 到 IK 插件的发布页查找与 OpenSearch **2.19.1 完全一致**的发行包（zip 文件名或说明里写明 2.19.1）。
+2. 找到了：打开 `env_check/opensearch/Dockerfile`，取消最后两行的注释，把 `IK_URL=` 填成那个 zip 的地址。
+3. 找不到：不装 IK，在结果里写明“IK 没有与 2.19.1 匹配的版本”。这本身就是一条结论：选 IK 就要更换 OpenSearch 版本。
+
+**第 2 步：构建并启动实测用的 OpenSearch（OS-1）**
+
+```bash
+cd <项目目录>/env_check/opensearch
+docker compose up -d --build
+```
+
+等它启动。正常情况下一分钟以内，下面的命令会返回带 `"status"` 的 JSON：
+
+```bash
+curl -s http://127.0.0.1:9200/_cluster/health
+```
+
+- 返回的 `status` 为 `green` 或 `yellow`：启动成功。单节点时 `yellow` 是正常的。
+- 两分钟后仍然连不上：执行 `docker compose logs --tail 100`，把输出保存下来，记为 OS-1 失败，不要往下做。
+
+确认插件已安装（输出里应有 `analysis-smartcn`，装了 IK 的话还有 IK）：
+
+```bash
+curl -s "http://127.0.0.1:9200/_cat/plugins?v"
+```
+
+**第 3 步：运行实测脚本（OS-1 至 OS-5）**
+
+```bash
+cd <项目目录>/env_check
+.venv-main/bin/python 01_check_opensearch.py
+```
+
+结果写入 `results/01_opensearch.json`。脚本依次做这些事：读版本和插件；用每个候选分词器切分同一句中文；用最好的可用分词器建测试索引，跑 6 个查询；测 BM25 和向量检索的延迟；读 JVM 堆。
+
+**第 4 步：换 2g 堆再测一次（OS-5，只在需要时做）**
+
+满足任意一条才需要做：第 3 步出现内存不足错误、查询明显卡顿、JVM 堆用量接近上限。
+
+```bash
+cd <项目目录>/env_check
+cp results/01_opensearch.json results/01_opensearch_1g.json
+OS_HEAP=2g docker compose -f opensearch/docker-compose.yml up -d --force-recreate
+# 等第 2 步的 curl 恢复返回后：
+.venv-main/bin/python 01_check_opensearch.py
+cp results/01_opensearch.json results/01_opensearch_2g.json
+```
+
+**第 5 步：并发内存（OS-6）**
+
+这一步要求测试机器上已经按 `env_check/README.md` 第 1 步建好 ocr 和 clip 两个环境，并下载了模型。做不到就跳过，记为“OS-6 未测试”。
+
+保持 OpenSearch 运行，开三个终端，都先 `cd <项目目录>/env_check`：
+
+```bash
+# 终端 B
+.venv-ocr/bin/python 02_check_ocr.py --mobile --hold
+```
+
+```bash
+# 终端 C
+.venv-clip/bin/python 03_check_clip.py --hold
+```
+
+```bash
+# 终端 D（等 B、C 都显示模型已加载后再运行）
+.venv-main/bin/python 04_mem_snapshot.py
+```
+
+完成后在终端 B、C 按 Ctrl+C。结果写入 `results/04_mem_snapshot.json`。
+
+**第 6 步：项目自己的 compose 与健康检查（OS-7）**
+
+先关掉实测用的 OpenSearch，它和项目的 OpenSearch 都占用 9200 端口：
+
+```bash
+cd <项目目录>/env_check/opensearch && docker compose down
+```
+
+```bash
+cd <项目目录>
+cp .env.example .env
+```
+
+编辑 `.env`：
+
+- 把 `POSTGRES_PASSWORD` 改成自己的密码，`DATABASE_URL` 里的密码要与它一致；
+- `JWT_SECRET` 换成一个随机值，可以用 `python3 -c "import secrets; print(secrets.token_urlsafe(48))"` 生成。
+
+```bash
+docker compose --env-file .env -f deploy/docker-compose.yml up -d
+```
+
+```bash
+python3.11 -m venv .venv-main
+.venv-main/bin/pip install -e "shared[dev]" -e "backend[dev]"
+```
+
+```bash
+cd backend && ../.venv-main/bin/alembic upgrade head
+```
+
+```bash
+cd backend && ../.venv-main/bin/uvicorn app.main:create_app --factory
+```
+
+在另一个终端执行：
+
+```bash
+curl -s http://127.0.0.1:8000/health
+```
+
+预期：`database` 和 `opensearch` 都是 `"ok"`；`clip_service` 是 `"unavailable"`（CLIP 服务还没写，属于正常）；整体 `status` 为 `"degraded"`。
+
+这一步顺带让第 5 节的 91 项数据库集成测试有了 PostgreSQL，可以接着按第 5 节补测。
+
+**第 7 步：T13 集成测试（OS-8）**
+
+T13 完成后补写具体命令。届时的原则：需要真实 OpenSearch 的测试，只有设置了专用的测试地址才会运行，否则跳过（与 `TEST_DATABASE_URL` 相同）；测试只能操作带测试前缀的索引，不得删除 `doc_meta`、`chunks` 正式索引。
+
+**第 8 步：收尾**
+
+```bash
+cd <项目目录> && docker compose --env-file .env -f deploy/docker-compose.yml down
+```
+
+`down` 不加 `-v`，数据卷保留。
+
+### 6.5 结果怎么读、怎么用来定 A13 和 A14
+
+**A13（选哪个分词器），看 `results/01_opensearch.json` 的 `analyzers`：**
+
+| 现象 | 结论 |
+|---|---|
+| `standard` 把中文逐字切开 | 正常现象，证明必须装中文分词插件 |
+| `smartcn` 把“文档管理”“信息检索”“跨模态”这类词切成完整的词或合理的两字词 | smartcn 可用 |
+| 装了 IK，`ik_max_word` 切得明显更合理（专业词完整、没有错切） | 可以考虑 IK，但要接受“版本必须严格匹配”的维护代价 |
+| 两者差别不大 | 选 smartcn：官方插件，与 OpenSearch 同版本发布，以后升级不会卡在插件上 |
+
+另外看 `bm25_hits`：脚本用选出的分词器建了一个 6 条记录的测试索引，跑 6 个查询。按测试数据，排第一的应当分别是：财务报告 → d1，发票 → d2，路由协议 → d3，检索模块 → d4，图文模型 → d5，预算 → d1。排第一的不对，或者没有命中，要记下来。注意：脚本只用选出的那一个分词器建索引（装了 IK 时优先用 `ik_max_word`，否则用 `smartcn`），要比较两者的检索结果，需要改脚本第 112 行的选择顺序后再跑一次。
+
+**A14（是否启用降级预案）：同时满足下面三条就不启用，继续用 OpenSearch。**
+
+1. 第 2 步启动成功，集群状态为 `green` 或 `yellow`；
+2. 1g 堆（或第 4 步的 2g 堆）下没有内存不足错误，查询延迟在几十毫秒以内；
+3. 第 5 步的 `system_available_gb` 不低于 1.5 GB，`swap_used_gb` 没有持续增长。
+
+任何一条不满足，就把数据交给 Barry，由 Barry 决定是否启用降级预案（GLOBAL §11.4，必须 Barry 同意）。
+
+### 6.6 测完之后要做的事
+
+1. 把测试机器上 `env_check/results/` 里的这些文件拷回开发机的同一目录：`00_sysinfo.testbox.json`、`01_opensearch.json`（做了第 4 步的，还有 `01_opensearch_1g.json`、`01_opensearch_2g.json`）、`04_mem_snapshot.json`，以及 `history/` 下新增的带时间戳的文件。不要拷 `00_sysinfo.json`。
+2. 在开发机上运行 `cd env_check && .venv-main/bin/python 05_make_report.py`，重新生成 `env_check/env_report.md`。报告的第 1 节仍是开发机，第 2 节（OpenSearch）和第 5 节（并发内存）来自测试机器，要在这两节开头手工注明“测于另一台机器”，并引用 `00_sysinfo.testbox.json` 里的配置。
+3. 在 `docs/decisions.md` §2 填写 A13、A14、JVM 堆大小的结论，并写明测试机器。
+4. A13 选定后修改 `deploy/docker-compose.yml`：改用装了所选插件的镜像。插件版本必须与 OpenSearch 版本完全一致。
+5. 把通过的项从本节删除；失败的项留在这里，写明失败现象，并附上日志。
+6. 在 `docs/downloads.md` 登记测试机器上下载的内容。
