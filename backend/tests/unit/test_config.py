@@ -209,3 +209,25 @@ def test_chunking_defaults_and_bounds(clean_env):
     clean_env.setenv("CHUNK_OVERLAP_CHARS", "51")
     with pytest.raises(ConfigError, match="CHUNK_OVERLAP_CHARS"):
         load_settings(env_file=None)
+
+
+def test_opensearch_options_defaults_and_bounds(clean_env):
+    for name, value in REQUIRED.items():
+        clean_env.setenv(name, value)
+
+    settings = load_settings(env_file=None)
+    assert settings.opensearch_timeout_seconds == 10.0
+    assert settings.opensearch_index_prefix == ""
+
+    clean_env.setenv("OPENSEARCH_INDEX_PREFIX", "test_1-")
+    assert load_settings(env_file=None).opensearch_index_prefix == "test_1-"
+
+    for bad in ("Upper", "_leading", "has space"):
+        clean_env.setenv("OPENSEARCH_INDEX_PREFIX", bad)
+        with pytest.raises(ConfigError, match="OPENSEARCH_INDEX_PREFIX"):
+            load_settings(env_file=None)
+    clean_env.delenv("OPENSEARCH_INDEX_PREFIX")
+
+    clean_env.setenv("OPENSEARCH_TIMEOUT_SECONDS", "0")
+    with pytest.raises(ConfigError, match="OPENSEARCH_TIMEOUT_SECONDS"):
+        load_settings(env_file=None)

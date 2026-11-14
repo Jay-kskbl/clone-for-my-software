@@ -1,6 +1,6 @@
 # 未测试清单（Not Tested）
 
-更新日期：2026-11-14（T12 完成后）
+更新日期：2026-11-14（T13 完成后）
 
 这里列出**已经写好但从未实际执行过**的测试，以及其他没有经过验证的性质。
 规则来自 GLOBAL.md“测试执行限制与代码验证要求”：跑不了的测试不强行执行、不安装工具，
@@ -18,11 +18,12 @@
 | T06 认证与权限 | `backend/tests/integration/test_auth.py` | 19 | 本机没有 PostgreSQL | 已复核，未发现问题 |
 | T07 任务框架 | `backend/tests/integration/test_task_queue.py` | 18 | 本机没有 PostgreSQL | 已复核，未发现问题 |
 | T08 文档管理 | `backend/tests/integration/test_documents.py` | 41 | 本机没有 PostgreSQL | 已复核，改了 1 处测试断言 |
-| **合计** | | **91** | | |
+| T13 文本索引 | `backend/tests/opensearch/test_text_index_live.py` | 13 | 本机没有 OpenSearch（没有 Docker 和 Java） | 已复核，未发现问题；有两处需要注意的性质，见第 4 节 |
+| **合计** | | **104** | | |
 
 T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器）和 T12（切分）不需要数据库，它们的测试全部在本机执行并通过，没有未测试项。
 
-对照：当前能在本机执行的测试，`backend/` 336 项、`shared/` 93 项、`frontend/` 30 项，全部通过。
+对照：当前能在本机执行的测试，`backend/` 378 项、`shared/` 93 项、`frontend/` 30 项，全部通过。
 
 ## 2. 影响最大的几项
 
@@ -40,6 +41,9 @@ T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器�
 | T08 | 上传中途失败不留半成品 | `test_documents.py::test_failure_while_moving_file_leaves_no_record_and_no_file`、`test_failure_at_database_commit_removes_the_already_moved_file` | 未测试（用假数据库会话模拟的版本已通过，见 `tests/unit/test_documents_unit.py`） |
 | T08 | 删除后列表和下载都不可见 | `test_documents.py::test_deleted_document_disappears_everywhere_immediately` | 未测试 |
 | T08 | 非法类型被拒绝 | `test_documents.py::test_unsupported_content_is_415_and_leaves_nothing` | 未测试（存储层的类型识别已通过，见 `tests/unit/test_storage.py`） |
+
+| T13 | 重复索引不产生重复数据 | `test_text_index_live.py::test_indexing_the_same_document_twice_does_not_duplicate`、`test_reindexing_with_a_new_parse_version_replaces_the_old_chunks` | 未测试（用模拟应答验证请求内容的版本已通过，见 `tests/unit/test_text_index.py`） |
+| T13 | 删除后查不到 | `test_text_index_live.py::test_deleted_document_cannot_be_found_in_either_index` | 未测试（同上） |
 
 **里程碑“基础系统”要求“T07 的四项测试全部通过”，目前不满足。**
 
@@ -88,6 +92,16 @@ T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器�
 - 标签：`test_put_tags_replaces_the_whole_set`、`test_same_tag_on_two_documents_is_one_tag_row`、`test_tag_list_only_contains_tags_of_accessible_documents`
 - 任务：`test_document_tasks_listing`、`test_retry_puts_failed_task_back_in_queue`、`test_retry_permissions`、`test_tasks_of_deleted_document_are_only_retryable_by_admin`、`test_admin_task_listing`
 
+### T13 `test_text_index_live.py`（13）
+
+- 创建索引：`test_ensure_indices_is_idempotent`
+- 重复索引与版本替换：`test_indexing_the_same_document_twice_does_not_duplicate`、`test_reindexing_with_a_new_parse_version_replaces_the_old_chunks`、`test_reindexing_one_document_leaves_other_documents_alone`、`test_doc_meta_written_twice_is_one_record_with_the_latest_values`、`test_body_chunks_survive_a_later_write_of_ocr_chunks_in_the_same_version`
+- 删除：`test_deleted_document_cannot_be_found_in_either_index`、`test_deleting_twice_or_deleting_an_unknown_document_is_fine`
+- 分词与检索：`test_chinese_text_is_searchable_by_word`、`test_analyzer_is_smartcn_and_splits_chinese_into_words`、`test_file_name_and_tags_are_searchable`、`test_source_type_filter_separates_body_from_ocr`
+- mapping：`test_strict_mapping_rejects_unknown_fields`
+
+特别说明：`tests/unit/test_text_index.py` 的 41 项用替换掉的网络应答验证了“发出去的请求长什么样、收到各种应答时怎么处理”，但应答是按文档写的，OpenSearch 实际是否这样应答没有验证过。
+
 ## 4. 不是测试、但同样没有验证过的性质
 
 | 项目 | 说明 | 记录位置 |
@@ -103,6 +117,11 @@ T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器�
 | PDF 解析器在真实文件上的表现 | T09 的测试用 PyMuPDF 现场生成的 PDF；没有用真实的扫描件、多栏排版、带表格或带水印的 PDF 验证过，阈值 20 也没有实验依据 | `decisions.md` D20 |
 | Word、Excel、图片解析器在真实文件上的表现 | T11 的测试文件是用 python-docx、openpyxl、PyMuPDF 现场生成的；没有用 Microsoft Word / Excel / WPS 实际保存的文件、手机或相机拍的照片验证过。尤其是 Excel 公式的缓存值，测试里是手工改 XML 模拟的 | `decisions.md` D24 |
 | 解析超时对真实解析器的作用 | 超时在 Worker 子进程边界执行，机制本身有测试（`test_worker_runner.py`）；但解析器要到 T14 才接入 Worker，“一个真的卡住的解析被杀掉”还没有端到端跑过 | `decisions.md` D24 |
+| 两个 mapping 文件能否被 OpenSearch 接受 | `doc_meta.json`、`chunks.json` 从未被任何 OpenSearch 接受过：分析器 `docmgr_text` 的定义 `{"type": "smartcn"}`（依赖插件注册的 smartcn 分析器类型）、在 index 设置里改写默认相似度为 BM25 的写法、`dynamic: strict`、`locator` 的 `enabled: false`。任何一处不被 2.19.1 接受，创建索引就整体失败 | `decisions.md` D26 |
+| mapping 文件随安装包发布 | `backend/pyproject.toml` 已声明 package-data（`app.modules.text_index` 下的 `mappings/*.json`），只确认过该配置能被正确读出；没有做过普通（非 editable）安装来验证文件确实被打包。验证方法：在一个临时虚拟环境里 `pip install ./backend`（会联网下载依赖，按规则先征得同意），然后确认 `site-packages/app/modules/text_index/mappings/` 下有两个 JSON 文件 | `decisions.md` D26 |
+| `deploy/opensearch/Dockerfile` | 从未构建过。安装 analysis-smartcn 需要联网 | `decisions.md` D26 |
+| `deploy/docker-compose.yml` 的语法 | 只用 macOS 自带的 Ruby 读过一遍 YAML，确认结构和 `build`、`image` 两项能读出来；没有用 `docker compose config` 校验过（本机没有 Docker），compose 自己的规则没有检查 | — |
+| smartcn 的切分效果 | A13 选定时没有任何实测数据，切分是否合理、对 B0–B2 的影响要到阶段五 | `decisions.md` A13 |
 | 切分参数对检索效果的影响 | 默认 500 字、重叠 50 字是经验值。“片段长度、重叠、是否给 Excel 片段补表头”对 B1、B2 的影响要到阶段五才有数据 | `decisions.md` D25 |
 | zip 与像素上限的默认值 | 200 MB、5000 个条目、1 亿像素都是经验值；没有用接近上限的真实大文件测过解析时的内存和耗时 | `decisions.md` D24 |
 | OpenSearch、中文分词、并发内存 | T00 环境实测中未完成的部分。补测步骤见第 6 节 | `env_check/未测试/清单.md` |
@@ -118,10 +137,25 @@ T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器�
    export $(grep '^TEST_DATABASE_URL=' ../.env) && ../.venv-main/bin/pytest
    ```
 
-3. 预期结果：427 项全部运行，0 项跳过。
+3. 预期结果：除 `tests/opensearch/` 的 13 项外全部运行。两类都补测时的预期见下面的“OpenSearch 测试”。
 4. 有失败的话先修；全部通过后更新本文件和 DEVPLAN §5。
 
 在另一台机器上补测时，把那台机器的系统和 PostgreSQL 版本一起记下来。
+
+**OpenSearch 测试（T13 的 13 项）**
+
+需要一个装了 analysis-smartcn 插件的 OpenSearch 2.19.1。最简单的办法是用项目自己的 `deploy/docker-compose.yml` 启动（第 6 节第 6 步），它会构建带插件的镜像。
+
+1. 确认插件已装：`curl -s "http://127.0.0.1:9200/_cat/plugins?v"` 的输出里有 `analysis-smartcn`。
+2. 在 `backend/` 目录执行：
+
+   ```bash
+   TEST_OPENSEARCH_URL=http://localhost:9200 ../.venv-main/bin/pytest tests/opensearch -v
+   ```
+
+3. 测试只使用形如 `test_xxxxxxxxxx_doc_meta` 的独立索引，结束时只删除自己建的索引，不碰 `doc_meta`、`chunks` 正式索引。即使这样，也不要对着有真实数据的 OpenSearch 运行。
+4. 预期结果：13 项全部通过。最先可能失败的是创建索引（mapping 写法不被接受），报错会写明是哪个字段或设置。
+5. 同时设置 `TEST_DATABASE_URL` 和 `TEST_OPENSEARCH_URL` 运行整个 `pytest`，预期 482 项全部运行，0 项跳过。
 
 ## 6. OpenSearch 相关的未测试项与补测步骤
 
@@ -148,9 +182,9 @@ T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器�
 | OS-5 | JVM 堆（1g，必要时 2g）与内存占用 | 同上 | 堆大小；附录 A14 是否启用降级预案 | T13、T21 |
 | OS-6 | 四个组件同时运行时的总内存与 swap | `env_check/04_mem_snapshot.py` | 一台机器能否同时运行全部组件 | 开发时是否按需启停 CLIP |
 | OS-7 | 项目自己的 `deploy/docker-compose.yml` 能否启动，`/health` 是否报告 OpenSearch 为 ok | Docker + 后端 | T01 的 compose 文件和健康检查在真实容器上是否正确 | T01 |
-| OS-8 | T13 文本索引的集成测试（重复索引不产生重复数据、删除后查不到等） | T13 写好的集成测试 | T13 的 🧪 | T13，T14 起所有依赖索引的任务 |
+| OS-8 | T13 文本索引的集成测试（13 项，含重复索引不产生重复数据、删除后查不到） | `backend/tests/opensearch/test_text_index_live.py` | T13 的 🧪；两个 mapping 能否被接受 | T13，T14 起所有依赖索引的任务 |
 
-OS-1 至 OS-6 与 `env_check/未测试/清单.md` 的 1–6 项一一对应。OS-8 的测试文件名和运行开关在 T13 完成后补到这里。
+OS-1 至 OS-6 与 `env_check/未测试/清单.md` 的 1–6 项一一对应。
 
 ### 6.3 测试机器要求
 
@@ -300,7 +334,13 @@ curl -s http://127.0.0.1:8000/health
 
 **第 7 步：T13 集成测试（OS-8）**
 
-T13 完成后补写具体命令。届时的原则：需要真实 OpenSearch 的测试，只有设置了专用的测试地址才会运行，否则跳过（与 `TEST_DATABASE_URL` 相同）；测试只能操作带测试前缀的索引，不得删除 `doc_meta`、`chunks` 正式索引。
+在第 6 步启动的 OpenSearch 上运行（项目的镜像已装 analysis-smartcn）：
+
+```bash
+cd <项目目录>/backend && TEST_OPENSEARCH_URL=http://localhost:9200 ../.venv-main/bin/pytest tests/opensearch -v
+```
+
+预期 13 项全部通过。测试只操作带随机前缀的索引，结束时自行删除。
 
 **第 8 步：收尾**
 

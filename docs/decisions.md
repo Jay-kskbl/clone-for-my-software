@@ -97,7 +97,7 @@
 
 - 决策：分词器不预先指定，在本机实测后确定，配置纳入版本管理。候选是官方的 analysis-smartcn 插件和社区的 IK 插件。
 - 理由：OpenSearch 默认分词器把中文逐字切开，检索效果差；IK 插件必须与 OpenSearch 版本严格匹配，能否安装要实测才知道。
-- 状态：**待定**，见第 2 节。
+- 状态：**Barry 于 2026-11-14 选定 analysis-smartcn，未经本机实测，阶段五可换。** 选定时 OpenSearch 和两个插件都没有在任何机器上运行过（本机没有 Docker 和 Java），依据是 smartcn 为官方插件、与 OpenSearch 同版本发布、安装风险低；IK 与 2.19.1 是否有匹配版本未核实。实现方式见 D26，补测步骤见 `docs/untested.md` 第 6 节。
 
 **A14 OpenSearch 降级预案：Python 端 BM25 + faiss，仅记录不实现**
 
@@ -168,7 +168,7 @@
 |---|---|---|
 | 硬件与操作系统（CPU、内存、磁盘、系统版本） | Apple M4，10 核，24 GB 内存，可用磁盘 341 GB，macOS 26.6.2（arm64），Python 3.11.18 | `results/00_sysinfo.json` |
 | OpenSearch 能否在本机稳定运行、占用多少内存 | 未测试 | — |
-| 中文分词方案（A13）：analysis-smartcn 还是 IK | 待定（未测试） | — |
+| 中文分词方案（A13）：analysis-smartcn 还是 IK | Barry 于 2026-11-14 选定 analysis-smartcn（未测试：没有实测数据，阶段五可换） | D26 |
 | 是否启用 OpenSearch 降级预案（A14） | 待定（未测试） | — |
 | PaddleOCR 模型规格、单张图片耗时、内存占用 | 已实测，规格待 Barry 选定。paddlepaddle 3.3.1、paddleocr 3.7.0，CPU。PP-OCRv5 mobile：平均 0.44 s/图，峰值内存约 1.0 GB；默认模型 PP-OCRv6 medium：平均 0.62 s/图，峰值内存约 1.1 GB。三张合成测试图上两者 CER 均为 0，无法据此区分识别质量 | `results/02_ocr_mobile.json`、`results/02_ocr.json` |
 | Chinese-CLIP 模型规格、编码耗时、内存占用、向量维度 | 已实测，运行设备待 Barry 选定。cn_clip 1.6.0、torch 2.15.0，模型 ViT-B-16（文本塔 RoBERTa-wwm-ext-base），向量维度 512。MPS：查询编码 P50 9.1 ms / P95 11.7 ms，图片 37.8 张/秒，峰值内存约 2.2 GB；CPU：P50 20.2 ms / P95 20.5 ms，图片 30.9 张/秒，峰值内存约 2.0 GB。链路合理性检查 5 条中对 4 条（仅验证链路，不是检索效果数据） | `results/03_clip_mps.json`、`results/03_clip.json` |
@@ -188,7 +188,7 @@
 | OCR 模型规格 | T17 OCR Worker | T17 开始前 |
 | CLIP 模型规格与向量维度 | T20 CLIP 服务、T21 向量索引 | T20 开始前 |
 
-目前 `deploy/docker-compose.yml` 使用的是不带中文分词插件的 OpenSearch 官方镜像，这只是临时状态，不代表已经选定方案。
+T13 起，`deploy/docker-compose.yml` 改为在官方 2.19.1 镜像上安装 analysis-smartcn 的自定义镜像（`deploy/opensearch/Dockerfile`），该镜像从未构建过。是否启用降级预案（A14）仍未确定，T13 按“不启用”实现。
 
 ## 3. 实现过程中的决策
 
@@ -422,3 +422,51 @@ GLOBAL §2 P1 规定“某页文本层有效字符数低于配置阈值时，该
 - Excel 的外接矩形可能比实际有内容的单元格大，例如一行在 A–C 列、下一行在 A–Z 列。
 - Excel 每个片段不重复表头：表头行之后的片段里只有数据，没有列名，按“列名 + 值”的方式搜索可能搜不到后面的行。是否给每个片段补上表头，需要实验确定，记在 DEVPLAN §4。
 - 重叠的文字在两个片段里各出现一次，同一文件的 BM25 分数可能因此略有偏高；检索时按文件聚合并只取最高分片段（GLOBAL §4.2），影响有限。
+
+### D26 文本索引的结构与写入方式（T13）
+
+计划经 Barry 批准后实现；分词器按 A13 的选定用 analysis-smartcn。**下面的一切都没有在真实 OpenSearch 上运行过**（见 `docs/untested.md` 第 6 节）。
+
+**访问方式。**
+
+- 用 httpx 直接调用 OpenSearch 的 REST 接口，不引入 opensearch-py：M8 只用到建索引、批量写入、按条件删除几个接口，httpx 已是 main 环境的依赖。
+- 统一的超时来自 `OPENSEARCH_TIMEOUT_SECONDS`（默认 10 秒）。索引名可以加前缀 `OPENSEARCH_INDEX_PREFIX`（默认为空），测试用它得到独立的索引，不碰正式数据。
+- 本模块不重试，重试交给任务框架（A3）。
+
+**索引结构**（`backend/app/modules/text_index/mappings/`，纳入版本管理）。
+
+| 索引 | `_id` | 字段 |
+|---|---|---|
+| `doc_meta` | `document_id` | `document_id`（keyword）、`filename`（text，另有 `.raw` keyword 子字段）、`tags`（text，另有 `.raw` keyword 子字段） |
+| `chunks` | `chunk_id` | 与 `Chunk` 契约完全一致：`chunk_id`、`document_id`、`parse_version`、`source_type`（以上 keyword）、`seq`（integer）、`text`（text）、`locator`（只存储、不索引） |
+
+- 两个索引都是 `dynamic: strict`：写入契约以外的字段直接报错，不会被悄悄加进 mapping。
+- 都是 1 个分片、0 个副本（单节点）。相似度显式写成 BM25，`k1=1.2`、`b=0.75`（与 OpenSearch 默认值相同；写出来是为了让实验参数可查、可改）。
+- 索引里不放任何权限字段（A10）：谁能看到哪个文档只由数据库决定。
+
+**分词器。**
+
+- 字段引用项目自己起的分词器名 `docmgr_text`。它目前定义为 `{"type": "smartcn"}`，即直接使用 analysis-smartcn 插件自带的 smartcn 分析器（中文分词 + 英文词干 + 停用词），不改它的组成。这样只依赖 `smartcn` 这一个名字；最初的写法是把它拆成 `smartcn_tokenizer` + `porter_stem` + `smartcn_stop` 三部分，复核时因为要多依赖两个名字而改掉。
+- 换分词方案只改两个 mapping 文件，但必须删除旧索引、重新创建、再把全部文档重新索引（GLOBAL §11.2）。重建入口由 T18 提供。
+- `ensure_indices` 只创建不存在的索引，不会修改已存在的索引。两个进程同时创建时，后一个收到“已存在”按成功处理。
+
+**写入与删除。**
+
+- `index_document`：先删除这个文档**其他** `parse_version` 的片段，再按 500 条一批写入，`_id` 为 `chunk_id`，同一片段重复写入是覆盖。同一版本的已有片段不删，因为正文片段和之后的 OCR 片段共用版本号、分两次写入。
+- `index_doc_meta`：按 `document_id` 整体覆盖文件名和标签。
+- `delete_document`：删除这个文档在两个索引里的全部数据；本来就不在索引里时什么也不做。
+- 所有写入默认 `refresh=true`：写完立即可搜到，删完立即搜不到。代价是写入较慢，毕设规模可以接受；批量重建时可以传 `refresh=False`。
+
+**错误。**
+
+- `TextIndexUnavailable`（可重试）：连不上、超时、5xx、429，以及按条件删除时部分失败或遇到并发修改。
+- `TextIndexError`（不可重试）：其余 4xx、批量写入中有单条被拒。
+- 错误信息不包含服务地址。Worker 按异常的 `retryable` 属性决定是否重试（D16）；检索接口（T15）遇到两类错误都必须报告检索服务故障，不能返回空结果（GLOBAL §12）。
+
+**代价与局限。**
+
+- 同一 `parse_version` 下如果片段数变少，多出来的旧片段不会被删掉。按 T12 的确定性切分，同一版本的输入相同、输出相同，正常不会发生。
+- 先删旧版本、再写新版本之间如果写入失败，这个文档会暂时没有可检索的片段，靠任务重试恢复。
+- 按条件删除只能删到已经刷新过的数据。用 `refresh=False` 写入后马上删除，刚写的数据可能删不掉。默认的 `refresh=true` 没有这个问题；T18 批量重建时要注意。
+- smartcn 分析器类型、在 index 设置里改写默认相似度为 BM25、strict mapping 的写法都没有被任何 OpenSearch 接受过。只要有一处不被 2.19.1 接受，创建索引就会整体失败。
+- mapping 是包内的 JSON 数据文件，已在 `backend/pyproject.toml` 的 `[tool.setuptools.package-data]` 里声明。但只验证过可编辑安装（`pip install -e`）能读到，没有做过普通安装来确认文件真的被打包进去。

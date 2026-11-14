@@ -1,0 +1,38 @@
+{
+  "settings": {
+    "index": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "similarity": {
+        "default": {
+          "type": "BM25",
+          "k1": 1.2,
+          "b": 0.75
+        }
+      }
+    },
+    "analysis": {
+      "analyzer": {
+        "docmgr_text": {
+          "type": "smartcn"
+        }
+      }
+    }
+  },
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "document_id": {"type": "keyword"},
+      "filename": {
+        "type": "text",
+        "analyzer": "docmgr_text",
+        "fields": {"raw": {"type": "keyword"}}
+      },
+      "tags": {
+        "type": "text",
+        "analyzer": "docmgr_text",
+        "fields": {"raw": {"type": "keyword"}}
+      }
+    }
+  }
+}

@@ -83,7 +83,7 @@ flowchart TB
 | M5 | 文档解析 | 文件路径 → `ParsedDocument`（纯函数） | `backend/app/modules/parsing` | 是 | T09、T11 | 已完成：PDF（T09），Word、Excel、图片（T11）；尚未接入 Worker（T14） |
 | M6 | OCR | 图片 → `OCRResult` | `services/ocr_worker` | 是 | T17 | 未开始 |
 | M7 | 切分 | `ParsedDocument` → `Chunk[]`（纯函数） | `backend/app/modules/chunking` | 是 | T12 | 已完成（T12）；尚未接入 Worker（T14） |
-| M8 | 文本索引与 BM25 | `Chunk[]` / 查询 → 排序列表 | `backend/app/modules/text_index` | — | T13 | 未开始 |
+| M8 | 文本索引与 BM25 | `Chunk[]` / 查询 → 排序列表 | `backend/app/modules/text_index` | — | T13、T15 | 索引的创建、写入、删除已完成（T13，未在真实 OpenSearch 上运行）；BM25 查询在 T15 |
 | M9 | CLIP 模型服务 | 图片 / 文本 → 向量 | `services/clip_service` | 是 | T20 | 未开始 |
 | M10 | 向量索引 | 向量 → 排序列表 | `backend/app/modules/vector_index` | — | T21 | 未开始 |
 | M11 | 检索编排与 RRF | 查询 → `SearchHit[]` | `backend/app/modules/search` | — | T15、T22 | 未开始 |
@@ -221,14 +221,14 @@ DELETE /api/documents/{id}
 
 | 索引 | 粒度 | 主要字段 | 用途 |
 |---|---|---|---|
-| `doc_meta` | 文件 | 文件名、标签 | 文件名 / 标签检索（实验 B0） |
-| `chunks` | 片段 | 文本、`source_type`、`document_id`、来源定位 | 正文与 OCR 文字的 BM25（实验 B1、B2） |
+| `doc_meta` | 文件，`_id` 为 `document_id` | `document_id`、`filename`、`tags`（后两者为全文字段，另有 `.raw` 精确值子字段） | 文件名 / 标签检索（实验 B0） |
+| `chunks` | 片段，`_id` 为 `chunk_id` | 与 `Chunk` 契约一致：`chunk_id`、`document_id`、`parse_version`、`seq`、`source_type`、`text`、`locator`（只存储、不索引） | 正文与 OCR 文字的 BM25（实验 B1、B2） |
 | 图片向量索引 | 图片 | 向量、`document_id` | CLIP 图像检索（实验 B3） |
 
 - 文件名不写进 `chunks`，避免一个文件的每个片段都给文件名加一次分（附录 A8）。
 - B1 与 B2 的区别只是 `source_type` 的过滤条件，不维护两套索引。
 - 向量检索用精确计算，不用近似索引（附录 A12）。
-- 中文分词方案尚未确定，待 T00 环境实测（附录 A13）。mapping 文件在 T13 定稿并纳入版本管理。
+- 中文分词用 analysis-smartcn（附录 A13，Barry 于 2026-11-14 选定，未经实测）。mapping 文件在 `backend/app/modules/text_index/mappings/`，纳入版本管理；两个索引都是 strict mapping，不含权限字段（附录 A10），结构说明见 `decisions.md` D26。
 
 ## 7. 故障与降级
 

@@ -153,7 +153,7 @@ BARRY zou/
 - [x] **T12 M7 切分**
   -   切分长度、重叠长度由配置控制；每个 chunk 带 locator；Excel 按行组切分
   -   🧪 切分后拼接覆盖原文；locator 正确；参数变化时 `parse_version` 变化
-- [ ] **T13 M8 文本索引** 🔒
+- [x] **T13 M8 文本索引** 🔒
   -   `doc_meta`、`chunks` 两个索引的 mapping（分词器按 T00 结论），mapping 文件纳入版本管理
   -   `index_document(doc_id, chunks)`：先删除该文档的旧 `parse_version` 再写入；`delete_document(doc_id)`
   -   🧪 重复索引不产生重复数据；删除后查不到
@@ -233,6 +233,13 @@ BARRY zou/
   - parse 任务处理函数里：用配置构造 `ChunkingParams`；用 `make_parse_version` 算出版本号，PDF 要把 `pdf_ocr_min_chars` 作为 `parser_options` 传进去；再调用 `chunk_document`。
   - 正文片段和各页 OCR 片段共用同一个 `{document_id}:{parse_version}:{seq}` 序号空间。OCR 任务是分页、分次执行的，每次的 `seq_start` 必须互不重叠，并且是确定性的（重复执行时序号相同）。这个分配规则 T14 要定，例如按 OCR 对象在 `ocr_targets` 里的位置预留区间。
   - OCR Worker 在 ocr 环境里，不能导入 backend。如果 T17 要在 OCR Worker 里切分，先把 `backend/app/modules/chunking` 移到 `shared`（它只依赖 shared 和标准库）；也可以让 OCR Worker 只写 OCRResult，由通用 Worker 切分。二选一在 T17 定。
+- **给后续任务的衔接提醒（T13 补充）**
+  - T14：API 和 Worker 启动时各调用一次 `ensure_indices`（只建不改，重复调用无副作用）。
+  - T14：上传成功、改标签、删除时要分别调用 `index_doc_meta` / `delete_document`。T08 的标签接口（`PUT /api/documents/{id}/tags`）目前不会更新索引，标签检索（B0）要等这一步接上才准确。
+  - T14：`index_document` 抛出的 `TextIndexUnavailable` 可重试、`TextIndexError` 不可重试，与解析器的 `ParseError` 一样由 Worker 按 `retryable` 处理。
+  - T17：OCR 片段与正文片段共用 `{document_id}:{parse_version}:{seq}` 序号空间，写入时用 `chunk_blocks` 的 `seq_start` 避免撞 ID；`index_document` 不会删除同一版本已有的正文片段。
+  - T15：BM25 查询在 M11 里实现，T13 只提供索引的创建、写入和删除。查询必须带上可访问的 document_id 过滤，返回前做数据库二次校验（A10）；两类索引错误都要报告为检索服务故障。
+  - T18：用 `refresh=False` 批量重建后再按条件删除，可能删不到尚未刷新的数据（D26）。
 - **待实验决定（T12 记录）**
   - 是否给每个 Excel 片段补上该工作表的表头行：片段里只有数据、没有列名，按“列名 + 值”的方式搜索可能搜不到后面的行。补表头会让表头词在同一文件里重复计分。阶段五用实验比较。
   - Word 片段只定位到起始段落。如果实验或演示发现跳转偏差影响使用，再考虑给 `DocxParaLocator` 增加结束段落字段（数据契约变更，需 Barry 批准）。
@@ -270,3 +277,4 @@ BARRY zou/
 | T05–T10 核查 | 2026-11-14 | a0872dc | Barry 要求的整体核查。方法：重跑全部测试与代码检查；从真实应用导出接口清单，与 api.md 和前端类型逐项对照（17 个接口、全部字段一致）；启动真实后端和前端开发代理，用 curl 走通不需要数据库的路径；通读各模块之间的衔接。发现并修复 5 处：① 超大上传经代理时用户看到 502 而不是 413；② 解析器标记的“不可重试”在子进程边界丢失；③ `.env.example` 里的示例 JWT 密钥长度合格，原样复制也能启动；④ 存储和 Worker 各有一处代码在 Windows 上会直接报错；⑤ `.gitignore` 的 `models/` 规则会误忽略任何同名目录。新增 7 项测试，后端现为 216 项通过。未修、留作后续的事项记在 §4。91 项数据库集成测试和前后端联调仍未测试，里程碑“基础系统”仍未达成 |
 | T11 | 2026-11-14 | 3bd66e9 | Word、Excel、图片三个解析器，zip 炸弹防护（解压后总大小、条目数、加密条目），图片像素数上限与截断检查。已执行：后端测试 288 项通过（T11 新增 72 项：Word 18、Excel 19、图片 23、zip 检查 11、配置 1），全部在本机实际执行，没有未测试项；代码检查通过。每种格式的 fixture 都不少于 2 个，畸形文件包括 zip 炸弹、谎报大小的条目、截断、XML 损坏、缺主部件、互相冒充、伪造表格范围、像素炸弹。新增依赖 python-docx 1.2.0、openpyxl 3.1.5（带入 lxml、et-xmlfile）由 Barry 批准，已登记到 docs/downloads.md；规则与局限见 decisions.md D24。新增三个配置项（PARSE_ZIP_MAX_TOTAL_BYTES、PARSE_ZIP_MAX_ENTRIES、PARSE_IMAGE_MAX_PIXELS）。解析超时沿用 Worker 子进程边界的超时（T07），解析器内部没有另做；解析器尚未接入 Worker（T14）。测试文件都是现场生成的，未用 Office 实际保存的文件和真实照片验证，已记入 docs/untested.md §4 |
 | T12 | 2026-11-14 | 8134a2e | 切分模块 `chunk_document` / `chunk_blocks`、`split_spans`、`make_parse_version`。规则见 decisions.md D25：PDF 页和图片不合并；Word 相邻段落、Excel 同一工作表相邻行按整块打包；Word 定位到起始段落，Excel 用外接矩形；打包时整块重叠，超长块按字符重叠并优先在换行、句末处断开；parse_version 由算法版本、切分参数、解析器名称和版本、解析参数确定性算出。新增配置 CHUNK_MAX_CHARS（500）、CHUNK_OVERLAP_CHARS（50）。已执行：后端测试 336 项通过（T12 新增 48 项：切分 47、配置 1），全部在本机实际执行，没有未测试项；代码检查通过。三项 🧪 都有对应测试，并用 T11 解析器生成的 docx、xlsx 做了衔接测试。没有新下载。切分尚未接入 Worker（T14）；正文与 OCR 片段的序号分配留给 T14/T17，记在 §4。实施过程中另一个会话（T11 实施 fork）曾在同一目录短暂做 T12，已由它撤回自己的改动；提交前逐个核对过文件内容，并重跑了全部测试 |
+| T13 | 2026-11-14 | （待填） | 计划经 Barry 批准后实现；代码由“T11 实施 (fork)”会话编写，复核、测试、文档和提交由本会话完成。`text_index` 模块：httpx 直连 REST（不引入 opensearch-py）、`doc_meta` 与 `chunks` 两个 strict mapping（分析器 `docmgr_text` 直接使用插件自带的 smartcn 分析器，显式 BM25 参数，无权限字段；`backend/pyproject.toml` 声明了 mapping 文件为 package-data）、`ensure_indices`、`index_document`（先删其他版本再批量写入，`_id`=chunk_id）、`index_doc_meta`、`delete_document`，错误分可重试 / 不可重试两类。新增配置 OPENSEARCH_TIMEOUT_SECONDS（10）、OPENSEARCH_INDEX_PREFIX（空）；`deploy/docker-compose.yml` 改为带 analysis-smartcn 的自定义镜像（`deploy/opensearch/Dockerfile`）。附录 A13 按 Barry 的选定改为 analysis-smartcn（未经实测，阶段五可换）；A14 未改，T13 按不启用实现。已执行：后端测试 378 项通过（T13 新增 42 项：模拟应答下的索引测试 41、配置 1），shared 93 项通过，代码检查通过。**未测试（Not Tested）**：`tests/opensearch/test_text_index_live.py` 的 13 项，包括 DEVPLAN 要求的两项 🧪（重复索引不产生重复数据、删除后查不到），原因是本机没有 OpenSearch（没有 Docker 和 Java）；两个 mapping 从未被 OpenSearch 接受过，`deploy/opensearch/Dockerfile` 从未构建，compose 只读过 YAML 结构，package-data 没有用普通安装验证过。复核时指出的两处已由编写会话修改：分析器改为直接用 smartcn 类型（少依赖两个名字）；补上 package-data 声明。已登记到 docs/untested.md，补测步骤见该文件第 5、6 节。没有新下载 |

@@ -21,10 +21,12 @@ services:
       retries: 10
 
   opensearch:
-    # 待定（附录 A13）：中文分词插件（analysis-smartcn 或 IK）要等 T00 环境实测后确定。
-    # 目前使用不带中文分词插件的官方镜像；确定后改为在此镜像基础上安装插件的自定义镜像，
-    # 插件版本必须与这里的 OpenSearch 版本严格一致。
-    image: opensearchproject/opensearch:2.19.1
+    # 附录 A13：中文分词用官方插件 analysis-smartcn（Barry 于 2026-11-14 选定，未经本机实测）。
+    # 镜像在官方 2.19.1 的基础上安装该插件，见 deploy/opensearch/Dockerfile；
+    # 第一次启动前会自动构建，需要联网下载插件。
+    build:
+      context: ./opensearch
+    image: docmgr-opensearch:2.19.1-smartcn
     environment:
       discovery.type: single-node
       # 仅限本机开发：关闭安全插件，端口只绑定 127.0.0.1
