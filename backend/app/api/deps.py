@@ -13,6 +13,7 @@ from app.core.security import InvalidTokenError, decode_access_token
 from app.db.models import User
 from app.modules.auth.permissions import ADMIN_ROLE
 from app.modules.storage import LocalStorage
+from app.modules.text_index import OpenSearchClient
 
 # auto_error=False：缺少或格式不对的 Authorization 头由下面统一转成 401 和项目的错误结构，
 # 而不是 FastAPI 默认的响应。
@@ -33,8 +34,13 @@ def get_storage(request: Request) -> LocalStorage:
     return request.app.state.storage
 
 
+def get_text_index(request: Request) -> OpenSearchClient:
+    return request.app.state.text_index
+
+
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 StorageDep = Annotated[LocalStorage, Depends(get_storage)]
+TextIndexDep = Annotated[OpenSearchClient, Depends(get_text_index)]
 SessionDep = Annotated[Session, Depends(get_session)]
 
 

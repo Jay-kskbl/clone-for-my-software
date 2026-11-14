@@ -29,6 +29,9 @@ services:
     image: docmgr-opensearch:2.19.1-smartcn
     environment:
       discovery.type: single-node
+      # 禁止“往不存在的索引里写数据时自动建索引”：自动建出来的索引没有中文分词、
+      # 字段类型靠猜。两个索引只能由后端按版本库里的 mapping 创建（text_index.ensure_indices）
+      action.auto_create_index: "false"
       # 仅限本机开发：关闭安全插件，端口只绑定 127.0.0.1
       DISABLE_SECURITY_PLUGIN: "true"
       DISABLE_INSTALL_DEMO_CONFIG: "true"

@@ -157,7 +157,7 @@ BARRY zou/
   -   `doc_meta`、`chunks` 两个索引的 mapping（分词器按 T00 结论），mapping 文件纳入版本管理
   -   `index_document(doc_id, chunks)`：先删除该文档的旧 `parse_version` 再写入；`delete_document(doc_id)`
   -   🧪 重复索引不产生重复数据；删除后查不到
-- [ ] **T14 解析流水线**
+- [x] **T14 解析流水线**
   -   parse 任务处理器：解析 → 切分 → 写 DocumentChunk → 索引 → 回写状态；需要 OCR 的页和图片创建 ocr 任务
   -   清理任务处理器：删索引 → 删文件 → 硬删除记录
   -   🧪 端到端：上传 PDF → 等任务完成 → chunks 索引中有该文档的数据
@@ -223,23 +223,21 @@ BARRY zou/
 
 以下是 2026-11-14 核查 T05–T10 时发现、但不属于已完成任务范围的事项，留给后续任务或由 Barry 决定：
 
-- **给 T14 的衔接提醒**
-  - 解析器 `parse_pdf` 接收文件路径，而存储模块目前只提供 `open(key)`（返回文件对象），没有“按 key 取本地路径”的接口。T14 接入解析器时需要给存储模块加一个。
-  - `documents.status` 目前只在上传时写成 `pending`，之后没有任何代码更新它。由谁、按什么规则回写（一个文档有 parse、ocr、embed 多个任务时如何汇总），T14 要定。
-  - 文档被软删除后，它尚未执行的 parse 任务仍在队列里。T14 的处理函数开头要检查文档是否已删除。
-  - 重试任务（`POST /api/tasks/{id}/retry`）目前不改文档状态，规则同样在 T14 定。
-  - （T11 补充）四个解析器的入口各自独立（`parse_pdf`、`parse_docx`、`parse_xlsx`、`parse_image`），没有统一的“按类型分发”函数，T14 写处理函数时按文档的类型选择，并把配置里的上限传进去。图片要另外调用 `read_image_info` 取宽高写入 `image_assets`，`parse_image` 的 `image_id` 用 `make_image_id(document_id)` 生成。
-- **给 T14、T17 的衔接提醒（T12 补充）**
-  - parse 任务处理函数里：用配置构造 `ChunkingParams`；用 `make_parse_version` 算出版本号，PDF 要把 `pdf_ocr_min_chars` 作为 `parser_options` 传进去；再调用 `chunk_document`。
-  - 正文片段和各页 OCR 片段共用同一个 `{document_id}:{parse_version}:{seq}` 序号空间。OCR 任务是分页、分次执行的，每次的 `seq_start` 必须互不重叠，并且是确定性的（重复执行时序号相同）。这个分配规则 T14 要定，例如按 OCR 对象在 `ocr_targets` 里的位置预留区间。
-  - OCR Worker 在 ocr 环境里，不能导入 backend。如果 T17 要在 OCR Worker 里切分，先把 `backend/app/modules/chunking` 移到 `shared`（它只依赖 shared 和标准库）；也可以让 OCR Worker 只写 OCRResult，由通用 Worker 切分。二选一在 T17 定。
-- **给后续任务的衔接提醒（T13 补充）**
-  - T14：API 和 Worker 启动时各调用一次 `ensure_indices`（只建不改，重复调用无副作用）。
-  - T14：上传成功、改标签、删除时要分别调用 `index_doc_meta` / `delete_document`。T08 的标签接口（`PUT /api/documents/{id}/tags`）目前不会更新索引，标签检索（B0）要等这一步接上才准确。
-  - T14：`index_document` 抛出的 `TextIndexUnavailable` 可重试、`TextIndexError` 不可重试，与解析器的 `ParseError` 一样由 Worker 按 `retryable` 处理。
-  - T17：OCR 片段与正文片段共用 `{document_id}:{parse_version}:{seq}` 序号空间，写入时用 `chunk_blocks` 的 `seq_start` 避免撞 ID；`index_document` 不会删除同一版本已有的正文片段。
-  - T15：BM25 查询在 M11 里实现，T13 只提供索引的创建、写入和删除。查询必须带上可访问的 document_id 过滤，返回前做数据库二次校验（A10）；两类索引错误都要报告为检索服务故障。
-  - T18：用 `refresh=False` 批量重建后再按条件删除，可能删不到尚未刷新的数据（D26）。
+- **（T14 已解决）** 之前记给 T14 的提醒都已处理，做法见 `decisions.md` D27：存储新增 `local_path()`；文档状态只跟随 parse 任务的规则已定，并在任务失败、回收、重试时一并更新；parse 处理函数开头检查文档是否已删除；按 `mime_type` 选解析器，图片写 `image_assets`；`parser_options` 只传 PDF 的 `pdf_ocr_min_chars`；索引改为在每个任务开始时 `ensure_indices`（没有放在 API、Worker 启动时）；上传后由 parse 任务写 `doc_meta`，删除由 cleanup 任务调用 `delete_document`，改标签接口提交后尽力同步 `doc_meta`；`TextIndexUnavailable` / `TextIndexError` / `ParseError` / `PipelineError` 都由 Worker 按 `retryable` 处理。
+- **给 T17（OCR Worker）的衔接提醒**
+  - 处理 ocr 任务前，先比较 `payload.parse_version` 与文档当前的 `parse_version`，不一致就直接成功结束：文档重新解析后，旧版本的 OCR 任务不会被删除（D27）。
+  - OCR 片段与正文片段共用 `{document_id}:{parse_version}:{seq}` 序号空间。OCR 任务是一页（或一张图片）一个、分次执行的，每次的 `seq_start` 必须互不重叠并且是确定性的，例如按页码预留区间；用 `chunk_blocks` 的 `seq_start` 实现。重新解析正文时，parse 只删正文片段，同一版本的 OCR 片段保留；`index_document` 也不会删除同一版本的已有片段。
+  - OCR Worker 在 ocr 环境里，不能导入 backend。如果要在 OCR Worker 里切分，先把 `backend/app/modules/chunking` 移到 `shared`（它只依赖 shared 和标准库）；也可以让 OCR Worker 只写 OCRResult，由通用 Worker 切分。二选一在 T17 定。
+  - 文档状态目前不反映 OCR 的成败。如果需要“OCR 失败”的提示，在 T17 定规则。
+- **给 T15（检索 v1）的衔接提醒**
+  - BM25 查询在 M11 里实现，T13 只提供索引的创建、写入和删除。查询必须带上可访问的 document_id 过滤，返回前做数据库二次校验（A10）；`TextIndexUnavailable`、`TextIndexError` 都要报告为检索服务故障，不能返回空结果。
+  - 二次校验同时挡住 T14 已知的残留：解析与清理竞争时可能留在索引里的、记录已经不存在的文档（D27）。
+- **给 T18（一致性检查）的衔接提醒**
+  - 要能发现并清理“数据库里已经没有这个文档、索引里还有它的数据”的残留（D27 的竞争窗口）。
+  - 要能补上改标签时没有同步成功的 `doc_meta`：改标签接口在检索服务不可用时只记警告。
+  - 用 `refresh=False` 批量重建后再按条件删除，可能删不到尚未刷新的数据（D26）。
+- **给 T21 的衔接提醒**
+  - parse 任务目前不创建 embed 任务。T21 要决定在哪里创建（建议与 OCR 任务一样，在 parse 成功的同一事务里），并按图片内容的 sha256 去重。
 - **待实验决定（T12 记录）**
   - 是否给每个 Excel 片段补上该工作表的表头行：片段里只有数据、没有列名，按“列名 + 值”的方式搜索可能搜不到后面的行。补表头会让表头词在同一文件里重复计分。阶段五用实验比较。
   - Word 片段只定位到起始段落。如果实验或演示发现跳转偏差影响使用，再考虑给 `DocxParaLocator` 增加结束段落字段（数据契约变更，需 Barry 批准）。
@@ -278,3 +276,4 @@ BARRY zou/
 | T11 | 2026-11-14 | 3bd66e9 | Word、Excel、图片三个解析器，zip 炸弹防护（解压后总大小、条目数、加密条目），图片像素数上限与截断检查。已执行：后端测试 288 项通过（T11 新增 72 项：Word 18、Excel 19、图片 23、zip 检查 11、配置 1），全部在本机实际执行，没有未测试项；代码检查通过。每种格式的 fixture 都不少于 2 个，畸形文件包括 zip 炸弹、谎报大小的条目、截断、XML 损坏、缺主部件、互相冒充、伪造表格范围、像素炸弹。新增依赖 python-docx 1.2.0、openpyxl 3.1.5（带入 lxml、et-xmlfile）由 Barry 批准，已登记到 docs/downloads.md；规则与局限见 decisions.md D24。新增三个配置项（PARSE_ZIP_MAX_TOTAL_BYTES、PARSE_ZIP_MAX_ENTRIES、PARSE_IMAGE_MAX_PIXELS）。解析超时沿用 Worker 子进程边界的超时（T07），解析器内部没有另做；解析器尚未接入 Worker（T14）。测试文件都是现场生成的，未用 Office 实际保存的文件和真实照片验证，已记入 docs/untested.md §4 |
 | T12 | 2026-11-14 | 8134a2e | 切分模块 `chunk_document` / `chunk_blocks`、`split_spans`、`make_parse_version`。规则见 decisions.md D25：PDF 页和图片不合并；Word 相邻段落、Excel 同一工作表相邻行按整块打包；Word 定位到起始段落，Excel 用外接矩形；打包时整块重叠，超长块按字符重叠并优先在换行、句末处断开；parse_version 由算法版本、切分参数、解析器名称和版本、解析参数确定性算出。新增配置 CHUNK_MAX_CHARS（500）、CHUNK_OVERLAP_CHARS（50）。已执行：后端测试 336 项通过（T12 新增 48 项：切分 47、配置 1），全部在本机实际执行，没有未测试项；代码检查通过。三项 🧪 都有对应测试，并用 T11 解析器生成的 docx、xlsx 做了衔接测试。没有新下载。切分尚未接入 Worker（T14）；正文与 OCR 片段的序号分配留给 T14/T17，记在 §4。实施过程中另一个会话（T11 实施 fork）曾在同一目录短暂做 T12，已由它撤回自己的改动；提交前逐个核对过文件内容，并重跑了全部测试 |
 | T13 | 2026-11-14 | 0600f02 | 计划经 Barry 批准后实现，A13 选 smartcn 由 Barry 于 2026-11-14 在本会话亲自确认；代码由“T11 实施 (fork)”会话编写，复核、测试、文档和提交由本会话完成。`text_index` 模块：httpx 直连 REST（不引入 opensearch-py）、`doc_meta` 与 `chunks` 两个 strict mapping（分析器 `docmgr_text` 直接使用插件自带的 smartcn 分析器，显式 BM25 参数，无权限字段；`backend/pyproject.toml` 声明了 mapping 文件为 package-data）、`ensure_indices`、`index_document`（先删其他版本再批量写入，`_id`=chunk_id）、`index_doc_meta`、`delete_document`，错误分可重试 / 不可重试两类。新增配置 OPENSEARCH_TIMEOUT_SECONDS（10）、OPENSEARCH_INDEX_PREFIX（空）；`deploy/docker-compose.yml` 改为带 analysis-smartcn 的自定义镜像（`deploy/opensearch/Dockerfile`）。附录 A13 按 Barry 的选定改为 analysis-smartcn（未经实测，阶段五可换）；A14 未改，T13 按不启用实现。已执行：后端测试 378 项通过（T13 新增 42 项：模拟应答下的索引测试 41、配置 1），shared 93 项通过，代码检查通过。**未测试（Not Tested）**：`tests/opensearch/test_text_index_live.py` 的 13 项，包括 DEVPLAN 要求的两项 🧪（重复索引不产生重复数据、删除后查不到），原因是本机没有 OpenSearch（没有 Docker 和 Java）；两个 mapping 从未被 OpenSearch 接受过，`deploy/opensearch/Dockerfile` 从未构建，compose 只读过 YAML 结构，package-data 没有用普通安装验证过。复核时指出的两处已由编写会话修改：分析器改为直接用 smartcn 类型（少依赖两个名字）；补上 package-data 声明。已登记到 docs/untested.md，补测步骤见该文件第 5、6 节。没有新下载 |
+| T14 | 2026-11-15 | （待填） | 代码由“T11 实施 (fork)”会话编写（Barry 在该会话里让开始 T14），复核、测试、文档和提交由本会话完成。parse 任务：读文档（已删除则不做）→ processing → 确保索引并写 doc_meta → 按 mime_type 解析、切分 → 换掉正文片段并登记图片 → 写 chunks 索引 → 复查是否被删除 → succeeded + parse_version + 按页创建 OCR 任务。cleanup 任务：只清理已软删除的文档，顺序为索引 → 文件 → 硬删除（最后一步，级联删除连任务记录一起删掉）。文档状态只跟随 parse 任务，最终失败时由 `shared/tasks.py` 的 fail / reclaim_expired 在同一事务里改为 failed；重试 failed 的 parse 任务时文档回到 pending。改标签后尽力同步 doc_meta；compose 关闭 `action.auto_create_index`；存储新增 `local_path()`。规则与局限见 decisions.md D27。已执行：后端测试 415 项通过（T14 新增 37 项：流水线 30、local_path 7），shared 93 项通过，代码检查通过。**未测试（Not Tested）**：`tests/integration/test_pipeline_db.py` 的 23 项，包括 DEVPLAN 要求的 🧪 端到端（上传 PDF → 等任务完成 → chunks 索引中有该文档的数据）。原因是本机没有 PostgreSQL，其中 2 项还需要 OpenSearch。`shared/tasks.py` 新增的 SQL 从未执行，真实子进程里的处理函数从未运行，`action.auto_create_index` 未验证。已登记到 docs/untested.md。复核时指出的 1 个应修问题（改标签可能让 OpenSearch 自动建出错误的索引）和 1 处文字错误已由编写会话修改。没有修改附录 A，没有新下载 |

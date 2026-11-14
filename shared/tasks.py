@@ -80,6 +80,18 @@ WHERE id IN (
     -- 多个 Worker 同时回收时各拿各的行，不互相等待，也不会按不同顺序加锁而死锁
     FOR UPDATE SKIP LOCKED
 )
+RETURNING status, task_type, document_id
+"""
+
+# 文档状态跟随它的 parse 任务（docs/decisions.md，T14）：parse 任务最终失败（不再重试）时，
+# 文档状态改为 failed。这条规则放在队列这一层，而不是任务处理函数里，是因为任务超时、
+# Worker 崩溃时处理函数已经不在了，只有“任务被标记为 failed”这个动作一定会发生。
+# 与任务状态的更新在同一个事务里执行，不会出现任务已失败而文档仍显示“处理中”的中间状态。
+# 只动还没有结论的文档（pending / processing），不覆盖已经成功的。
+_MARK_DOCUMENTS_FAILED_SQL = f"""
+UPDATE documents SET status = '{STATUS_FAILED}', updated_at = now()
+WHERE id = ANY(%(document_ids)s)
+  AND status IN ('{STATUS_PENDING}', '{STATUS_PROCESSING}')
 """
 
 _CLAIM_SQL = f"""
@@ -122,7 +134,7 @@ WHERE {_OWNED}
 _FAIL_SQL = f"""
 UPDATE processing_tasks SET {_RELEASE_SET}
 WHERE {_OWNED}
-RETURNING status
+RETURNING status, task_type, document_id
 """
 
 
@@ -130,7 +142,9 @@ def reclaim_expired(conn: psycopg.Connection) -> int:
     """回收租约已过期但仍为 processing 的任务，返回回收的数量。"""
     with conn.transaction():
         cur = conn.execute(_RECLAIM_SQL, {"error": LEASE_EXPIRED_ERROR, "retryable": True})
-        return cur.rowcount
+        rows = cur.fetchall()
+        _mark_documents_failed(conn, rows)
+        return len(rows)
 
 
 def claim(
@@ -212,4 +226,22 @@ def fail(
                 "retryable": retryable,
             },
         ).fetchone()
+        if row:
+            _mark_documents_failed(conn, [row])
     return row[0] if row else None
+
+
+def _mark_documents_failed(
+    conn: psycopg.Connection, released: Sequence[tuple[str, str, uuid.UUID]]
+) -> None:
+    """released：刚被释放的任务的（新状态，任务类型，文档 ID）。
+
+    其中最终失败的 parse 任务，把它的文档状态改为 failed。必须在调用方的事务里调用。
+    """
+    document_ids = [
+        document_id
+        for status, task_type, document_id in released
+        if status == STATUS_FAILED and task_type == TASK_PARSE
+    ]
+    if document_ids:
+        conn.execute(_MARK_DOCUMENTS_FAILED_SQL, {"document_ids": document_ids})

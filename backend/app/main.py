@@ -20,6 +20,7 @@ from app.config import Settings, load_settings
 from app.core.errors import ConfigError
 from app.db.session import make_engine, make_session_factory
 from app.modules.storage import LocalStorage
+from app.modules.text_index import client_from_settings
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -37,11 +38,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         yield
+        text_index.close()
         engine.dispose()
+
+    # 创建客户端不会立刻连接 OpenSearch：它没启动时服务仍能起来，由 /health 如实报告
+    text_index = client_from_settings(settings)
 
     app = FastAPI(title="智能文档管理系统 API", lifespan=lifespan)
     app.state.settings = settings
     app.state.session_factory = make_session_factory(engine)
+    app.state.text_index = text_index
     # 启动时就创建存储目录：目录不可写的问题在启动时暴露，而不是等到第一次上传
     app.state.storage = LocalStorage(settings.storage_root)
     register_error_handlers(app)

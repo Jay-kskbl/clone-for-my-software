@@ -79,11 +79,11 @@ flowchart TB
 | M1 | 认证与权限 | user → 可访问的 document_id 集合；`can_access(user, doc)` | `backend/app/modules/auth` | — | T06 | 已完成（数据库集成测试未测试） |
 | M2 | 文档管理 | API 请求 → Document 记录；软删除；创建任务 | `backend/app/modules/documents` | — | T08 | 已完成（数据库集成测试未测试） |
 | M3 | 存储抽象 | 字节流 → `storage_key`；按 key 读取、删除 | `backend/app/modules/storage` | 是 | T05 | 已完成 |
-| M4 | 任务框架 | 任务 → 状态流转（领取、租约、重试、幂等） | `shared/tasks.py`、`backend/app/worker` | — | T07 | 已完成（数据库集成测试未测试） |
-| M5 | 文档解析 | 文件路径 → `ParsedDocument`（纯函数） | `backend/app/modules/parsing` | 是 | T09、T11 | 已完成：PDF（T09），Word、Excel、图片（T11）；尚未接入 Worker（T14） |
+| M4 | 任务框架 | 任务 → 状态流转（领取、租约、重试、幂等） | `shared/tasks.py`、`backend/app/worker` | — | T07、T14 | 已完成（数据库集成测试未测试）；T14 登记了 parse、cleanup 两个处理函数 |
+| M5 | 文档解析 | 文件路径 → `ParsedDocument`（纯函数） | `backend/app/modules/parsing` | 是 | T09、T11 | 已完成：PDF（T09），Word、Excel、图片（T11）；已接入 Worker 的 parse 任务（T14） |
 | M6 | OCR | 图片 → `OCRResult` | `services/ocr_worker` | 是 | T17 | 未开始 |
-| M7 | 切分 | `ParsedDocument` → `Chunk[]`（纯函数） | `backend/app/modules/chunking` | 是 | T12 | 已完成（T12）；尚未接入 Worker（T14） |
-| M8 | 文本索引与 BM25 | `Chunk[]` / 查询 → 排序列表 | `backend/app/modules/text_index` | — | T13、T15 | 索引的创建、写入、删除已完成（T13，未在真实 OpenSearch 上运行）；BM25 查询在 T15 |
+| M7 | 切分 | `ParsedDocument` → `Chunk[]`（纯函数） | `backend/app/modules/chunking` | 是 | T12 | 已完成（T12）；已接入 Worker 的 parse 任务（T14） |
+| M8 | 文本索引与 BM25 | `Chunk[]` / 查询 → 排序列表 | `backend/app/modules/text_index` | — | T13、T15 | 索引的创建、写入、删除已完成（T13），由 parse、cleanup 任务和改标签接口调用（T14），都未在真实 OpenSearch 上运行；BM25 查询在 T15 |
 | M9 | CLIP 模型服务 | 图片 / 文本 → 向量 | `services/clip_service` | 是 | T20 | 未开始 |
 | M10 | 向量索引 | 向量 → 排序列表 | `backend/app/modules/vector_index` | — | T21 | 未开始 |
 | M11 | 检索编排与 RRF | 查询 → `SearchHit[]` | `backend/app/modules/search` | — | T15、T22 | 未开始 |
@@ -164,6 +164,8 @@ Worker 领取任务（SELECT … FOR UPDATE SKIP LOCKED，写入租约）
               └─ 图片 ────────→ 创建 embed 任务 → M9 编码 → 写 ImageEmbedding → M10 写向量索引
   └─ 回写任务和文档状态：succeeded，或 failed + 失败原因
 ```
+
+T14 的实现（`decisions.md` D27）：parse 任务先写 `doc_meta`，再解析、切分、写 DocumentChunk、写 `chunks` 索引，最后把文档标为 succeeded 并按页（或整张图片）创建 ocr 任务；embed 任务尚未创建（T21）。文档状态只跟随 parse 任务。
 
 任务框架保证的四件事（GLOBAL §3.3，附录 A3）：
 

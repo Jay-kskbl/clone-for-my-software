@@ -8,9 +8,18 @@ from urllib.parse import quote
 
 from fastapi import APIRouter, File, Form, Query, Response, UploadFile
 from fastapi.responses import StreamingResponse
+from sqlalchemy.orm import Session
 
-from app.api.deps import CurrentUser, PaginationDep, SessionDep, SettingsDep, StorageDep
+from app.api.deps import (
+    CurrentUser,
+    PaginationDep,
+    SessionDep,
+    SettingsDep,
+    StorageDep,
+    TextIndexDep,
+)
 from app.core.errors import AppError
+from app.db.models import Document
 from app.modules.auth.permissions import get_accessible_document, get_owned_document
 from app.modules.documents import service, sharing
 from app.modules.documents.schemas import (
@@ -24,8 +33,19 @@ from app.modules.documents.schemas import (
     TagList,
     TagsRequest,
 )
-from app.modules.documents.tags import list_visible_tags, normalize_tags, replace_document_tags
+from app.modules.documents.tags import (
+    list_visible_tags,
+    normalize_tags,
+    replace_document_tags,
+    tags_by_document,
+)
 from app.modules.storage import StoredFileNotFoundError
+from app.modules.text_index import (
+    OpenSearchClient,
+    TextIndexError,
+    ensure_indices,
+    index_doc_meta,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["documents"])
@@ -181,12 +201,33 @@ def remove_share(
 
 @router.put("/documents/{document_id}/tags", response_model=DocumentOut)
 def set_tags(
-    document_id: uuid.UUID, body: TagsRequest, user: CurrentUser, session: SessionDep
+    document_id: uuid.UUID,
+    body: TagsRequest,
+    user: CurrentUser,
+    session: SessionDep,
+    text_index: TextIndexDep,
 ) -> DocumentOut:
     document = get_owned_document(session, user, document_id)
     replace_document_tags(session, document.id, normalize_tags(body.tags))
     session.commit()
+    _sync_doc_meta(session, text_index, document)
     return service.to_document_out(session, user, [document])[0]
+
+
+def _sync_doc_meta(session: Session, text_index: OpenSearchClient, document: Document) -> None:
+    """标签改动后，把文件名和最新的标签写进 doc_meta 索引，这样按标签检索能立刻反映改动。
+
+    数据库是标签的唯一依据，这里只是让索引跟上。检索服务此刻不可用时不让改标签失败：
+    记一条警告，索引暂时是旧的，之后由重新解析或一致性检查（T18）补上。
+    """
+    tags = tags_by_document(session, [document.id]).get(document.id, [])
+    try:
+        # 先保证索引按项目的 mapping 建好。否则往一个还不存在的索引里写数据，
+        # OpenSearch 可能自动建一个结构不对的索引（没有中文分词），之后只能删掉重建
+        ensure_indices(text_index)
+        index_doc_meta(text_index, document_id=document.id, filename=document.filename, tags=tags)
+    except TextIndexError as exc:
+        logger.warning("文档 %s 的标签已保存，但未能同步到检索索引（%s）", document.id, exc.message)
 
 
 @router.get("/tags", response_model=TagList)

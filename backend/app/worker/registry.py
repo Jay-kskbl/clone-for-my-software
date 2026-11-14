@@ -8,7 +8,12 @@ Worker 只领取这里登记了的类型，所以 ocr、embed 任务不会被通
 - 幂等：同一个任务执行两次，结果与执行一次相同（GLOBAL §3.3）。写入用确定性 ID 覆盖，不追加。
 """
 
+from shared.tasks import TASK_CLEANUP, TASK_PARSE
+
+from app.worker.handlers import handle_cleanup, handle_parse
 from app.worker.runner import Handler
 
-# T14 在这里登记 parse 和 cleanup 的处理函数。
-HANDLERS: dict[str, Handler] = {}
+HANDLERS: dict[str, Handler] = {
+    TASK_PARSE: handle_parse,
+    TASK_CLEANUP: handle_cleanup,
+}

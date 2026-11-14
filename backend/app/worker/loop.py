@@ -134,7 +134,13 @@ def _process(
 
     try:
         if result.ok:
-            if not queue.complete(task.id):
+            if queue.complete(task.id):
+                pass
+            elif task.task_type == tasks.TASK_CLEANUP:
+                # 正常情况：清理任务的最后一步是硬删除文档，数据库的级联删除
+                # 把这个任务自己的记录也删掉了，所以没有记录可以标记为成功
+                logger.info("清理任务 %s 已完成，任务记录已随文档一并删除", task.id)
+            else:
                 logger.warning("任务 %s 已完成，但租约已不属于本 Worker，结果未被记录", task.id)
         else:
             status = queue.fail(task.id, result.error or "未知错误", retryable=result.retryable)

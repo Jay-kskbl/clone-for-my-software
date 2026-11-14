@@ -2,7 +2,7 @@
 
 import uuid
 
-from shared.tasks import STATUS_FAILED, STATUS_PENDING
+from shared.tasks import STATUS_FAILED, STATUS_PENDING, TASK_PARSE
 from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
@@ -83,6 +83,14 @@ def retry_task(session: Session, user: User, task_id: uuid.UUID) -> ProcessingTa
     if result.rowcount != 1:
         session.rollback()
         raise TaskNotRetryableError("只有失败的任务可以重试")
+    if task.task_type == TASK_PARSE:
+        # 文档状态跟随它的 parse 任务：任务回到队列，文档也回到“等待处理”。
+        # 只改 failed 的文档：已软删除的文档状态无所谓，改了也不影响任何查询
+        session.execute(
+            update(Document)
+            .where(Document.id == task.document_id, Document.status == STATUS_FAILED)
+            .values(status=STATUS_PENDING)
+        )
     session.commit()
     session.refresh(task)
     return task

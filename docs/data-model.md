@@ -120,7 +120,7 @@ erDiagram
 | size_bytes | bigint，≥ 0 | |
 | sha256 | varchar(64)，有索引 | 文件内容哈希 |
 | storage_key | varchar(512)，唯一 | 存储抽象层的键，形如 `{yyyy}/{document_id}/{sha256}.{ext}` |
-| status | varchar(16)，默认 `pending` | 处理状态：`pending` / `processing` / `succeeded` / `failed` |
+| status | varchar(16)，默认 `pending` | 处理状态：`pending` / `processing` / `succeeded` / `failed`。只跟随 parse 任务：开始处理为 `processing`，成功为 `succeeded`，parse 任务最终失败为 `failed`，重试失败的 parse 任务时回到 `pending`；OCR、清理任务不改它（`decisions.md` D27） |
 | parse_version | varchar(64)，可空 | 当前生效的解析版本；未解析成功时为空 |
 | created_at / updated_at | timestamptz | |
 | deleted_at | timestamptz，可空，有索引 | 软删除标记，非空即对所有查询不可见（GLOBAL §4.5） |

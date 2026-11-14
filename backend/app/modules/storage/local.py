@@ -153,6 +153,17 @@ class LocalStorage:
             raise StoredFileNotFoundError(storage_key) from None
         return os.fdopen(fd, "rb")
 
+    def local_path(self, storage_key: str) -> Path:
+        """storage_key 对应的本地文件路径，只读使用。
+
+        解析库（PyMuPDF、python-docx、openpyxl）要的是文件路径而不是文件对象。
+        路径经过与 open() 相同的检查；文件不存在时抛出与 open() 相同的错误。
+        调用方不得通过这个路径写入、移动或删除文件——那些操作只能走本类的方法。
+        """
+        # 借 open() 做存在性检查，保证“文件不存在”在两个方法里是同一种错误
+        self.open(storage_key).close()
+        return self._resolve_key(storage_key)
+
     def delete(self, storage_key: str) -> None:
         """删除文件。文件已不存在时什么也不做：清理任务重试时会重复调用（GLOBAL §3.3 幂等）。"""
         path = self._resolve_key(storage_key)

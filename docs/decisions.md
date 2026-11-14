@@ -234,7 +234,7 @@ T13 起，`deploy/docker-compose.yml` 改为在官方 2.19.1 镜像上安装 ana
 
 - 决策：`documents.status` 取 `pending`、`processing`、`succeeded`、`failed`，与任务状态一致。
 - 理由：用户在文件列表中看到的状态与后台任务的状态对应，不需要另一套状态映射。
-- 代价与局限：一个文档可能有多个任务（解析、OCR、向量），文档状态如何由多个任务的状态汇总，要在 T14 解析流水线中明确。
+- 代价与局限：一个文档可能有多个任务（解析、OCR、向量）。T14 定下的规则是文档状态只跟随 parse 任务，见 D27。OCR、向量任务的成败不反映在文档状态里，用户要在任务列表里查看。
 
 ### D9 片段正文保存在数据库中（T03）
 
@@ -470,3 +470,65 @@ GLOBAL §2 P1 规定“某页文本层有效字符数低于配置阈值时，该
 - 按条件删除只能删到已经刷新过的数据。用 `refresh=False` 写入后马上删除，刚写的数据可能删不掉。默认的 `refresh=true` 没有这个问题；T18 批量重建时要注意。
 - smartcn 分析器类型、在 index 设置里改写默认相似度为 BM25、strict mapping 的写法都没有被任何 OpenSearch 接受过。只要有一处不被 2.19.1 接受，创建索引就会整体失败。
 - mapping 是包内的 JSON 数据文件，已在 `backend/pyproject.toml` 的 `[tool.setuptools.package-data]` 里声明。但只验证过可编辑安装（`pip install -e`）能读到，没有做过普通安装来确认文件真的被打包进去。
+
+### D27 解析流水线：parse 与 cleanup 任务、文档状态规则（T14）
+
+代码由“T11 实施 (fork)”会话编写，复核、测试、文档和提交由本会话完成。**涉及数据库和 OpenSearch 的部分都没有实际运行过**，见 `docs/untested.md`。
+
+**文档状态只跟随 parse 任务。**
+
+| 时机 | 文档状态 | 在哪里写 |
+|---|---|---|
+| 上传成功 | `pending` | 上传接口（T08） |
+| parse 任务开始处理 | `processing` | parse 处理函数 |
+| parse 成功 | `succeeded`，同时写入 `parse_version` | parse 处理函数，最后一步 |
+| parse 任务最终失败（不可重试的错误，或重试次数用完，或租约过期被回收且次数已用完） | `failed` | `shared/tasks.py` 的 `fail` / `reclaim_expired`，与任务状态在同一个事务里更新；只改 `pending` / `processing` 的文档，不覆盖 `succeeded` |
+| parse 任务失败但还会重试 | 保持 `processing` | — |
+| 重试一个 failed 的 parse 任务 | 从 `failed` 回到 `pending` | 重试接口（`documents/tasks.py` 的 `retry_task`） |
+
+- ocr、cleanup 任务的成败不改变文档状态。OCR 失败时文档仍是 `succeeded`，正文已经可以检索；OCR 的结果要在任务列表里看。T17 如需调整再定。
+- “最终失败 → failed”放在任务队列这一层，而不是处理函数里，因为任务超时、Worker 崩溃时处理函数已经不在了，只有“任务被标为 failed”这个动作一定会发生。
+
+**parse 任务的步骤**（`backend/app/worker/handlers/parse.py`，每一步都可以重复执行，结果不变）：
+
+1. 读出文档。记录不存在或已软删除：什么都不做，任务算成功，由 cleanup 任务负责清理。
+2. 文档状态改为 `processing`，提交。
+3. 确保两个索引存在，然后把文件名和标签写入 `doc_meta`。放在解析之前，即使正文解析失败，文件也能按文件名搜到。
+4. 按上传时识别出的真实类型（`mime_type`）选解析器，再切分。PDF 的 `pdf_ocr_min_chars` 算进 parse_version；zip 和像素上限只决定“解析还是拒绝”，不改变解析结果，不算进去。
+5. 数据库：删掉这个文档的正文片段和其他版本的全部片段（同一版本的 OCR 片段保留），写入新片段；图片另外登记或更新一条 `image_assets`（宽、高、sha256）。提交。
+6. `chunks` 索引：写入这一版的片段，同时删掉其他版本的。
+7. 再读一次文档。解析期间它被删除了：把刚写进索引的数据撤掉，结束。
+8. 状态改为 `succeeded`，记下 parse_version，同时创建 OCR 任务，一起提交。
+
+- `succeeded` 最后写，所以“成功”一定意味着数据库和索引里都已经有正文片段。
+- OCR 任务一页（或一张图片）一个，`payload = {parse_version, locator}`，按“同版本同对象”去重。一页失败只重试这一页；上百页的扫描件也不会因为总耗时超过任务超时而整体失败。
+- embed 任务（T21）还没有在这里创建。
+
+**cleanup 任务**（`handlers/cleanup.py`）：
+
+- 只清理已软删除的文档。文档没有被删除时直接失败（不可重试），宁可失败也不删用户的文件；记录已不存在时什么都不做，算成功。
+- 顺序：删两个索引里的数据 → 删文件 → 硬删除数据库记录。数据库记录最后删：前两步失败时记录还在，重试能再找到要删的东西。
+- 硬删除依赖数据库的级联删除，片段、图片记录、共享、标签关联和全部任务记录都会一起删掉，包括正在执行的这个 cleanup 任务自己。所以：
+  - 硬删除必须是最后一步。之后再做任何事，父进程下一次续租都会发现记录没了，按“租约丢失”终止子进程。
+  - 成功的 cleanup 不会留下任务记录，Worker 的日志里只有一条 info：“清理任务已完成，任务记录已随文档一并删除”。
+
+**运行方式。**
+
+- 处理函数运行在 spawn 出来的子进程里，只收到一个 Task。配置、数据库会话、存储、检索客户端都在子进程里自己建立（`backend/app/worker/context.py`），任务结束时关闭。
+- 每个任务开始时调用 `ensure_indices`，不依赖“API、Worker、OpenSearch 谁先启动”。API 和 Worker 启动时都没有调用它。
+- 存储模块新增 `local_path(storage_key)`：解析库要的是文件路径。路径经过与 `open()` 相同的安全检查，文件不存在时抛同样的错误；调用方只能读取，不得通过这个路径写入、移动或删除。
+- 处理函数自己抛的不可重试错误是 `PipelineError`（原始文件不存在、不认识的文件类型、清理一个没删除的文档）。解析器的 `ParseError`、检索服务的两类错误按各自的 `retryable` 处理。
+
+**标签与索引。**
+
+- 改标签接口在数据库提交之后，尽力把文件名和最新标签同步到 `doc_meta`：先确保索引存在，再写入。检索服务不可用时只记一条警告，标签照常保存，接口不报错。
+- `deploy/docker-compose.yml` 给 OpenSearch 设置了 `action.auto_create_index: "false"`。往不存在的索引里写数据时，OpenSearch 默认会自动建一个按数据猜字段类型的索引，没有中文分词，也不是 strict；之后 `ensure_indices` 看到索引已存在就不会再管它。关掉以后，两个索引只能按版本库里的 mapping 创建。
+
+**代价与局限。**
+
+- parse 步骤 7 与 8 之间有一个很窄的窗口：如果此时 cleanup 恰好硬删除了文档，步骤 8 的提交会失败；步骤 6 写进 `chunks` 的数据会残留在索引里，parse 任务记录也已被级联删除。检索时的数据库二次校验（A10）保证这些残留不会出现在结果里，T18 的一致性检查要能发现并清理它们。
+- parse 失败但还会重试时，任务是 `pending`，文档仍显示 `processing`，直到最终成功或失败。
+- 重新解析后（parse_version 变了），旧版本留下的 OCR 任务既不删除也不标记，T17 处理 OCR 任务时要先比对版本。
+- 改标签时检索服务如果卡住，这次请求最多多等 `OPENSEARCH_TIMEOUT_SECONDS`（默认 10 秒）。
+- 上传之后、parse 任务开始之前，按文件名也搜不到这个文件，因为 `doc_meta` 是在 parse 任务里写的。
+- 目前没有改文件名的接口；以后如果加，要同步 `doc_meta`。
