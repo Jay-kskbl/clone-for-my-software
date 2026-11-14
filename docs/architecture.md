@@ -89,7 +89,7 @@ flowchart TB
 | M11 | 检索编排与 RRF | 查询 → `SearchHit[]` | `backend/app/modules/search` | — | T15、T22 | 未开始 |
 | M12 | 实验评测 | 实验配置 → 指标 + 原始结果 | `experiments/` | — | T19 | 未开始 |
 | M13 | 一致性检查 | — → 数据库 / 磁盘 / 索引的差异报告 | `backend/app/modules/consistency` | — | T18 | 未开始 |
-| M14 | 前端 | 只依赖 API 契约 | `frontend/` | — | T10、T16、T23 | 未开始 |
+| M14 | 前端 | 只依赖 API 契约 | `frontend/` | — | T10、T16、T23 | 骨架已完成（T10）；检索页（T16）、图片与通道标记（T23）未开始 |
 
 M2 和 M11 是耦合中心：M2 串起存储、任务和权限，M11 汇聚所有检索通道。这两个模块的接口先定稳再实现。
 

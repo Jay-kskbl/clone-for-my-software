@@ -26,7 +26,13 @@ htmlcov/
 node_modules/
 dist/
 
+# 装在项目内的工具（Node.js），见 docs/downloads.md
+/.tools/
+
 # 编辑器与系统
 .idea/
 .vscode/
 .DS_Store
+
+# Claude Code 的本地预览配置（含本机绝对路径）
+.claude/launch.json

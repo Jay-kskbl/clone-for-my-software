@@ -1,0 +1,45 @@
+# 前端（M14）
+
+Vue 3 + TypeScript + Element Plus。只依赖 `docs/api.md` 中的接口契约。
+
+## 准备
+
+需要 Node.js 的 LTS 版本（22.12 以上，实际使用的是 26.13.1）。本项目把 Node.js 装在了项目内的 `.tools/node/`（见 `docs/decisions.md` D23），
+它不在系统 `PATH` 里，每个新开的终端先执行一次：
+
+```bash
+export PATH="$(git rev-parse --show-toplevel)/.tools/node/bin:$PATH"
+```
+
+然后在本目录安装依赖：
+
+```bash
+npm install
+```
+
+## 常用命令
+
+| 命令 | 作用 |
+|---|---|
+| `npm run dev` | 开发服务器，访问 `http://127.0.0.1:5173`。`/api`、`/health` 会被转发到 `http://127.0.0.1:8000`，所以要先启动后端 |
+| `npm run typecheck` | 类型检查（包括 `.vue` 文件） |
+| `npm test` | 单元测试 |
+| `npm run build` | 类型检查 + 生产构建，产物在 `dist/` |
+
+## 目录
+
+```
+src/
+├── api/          接口封装：client.ts（令牌、错误转换）、auth.ts、documents.ts、types.ts（与 api.md 对应的类型）
+├── auth.ts       登录状态（当前用户）
+├── router.ts     路由与登录跳转
+├── views/        页面：LoginView（登录/注册）、DocumentsView（文件列表、上传、下载、删除）
+├── components/   ShareDialog（共享）
+└── utils/        格式化函数
+tests/            单元测试（接口封装、格式化）
+```
+
+## 说明
+
+- 页面上的登录判断和按钮显隐只决定“显示什么”，不是权限控制；权限由后端每个接口校验。
+- 上传时选择文件的类型过滤只是方便用户，真正的类型检查在后端按文件内容进行。
