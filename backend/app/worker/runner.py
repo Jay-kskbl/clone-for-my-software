@@ -8,13 +8,17 @@
 
 import logging
 import multiprocessing
-import resource
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from multiprocessing.connection import Connection
 
 from shared.tasks import Task
+
+try:
+    import resource
+except ImportError:  # Windows 没有这个模块；那里单个任务只受超时保护
+    resource = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +42,9 @@ class RunResult:
     # True：处理过程中发现租约已不属于本 Worker，子进程已被终止。
     # 此时任务已归别人或已被回收，调用方不应再回写结果。
     lease_lost: bool = False
+    # False：重试也不会成功（处理函数抛出的异常带有 retryable=False，例如文件本身已损坏），
+    # 调用方应直接把任务标记为 failed。超时、崩溃等情况都按可重试处理。
+    retryable: bool = True
 
 
 def _limit_memory(memory_limit_mb: int) -> None:
@@ -46,6 +53,9 @@ def _limit_memory(memory_limit_mb: int) -> None:
     局限：这个限制在 Linux 上有效；macOS 的内核基本不执行 RLIMIT_AS，设置可能失败或不起作用。
     设置失败只记录警告，不让任务因此失败——超时仍然是有效的兜底。
     """
+    if resource is None:
+        logger.warning("当前系统不支持设置内存上限，本任务只受超时保护")
+        return
     limit = memory_limit_mb * 1024 * 1024
     try:
         resource.setrlimit(resource.RLIMIT_AS, (limit, limit))
@@ -62,7 +72,10 @@ def _child_main(
             _limit_memory(memory_limit_mb)
         handler(task)
     except BaseException as exc:  # noqa: BLE001 —— 任何失败（含 MemoryError）都要报告给父进程
-        conn.send(f"{type(exc).__name__}: {exc}")
+        # 异常对象本身不一定能跨进程传递，只传失败原因和“是否值得重试”这两样。
+        # 约定：异常带有 retryable 属性且为 False 时不再重试（例如 parsing.ParseError）。
+        retryable = getattr(exc, "retryable", True) is not False
+        conn.send((f"{type(exc).__name__}: {exc}", retryable))
     else:
         conn.send(None)
     finally:
@@ -106,14 +119,17 @@ def run_in_subprocess(
 
             if parent_conn.poll(min(tick_seconds, remaining)):
                 try:
-                    error = parent_conn.recv()
+                    failure = parent_conn.recv()
                 except EOFError:
                     # 管道关闭但没有收到结果：子进程没来得及报告就死了
                     # （被系统杀掉、解释器崩溃、os._exit 等）
                     process.join(_KILL_WAIT_SECONDS)
                     return RunResult(ok=False, error=f"子进程异常退出（退出码 {process.exitcode}）")
                 process.join(_KILL_WAIT_SECONDS)
-                return RunResult(ok=error is None, error=error)
+                if failure is None:
+                    return RunResult(ok=True)
+                error, retryable = failure
+                return RunResult(ok=False, error=error, retryable=retryable)
 
             if on_tick is not None and not on_tick():
                 _kill(process)

@@ -25,6 +25,14 @@ class Settings(BaseSettings):
     # 至少 32 个字符：HS256 的密钥长度不应短于 256 位
     jwt_secret: SecretStr = Field(min_length=32, description="签发登录令牌（JWT）的密钥")
 
+    @field_validator("jwt_secret")
+    @classmethod
+    def _jwt_secret_not_the_example(cls, value: SecretStr) -> SecretStr:
+        # .env.example 里的示例值是公开的，长度也够：直接复制过来能启动，但任何人都能伪造令牌
+        if value.get_secret_value().startswith("change-me"):
+            raise ValueError("仍是 .env.example 中的示例值，必须换成自己生成的随机密钥")
+        return value
+
     # ---- 可选 ----
     health_check_timeout_seconds: float = Field(default=2.0, gt=0)
     access_token_expire_seconds: int = Field(default=3600, gt=0, description="登录令牌有效期")

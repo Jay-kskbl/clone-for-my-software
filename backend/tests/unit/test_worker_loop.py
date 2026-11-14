@@ -42,6 +42,7 @@ class FakeQueue:
         self.claimed_types = []
         self.completed = []
         self.failed = []
+        self.fail_retryable = []
         self.renewed = []
         self.resets = 0
         self.renew_result = True
@@ -68,9 +69,10 @@ class FakeQueue:
         self.completed.append(task_id)
         return True
 
-    def fail(self, task_id, error):
+    def fail(self, task_id, error, *, retryable):
         self.failed.append((task_id, error))
-        return "pending"
+        self.fail_retryable.append(retryable)
+        return "pending" if retryable else "failed"
 
     def reset(self):
         self.resets += 1
@@ -173,6 +175,22 @@ def test_failed_task_is_reported_with_reason_and_worker_continues():
     assert processed == 2
     assert queue.failed == [(bad.id, "ValueError: 文件已损坏")]
     assert queue.completed == [good.id]
+
+
+def test_retryable_flag_reaches_the_queue():
+    # 文件本身损坏这类失败，重试没有意义：处理函数标记的 retryable=False 必须一路传到队列
+    corrupt, flaky = make_task(), make_task()
+    queue = FakeQueue([corrupt, flaky])
+    runner = FakeRunner(
+        [
+            RunResult(ok=False, error="ParseError: PDF 已加密", retryable=False),
+            RunResult(ok=False, error="处理超时"),
+        ]
+    )
+
+    run(queue, runner)
+
+    assert queue.fail_retryable == [False, True]
 
 
 def test_exits_after_max_tasks():

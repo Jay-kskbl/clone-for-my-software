@@ -361,6 +361,19 @@ def test_oversized_upload_is_rejected_from_content_length(client, tmp_path):
     assert stored_files(tmp_path / "storage") == []
 
 
+def test_oversized_upload_keeps_the_connection_usable(client):
+    # 回归：服务端曾经不读请求体就应答并断开连接，经代理访问时用户看到的是 502 而不是 413。
+    # 现在请求体会被读完并丢弃，同一个连接上的下一个请求照常工作。
+    huge = b"%PDF-1.4\n" + b"x" * (1100 * 1024)
+
+    first = client.post("/api/documents", files={"file": ("a.pdf", huge, "application/pdf")})
+    second = client.get("/api/auth/me")
+
+    assert first.status_code == 413
+    assert "connection" not in first.headers
+    assert second.status_code == 401
+
+
 def test_size_limit_only_applies_to_the_upload_route(client):
     resp = client.post("/api/auth/register", content=b"x" * (1200 * 1024))
 

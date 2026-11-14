@@ -27,6 +27,11 @@ from app.modules.storage.errors import (
 )
 from app.modules.storage.filetype import SUPPORTED_TYPES, FileType, detect_file_type
 
+# 这两个标志不是每个系统都有：O_NOFOLLOW 在 Windows 上不存在（那里只剩 _resolve_key 的检查），
+# O_BINARY 只在 Windows 上存在且必须加上，否则文件会被当成文本读。
+_O_NOFOLLOW = getattr(os, "O_NOFOLLOW", 0)
+_O_BINARY = getattr(os, "O_BINARY", 0)
+
 _TMP_DIR_NAME = ".tmp"
 _COPY_CHUNK_BYTES = 1024 * 1024
 
@@ -143,7 +148,7 @@ class LocalStorage:
         path = self._resolve_key(storage_key)
         try:
             # O_NOFOLLOW：检查之后、打开之前文件被换成符号链接时，打开会失败而不是跟过去
-            fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+            fd = os.open(path, os.O_RDONLY | _O_NOFOLLOW | _O_BINARY)
         except FileNotFoundError:
             raise StoredFileNotFoundError(storage_key) from None
         return os.fdopen(fd, "rb")

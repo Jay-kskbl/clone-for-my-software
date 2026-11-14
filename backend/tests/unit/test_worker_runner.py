@@ -36,6 +36,22 @@ def handler_raises(_task: Task) -> None:
     raise ValueError("文件已损坏")
 
 
+class PermanentError(Exception):
+    """和 parsing.ParseError 一样的约定：带 retryable=False 表示重试也没用。"""
+
+    retryable = False
+
+
+def handler_permanent_failure(_task: Task) -> None:
+    raise PermanentError("文件已加密")
+
+
+def handler_parse_error(_task: Task) -> None:
+    from app.modules.parsing import ParseError
+
+    raise ParseError("PDF 已加密，需要口令才能读取，无法解析")
+
+
 def handler_sleeps_forever(_task: Task) -> None:
     time.sleep(600)
 
@@ -70,6 +86,27 @@ def test_exception_becomes_error_message():
     assert result.lease_lost is False
 
 
+def test_ordinary_exception_is_retryable():
+    assert run_in_subprocess(handler_raises, TASK, timeout_seconds=30).retryable is True
+
+
+def test_non_retryable_exception_is_flagged_across_the_process_boundary():
+    result = run_in_subprocess(handler_permanent_failure, TASK, timeout_seconds=30)
+
+    assert result.ok is False
+    assert result.error == "PermanentError: 文件已加密"
+    assert result.retryable is False
+
+
+def test_parse_error_from_the_parsing_module_is_not_retried():
+    # T07 与 T09 的衔接：解析器报告“文件本身有问题”时，任务框架不应浪费重试次数
+    result = run_in_subprocess(handler_parse_error, TASK, timeout_seconds=30)
+
+    assert result.ok is False
+    assert "已加密" in result.error
+    assert result.retryable is False
+
+
 def test_memory_error_is_reported_not_fatal_to_parent():
     result = run_in_subprocess(handler_out_of_memory, TASK, timeout_seconds=30)
 
@@ -85,6 +122,7 @@ def test_timeout_kills_the_subprocess():
     assert result.ok is False
     assert "超时" in result.error
     assert result.lease_lost is False
+    assert result.retryable is True  # 超时可能是机器一时繁忙，值得再试
     # 远小于处理函数想睡的 600 秒：子进程确实被杀掉了，而不是等它自己结束
     assert time.monotonic() - started < 20
 

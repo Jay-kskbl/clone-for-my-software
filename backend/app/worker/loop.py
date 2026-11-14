@@ -26,7 +26,7 @@ class TaskQueue(Protocol):
     def claim(self, task_types: Sequence[str]) -> Task | None: ...
     def renew(self, task_id: uuid.UUID) -> bool: ...
     def complete(self, task_id: uuid.UUID) -> bool: ...
-    def fail(self, task_id: uuid.UUID, error: str) -> str | None: ...
+    def fail(self, task_id: uuid.UUID, error: str, *, retryable: bool) -> str | None: ...
     def reset(self) -> None: ...
 
 
@@ -64,9 +64,13 @@ class PgTaskQueue:
     def complete(self, task_id: uuid.UUID) -> bool:
         return tasks.complete(self._connection(), task_id=task_id, worker_id=self._worker_id)
 
-    def fail(self, task_id: uuid.UUID, error: str) -> str | None:
+    def fail(self, task_id: uuid.UUID, error: str, *, retryable: bool) -> str | None:
         return tasks.fail(
-            self._connection(), task_id=task_id, worker_id=self._worker_id, error=error
+            self._connection(),
+            task_id=task_id,
+            worker_id=self._worker_id,
+            error=error,
+            retryable=retryable,
         )
 
     def reset(self) -> None:
@@ -133,7 +137,7 @@ def _process(
             if not queue.complete(task.id):
                 logger.warning("任务 %s 已完成，但租约已不属于本 Worker，结果未被记录", task.id)
         else:
-            status = queue.fail(task.id, result.error or "未知错误")
+            status = queue.fail(task.id, result.error or "未知错误", retryable=result.retryable)
             logger.warning("任务 %s 失败（%s），新状态：%s", task.id, result.error, status)
     except psycopg.Error as exc:
         # 结果没写回去：不重试回写，让租约过期后由回收机制处理（处理函数是幂等的，重做是安全的）

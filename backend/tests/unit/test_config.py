@@ -156,3 +156,21 @@ def test_pdf_ocr_threshold_default_and_bounds(clean_env):
     clean_env.setenv("PDF_OCR_MIN_CHARS", "0")
     with pytest.raises(ConfigError, match="PDF_OCR_MIN_CHARS"):
         load_settings(env_file=None)
+
+
+def test_example_jwt_secret_is_rejected(clean_env):
+    # .env.example 里的示例值足够长，但它是公开的：原样复制不能启动
+    for name, value in REQUIRED.items():
+        clean_env.setenv(name, value)
+    clean_env.setenv("JWT_SECRET", "change-me-generate-a-random-secret-of-32-chars-or-more")
+
+    with pytest.raises(ConfigError, match="JWT_SECRET") as excinfo:
+        load_settings(env_file=None)
+
+    assert "change-me-generate" not in str(excinfo.value)
+
+
+def test_env_example_itself_does_not_pass_as_a_working_config(clean_env):
+    # 防止示例文件和上面的检查脱节：把 .env.example 当作 .env 用，必须在 JWT_SECRET 上失败
+    with pytest.raises(ConfigError, match="JWT_SECRET"):
+        load_settings(env_file=PROJECT_ROOT / ".env.example")
