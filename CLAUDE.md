@@ -42,6 +42,7 @@ python -m venv .venv-main
 - 启动后端（`backend/` 目录，main 环境）：`uvicorn app.main:create_app --factory --reload`，然后访问 `http://127.0.0.1:8000/health`
 - 数据库迁移（`backend/` 目录，main 环境）：`alembic upgrade head`；说明见 `docs/data-model.md` §4
 - 创建管理员（`backend/` 目录，main 环境）：`python -m app.modules.auth create-admin <用户名>`，密码在终端里输入
+- 一致性检查（`backend/` 目录，main 环境）：`python -m app.modules.consistency check`，只读，对账数据库、磁盘和两个索引；修复用 `python -m app.modules.consistency repair --fix <类别>`，要修多类就重复写 `--fix`（如 `--fix index --fix temp-files`），不加 `--yes` 只演练；类别与退出码见 `docs/decisions.md` D31。重建索引（`--fix rebuild-indices`）前先停掉通用 Worker 和 OCR Worker
 - 运行测试（main 环境）：在 `backend/` 和 `shared/` 目录下分别执行 `pytest`
 - 集成测试需要专用的空测试库：先建库 `docmgr_test`，再设置 `TEST_DATABASE_URL`（见 `.env.example`）；不设置时这些测试被跳过，算“未运行”
 - 代码检查（`backend/`、`shared/`、`services/ocr_worker/` 目录分别执行）：`ruff check . && ruff format --check .`

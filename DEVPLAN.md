@@ -226,8 +226,6 @@ BARRY zou/
   - 一致性检查（D31）还没有覆盖 `image_embeddings`：T21 写入向量后，补上“不再被任何图片引用的向量”和“向量索引与数据库不一致”的检测与修复（D10）。
 - **待定（T18 记录）**
   - backend 通用 Worker 启动时不检查数据库，连不上时在领取循环里无限重试；OCR Worker 启动时连不上数据库就以退出码 1 结束（D30）。两者不一致，是否统一由 Barry 决定。
-- **待 Barry 同意后修改 CLAUDE.md（T18 记录）**
-  - “常用命令”里补上一致性检查：`backend/` 目录、main 环境，`python -m app.modules.consistency check`；修复用 `python -m app.modules.consistency repair --fix <类别> --yes`（不加 `--yes` 只演练；`rebuild-indices` 前先停掉两个 Worker）。需要完整的 `.env`（包括 `JWT_SECRET`）。
 - **给 T20、T21（CLIP）的参考（T17 记录）**
   - CLIP 服务和 embed 任务可以复用 `shared.task_queue.PgTaskQueue`，以及 OCR Worker“常驻子进程加载模型、超时或崩溃时杀掉重开”的写法（`services/ocr_worker/ocr_worker/engine_process.py`）。
 - **待改进（T17 记录）**
