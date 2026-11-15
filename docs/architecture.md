@@ -87,7 +87,7 @@ flowchart TB
 | M9 | CLIP 模型服务 | 图片 / 文本 → 向量 | `services/clip_service` | 是 | T20 | 未开始 |
 | M10 | 向量索引 | 向量 → 排序列表 | `backend/app/modules/vector_index` | — | T21 | 未开始 |
 | M11 | 检索编排与 RRF | 查询 → `SearchHit[]` | `backend/app/modules/search` | — | T15、T22 | v1 已完成（T15）：meta、text 两路、RRF、数据库二次校验、检索日志；图像通道待 T22（`decisions.md` D28） |
-| M12 | 实验评测 | 实验配置 → 指标 + 原始结果 | `experiments/` | — | T19 | 未开始 |
+| M12 | 实验评测 | 实验配置 → 指标 + 原始结果 | 代码 `backend/app/modules/experiments`，数据 `experiments/` | — | T19 | 框架已完成（T19，`decisions.md` D32）：B0–B2 配置、P/R/nDCG、分层报告；还没有评测数据 |
 | M13 | 一致性检查 | — → 数据库 / 磁盘 / 索引的差异报告 | `backend/app/modules/consistency` | — | T18 | 已完成（T18，`decisions.md` D31）：19 种检测项、7 类修复；未在真实数据库和 OpenSearch 上运行 |
 | M14 | 前端 | 只依赖 API 契约 | `frontend/` | — | T10、T16、T23 | 骨架已完成（T10）；检索页、预览页（PDF 用 pdf.js、图片、Word/Excel 抽取文本）已完成（T16，`decisions.md` D29），只对着模拟接口检查过；图片与通道标记（T23）未开始 |
 

@@ -1,0 +1,8 @@
+{
+  "name": "B2",
+  "description": "正文 + OCR 文字 BM25：只开 text 通道，正文和 OCR 都查",
+  "channels": {"meta": false, "text": true, "image": false},
+  "source_types": ["body", "ocr"],
+  "top_k": 20,
+  "ks": [5, 10, 20]
+}

@@ -36,3 +36,8 @@ dist/
 
 # Claude Code 的本地预览配置（含本机绝对路径）
 .claude/launch.json
+
+# 实验（T19）：原文件、导入生成的对应表、运行结果不进版本库
+/experiments/datasets/files/
+/experiments/datasets/document_map.csv
+/experiments/runs/

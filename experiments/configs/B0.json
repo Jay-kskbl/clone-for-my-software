@@ -1,0 +1,8 @@
+{
+  "name": "B0",
+  "description": "文件名/标签检索：只开 doc_meta 通道（GLOBAL §9.2 基础基线）",
+  "channels": {"meta": true, "text": false, "image": false},
+  "source_types": ["body", "ocr"],
+  "top_k": 20,
+  "ks": [5, 10, 20]
+}

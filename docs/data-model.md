@@ -236,10 +236,12 @@ erDiagram
 |---|---|---|
 | id | uuid，主键 | |
 | name | varchar(128) | 实验名，如 B0、B1 |
-| config | jsonb | 完整实验配置 |
-| metrics | jsonb，可空 | 运行结束后写入的汇总指标 |
-| raw_results_path | varchar(512)，可空 | 每条查询原始排名的文件路径 |
+| config | jsonb | 完整实验配置，与结果目录里的 `config.json` 相同：`experiment`（实验配置）、`search_params`、`processing_params`、`dataset`（统计）、`versions`、`opensearch`、`machine`、`preflight_problems`、`repeats`、`started_at`、`complete` |
+| metrics | jsonb，可空 | 汇总指标，与 `metrics.json` 相同：`queries`、`queries_by_type`、`queries_without_relevant`、`repeats`、`failed_searches`、`overall` 与 `by_type`（每个指标的 `mean`、`queries`、`across_repeats`）、`latency_ms`（`p50`、`p95`、`searches`） |
+| raw_results_path | varchar(512)，可空 | 结果目录相对项目根目录的路径，如 `experiments/runs/<时间>_B1_<随机串>`；每条查询的原始排名在其中的 `results.jsonl` |
 | started_at / finished_at | timestamptz | |
+
+由 `python -m app.modules.experiments run` 在运行结束时写入一行（T19，`decisions.md` D32）。
 
 ## 4. 迁移
 

@@ -1,0 +1,8 @@
+{
+  "name": "B1",
+  "description": "文档正文 BM25：只开 text 通道，只查正文（source_type=body）",
+  "channels": {"meta": false, "text": true, "image": false},
+  "source_types": ["body"],
+  "top_k": 20,
+  "ks": [5, 10, 20]
+}

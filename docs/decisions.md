@@ -770,3 +770,62 @@ GLOBAL §2 P1 规定“某页文本层有效字符数低于配置阈值时，该
 - `missing_file` 不能自动修复：文件内容只在磁盘上，只能由人决定删除记录还是找回文件。
 - `unknown_file` 只报告，不删除。
 - 命令需要完整的后端配置（包括 `JWT_SECRET`），因为它和后端共用同一套配置读取；`__main__` 的说明里写明了这一点。
+
+### D32 实验框架 v1（T19）
+
+代码：`backend/app/modules/experiments/`（`dataset`、`metrics`、`config`、`runner`、`environment`、`__main__`）；数据、配置和使用说明在仓库根目录的 `experiments/`（`experiments/README.md`）。
+
+**批准。** 计划由 Barry 在编写会话里批准，原话“批准，开始写”（由编写会话转述）。
+
+**代码与数据分开放。** 代码放在 backend 里，因为实验要直接调用检索编排（`app.modules.search.service.search`）、读取后端配置、写 `experiment_runs` 表。放在仓库根目录另建一个包，要么重复这些代码，要么另装一个包。数据放在 `experiments/`，与 DEVPLAN §2 的仓库结构一致。
+
+**数据格式。**
+
+- `datasets/manifest.csv`：`file_id, path, type, source, notes`，`type` 为 `pdf`、`scanned_pdf`、`docx`、`xlsx`、`image` 之一，`source` 必填（GLOBAL §9.2 第 1 条）。
+- `queries.tsv`：`query_id, type, text`，`type` 为 `text`、`visual`、`mixed`（附录 A18）。
+- `qrels/*.tsv`：`query_id, file_id, grade`，`grade` 为 0–3 的整数，可以分多个文件逐周补；同一对的等级在不同文件里矛盾时报错。
+- 标注用 `file_id`，不用 `document_id`：`document_id` 要上传后才有，重新导入就全部改变；`file_id` 由标注者自己起，标注可以长期保存。导入时生成 `datasets/document_map.csv`（`file_id, document_id, sha256`）把两者对应起来。评测单位仍是文件（附录 A6）。
+- 原文件（`datasets/files/`）、`document_map.csv` 和运行结果（`runs/`）不进 Git。
+
+**指标（`metrics.py`，纯函数）。**
+
+- `P@K` = 前 K 名里相关文件数 / K。返回不足 K 个时，分母仍是 K。
+- `R@K` = 前 K 名里相关文件数 / 全部相关文件数。
+- `nDCG@K` = DCG@K / IDCG@K，增益为 2^g − 1，折损为 log2(名次 + 1)，IDCG 由全部标注按等级从高到低截取前 K 个算出，与 trec_eval 的 `ndcg_cut` 一致。
+- 等级大于 0 才算相关；没有标注的文件等级为 0。
+- 没有任何相关文件的查询，三项指标都记为空，不参与任何平均，在结果里单独列出。首轮复核时 P@K 曾按 0 计入平均，与另外两项的分母不一致，已改。
+- 数据集以外的文件占名次，但永远不相关。
+- 延迟的 P50、P95 用最近秩法，不插值，结果一定是某次实测值；重复运行之间的波动报告平均值、总体标准差、最小和最大值。
+
+**分层报告。** `metrics.json` 先按查询类型（文字型、视觉型、混合型）分层，再给总体（附录 A18）。
+
+**对照组。** `experiments/configs/` 下 B0、B1、B2 三个配置。各组之间只能切换四项：通道开关（三个通道都要写明）、`source_types`、`top_k`、K 值（GLOBAL §9.2：不得为某组实验单独写检索代码）。RRF k、截断深度、字段权重等其余检索参数来自 `.env`，每次运行原样记录。`top_k` 不得小于最大的 K，也不得超过 `SEARCH_MAX_TOP_K`。
+
+**每次运行保存什么。** 结果目录为 `experiments/runs/<UTC 时间到微秒>Z_<实验名>_<6 位随机十六进制>/`，在跑查询之前就创建，避免同一秒内两次运行互相覆盖。
+
+- `config.json`：实验配置；检索参数（`SearchParams` 全部字段）；切分与 OCR 触发参数（`CHUNK_MAX_CHARS`、`CHUNK_OVERLAP_CHARS`、`PDF_OCR_MIN_CHARS`）；数据集统计；版本（`CHUNKER_VERSION`、两个 mapping 文件的 sha256、数据集文件的 parse_version 集合、`ocr_results` 里的 OCR 模型名称和版本）；OpenSearch 版本和插件；机器信息（系统、CPU、内存、Python 版本、git 提交号，以及工作区是否有未提交改动）；运行前检查发现的问题；重复次数；开始时间；是否完整。
+- `results.jsonl`：每次重复的每条查询一行，包括排名（file_id、document_id、最终分数、各通道原始名次和分数）、耗时、通道状态、不可用的通道、数据集以外的文件数、各项指标；检索失败的查询记录错误信息。
+- `metrics.json`：按查询类型分层和总体的平均值、参与平均的查询数、重复运行之间的波动、失败的检索数、延迟 P50/P95。
+- `experiment_runs` 表：一行，`config` 和 `metrics` 与上面两个 JSON 相同，`raw_results_path` 为结果目录相对项目根目录的路径。
+
+**运行前检查。** 下面任何一项不满足，就拒绝运行（退出码 1）：
+
+- 数据集文件都已导入、没有被删除、都已处理成功；
+- 全库没有 pending 或 processing 的任务；
+- 全库没有已删除但还没清理的文档（D28：管理员检索不做前置过滤，这类文档会占名次）；
+- 数据集文件的解析版本只有一个。
+
+加 `--allow-incomplete` 可以跳过检查继续运行，发现的问题会写进 `config.json`，这次运行也标为不完整。
+
+**不完整的运行。** 检索失败（503）或有通道不可用（例如 T22 之前的图像通道），这次运行都标记为不完整，退出码 2，不能当正式数据（GLOBAL §12：故障不能当成空结果）。
+
+**实验账号。** `import` 时自动创建账号 `experiment`，角色是管理员（看得到全部文档），密码随机生成且不保存，所以这个账号无法登录。实验时检索日志照常写，可以按这个账号和正常使用的日志区分开。
+
+**代价与局限。**
+
+- 现在没有任何评测数据，合成数据或测试数据得到的数字不是实验结果。
+- `OCR_MIN_CONFIDENCE`、`OCR_PDF_DPI` 属于 OCR Worker 的配置，backend 读不到，没有记录进 `config.json`；只记录了 `ocr_results` 里的模型名称和版本。
+- 运行前检查统计的是全库，别人上传的文件正在处理时也会挡住实验。
+- K 最大为 `SEARCH_MAX_TOP_K`（默认 100）。
+- 运行中途出现数据库错误时，命令以“无法连接数据库”退出，已跑完的查询不会写进 `results.jsonl`。
+- 没有 CER 评测，也没有性能实验（T27）。
