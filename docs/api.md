@@ -75,7 +75,7 @@
 | GET | `/api/documents` | 登录 | 列出可访问的文档 | T08（已实现） |
 | GET | `/api/documents/{id}` | 可访问 | 文档详情 | T08（已实现） |
 | GET | `/api/documents/{id}/download` | 可访问 | 下载原文件 | T08（已实现） |
-| GET | `/api/documents/{id}/text` | 可访问 | 抽取出的文本（Word / Excel 预览用） | T16 |
+| GET | `/api/documents/{id}/text` | 可访问 | 抽取出的文本（Word / Excel 预览用） | T16（已实现） |
 | DELETE | `/api/documents/{id}` | owner | 删除（软删除，立即不可见） | T08（已实现） |
 | GET | `/api/documents/{id}/shares` | owner | 查看共享给了谁 | T08（已实现） |
 | POST | `/api/documents/{id}/shares` | owner | 共享给指定用户 | T08（已实现） |
@@ -223,14 +223,18 @@
 
 返回从文档中抽取的文本片段，用于 Word、Excel 的文本预览，以及从检索结果跳转到命中位置。
 
-- 查询参数：`page`、`page_size`、`source_type`（可选：`body` 或 `ocr`）
+- 查询参数：
+  - `page`、`page_size`：通用分页，默认 1 和 20，`page_size` 最大 100（前端预览页用 50）
+  - `source_type`（可选）：`body` 或 `ocr`
+  - `chunk_id`（可选）：指定后忽略 `page`，直接返回这个片段所在的那一页（从检索结果跳转时用）。片段不属于文档当前版本时（文档被重新解析过）返回第 1 页；格式不正确或属于别的文档时返回 422
+- 只返回文档当前解析版本（`parse_version`）的片段，按 `seq` 排序；数据来自数据库，检索服务不可用时也能使用
 - 响应 200：
 
 ```json
 {
   "items": [
     {
-      "chunk_id": "…uuid…:v1:0",
+      "chunk_id": "…uuid…:c1-m500-o50-1a2b3c4d5e6f:0",
       "seq": 0,
       "source_type": "body",
       "text": "……",
@@ -243,7 +247,7 @@
 
 - `locator` 的四种形态见 `shared/contracts/locators.py`：`pdf_page`、`docx_para`、`xlsx_range`、`image`
 - 文档尚未解析成功时返回空列表，前端结合 `Document.status` 给出提示
-- 错误：403、404
+- 错误：403、404；422（`chunk_id` 不合法、`source_type` 不合法、分页参数越界）
 
 ### 5.7 DELETE /api/documents/{id}
 

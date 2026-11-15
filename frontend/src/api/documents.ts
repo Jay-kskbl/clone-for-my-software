@@ -1,5 +1,5 @@
 import { request, requestRaw } from './client'
-import type { DocumentItem, Page, Scope, Share, Status } from './types'
+import type { DocumentItem, Page, Scope, Share, SourceType, Status, TextChunk } from './types'
 
 export interface ListParams {
   page: number
@@ -18,6 +18,22 @@ export function uploadDocument(file: File, tags: string[] = []): Promise<Documen
   form.append('file', file)
   for (const tag of tags) form.append('tags', tag)
   return request<DocumentItem>('/api/documents', { method: 'POST', body: form })
+}
+
+export function getDocument(id: string): Promise<DocumentItem> {
+  return request<DocumentItem>(`/api/documents/${id}`)
+}
+
+export interface TextParams {
+  page?: number
+  page_size?: number
+  source_type?: SourceType
+  /** 指定后返回这个片段所在的那一页（从检索结果跳转时用），忽略 page */
+  chunk_id?: string
+}
+
+export function getDocumentText(id: string, params: TextParams = {}): Promise<Page<TextChunk>> {
+  return request<Page<TextChunk>>(`/api/documents/${id}/text`, { query: { ...params } })
 }
 
 export function deleteDocument(id: string): Promise<void> {

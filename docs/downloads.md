@@ -32,7 +32,7 @@ GLOBAL.md 规定不安装任何新内容；确实需要时先问 Barry，批准�
 | 19 | 2026-11-14 13:27 | openpyxl | 3.1.5 | PyPI | `openpyxl/` | 约 2.0 MB | Excel 解析（M5） | T11 | Barry 于 2026-11-14 批准（`decisions.md` D24） |
 | 20 | 2026-11-14 13:27 | et-xmlfile | 2.0.0 | PyPI | `et_xmlfile/` | 约 92 KB | openpyxl 的依赖 | T11 | 同上，随 #19 自动安装 |
 
-小计：11 个包，安装后约 83.8 MB。编号 8–16 是下面的 Node.js 和 npm 包。
+小计：11 个包，安装后约 83.8 MB。编号 8–16、21–23 是下面的 Node.js 和 npm 包。
 
 说明：
 
@@ -74,9 +74,25 @@ Barry 于 2026-11-14 批准。
 - npm 同样会在用户级缓存 `~/.npm/` 里保留一份安装包，大小没有单独统计。
 - `frontend/node_modules/` 已在 `.gitignore` 中。
 
-### 2.4 合计
+### 2.4 npm 包（T16）
 
-T05 至 T11：Python 包约 84 MB，Node.js 约 222 MB，npm 包约 183 MB，共约 489 MB。
+2026-11-15 12:42 安装，来源是 npm 官方仓库 `registry.npmjs.org`，装在 `frontend/node_modules/`。
+命令：`npm install --save-exact pdfjs-dist@6.5.438`（在 `frontend/` 目录，使用 `.tools/node/` 里的 npm）。
+
+| # | 包 | 版本 | 安装后大小 | 用途 | 批准 |
+|---|---|---|---|---|---|
+| 21 | pdfjs-dist | 6.5.438 | 约 37.5 MB | 在页面里渲染 PDF 并跳到命中页（附录 A16，T16） | Barry 于 2026-11-15 批准：先在编写会话里选了“同意安装 6.5.438 (Recommended)”，又在本会话里选了“同意，现在安装 (Recommended)” |
+| 22 | @napi-rs/canvas | 1.1.1 | 约 200 KB | pdfjs-dist 的可选依赖（`optionalDependencies`），只在 Node.js 里渲染 PDF 时用；浏览器里不用（pdfjs-dist 的 `browser` 字段把 `canvas` 设为 `false`） | 未单独请示：随 #21 自动安装，安装前没有预料到 |
+| 23 | @napi-rs/canvas-darwin-arm64 | 1.1.1 | 约 27.9 MB | #22 的 macOS arm64 原生二进制（`skia.darwin-arm64.node`） | 同上 |
+
+- `package.json` 的 `dependencies` 里锁定为 `"pdfjs-dist": "6.5.438"`（不带 `^`）。#22、#23 的精确版本只记录在 `package-lock.json`。
+- `package-lock.json` 里还登记了 @napi-rs/canvas 其他 10 个平台的二进制包（Linux、Windows、Android），只在对应平台上安装，本机没有下载。
+- #22、#23 没有安装脚本，安装时没有执行任何代码。npm 提示 fsevents 2.3.3（T10 已装）有安装脚本未被允许，与本次安装无关。
+- 本次安装共占用约 65.4 MB，其中约 27.9 MB 是浏览器里用不到的 #23。是否保留 #22、#23 待 Barry 决定。
+
+### 2.5 合计
+
+T05 至 T16：Python 包约 84 MB，Node.js 约 222 MB，npm 包约 248 MB（T10 约 183 MB，T16 约 65 MB），共约 554 MB。
 
 ## 3. 没有下载、但曾经考虑过的
 

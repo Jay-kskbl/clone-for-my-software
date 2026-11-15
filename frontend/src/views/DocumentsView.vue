@@ -192,8 +192,9 @@ onBeforeUnmount(() => clearTimeout(refreshTimer))
       <el-table-column label="上传时间" width="150">
         <template #default="{ row }: { row: DocumentItem }">{{ formatTime(row.created_at) }}</template>
       </el-table-column>
-      <el-table-column label="操作" width="180" fixed="right">
+      <el-table-column label="操作" width="220" fixed="right">
         <template #default="{ row }: { row: DocumentItem }">
+          <el-button link type="primary" @click="$router.push({ name: 'preview', params: { id: row.id } })">查看</el-button>
           <el-button link type="primary" @click="onDownload(row)">下载</el-button>
           <template v-if="canManage(row)">
             <el-button link type="primary" @click="sharing = row">共享</el-button>

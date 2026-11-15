@@ -14,7 +14,13 @@ function onLogout() {
 <template>
   <el-container class="app">
     <el-header class="app-header">
-      <span class="app-title">智能文档管理系统</span>
+      <span class="app-left">
+        <span class="app-title">智能文档管理系统</span>
+        <nav v-if="auth.user" class="app-nav">
+          <router-link :to="{ name: 'documents' }" class="app-nav-link">文件</router-link>
+          <router-link :to="{ name: 'search' }" class="app-nav-link">检索</router-link>
+        </nav>
+      </span>
       <span v-if="auth.user" class="app-user">
         {{ auth.user.username }}
         <el-tag v-if="auth.user.role === 'admin'" size="small" type="warning">管理员</el-tag>
@@ -47,6 +53,27 @@ body {
 
 .app-title {
   font-size: 18px;
+  font-weight: 600;
+}
+
+.app-left {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.app-nav {
+  display: flex;
+  gap: 16px;
+}
+
+.app-nav-link {
+  color: #606266;
+  text-decoration: none;
+}
+
+.app-nav-link.router-link-exact-active {
+  color: #409eff;
   font-weight: 600;
 }
 

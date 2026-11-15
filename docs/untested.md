@@ -1,6 +1,6 @@
 # 未测试清单（Not Tested）
 
-更新日期：2026-11-15（T15 完成后）
+更新日期：2026-11-15（T16 完成后）
 
 这里列出**已经写好但从未实际执行过**的测试，以及其他没有经过验证的性质。
 规则来自 GLOBAL.md“测试执行限制与代码验证要求”：跑不了的测试不强行执行、不安装工具，
@@ -21,11 +21,12 @@
 | T13 文本索引 | `backend/tests/opensearch/test_text_index_live.py` | 13 | 本机没有 OpenSearch（没有 Docker 和 Java） | 已复核，未发现问题；有两处需要注意的性质，见第 4 节 |
 | T14 解析流水线 | `backend/tests/integration/test_pipeline_db.py` | 23 | 本机没有 PostgreSQL；其中 2 项端到端测试还需要 OpenSearch | 已复核，未发现问题 |
 | T15 检索 v1 | `backend/tests/integration/test_search_db.py` | 20 | 本机没有 PostgreSQL；其中 1 项还需要 OpenSearch | 已复核，未发现阻塞问题；局限见 `decisions.md` D28 |
-| **合计** | | **147** | | |
+| T16 抽取文本接口 | `backend/tests/integration/test_document_text.py` | 11 | 本机没有 PostgreSQL | 已复核，未发现问题 |
+| **合计** | | **158** | | |
 
 T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器）和 T12（切分）不需要数据库，它们的测试全部在本机执行并通过，没有未测试项。
 
-对照：当前能在本机执行的测试，`backend/` 462 项、`shared/` 93 项、`frontend/` 30 项，全部通过。
+对照：当前能在本机执行的测试，`backend/` 462 项、`shared/` 93 项、`frontend/` 48 项，全部通过。
 
 ## 2. 影响最大的几项
 
@@ -138,6 +139,14 @@ OpenSearch 用假的网络层代替（替换 `app.state.text_index`），专门�
 
 - `test_full_text_search_against_a_real_index`：真实索引上检索命中、摘要带 `<em>`、只开 meta 通道（B0）、删除后立即查不到
 
+### T16 `test_document_text.py`（11）
+
+需要 PostgreSQL：
+
+- `test_returns_chunks_of_the_current_version_in_order`、`test_pagination`、`test_filter_by_source_type`
+- 跳转：`test_chunk_id_jumps_to_the_page_containing_it`、`test_stale_chunk_id_falls_back_to_the_first_page`、`test_invalid_or_foreign_chunk_id_is_422`（2）
+- 其他：`test_unparsed_document_returns_an_empty_list`、`test_permissions`、`test_deleted_or_unknown_document_is_404`、`test_invalid_source_type_is_422`
+
 ## 4. 不是测试、但同样没有验证过的性质
 
 | 项目 | 说明 | 记录位置 |
@@ -145,8 +154,9 @@ OpenSearch 用假的网络层代替（替换 `app.state.text_index`），专门�
 | Worker 子进程的内存上限 | 用 `RLIMIT_AS` 实现，只在 Linux 上有效；开发机是 macOS，内核基本不执行这个限制 | `decisions.md` D16 |
 | 后端连上真实数据库后的整体运行 | 没有在本机启动过“后端 + PostgreSQL”，注册、上传、下载等接口没有人工点过一遍 | — |
 | `deploy/docker-compose.yml` | 只校验过语法，容器从未启动 | DEVPLAN §5 T01 |
-| 前端与真实后端的联调 | **未测试。** 本机没有 PostgreSQL，真实后端的登录、上传等接口跑不起来。T10 的页面是对着一个临时写的模拟接口在浏览器里检查的（模拟接口按 `api.md` 的结构应答，不是项目代码，没有提交）。前端与真实后端之间的不一致——字段名、状态码、multipart 的细节——这种检查发现不了 | DEVPLAN §5 T10 |
-| 前端页面组件的自动化测试 | 没有写。30 项前端单元测试只覆盖接口封装和格式化函数；登录页、文件列表、共享对话框只做过上面那次人工浏览器检查 | DEVPLAN §5 T10 |
+| 前端与真实后端的联调 | **未测试。** 本机没有 PostgreSQL，真实后端的登录、上传等接口跑不起来。T10 的页面是对着一个临时写的模拟接口在浏览器里检查的（模拟接口按 `api.md` 的结构应答，不是项目代码，没有提交）。前端与真实后端之间的不一致——字段名、状态码、multipart 的细节——这种检查发现不了。T16 的检索页、预览页和抽取文本接口同样只对着模拟接口检查过（检索、PDF 跳页、Word 跳到命中段、图片、503 与空结果的区分），从未与真实后端和真实 OpenSearch 联调 | DEVPLAN §5 T10、T16 |
+| 前端页面组件的自动化测试 | 没有写，项目里也没有组件测试工具（加装需要 Barry 同意）。48 项前端单元测试只覆盖接口封装、格式化、摘要清洗和位置格式；登录页、文件列表、共享对话框、检索页、预览页、PDF 查看器只做过人工浏览器检查 | DEVPLAN §5 T10、T16 |
+| PDF 预览在真实文件上的表现 | 只用模拟接口返回的一份 5 页、纯英文、PyMuPDF 现场生成的测试 PDF 验证过跳页、翻页、缩放。没有用中文、扫描件、大文件（接近 50 MB）或加密的 PDF 试过 | `decisions.md` D29 |
 | 真实后端经开发代理的访问 | **部分验证。** T05–T10 核查时启动了真实后端（数据库地址指向不存在的端口）和真实的前端开发代理，用 curl 验证了不需要数据库的路径：健康检查、数据库不可用返回 503、未登录 401、参数校验 422、未登录上传（multipart 经代理）401、超大上传 413。需要数据库的路径（登录成功之后的一切）仍未验证 | DEVPLAN §5 核查记录 |
 | Windows 上的运行 | 存储模块和 Worker 加了两处兼容处理（`O_NOFOLLOW`、`resource` 模块在 Windows 上不存在），但从未在 Windows 上运行过任何代码或测试 | — |
 | 管理员视角的前端 | 模拟接口里没有管理员账号，页面上“管理员”标记和“管理员可见”来源没有实际显示过 | — |
@@ -213,7 +223,7 @@ OpenSearch 用假的网络层代替（替换 `app.state.text_index`），专门�
 
    预期 20 项全部通过。
 7. 高亮摘要的转义（没有自动化测试，手工做一次）：用一个带随机前缀的测试索引，写入一条 `text` 为 `<script>alert(1)</script> 报销标准` 的片段，分别查“报销”（有命中词）和只靠词干匹配、没有可高亮词的查询，确认返回的 `evidence.snippet` 里 `<script>` 显示为 `&lt;script&gt;`，只有 `<em>` 是标签。结果记到本文件第 4 节对应的行。
-8. 同时设置 `TEST_DATABASE_URL` 和 `TEST_OPENSEARCH_URL` 运行整个 `pytest`，预期 609 项全部运行，0 项跳过。
+8. 同时设置 `TEST_DATABASE_URL` 和 `TEST_OPENSEARCH_URL` 运行整个 `pytest`，预期 620 项全部运行，0 项跳过。
 
 ## 6. OpenSearch 相关的未测试项与补测步骤
 

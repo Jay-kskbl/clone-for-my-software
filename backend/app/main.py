@@ -13,7 +13,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.api import auth, documents, health, tasks
+from app.api import auth, document_text, documents, health, tasks
 from app.api import search as search_api
 from app.api.errors import register_error_handlers
 from app.api.upload_limit import UploadSizeLimitMiddleware
@@ -60,4 +60,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(documents.router)
     app.include_router(tasks.router)
     app.include_router(search_api.router)
+    app.include_router(document_text.router)
     return app
