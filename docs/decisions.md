@@ -623,7 +623,7 @@ GLOBAL §2 P1 规定“某页文本层有效字符数低于配置阈值时，该
 
 **打包。** `pdf.worker` 单独输出，约 1.27 MB。pdf.js 主体在预览页的分块里（约 450 KB，gzip 后约 136 KB），只有打开预览页时才加载。主包大小与 T10 相同（约 874 KB，gzip 后约 279 KB）。Vite 提示有分块超过 500 KB。
 
-**新增依赖。** pdfjs-dist 6.5.438，Barry 于 2026-11-15 批准（`downloads.md` #21）。它的可选依赖 @napi-rs/canvas 和 macOS 原生二进制（#22、#23，约 28 MB）随之自动安装。这两个只在 Node.js 里渲染 PDF 时使用，浏览器用不到，是否保留待 Barry 决定。
+**新增依赖。** pdfjs-dist 6.5.438，Barry 于 2026-11-15 批准（`downloads.md` #21）。它的可选依赖 @napi-rs/canvas 和 macOS 原生二进制（#22、#23，约 28 MB）随之自动安装。这两个只在 Node.js 里渲染 PDF 时使用；Barry 于 2026-11-15 决定保留（浏览器用不到，不进打包结果）。
 
 **代价与局限。**
 
