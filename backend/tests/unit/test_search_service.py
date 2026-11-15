@@ -1,0 +1,460 @@
+"""T15：检索编排 v1。不需要数据库和 OpenSearch。
+
+OpenSearch 用假的网络层代替；“可访问的文档集合”“数据库二次校验”“写检索日志”三处
+数据库访问替换成可控的假函数。它们在真实数据库上的行为见 tests/integration/test_search_db.py。
+"""
+
+import json
+import uuid
+from types import SimpleNamespace
+
+import httpx
+import pytest
+from shared.contracts import Evidence
+
+from app.core.errors import RequestInvalidError, SearchUnavailableError
+from app.modules.search import SearchParams, SearchRequestData, params_from_settings, search
+from app.modules.search import service as service_module
+from app.modules.text_index import OpenSearchClient
+
+A = uuid.UUID("aaaaaaaa-0000-4000-8000-000000000000")
+B = uuid.UUID("bbbbbbbb-0000-4000-8000-000000000000")
+C = uuid.UUID("cccccccc-0000-4000-8000-000000000000")
+VERSION = "c1-m500-o50-aaaaaaaaaaaa"
+
+PARAMS = SearchParams(
+    rrf_k=60,
+    channel_depth=50,
+    meta_filename_weight=2.0,
+    meta_tags_weight=1.0,
+    snippet_chars=100,
+    default_top_k=10,
+    max_top_k=20,
+    max_query_chars=50,
+    default_channels={"meta": True, "text": True, "image": False},
+)
+
+USER = SimpleNamespace(id=uuid.uuid4(), role="user")
+ADMIN = SimpleNamespace(id=uuid.uuid4(), role="admin")
+
+
+def meta_hit(document_id: uuid.UUID, score: float) -> dict:
+    return {"_source": {"document_id": str(document_id)}, "sort": [score, str(document_id)]}
+
+
+def text_hit(document_id: uuid.UUID, score: float, *, seq: int = 0, highlight=True) -> dict:
+    hit = {
+        "_source": {
+            "chunk_id": f"{document_id}:{VERSION}:{seq}",
+            "document_id": str(document_id),
+            "source_type": "body",
+            "locator": {"type": "pdf_page", "page": seq + 1},
+            "text": "差旅<报销>标准按照公司规定执行，" * 10,
+        },
+        "sort": [score, str(document_id)],
+    }
+    if highlight:
+        hit["highlight"] = {"text": ["差旅<em>报销</em>标准"]}
+    return hit
+
+
+class FakeOpenSearch:
+    def __init__(self) -> None:
+        self.meta_hits: list[dict] = []
+        self.text_hits: list[dict] = []
+        self.requests: list[httpx.Request] = []
+        # 路径 → 要返回的错误应答（或要抛出的异常）
+        self.failures: dict[str, object] = {}
+        self.missing_indices: set[str] = set()
+
+    def handle(self, request: httpx.Request) -> httpx.Response:
+        self.requests.append(request)
+        path = request.url.path
+        failure = self.failures.get(path)
+        if isinstance(failure, Exception):
+            raise failure
+        if isinstance(failure, httpx.Response):
+            return failure
+        index = path.strip("/").split("/")[0]
+        if request.method == "HEAD":
+            return httpx.Response(404 if index in self.missing_indices else 200)
+        if request.method == "PUT":
+            self.missing_indices.discard(index)
+            return httpx.Response(200, json={})
+        if index in self.missing_indices:
+            return httpx.Response(
+                404,
+                json={"error": {"type": "index_not_found_exception", "reason": "no such index"}},
+            )
+        hits = self.meta_hits if index == "doc_meta" else self.text_hits
+        return httpx.Response(200, json={"hits": {"hits": hits}})
+
+    def client(self) -> OpenSearchClient:
+        return OpenSearchClient(
+            "http://search.internal:9200",
+            timeout_seconds=1.0,
+            transport=httpx.MockTransport(self.handle),
+        )
+
+    def bodies(self, index: str) -> list[dict]:
+        return [
+            json.loads(r.content)
+            for r in self.requests
+            if r.method == "POST" and r.url.path == f"/{index}/_search"
+        ]
+
+
+@pytest.fixture
+def os_server() -> FakeOpenSearch:
+    return FakeOpenSearch()
+
+
+@pytest.fixture
+def db(monkeypatch):
+    """替换三处数据库访问。live：数据库里“未删除且有权访问”的文档；logs：写下的日志。"""
+    state = SimpleNamespace(accessible={A, B, C}, live={A, B, C}, logs=[])
+
+    def accessible_ids(session, user):
+        return None if user.role == "admin" else set(state.accessible)
+
+    def live_documents(session, user, ids):
+        return {d: SimpleNamespace(id=d) for d in ids if d in state.live}
+
+    def write_log(session, user, **kwargs):
+        state.logs.append(kwargs)
+
+    monkeypatch.setattr(service_module, "_accessible_ids", accessible_ids)
+    monkeypatch.setattr(service_module, "_live_documents", live_documents)
+    monkeypatch.setattr(service_module, "_write_log", write_log)
+    return state
+
+
+def run(os_server, user=USER, params=PARAMS, **request):
+    request.setdefault("query", "报销标准")
+    return search(
+        None, user, SearchRequestData(**request), client=os_server.client(), params=params
+    )
+
+
+def ids(outcome) -> list[uuid.UUID]:
+    return [hit.document_id for hit in outcome.hits]
+
+
+def statuses(outcome) -> dict[str, str]:
+    return {r.channel: r.status for r in outcome.channels}
+
+
+# ---- 融合与证据 ----
+
+
+def test_both_channels_are_fused_by_rrf(os_server, db):
+    os_server.meta_hits = [meta_hit(A, 5.0), meta_hit(B, 3.0)]
+    os_server.text_hits = [text_hit(B, 12.0), text_hit(C, 9.0)]
+
+    outcome = run(os_server)
+
+    # B：meta 第 2 + text 第 1，分数最高
+    assert ids(outcome) == [B, A, C]
+    best = outcome.hits[0]
+    assert best.score == pytest.approx(1 / 62 + 1 / 61)
+    assert [(c.channel, c.rank, c.score) for c in best.channels] == [
+        ("meta", 2, 3.0),
+        ("text", 1, 12.0),
+    ]
+    assert statuses(outcome) == {"meta": "ok", "text": "ok", "image": "disabled"}
+
+
+def test_text_hit_carries_its_best_chunk_as_evidence(os_server, db):
+    os_server.text_hits = [text_hit(A, 9.0, seq=4)]
+
+    (hit,) = run(os_server).hits
+
+    assert hit.evidence == Evidence(
+        chunk_id=f"{A}:{VERSION}:4",
+        snippet="差旅<em>报销</em>标准",
+        source_type="body",
+        locator={"type": "pdf_page", "page": 5},
+    )
+
+
+def test_meta_only_hit_has_no_evidence(os_server, db):
+    os_server.meta_hits = [meta_hit(A, 5.0)]
+
+    (hit,) = run(os_server).hits
+
+    assert hit.evidence is None
+
+
+def test_snippet_falls_back_to_escaped_text_when_nothing_is_highlighted(os_server, db):
+    os_server.text_hits = [text_hit(A, 9.0, highlight=False)]
+
+    (hit,) = run(os_server).hits
+
+    # 原文里的 < > 被转义，摘要可以安全地当 HTML 显示
+    assert hit.evidence.snippet.startswith("差旅&lt;报销&gt;标准")
+    assert "<" not in hit.evidence.snippet
+    assert len(hit.evidence.snippet) >= 100
+
+
+# ---- 发出去的查询 ----
+
+
+def test_text_query_collapses_by_document_and_filters_by_permission(os_server, db):
+    db.accessible = {B, A}
+
+    run(os_server, source_types=["body"])
+
+    (body,) = os_server.bodies("chunks")
+    assert body["size"] == 50
+    assert body["collapse"] == {"field": "document_id"}
+    assert body["query"]["bool"]["must"] == [{"match": {"text": {"query": "报销标准"}}}]
+    assert body["query"]["bool"]["filter"] == [
+        {"terms": {"source_type": ["body"]}},
+        {"terms": {"document_id": sorted([str(A), str(B)])}},
+    ]
+    highlight = body["highlight"]
+    assert highlight["encoder"] == "html"
+    assert highlight["fields"]["text"]["fragment_size"] == 100
+
+
+def test_meta_query_uses_the_configured_field_weights(os_server, db):
+    run(os_server)
+
+    (body,) = os_server.bodies("doc_meta")
+    multi_match = body["query"]["bool"]["must"][0]["multi_match"]
+    assert multi_match["fields"] == ["filename^2.0", "tags^1.0"]
+    assert multi_match["query"] == "报销标准"
+
+
+def test_source_types_default_to_body_and_ocr(os_server, db):
+    run(os_server)
+
+    (body,) = os_server.bodies("chunks")
+    assert body["query"]["bool"]["filter"][0] == {"terms": {"source_type": ["body", "ocr"]}}
+
+
+def test_admin_queries_are_not_filtered_by_document_id(os_server, db):
+    run(os_server, user=ADMIN)
+
+    for index in ("doc_meta", "chunks"):
+        (body,) = os_server.bodies(index)
+        assert not any("document_id" in f.get("terms", {}) for f in body["query"]["bool"]["filter"])
+
+
+def test_user_without_any_document_does_not_query_at_all(os_server, db):
+    db.accessible = set()
+
+    outcome = run(os_server)
+
+    assert outcome.hits == []
+    assert os_server.requests == []
+    assert statuses(outcome)["text"] == "ok"
+
+
+def test_disabled_channels_are_not_queried(os_server, db):
+    outcome = run(os_server, channels={"meta": False})
+
+    assert os_server.bodies("doc_meta") == []
+    assert len(os_server.bodies("chunks")) == 1
+    assert statuses(outcome) == {"meta": "disabled", "text": "ok", "image": "disabled"}
+
+
+# ---- 数据库二次校验（附录 A10）----
+
+
+def test_documents_failing_the_database_check_are_dropped(os_server, db):
+    # 索引里还有 B（已删除、已取消共享，或记录已经不存在），数据库说它不该出现
+    os_server.meta_hits = [meta_hit(B, 9.0), meta_hit(A, 5.0)]
+    os_server.text_hits = [text_hit(B, 12.0)]
+    db.live = {A}
+
+    outcome = run(os_server)
+
+    assert ids(outcome) == [A]
+    assert set(outcome.documents) == {A}
+
+
+def test_admin_results_are_still_checked_against_the_database(os_server, db):
+    os_server.text_hits = [text_hit(A, 9.0), text_hit(B, 8.0)]
+    db.live = {B}
+
+    assert ids(run(os_server, user=ADMIN)) == [B]
+
+
+def test_top_k_is_applied_after_the_database_check(os_server, db):
+    os_server.text_hits = [text_hit(d, 10.0 - i) for i, d in enumerate([A, B, C])]
+    db.live = {B, C}
+
+    # 先过滤再截取：A 被挡掉后仍然返回 2 个
+    assert ids(run(os_server, top_k=2)) == [B, C]
+
+
+def test_each_document_appears_once(os_server, db):
+    os_server.meta_hits = [meta_hit(A, 5.0)]
+    os_server.text_hits = [text_hit(A, 9.0, seq=0), text_hit(A, 8.0, seq=1), text_hit(B, 1.0)]
+
+    outcome = run(os_server)
+
+    assert ids(outcome) == [A, B]
+    assert outcome.hits[0].evidence.chunk_id.endswith(":0")
+
+
+# ---- 故障与“没有结果”必须能区分（GLOBAL §12）----
+
+
+def test_no_match_is_an_empty_result_not_an_error(os_server, db):
+    outcome = run(os_server)
+
+    assert outcome.hits == []
+    assert statuses(outcome) == {"meta": "ok", "text": "ok", "image": "disabled"}
+    assert len(db.logs) == 1
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [
+        httpx.Response(503, json={"error": "unavailable"}),
+        httpx.Response(400, json={"error": {"type": "parsing_exception", "reason": "bad"}}),
+        httpx.ConnectError("refused to search.internal:9200"),
+    ],
+)
+@pytest.mark.parametrize("failing", ["/doc_meta/_search", "/chunks/_search"])
+def test_search_service_failure_is_503_never_an_empty_result(os_server, db, failure, failing):
+    if isinstance(failure, httpx.ConnectError):
+        failure.request = httpx.Request("POST", "http://x")
+    os_server.failures[failing] = failure
+    os_server.meta_hits = [meta_hit(A, 5.0)]
+
+    with pytest.raises(SearchUnavailableError) as excinfo:
+        run(os_server)
+
+    assert excinfo.value.status_code == 503
+    assert excinfo.value.code == "SEARCH_UNAVAILABLE"
+    assert "search.internal" not in excinfo.value.message
+    # 故障也写日志，并记下是哪个通道出的问题
+    (log,) = db.logs
+    assert log["hits"] == []
+    failed = "meta" if failing.startswith("/doc_meta") else "text"
+    assert {r.channel: r.status for r in log["reports"]}[failed] == "unavailable"
+
+
+def test_missing_indices_are_created_and_the_result_is_a_real_empty(os_server, db):
+    # 刚部署、还没有任何文档被解析过：索引还不存在
+    os_server.missing_indices = {"doc_meta", "chunks"}
+
+    outcome = run(os_server)
+
+    assert outcome.hits == []
+    assert ("PUT", "/doc_meta") in [(r.method, r.url.path) for r in os_server.requests]
+    assert ("PUT", "/chunks") in [(r.method, r.url.path) for r in os_server.requests]
+
+
+def test_log_failure_after_a_search_failure_still_reports_the_search_failure(
+    os_server, db, monkeypatch
+):
+    def broken_log(session, user, **kwargs):
+        raise RuntimeError("database is gone")
+
+    monkeypatch.setattr(service_module, "_write_log", broken_log)
+    os_server.failures["/chunks/_search"] = httpx.Response(503, json={})
+    session = SimpleNamespace(rollback=lambda: None)
+
+    with pytest.raises(SearchUnavailableError):
+        search(
+            session,
+            USER,
+            SearchRequestData(query="报销"),
+            client=os_server.client(),
+            params=PARAMS,
+        )
+
+
+# ---- 图像通道（T22 之前）----
+
+
+def test_requesting_the_image_channel_reports_it_unavailable(os_server, db):
+    os_server.text_hits = [text_hit(A, 9.0)]
+
+    outcome = run(os_server, channels={"image": True})
+
+    image = next(r for r in outcome.channels if r.channel == "image")
+    assert (image.status, image.detail) == ("unavailable", "图像检索尚未实现")
+    assert ids(outcome) == [A]
+
+
+def test_image_alone_is_allowed_and_returns_nothing(os_server, db):
+    outcome = run(os_server, channels={"meta": False, "text": False, "image": True})
+
+    assert outcome.hits == []
+    assert os_server.requests == []
+
+
+# ---- 请求校验 ----
+
+
+@pytest.mark.parametrize(
+    "request_kwargs, message",
+    [
+        ({"query": ""}, "不能为空"),
+        ({"query": "   "}, "不能为空"),
+        ({"query": "长" * 51}, "不能超过"),
+        ({"top_k": 0}, "top_k"),
+        ({"top_k": 21}, "top_k"),
+        ({"channels": {"meta": False, "text": False}}, "至少要开启"),
+        ({"source_types": []}, "source_types"),
+    ],
+)
+def test_invalid_requests_are_422_and_send_nothing(os_server, db, request_kwargs, message):
+    with pytest.raises(RequestInvalidError, match=message):
+        run(os_server, **request_kwargs)
+
+    assert os_server.requests == []
+    assert db.logs == []
+
+
+def test_query_is_trimmed(os_server, db):
+    run(os_server, query="  报销标准  ")
+
+    (body,) = os_server.bodies("chunks")
+    assert body["query"]["bool"]["must"][0]["match"]["text"]["query"] == "报销标准"
+
+
+# ---- 检索日志 ----
+
+
+def test_log_records_query_effective_config_channels_and_results(os_server, db):
+    os_server.meta_hits = [meta_hit(A, 5.0)]
+    os_server.text_hits = [text_hit(A, 9.0)]
+
+    run(os_server, query="  报销标准 ", top_k=5, source_types=["ocr", "body", "ocr"])
+
+    (log,) = db.logs
+    assert log["query"] == "报销标准"
+    assert log["config"]["top_k"] == 5
+    assert log["config"]["channels"] == {"meta": True, "text": True, "image": False}
+    assert log["config"]["source_types"] == ["body", "ocr"]
+    assert log["config"]["params"]["rrf_k"] == 60
+    assert log["config"]["params"]["channel_depth"] == 50
+    assert [hit.document_id for hit in log["hits"]] == [A]
+    assert log["latency_ms"] >= 0
+
+
+def test_params_come_from_settings():
+    settings = SimpleNamespace(
+        search_rrf_k=30,
+        search_channel_depth=200,
+        search_meta_filename_weight=1.5,
+        search_meta_tags_weight=0.5,
+        search_snippet_chars=80,
+        search_default_top_k=10,
+        search_max_top_k=50,
+        search_max_query_chars=100,
+        search_channel_meta_enabled=True,
+        search_channel_text_enabled=False,
+        search_channel_image_enabled=False,
+    )
+
+    params = params_from_settings(settings)
+
+    assert (params.rrf_k, params.channel_depth, params.max_top_k) == (30, 200, 50)
+    assert params.default_channels == {"meta": True, "text": False, "image": False}

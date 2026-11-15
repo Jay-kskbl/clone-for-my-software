@@ -1,6 +1,6 @@
 # 未测试清单（Not Tested）
 
-更新日期：2026-11-15（T14 完成后）
+更新日期：2026-11-15（T15 完成后）
 
 这里列出**已经写好但从未实际执行过**的测试，以及其他没有经过验证的性质。
 规则来自 GLOBAL.md“测试执行限制与代码验证要求”：跑不了的测试不强行执行、不安装工具，
@@ -20,11 +20,12 @@
 | T08 文档管理 | `backend/tests/integration/test_documents.py` | 41 | 本机没有 PostgreSQL | 已复核，改了 1 处测试断言 |
 | T13 文本索引 | `backend/tests/opensearch/test_text_index_live.py` | 13 | 本机没有 OpenSearch（没有 Docker 和 Java） | 已复核，未发现问题；有两处需要注意的性质，见第 4 节 |
 | T14 解析流水线 | `backend/tests/integration/test_pipeline_db.py` | 23 | 本机没有 PostgreSQL；其中 2 项端到端测试还需要 OpenSearch | 已复核，未发现问题 |
-| **合计** | | **127** | | |
+| T15 检索 v1 | `backend/tests/integration/test_search_db.py` | 20 | 本机没有 PostgreSQL；其中 1 项还需要 OpenSearch | 已复核，未发现阻塞问题；局限见 `decisions.md` D28 |
+| **合计** | | **147** | | |
 
 T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器）和 T12（切分）不需要数据库，它们的测试全部在本机执行并通过，没有未测试项。
 
-对照：当前能在本机执行的测试，`backend/` 415 项、`shared/` 93 项、`frontend/` 30 项，全部通过。
+对照：当前能在本机执行的测试，`backend/` 462 项、`shared/` 93 项、`frontend/` 30 项，全部通过。
 
 ## 2. 影响最大的几项
 
@@ -45,6 +46,10 @@ T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器�
 | T13 | 重复索引不产生重复数据 | `test_text_index_live.py::test_indexing_the_same_document_twice_does_not_duplicate`、`test_reindexing_with_a_new_parse_version_replaces_the_old_chunks` | 未测试（用模拟应答验证请求内容的版本已通过，见 `tests/unit/test_text_index.py`） |
 | T13 | 删除后查不到 | `test_text_index_live.py::test_deleted_document_cannot_be_found_in_either_index` | 未测试（同上） |
 | T14 | 端到端：上传 PDF → 等任务完成 → chunks 索引中有该文档的数据 | `test_pipeline_db.py::test_upload_parse_index_then_delete_and_cleanup` | 未测试（需要 PostgreSQL 和 OpenSearch；处理函数用假数据库和假检索服务的版本已通过，见 `tests/unit/test_pipeline.py`） |
+| T15 | 删除后立即查不到 | `test_search_db.py::test_deleted_document_disappears_from_search_immediately`、`test_deleted_document_is_hidden_from_admin_too` | 未测试（检索编排把数据库访问换成替身的版本已通过，见 `tests/unit/test_search_service.py`） |
+| T15 | 取消共享后立即查不到 | `test_search_db.py::test_unsharing_removes_the_document_from_search_immediately` | 未测试（同上） |
+| T15 | 同一文件不重复出现 | `test_search_db.py::test_document_hit_by_both_channels_appears_once_with_both_ranks` | 未测试（RRF 的合并已由 `tests/unit/test_search_rrf.py` 验证） |
+| T15 | 服务故障与“无结果”可以区分 | `test_search_db.py::test_no_match_is_200_with_an_empty_list`、`test_search_service_down_is_503_search_unavailable` | 未测试（同上，`test_search_service.py`） |
 
 **里程碑“基础系统”要求“T07 的四项测试全部通过”，目前不满足。**
 
@@ -118,6 +123,21 @@ T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器�
 
 特别说明：`tests/unit/test_pipeline.py` 的 30 项用假的数据库会话和假的检索服务验证了处理函数的步骤顺序和分支，但真实数据库上的约束、级联删除和 SQL 都没有执行过。
 
+### T15 `test_search_db.py`（20）
+
+OpenSearch 用假的网络层代替（替换 `app.state.text_index`），专门检验数据库这一侧的保证。需要 PostgreSQL（19 项）：
+
+- 🧪 删除与共享：`test_deleted_document_disappears_from_search_immediately`、`test_deleted_document_is_hidden_from_admin_too`、`test_unsharing_removes_the_document_from_search_immediately`
+- 权限：`test_other_peoples_documents_never_appear_even_if_the_index_leaks_them`、`test_permission_prefilter_is_sent_to_the_index`、`test_admin_sees_everyone_s_documents`、`test_document_whose_record_is_gone_is_dropped`
+- 🧪 文件级去重：`test_document_hit_by_both_channels_appears_once_with_both_ranks`
+- 🧪 无结果与故障：`test_no_match_is_200_with_an_empty_list`、`test_search_service_down_is_503_search_unavailable`
+- 检索日志：`test_every_search_is_logged_including_failures`、`test_successful_search_log_lists_the_results`、`test_invalid_request_is_not_logged`
+- 请求校验：`test_search_requires_login`、`test_malformed_requests_are_422`（5）
+
+另外需要 OpenSearch（1 项）：
+
+- `test_full_text_search_against_a_real_index`：真实索引上检索命中、摘要带 `<em>`、只开 meta 通道（B0）、删除后立即查不到
+
 ## 4. 不是测试、但同样没有验证过的性质
 
 | 项目 | 说明 | 记录位置 |
@@ -144,6 +164,9 @@ T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器�
 | cleanup 硬删除与续租的配合 | 硬删除后任务记录被级联删除，父进程的下一次续租会把子进程按“租约丢失”终止。代码把硬删除放在最后一步来规避，但真实时序没有观察过 | `decisions.md` D27 |
 | 切分参数对检索效果的影响 | 默认 500 字、重叠 50 字是经验值。“片段长度、重叠、是否给 Excel 片段补表头”对 B1、B2 的影响要到阶段五才有数据 | `decisions.md` D25 |
 | zip 与像素上限的默认值 | 200 MB、5000 个条目、1 亿像素都是经验值；没有用接近上限的真实大文件测过解析时的内存和耗时 | `decisions.md` D24 |
+| 检索查询能否被 OpenSearch 接受 | T15 的两个查询体从未被真实 OpenSearch 接受过：`chunks` 查询同时使用 `collapse`（按 `document_id`）、`sort`（`_score` 后接 `document_id`）和 `highlight`（`encoder=html`、`number_of_fragments=1`、`no_match_size`）；`doc_meta` 查询用 `multi_match` 带小数权重。已人工核对这几项在 2.19 上可以同时使用，分数从 `hit.sort[0]` 取 | `decisions.md` D28 |
+| smartcn 下的高亮效果 | 摘要是否落在命中词附近、长度是否接近 `SEARCH_SNIPPET_CHARS`，没有实际看过 | `decisions.md` D28 |
+| 高亮摘要的 HTML 转义 | 原文含 `<script>` 等标签时，命中片段和 `no_match_size` 截取的片段是否都被转义，需要在 OpenSearch 上实测（第 5 节 OpenSearch 测试第 7 步）。前端（T16）用 `v-html` 显示摘要之前必须确认 | `decisions.md` D28 |
 | OpenSearch、中文分词、并发内存 | T00 环境实测中未完成的部分。补测步骤见第 6 节 | `env_check/未测试/清单.md` |
 
 ## 5. 补测方法
@@ -157,12 +180,12 @@ T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器�
    export $(grep '^TEST_DATABASE_URL=' ../.env) && ../.venv-main/bin/pytest
    ```
 
-3. 预期结果：除 `tests/opensearch/` 的 13 项和 `test_pipeline_db.py` 的 2 项端到端测试外全部运行。两类都补测时的预期见下面的“OpenSearch 测试”。
+3. 预期结果：除 `tests/opensearch/` 的 13 项、`test_pipeline_db.py` 的 2 项端到端测试和 `test_search_db.py` 的 1 项真实索引测试外全部运行。两类都补测时的预期见下面的“OpenSearch 测试”。
 4. 有失败的话先修；全部通过后更新本文件和 DEVPLAN §5。
 
 在另一台机器上补测时，把那台机器的系统和 PostgreSQL 版本一起记下来。
 
-**OpenSearch 测试（T13 的 13 项、T14 的 2 项端到端）**
+**OpenSearch 测试（T13 的 13 项、T14 的 2 项端到端、T15 的 1 项）**
 
 需要一个装了 analysis-smartcn 插件的 OpenSearch 2.19.1。最简单的办法是用项目自己的 `deploy/docker-compose.yml` 启动（第 6 节第 6 步），它会构建带插件的镜像。
 
@@ -182,7 +205,15 @@ T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器�
    ```
 
    测试会把配置写进环境变量，交给子进程读取（环境变量优先于 `.env`）；索引同样使用带随机前缀的独立索引。
-6. 同时设置 `TEST_DATABASE_URL` 和 `TEST_OPENSEARCH_URL` 运行整个 `pytest`，预期 542 项全部运行，0 项跳过。
+6. T15 的 1 项真实索引测试同样需要两者，在 `backend/` 目录执行：
+
+   ```bash
+   export $(grep '^TEST_DATABASE_URL=' ../.env) && TEST_OPENSEARCH_URL=http://localhost:9200 ../.venv-main/bin/pytest tests/integration/test_search_db.py -v
+   ```
+
+   预期 20 项全部通过。
+7. 高亮摘要的转义（没有自动化测试，手工做一次）：用一个带随机前缀的测试索引，写入一条 `text` 为 `<script>alert(1)</script> 报销标准` 的片段，分别查“报销”（有命中词）和只靠词干匹配、没有可高亮词的查询，确认返回的 `evidence.snippet` 里 `<script>` 显示为 `&lt;script&gt;`，只有 `<em>` 是标签。结果记到本文件第 4 节对应的行。
+8. 同时设置 `TEST_DATABASE_URL` 和 `TEST_OPENSEARCH_URL` 运行整个 `pytest`，预期 609 项全部运行，0 项跳过。
 
 ## 6. OpenSearch 相关的未测试项与补测步骤
 
@@ -211,6 +242,7 @@ T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器�
 | OS-7 | 项目自己的 `deploy/docker-compose.yml` 能否启动，`/health` 是否报告 OpenSearch 为 ok | Docker + 后端 | T01 的 compose 文件和健康检查在真实容器上是否正确 | T01 |
 | OS-8 | T13 文本索引的集成测试（13 项，含重复索引不产生重复数据、删除后查不到） | `backend/tests/opensearch/test_text_index_live.py` | T13 的 🧪；两个 mapping 能否被接受 | T13，T14 起所有依赖索引的任务 |
 | OS-9 | T14 端到端测试（2 项，另需 PostgreSQL） | `backend/tests/integration/test_pipeline_db.py` 的 `test_upload_parse_index_then_delete_and_cleanup`、`test_corrupt_upload_ends_as_failed_document_with_reason` | T14 的 🧪；真实子进程里的处理函数；`action.auto_create_index` | T14 起的整条写入链路 |
+| OS-10 | T15 真实索引检索（1 项，另需 PostgreSQL）与高亮转义手工检查 | `backend/tests/integration/test_search_db.py` 的 `test_full_text_search_against_a_real_index`；第 5 节 OpenSearch 测试第 7 步 | T15 的查询体能否被接受；摘要转义 | T16 前端显示摘要 |
 
 OS-1 至 OS-6 与 `env_check/未测试/清单.md` 的 1–6 项一一对应。
 

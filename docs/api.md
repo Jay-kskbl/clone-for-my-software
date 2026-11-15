@@ -328,13 +328,19 @@
 
 | 字段 | 必填 | 说明 |
 |---|---|---|
-| `query` | 是 | 查询文本，不能为空 |
-| `top_k` | 否 | 返回的文件数，默认和上限来自配置 |
-| `channels` | 否 | 通道开关。`meta` 文件名与标签，`text` 正文与 OCR 文字，`image` CLIP 图像检索。不传则使用配置中的默认值 |
+| `query` | 是 | 查询文本。去掉首尾空白后不能为空，不超过 `SEARCH_MAX_QUERY_CHARS` 个字符（默认 256） |
+| `top_k` | 否 | 返回的文件数，1 到 `SEARCH_MAX_TOP_K`（默认 100）；不传为 `SEARCH_DEFAULT_TOP_K`（默认 20） |
+| `channels` | 否 | 通道开关。`meta` 文件名与标签，`text` 正文与 OCR 文字，`image` CLIP 图像检索。不传或某一项为 `null` 时使用配置中的默认值（默认 `meta`、`text` 开，`image` 关） |
 | `source_types` | 否 | `text` 通道检索哪些来源的片段：`body` 正文、`ocr` OCR 文字。不传为两者都查 |
 
 对照实验只通过这些开关切换：B0 只开 `meta`；B1 只开 `text` 且 `source_types=["body"]`；
 B2 只开 `text` 且两种来源都查；B3 三个通道全开。
+
+请求体里出现未定义的字段（包括 `channels` 里的未知通道）、`source_types` 含未知来源，都返回 422。
+
+**图像通道（T22 之前）**：尚未实现。请求开启它时，`channels` 中 `image` 的状态为 `unavailable`、`detail` 为“图像检索尚未实现”，其余通道照常执行；只开图像通道时返回 200 和空列表。
+
+融合方式为 RRF（k 与每通道截断深度来自配置，见 `decisions.md` D28）；`hits[].channels[].rank` 是该通道内的文件级名次。
 
 **响应 200**
 
@@ -349,7 +355,7 @@ B2 只开 `text` 且两种来源都查；B3 三个通道全开。
         { "channel": "image", "rank": 4, "score": 0.31 }
       ],
       "evidence": {
-        "chunk_id": "…uuid…:v1:4",
+        "chunk_id": "…uuid…:c1-m500-o50-1a2b3c4d5e6f:4",
         "image_id": null,
         "snippet": "……差旅<em>报销标准</em>按……",
         "source_type": "body",
@@ -373,7 +379,8 @@ B2 只开 `text` 且两种来源都查；B3 三个通道全开。
 | `hits[].channels` | 该文件在各通道内的原始排名和原始分数（只列出命中它的通道）。不同通道的分数不能直接比较 |
 | `hits[].evidence` | 命中证据：最佳片段或图片，及其来源定位。`chunk_id` 与 `image_id` 恰有一个非空；只被文件名通道命中时整个字段为 `null` |
 | `channels` | 顶层的通道状态，每个通道一项 |
-| `channels[].status` | `ok` 正常执行；`disabled` 被请求或配置关闭；`unavailable` 本应执行但失败或超时，已降级 |
+| `channels[].status` | `ok` 正常执行；`disabled` 被请求或配置关闭；`unavailable` 本应执行但没有执行成功（T15 中只有尚未实现的图像通道会是这个状态；文本类通道失败时整次检索返回 503） |
+| `hits[].evidence.snippet` | 高亮摘要。原文已做 HTML 转义，只有命中词外的 `<em>…</em>` 是标签 |
 
 `hits[]` 除 `document` 外的部分就是 `shared/contracts/search.py` 中的 `SearchHit`。
 
@@ -383,12 +390,13 @@ B2 只开 `text` 且两种来源都查；B3 三个通道全开。
 |---|---|
 | 检索正常，没有匹配的文件 | 200，`hits` 为空列表 |
 | 图像通道不可用，文本通道正常 | 200，结果来自文本通道，`channels` 中 `image` 为 `unavailable` |
-| OpenSearch 不可用 | 503 `SEARCH_UNAVAILABLE` |
+| OpenSearch 不可用，或任何一个文本类通道（`meta`、`text`）出错 | 503 `SEARCH_UNAVAILABLE`，不返回另一路的部分结果 |
 
 **保证**：返回前用数据库校验每一个候选文件，只保留未删除且当前用户有权访问的。
 所以删除文件、取消共享之后，下一次检索立即生效（附录 A10）。每次检索都写一条检索日志。
 
-- 错误：401；422 `VALIDATION_ERROR`（`query` 为空，或所有通道都被关闭）；503 `SEARCH_UNAVAILABLE`
+- 错误：401；422 `VALIDATION_ERROR`（`query` 为空或过长、`top_k` 超出范围、所有通道都被关闭、`source_types` 为空列表或含未知值、出现未定义字段）；503 `SEARCH_UNAVAILABLE`
+- 请求校验失败（422）不写检索日志；检索服务故障（503）也写一条
 
 ## 8. 不提供的接口
 

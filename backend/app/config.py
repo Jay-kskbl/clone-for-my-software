@@ -81,6 +81,40 @@ class Settings(BaseSettings):
     chunk_max_chars: int = Field(default=500, ge=50, le=10_000)
     chunk_overlap_chars: int = Field(default=50, ge=0)
 
+    # ---- 检索（M11）----
+    # 都是检索实验参数：每次检索随检索日志一起记录（GLOBAL §8.2）
+    search_default_top_k: int = Field(default=20, ge=1)
+    search_max_top_k: int = Field(default=100, ge=1)
+    search_max_query_chars: int = Field(default=256, ge=1)
+    # 每个通道最多取多少个文件参与 RRF 融合（截断深度）
+    search_channel_depth: int = Field(default=100, ge=1, le=10_000)
+    # RRF 常数 k：分数为 Σ 1/(k + 名次)。60 是原论文（Cormack 等，2009）的取值
+    search_rrf_k: int = Field(default=60, ge=1)
+    # meta 通道里文件名与标签的权重。默认相同：没有实验依据之前不偏向任何一个
+    search_meta_filename_weight: float = Field(default=1.0, gt=0)
+    search_meta_tags_weight: float = Field(default=1.0, gt=0)
+    # 命中片段（高亮摘要）的长度，按字符计
+    search_snippet_chars: int = Field(default=150, ge=20, le=2000)
+    # 请求里没有指定时各通道是否开启。图像通道在 T22 之前没有实现，默认关闭
+    search_channel_meta_enabled: bool = True
+    search_channel_text_enabled: bool = True
+    search_channel_image_enabled: bool = False
+
+    @model_validator(mode="after")
+    def _search_limits_consistent(self) -> "Settings":
+        if self.search_default_top_k > self.search_max_top_k:
+            raise ValueError("SEARCH_DEFAULT_TOP_K 不能超过 SEARCH_MAX_TOP_K")
+        # 每个通道至少要取够 top_k 个文件，否则只开一个通道时凑不满 top_k
+        if self.search_max_top_k > self.search_channel_depth:
+            raise ValueError("SEARCH_MAX_TOP_K 不能超过 SEARCH_CHANNEL_DEPTH")
+        if not (
+            self.search_channel_meta_enabled
+            or self.search_channel_text_enabled
+            or self.search_channel_image_enabled
+        ):
+            raise ValueError("SEARCH_CHANNEL_*_ENABLED 至少要开启一个")
+        return self
+
     # ---- Worker（M4，附录 A3）----
     # 租约时长：太短会误回收仍在正常处理的任务，太长则 Worker 崩溃后恢复慢
     worker_lease_seconds: float = Field(default=60.0, gt=0)

@@ -231,3 +231,34 @@ def test_opensearch_options_defaults_and_bounds(clean_env):
     clean_env.setenv("OPENSEARCH_TIMEOUT_SECONDS", "0")
     with pytest.raises(ConfigError, match="OPENSEARCH_TIMEOUT_SECONDS"):
         load_settings(env_file=None)
+
+
+def test_search_options_defaults_and_bounds(clean_env):
+    for name, value in REQUIRED.items():
+        clean_env.setenv(name, value)
+
+    settings = load_settings(env_file=None)
+    assert (settings.search_default_top_k, settings.search_max_top_k) == (20, 100)
+    assert (settings.search_channel_depth, settings.search_rrf_k) == (100, 60)
+    assert settings.search_channel_image_enabled is False
+
+    clean_env.setenv("SEARCH_DEFAULT_TOP_K", "101")
+    with pytest.raises(ConfigError, match="SEARCH_DEFAULT_TOP_K"):
+        load_settings(env_file=None)
+    clean_env.delenv("SEARCH_DEFAULT_TOP_K")
+
+    clean_env.setenv("SEARCH_CHANNEL_DEPTH", "50")
+    with pytest.raises(ConfigError, match="SEARCH_MAX_TOP_K"):
+        load_settings(env_file=None)
+    clean_env.delenv("SEARCH_CHANNEL_DEPTH")
+
+    clean_env.setenv("SEARCH_CHANNEL_META_ENABLED", "false")
+    clean_env.setenv("SEARCH_CHANNEL_TEXT_ENABLED", "false")
+    with pytest.raises(ConfigError, match="SEARCH_CHANNEL"):
+        load_settings(env_file=None)
+    clean_env.delenv("SEARCH_CHANNEL_META_ENABLED")
+    clean_env.delenv("SEARCH_CHANNEL_TEXT_ENABLED")
+
+    clean_env.setenv("SEARCH_RRF_K", "0")
+    with pytest.raises(ConfigError, match="SEARCH_RRF_K"):
+        load_settings(env_file=None)

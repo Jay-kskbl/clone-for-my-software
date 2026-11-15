@@ -218,11 +218,13 @@ erDiagram
 | id | uuid，主键 | |
 | user_id | uuid，可空，外键 → users（删除用户时置空），有索引 | |
 | query | text | 查询文本 |
-| config | jsonb | 本次检索生效的参数（通道开关、RRF k、截断深度等） |
-| channels | jsonb | 各通道的执行情况：是否参与、是否降级、耗时 |
-| results | jsonb | 返回的结果列表（document_id、分数、各通道排名） |
+| config | jsonb | 本次检索生效的参数：`{top_k, channels, source_types, params}`，`channels` 为生效的通道开关，`params` 为 RRF k、截断深度、字段权重等全部检索配置 |
+| channels | jsonb | 各通道的执行情况：`{通道名: {status, took_ms, detail, hits}}`，`status` 为 `ok` / `disabled` / `unavailable` |
+| results | jsonb | 返回给用户的最终结果（二次校验、截取之后）：`[{document_id, score, channels, evidence_chunk_id}]`，`channels` 为该文档在各通道的原始名次和分数 |
 | latency_ms | double | 总耗时 |
 | created_at | timestamptz，有索引 | |
+
+每次检索写一条（T15，`decisions.md` D28），检索服务故障时也写；请求校验失败（422）不写。
 
 ### experiment_runs —— 实验记录（必选）
 

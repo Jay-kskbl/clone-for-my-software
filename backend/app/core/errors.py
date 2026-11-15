@@ -59,6 +59,13 @@ class UnsupportedFileTypeError(AppError):
     code = "UNSUPPORTED_FILE_TYPE"
 
 
+class SearchUnavailableError(AppError):
+    """检索服务（OpenSearch）不可用。不是“没有搜到”：没有结果时返回 200 和空列表。"""
+
+    status_code = 503
+    code = "SEARCH_UNAVAILABLE"
+
+
 class RequestInvalidError(AppError):
     """请求内容不合法，但不是字段格式问题（那一类由 FastAPI 的参数校验直接返回 422）。"""
 

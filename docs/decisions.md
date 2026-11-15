@@ -532,3 +532,64 @@ GLOBAL §2 P1 规定“某页文本层有效字符数低于配置阈值时，该
 - 改标签时检索服务如果卡住，这次请求最多多等 `OPENSEARCH_TIMEOUT_SECONDS`（默认 10 秒）。
 - 上传之后、parse 任务开始之前，按文件名也搜不到这个文件，因为 `doc_meta` 是在 parse 任务里写的。
 - 目前没有改文件名的接口；以后如果加，要同步 `doc_meta`。
+
+### D28 检索 v1：文件名与正文两路、RRF、二次校验（T15）
+
+代码在 `backend/app/modules/search/`（`channels.py`、`rrf.py`、`params.py`、`service.py`、`schemas.py`）和 `backend/app/api/search.py`。
+
+**RRF 提前到 T15。** 原计划 RRF（`rrf.py`）属于 T22（带 🔒）。T15 要把文件名、正文两路结果合成一个列表，必须先定合并方式。Barry 于 2026-11-15 在编写会话里选定“T15 就用 RRF (Recommended)”：在 T15 写好 `rrf.py`，k=60、每通道取前 100 个文件，都放配置；T22 只加图像通道、降级和消融配置。也就是说，原属 T22 的 `rrf.py` 在 T15 提前完成，这是 Barry 批准的。附录 A 没有改动。
+
+**处理顺序**（GLOBAL §4.4、§4.5）：
+
+1. 校验请求，确定本次生效的通道和参数。
+2. `meta`（`doc_meta` 索引，文件名与标签，B0）和 `text`（`chunks` 索引的 BM25，按 `source_type` 过滤，B1/B2）两路分别检索，各自已聚合到 document_id。`text` 用 OpenSearch 的 `collapse`（按 `document_id` 折叠）每个文档只留得分最高的片段，它同时是该文档的命中证据。
+3. RRF 融合：分数为 Σ 1/(k + 名次)，只用名次、不用原始分数（BM25 分数与以后的向量相似度量纲不同）。每通道只取前 `SEARCH_CHANNEL_DEPTH` 名。同分时按 document_id 排序，保证同样的输入得到同样的顺序（实验可重复）。各通道的原始名次和原始分数原样保留在结果里。
+4. 数据库二次校验：用 `accessible_filter(user)`（D15）只保留未删除且当前用户有权访问的文档，每次都查、不缓存。
+5. 截取前 top_k 个：先过滤、后截取，被过滤掉的文档不占名额。
+6. 写 SearchLog。
+
+**权限。** 普通用户的两路查询都带上“可访问 document_id 集合”的 `terms` 前置过滤，作用只是召回：避免前 100 名被别人的文档占满、过滤后结果变少。管理员不加这个过滤。权限的保证始终是第 4 步的二次校验（附录 A10）；它同时挡住 D27 所说的索引残留（记录已经不存在的文档）。
+
+**故障。**
+
+- 任何一路出现 `TextIndexError` 或 `TextIndexUnavailable`，整次检索返回 503 `SEARCH_UNAVAILABLE`。这是有意的：两路都依赖 OpenSearch，一路失败说明检索服务有问题，不悄悄只返回另一路的结果（GLOBAL §12）。
+- 故障时也写一条检索日志，记录两路各自的状态。日志写失败时回滚并记错误日志，但不掩盖原本的检索故障。返回给客户端的错误信息不含服务地址。
+- 索引不存在时（系统刚部署、还没有文档被解析过），查询路径会调用 `ensure_indices` 按项目 mapping 建好索引（这是一次写操作），再查一次；之后得到的空结果才是真实的“没有数据”。不直接把“索引不存在”当成空结果，以免掩盖索引名前缀配错之类的故障。
+
+**图像通道。** T22 之前没有实现。默认关闭（`SEARCH_CHANNEL_IMAGE_ENABLED=false`）。请求里开启它时，它的状态为 `unavailable`、`detail` 为“图像检索尚未实现”，其余通道照常执行；只开图像通道时返回 200 和空列表。
+
+**高亮摘要。** `encoder=html`：片段原文先做 HTML 转义，再插入 `<em>`，所以文档里的 `<script>` 之类只会显示成文字。没有可高亮的词时（例如只靠词干匹配），用 `no_match_size` 从片段开头截取；应答里没有 highlight 时，在 Python 端 `html.escape` 后截取。
+
+**配置**（11 项，`backend/app/config.py`，`.env.example` 已同步）：
+
+| 配置项 | 默认值 | 含义 |
+|---|---|---|
+| `SEARCH_DEFAULT_TOP_K` | 20 | 请求不指定时返回的文件数 |
+| `SEARCH_MAX_TOP_K` | 100 | top_k 上限 |
+| `SEARCH_MAX_QUERY_CHARS` | 256 | 检索词长度上限（去掉首尾空白后按字符计） |
+| `SEARCH_CHANNEL_DEPTH` | 100 | 每通道最多取多少个文件参与 RRF（截断深度），上限 10000 |
+| `SEARCH_RRF_K` | 60 | RRF 常数 k |
+| `SEARCH_META_FILENAME_WEIGHT` | 1.0 | meta 通道文件名字段的权重 |
+| `SEARCH_META_TAGS_WEIGHT` | 1.0 | meta 通道标签字段的权重 |
+| `SEARCH_SNIPPET_CHARS` | 150 | 高亮摘要长度（20–2000） |
+| `SEARCH_CHANNEL_META_ENABLED` | true | 请求不指定时 meta 通道是否开启 |
+| `SEARCH_CHANNEL_TEXT_ENABLED` | true | 同上，text 通道 |
+| `SEARCH_CHANNEL_IMAGE_ENABLED` | false | 同上，image 通道 |
+
+约束：`SEARCH_DEFAULT_TOP_K ≤ SEARCH_MAX_TOP_K ≤ SEARCH_CHANNEL_DEPTH`（每个通道至少要取够 top_k 个文件，否则只开一个通道时凑不满），三个通道开关至少开一个；不满足时启动报错。两项权重相同、k=60 取自 RRF 原论文（Cormack 等，2009），都没有本项目的实验依据，属于阶段五的实验参数。
+
+**SearchLog 的结构。**
+
+- `config`：`{top_k, channels, source_types, params}`。`channels` 是本次生效的通道开关，`params` 是上表全部参数。
+- `channels`：`{通道名: {status, took_ms, detail, hits}}`，三个通道各一项。
+- `results`：`[{document_id, score, channels, evidence_chunk_id}]`，是返回给用户的最终结果（二次校验、截取之后）；`channels` 为该文档在各通道的原始名次和分数。
+- 请求校验失败（422）不写日志。
+
+**代价与局限。**
+
+- `terms` 前置过滤：普通用户的可访问集合超过 OpenSearch 的 `index.max_terms_count`（默认 65536）时，查询会被拒绝，整次检索返回 503；请求体也随文档数线性增长（每个 ID 约 40 字节）。毕设规模不会触发。
+- 管理员不加前置过滤：已软删除、尚未清理的文档仍在索引里，会占通道前 100 名的位置。二次校验会把它们去掉，但管理员拿到的结果可能少于 top_k。普通用户的可访问集合本身已排除已删除文档，不受影响。
+- `fragment_size` 对 OpenSearch 默认的 unified 高亮器只是近似值，实际摘要可能比 `SEARCH_SNIPPET_CHARS` 长。`no_match_size` 截取的片段是否同样经过 HTML 编码，没有在 OpenSearch 上实测（见 `untested.md`）。
+- 一路失败即整体 503（例如 meta 成功、text 失败）。
+- 两路串行执行，延迟是两次查询之和。T22 加图像通道时再考虑并行。
+- 查询路径在索引不存在时会建索引，检索接口因此不是纯只读的。

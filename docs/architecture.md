@@ -83,10 +83,10 @@ flowchart TB
 | M5 | 文档解析 | 文件路径 → `ParsedDocument`（纯函数） | `backend/app/modules/parsing` | 是 | T09、T11 | 已完成：PDF（T09），Word、Excel、图片（T11）；已接入 Worker 的 parse 任务（T14） |
 | M6 | OCR | 图片 → `OCRResult` | `services/ocr_worker` | 是 | T17 | 未开始 |
 | M7 | 切分 | `ParsedDocument` → `Chunk[]`（纯函数） | `backend/app/modules/chunking` | 是 | T12 | 已完成（T12）；已接入 Worker 的 parse 任务（T14） |
-| M8 | 文本索引与 BM25 | `Chunk[]` / 查询 → 排序列表 | `backend/app/modules/text_index` | — | T13、T15 | 索引的创建、写入、删除已完成（T13），由 parse、cleanup 任务和改标签接口调用（T14），都未在真实 OpenSearch 上运行；BM25 查询在 T15 |
+| M8 | 文本索引与 BM25 | `Chunk[]` / 查询 → 排序列表 | `backend/app/modules/text_index` | — | T13、T15 | 索引的创建、写入、删除已完成（T13），由 parse、cleanup 任务和改标签接口调用（T14），都未在真实 OpenSearch 上运行；BM25 查询在 M11 里实现（T15） |
 | M9 | CLIP 模型服务 | 图片 / 文本 → 向量 | `services/clip_service` | 是 | T20 | 未开始 |
 | M10 | 向量索引 | 向量 → 排序列表 | `backend/app/modules/vector_index` | — | T21 | 未开始 |
-| M11 | 检索编排与 RRF | 查询 → `SearchHit[]` | `backend/app/modules/search` | — | T15、T22 | 未开始 |
+| M11 | 检索编排与 RRF | 查询 → `SearchHit[]` | `backend/app/modules/search` | — | T15、T22 | v1 已完成（T15）：meta、text 两路、RRF、数据库二次校验、检索日志；图像通道待 T22（`decisions.md` D28） |
 | M12 | 实验评测 | 实验配置 → 指标 + 原始结果 | `experiments/` | — | T19 | 未开始 |
 | M13 | 一致性检查 | — → 数据库 / 磁盘 / 索引的差异报告 | `backend/app/modules/consistency` | — | T18 | 未开始 |
 | M14 | 前端 | 只依赖 API 契约 | `frontend/` | — | T10、T16、T23 | 骨架已完成（T10）；检索页（T16）、图片与通道标记（T23）未开始 |
