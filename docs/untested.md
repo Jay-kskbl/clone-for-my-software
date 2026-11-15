@@ -1,6 +1,6 @@
 # 未测试清单（Not Tested）
 
-更新日期：2026-11-15（T17 完成后）
+更新日期：2026-11-15（T18 完成后）
 
 这里列出**已经写好但从未实际执行过**的测试，以及其他没有经过验证的性质。
 规则来自 GLOBAL.md“测试执行限制与代码验证要求”：跑不了的测试不强行执行、不安装工具，
@@ -23,11 +23,12 @@
 | T15 检索 v1 | `backend/tests/integration/test_search_db.py` | 20 | 本机没有 PostgreSQL；其中 1 项还需要 OpenSearch | 已复核，未发现阻塞问题；局限见 `decisions.md` D28 |
 | T16 抽取文本接口 | `backend/tests/integration/test_document_text.py` | 11 | 本机没有 PostgreSQL | 已复核，未发现问题 |
 | T17 OCR Worker 读写数据库 | `backend/tests/integration/test_ocr_worker_db.py` | 10 | 本机没有 PostgreSQL | 已复核，未发现问题 |
-| **合计** | | **168** | | |
+| T18 一致性检查 | `backend/tests/integration/test_consistency_db.py` | 12 | 本机没有 PostgreSQL | 已复核；首轮发现的误删问题已修复，见 `decisions.md` D31 |
+| **合计** | | **180** | | |
 
 T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器）和 T12（切分）不需要数据库，它们的测试全部在本机执行并通过，没有未测试项。
 
-对照：当前能在本机执行的测试，`backend/` 463 项、`shared/` 105 项、`services/ocr_worker/` 63 项（main 环境；另有 4 项真实识别测试在 ocr 环境里运行并通过）、`frontend/` 48 项，全部通过。
+对照：当前能在本机执行的测试，`backend/` 499 项、`shared/` 105 项、`services/ocr_worker/` 63 项（main 环境；另有 4 项真实识别测试在 ocr 环境里运行并通过）、`frontend/` 48 项，全部通过。
 
 ## 2. 影响最大的几项
 
@@ -156,6 +157,15 @@ OpenSearch 用假的网络层代替（替换 `app.state.text_index`），专门�
 - 竞争：`test_save_refuses_when_the_document_was_reparsed`、`test_save_refuses_when_the_document_was_deleted`
 - `test_ping`
 
+### T18 `test_consistency_db.py`（12）
+
+需要 PostgreSQL。OpenSearch 用假的网络层代替：
+
+- `test_consistent_database_has_no_issues`、`test_collect_db_reads_tags_cleanup_tasks_and_ocr_targets`
+- 三类人为制造的不一致（DEVPLAN 的 🧪）：`test_file_deleted_from_disk_is_detected`（磁盘）、`test_record_deleted_behind_the_index_is_detected_and_repaired`（索引）、`test_old_version_chunks_are_detected_and_repaired`（数据库）
+- 修复：`test_stale_ocr_results_are_removed`、`test_deleted_document_without_cleanup_gets_a_cleanup_task`、`test_orphan_file_is_deleted_but_a_referenced_file_never_is`、`test_reindex_rebuilds_a_document_from_the_database`、`test_rebuild_indices_recreates_both_and_reindexes_live_documents`、`test_index_repairs_are_skipped_when_the_search_service_is_down`
+- 误删防护：`test_chunks_of_a_document_being_parsed_are_never_deleted`
+
 ## 4. 不是测试、但同样没有验证过的性质
 
 | 项目 | 说明 | 记录位置 |
@@ -174,6 +184,8 @@ OpenSearch 用假的网络层代替（替换 `app.state.text_index`），专门�
 | 解析超时对真实解析器的作用 | 超时在 Worker 子进程边界执行，机制本身有测试（`test_worker_runner.py`）；但解析器要到 T14 才接入 Worker，“一个真的卡住的解析被杀掉”还没有端到端跑过 | `decisions.md` D24 |
 | 两个 mapping 文件能否被 OpenSearch 接受 | `doc_meta.json`、`chunks.json` 从未被任何 OpenSearch 接受过：分析器 `docmgr_text` 的定义 `{"type": "smartcn"}`（依赖插件注册的 smartcn 分析器类型）、在 index 设置里改写默认相似度为 BM25 的写法、`dynamic: strict`、`locator` 的 `enabled: false`。任何一处不被 2.19.1 接受，创建索引就整体失败 | `decisions.md` D26 |
 | mapping 文件随安装包发布 | T17 起 mapping 在 `shared/text_index/mappings/`，`shared/pyproject.toml` 声明了 package-data（`shared.text_index` 下的 `mappings/*.json`）。两个环境都是 editable 安装，没有做过普通安装来验证文件确实被打包。验证方法：在一个临时虚拟环境里 `pip install ./shared`（会联网下载依赖，按规则先征得同意），然后确认 `site-packages/shared/text_index/mappings/` 下有两个 JSON 文件 | `decisions.md` D26、D30 |
+| 一致性检查对真实 OpenSearch 的操作 | 索引扫描（`search_after` 分页）、结构检查（`_mapping`、`_settings` 的返回结构）、单个文档重建和 `rebuild-indices` 全部重建都从未在真实 OpenSearch 上运行过；单元测试和集成测试里的应答是按文档写的 | `decisions.md` D31 |
+| 一致性检查在真实数据上的运行 | 从未对一个真实使用过的系统跑过 `check` 和 `repair`，误报率、耗时和内存占用都没有数据 | `decisions.md` D31 |
 | OCR Worker 的完整链路 | 从未连过真实的 PostgreSQL 和 OpenSearch：领取 ocr 任务 → 识别 → 写 OCRResult 和 DocumentChunk → 写 chunks 索引 → 复查。主循环、续约、超时杀子进程只用假队列和假数据库测过（`services/ocr_worker/tests/`）；识别本身在 ocr 环境里用真实模型测过（4 项通过） | `decisions.md` D30 |
 | OCR 在真实文件上的表现 | 只用 PyMuPDF 现场生成的扫描版 PDF 页、图片和空白图验证过；没有真实扫描件、手机照片、多栏排版、竖排或手写文字 | `decisions.md` D30 |
 | OCR 子进程的内存上限 | `OCR_WORKER_MEMORY_LIMIT_MB` 用 `RLIMIT_AS` 实现，只在 Linux 上有效；本机（macOS）启动时打印“无法设置识别子进程的内存上限”，只受超时保护。没有在 Linux 上验证过 | `decisions.md` D16、D30 |
@@ -235,7 +247,7 @@ OpenSearch 用假的网络层代替（替换 `app.state.text_index`），专门�
 
    预期 20 项全部通过。
 7. 高亮摘要的转义（没有自动化测试，手工做一次）：用一个带随机前缀的测试索引，写入一条 `text` 为 `<script>alert(1)</script> 报销标准` 的片段，分别查“报销”（有命中词）和只靠词干匹配、没有可高亮词的查询，确认返回的 `evidence.snippet` 里 `<script>` 显示为 `&lt;script&gt;`，只有 `<em>` 是标签。结果记到本文件第 4 节对应的行。
-8. 同时设置 `TEST_DATABASE_URL` 和 `TEST_OPENSEARCH_URL` 运行整个 `pytest`，预期 631 项全部运行，0 项跳过（backend 目录）。
+8. 同时设置 `TEST_DATABASE_URL` 和 `TEST_OPENSEARCH_URL` 运行整个 `pytest`，预期 679 项全部运行，0 项跳过（backend 目录）。
 
 ## 6. OpenSearch 相关的未测试项与补测步骤
 

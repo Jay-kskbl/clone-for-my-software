@@ -170,7 +170,7 @@ BARRY zou/
   -   `services/ocr_worker`：只领取 ocr 任务；图片或 PDF 页 → OCRResult → 生成 `source_type=ocr` 的 chunks → 创建索引任务
   -   模型路径来自配置，缺失时启动报错；记录模型名称和版本
   -   🧪 识别生成的测试图；OCR 失败时任务标记 failed，原文件仍在
-- [ ] **T18 M13 一致性检查**
+- [x] **T18 M13 一致性检查**
   -   `python -m app.modules.consistency check|repair`：对账数据库、磁盘、两个索引，输出差异；`repair` 需要显式参数才执行
   -   🧪 人为制造三类不一致，都能被检测出来
 - [ ] **T19 M12 实验框架 v1** 🔒
@@ -222,8 +222,12 @@ BARRY zou/
 以下是 2026-11-14 核查 T05–T10 时发现、但不属于已完成任务范围的事项，留给后续任务或由 Barry 决定：
 
 - **（T14 已解决）** 之前记给 T14 的提醒都已处理，做法见 `decisions.md` D27：存储新增 `local_path()`；文档状态只跟随 parse 任务的规则已定，并在任务失败、回收、重试时一并更新；parse 处理函数开头检查文档是否已删除；按 `mime_type` 选解析器，图片写 `image_assets`；`parser_options` 只传 PDF 的 `pdf_ocr_min_chars`；索引改为在每个任务开始时 `ensure_indices`（没有放在 API、Worker 启动时）；上传后由 parse 任务写 `doc_meta`，删除由 cleanup 任务调用 `delete_document`，改标签接口提交后尽力同步 `doc_meta`；`TextIndexUnavailable` / `TextIndexError` / `ParseError` / `PipelineError` 都由 Worker 按 `retryable` 处理。
-- **给 T18（一致性检查）的补充（T17 记录）**
-  - 对账要覆盖 OCR：每条 `ocr_results` 都应对应文档当前版本的一个 OCR 对象；OCR 片段（`source_type=ocr`，seq 从 1e9 起）在数据库和 chunks 索引里应当一致；旧版本或已删除文档留下的 OCR 片段要能发现并清理。
+- **给 T21 的补充（T18 记录）**
+  - 一致性检查（D31）还没有覆盖 `image_embeddings`：T21 写入向量后，补上“不再被任何图片引用的向量”和“向量索引与数据库不一致”的检测与修复（D10）。
+- **待定（T18 记录）**
+  - backend 通用 Worker 启动时不检查数据库，连不上时在领取循环里无限重试；OCR Worker 启动时连不上数据库就以退出码 1 结束（D30）。两者不一致，是否统一由 Barry 决定。
+- **待 Barry 同意后修改 CLAUDE.md（T18 记录）**
+  - “常用命令”里补上一致性检查：`backend/` 目录、main 环境，`python -m app.modules.consistency check`；修复用 `python -m app.modules.consistency repair --fix <类别> --yes`（不加 `--yes` 只演练；`rebuild-indices` 前先停掉两个 Worker）。需要完整的 `.env`（包括 `JWT_SECRET`）。
 - **给 T20、T21（CLIP）的参考（T17 记录）**
   - CLIP 服务和 embed 任务可以复用 `shared.task_queue.PgTaskQueue`，以及 OCR Worker“常驻子进程加载模型、超时或崩溃时杀掉重开”的写法（`services/ocr_worker/ocr_worker/engine_process.py`）。
 - **待改进（T17 记录）**
@@ -238,10 +242,6 @@ BARRY zou/
   - 图像通道目前在请求开启时报 `unavailable`（“图像检索尚未实现”），实现后改为真实状态。
 - **给 T19（实验框架）的衔接提醒（T15 补充）**
   - runner 直接调用 `app.modules.search.service.search`，从返回的 `SearchHit.channels` 或 SearchLog 读各通道原始名次和分数；对照组只通过 `channels`、`source_types` 切换（D28）。
-- **给 T18（一致性检查）的衔接提醒**
-  - 要能发现并清理“数据库里已经没有这个文档、索引里还有它的数据”的残留（D27 的竞争窗口）。
-  - 要能补上改标签时没有同步成功的 `doc_meta`：改标签接口在检索服务不可用时只记警告。
-  - 用 `refresh=False` 批量重建后再按条件删除，可能删不到尚未刷新的数据（D26）。
 - **给 T21 的衔接提醒**
   - parse 任务目前不创建 embed 任务。T21 要决定在哪里创建（建议与 OCR 任务一样，在 parse 成功的同一事务里），并按图片内容的 sha256 去重。
 - **待实验决定（T12 记录）**
@@ -272,7 +272,7 @@ BARRY zou/
 | T02 | 2026-11-13 | 43f7589 | shared 包测试 93 项通过 |
 | T03 | 2026-11-13 | 62f3201 | 后端测试 30 项通过，其中 13 项集成测试在本地 PostgreSQL 16.15 上运行；未在 docker-compose 的 postgres:16.6 容器上运行 |
 | T04 | 2026-11-13 | 403664d | 三份文档完成；Barry 于 2026-11-13 确认方案（含 api.md 的接口设计与 D12、D13），里程碑“方案评审”通过。遗留：decisions.md §2 中 OpenSearch、分词（A13）、降级预案（A14）、并发内存未测试，须在 T13 开始前确定；OCR/CLIP 规格分别在 T17、T20 开始前选定 |
-| T05 | 2026-11-13 | b39f3dd | 后端测试 74 项通过（其中存储 54 项、配置新增 3 项），13 项集成测试因未设置 TEST_DATABASE_URL 未运行（与本任务无关）；接口为 stage/commit/discard 两步写入 + put 简便方法；支持 pdf/png/jpg/docx/xlsx 五种类型；进程被强杀时残留的临时文件尚无清理入口，留给 T18 |
+| T05 | 2026-11-13 | b39f3dd | 后端测试 74 项通过（其中存储 54 项、配置新增 3 项），13 项集成测试因未设置 TEST_DATABASE_URL 未运行（与本任务无关）；接口为 stage/commit/discard 两步写入 + put 简便方法；支持 pdf/png/jpg/docx/xlsx 五种类型；进程被强杀时残留的临时文件尚无清理入口，留给 T18（已由 T18 的 `temp-files` 处理，见 decisions.md D31） |
 | T06 | 2026-11-13 | 56e8336 | 已执行：不需要数据库的测试 113 项通过（T06 新增 37 项：密码哈希、令牌、未登录 401、参数校验 422、数据库不可用 503）。**未测试（Not Tested）**：`tests/integration/test_auth.py` 中 19 项需要 PostgreSQL 的测试（注册登录全流程、重名 409、访问他人文档 403、管理员可见全部、共享后可见与取消共享后不可见、软删除不可见、create-admin 命令），原因是本机没有 PostgreSQL，按 GLOBAL“测试执行限制”不安装；已对这部分代码和测试做人工复核，未发现问题。T03 的 13 项迁移测试同样未测试 |
 | T07 | 2026-11-13 | 56e8336 | 计划经 Barry 批准后实现。已执行：后端测试 135 项通过（T07 新增 22 项：子进程执行的正常/异常/超时/崩溃/租约丢失，主循环的分发/回写/处理 N 个后退出/数据库出错不崩溃，配置校验）。**未测试（Not Tested）**：`tests/integration/test_task_queue.py` 的 18 项，包括 DEVPLAN 要求的全部四项 🧪（崩溃恢复、并发不重复领取、幂等、超过重试上限标记 failed），原因是本机没有 PostgreSQL，按 GLOBAL“测试执行限制”不安装；已逐条复核 SQL 与测试逻辑，未发现问题。内存上限在 macOS 上不生效（decisions.md D16）。里程碑“基础系统”要求 T07 四项测试全部通过，目前不满足 |
 | T08 | 2026-11-13 | a749a23 | 已执行：后端测试 188 项通过（T08 新增 53 项：文件名与标签规范化、上传各步骤失败后不留文件（用假的数据库会话模拟）、全部路由未登录 401、Content-Length 超限 413、配置校验）。**未测试（Not Tested）**：`tests/integration/test_documents.py` 的 41 项，包括 DEVPLAN 要求的三项 🧪 在真实数据库上的版本（上传中途失败不留半成品、删除后列表和下载都不可见、非法类型被拒绝），以及列表、分页、共享、标签、任务重试；原因是本机没有 PostgreSQL，按 GLOBAL“测试执行限制”不安装；已逐条复核代码与测试。新增依赖 python-multipart 由 Barry 单独批准（decisions.md D19）。至此共 91 项数据库集成测试未测试。未测试项的逐项清单见 `docs/untested.md`，下载记录见 `docs/downloads.md` |
@@ -286,3 +286,4 @@ BARRY zou/
 | T15 | 2026-11-15 | 68385a0 | 代码由“T11 实施 (fork)”会话编写（Barry 在该会话里让开始 T15），复核、测试、文档和提交由本会话完成。融合方式由 Barry 于 2026-11-15 在该会话选定“T15 就用 RRF (Recommended)”：`rrf.py` 从 T22 提前到 T15，k=60、每通道取前 100 个文件，都放配置；T22 只加图像通道、降级和消融配置。实现见 decisions.md D28：校验 → meta（doc_meta，文件名与标签）、text（chunks BM25，collapse 取每文档最佳片段作证据）两路 → RRF（只用名次，同分按 document_id 排序）→ 数据库二次校验（accessible_filter，不缓存）→ 先过滤后截取 top_k → 写 SearchLog；普通用户两路带可访问 ID 的 terms 前置过滤（只为召回），管理员不加；任何一路出错整体 503 SEARCH_UNAVAILABLE，故障也写日志；索引不存在时查询路径先建索引再查；图像通道未实现，默认关闭，开启时报 unavailable。新增 POST /api/search、SearchUnavailableError（503）、11 项 SEARCH_* 配置。已执行：后端测试 462 项通过（T15 新增 47 项，RRF、检索编排、配置），shared 93 项通过，代码检查通过。未测试（Not Tested）：`test_search_db.py` 20 项（19 项需要 PostgreSQL，1 项另需 OpenSearch），含 DEVPLAN 的四项 🧪；查询体从未被真实 OpenSearch 接受过；高亮转义待实测（untested.md OS-10）。复核发现 6 处局限，未改代码，写进 D28。没有修改附录 A，没有新下载 |
 | T16 | 2026-11-15 | 066350f | 代码由“T11 实施 (fork)”会话编写（Barry 在该会话里让开始 T16），复核、测试、浏览器检查、文档和提交由本会话完成。新增后端接口 GET /api/documents/{id}/text（当前版本片段，按 seq 排序，来自数据库；chunk_id 直接跳到所在页）；前端检索页（检索词进地址栏，503 与无结果分开显示，失败通道逐个提示）、预览页（PDF 用 pdf.js 画在 canvas 并跳到命中页，图片原生显示，Word/Excel 显示抽取文本并滚到命中片段）、顶部导航、文件列表“查看”。规则见 decisions.md D29；D22 改为“只在两处用 v-html，都先转义再只插入 <em>”。新增依赖 pdfjs-dist 6.5.438，Barry 于 2026-11-15 批准（先在编写会话选“同意安装 6.5.438 (Recommended)”，又在本会话选“同意，现在安装 (Recommended)”），随之自动带入 @napi-rs/canvas 两个可选包（约 28 MB，浏览器不用；Barry 随后决定保留），已登记 downloads.md #21–#23。已执行：后端测试 462 项通过；前端类型检查、构建通过，单元测试 48 项通过（T16 新增 18 项）；浏览器检查是对着临时模拟接口做的（模拟接口不是项目代码，没有提交）：检索结果、摘要里的 <script> 和 <img onerror> 只显示成文字、空结果与 503 分开显示、图像通道提示、刷新保留检索词、PDF 跳到命中页及翻页/页码/缩放、Word 分页并滚到命中段（首轮发现直接打开不滚动，修复后复查通过）、图片预览。未测试（Not Tested）：test_document_text.py 11 项（需要 PostgreSQL）；前端与真实后端联调；页面组件无自动化测试；PDF 只用测试文件验证过。**MVP-0 里程碑未达成，没有打 tag**：全部数据库与 OpenSearch 测试都没有运行，前后端没有联调。没有修改附录 A |
 | T17 | 2026-11-15 | 0151f34 | 计划由 Barry 在编写会话里批准（“批准，开始写”；选择“按原计划做 OCR Worker”“PP-OCRv5 mobile (Recommended)”“沿用 env_check/.venv-ocr (Recommended)”）；代码由“T11 实施 (fork)”会话编写，测试、复核、文档和提交由本会话完成。`services/ocr_worker`：只领取 ocr 任务，常驻识别子进程（模型只加载一次），PDF 页 200 dpi 渲染，识别结果按“文档 + 对象”替换，一页的行拼成一个文本块后切分，OCR 片段序号从 1e9 起每页预留 1000 个，保存时加锁复查版本、写索引只写不删、写完复查；启动时配置、模型、数据库任一有问题即退出码 1，不联网下载模型。chunking、text_index、PgTaskQueue、存储路径检查移到 shared（shared 新增 httpx 依赖）；parse 创建 ocr 任务时带上切分参数。规则见 decisions.md D30。新增下载：ocr 环境的 PyMuPDF 1.28.2、psycopg 3.3.9、psycopg-binary 3.3.9（Barry 批准，downloads.md #24–#26）；OCR 模型从本机缓存复制到 models/ocr（#27、#28，不进版本库）；shared 以 editable 方式离线装入两个环境。已执行：后端测试 463 项通过；shared 105 项通过；services/ocr_worker 63 项通过（main 环境）；🧪 真实识别 4 项在 ocr 环境通过（扫描版 PDF 页、独立图片、空白图、模型版本记录），用的是本地模型，~/.paddlex 没有新增模型、没有联网；启动检查三项通过（缺配置、模型目录不存在、数据库连不上都在约 1 秒内以退出码 1 结束）；代码检查通过。首轮复核发现并已修复：每行 OCR 文字各成一个片段；重新解析时 OCR 可能删掉新版本的索引片段；一个无效的测试用例；启动时连不上数据库不退出。未测试（Not Tested）：test_ocr_worker_db.py 10 项（需要 PostgreSQL）；OCR Worker 完整链路从未连真实数据库和 OpenSearch；真实扫描件；Linux 上的内存上限。CLAUDE.md 的命令说明待 Barry 同意后补（§4）。没有修改附录 A |
+| T18 | 2026-11-15 | （待填） | 代码由“T11 实施 (fork)”会话编写（Barry 在该会话里让开始 T18），测试、复核、文档和提交由本会话完成。`python -m app.modules.consistency check|repair`：以数据库为准，对账磁盘、`doc_meta`、`chunks`；19 种检测项，7 类修复（index、db-chunks、ocr-results、cleanup-tasks、temp-files、orphan-files、rebuild-indices）；repair 必须 `--fix` 指定类别，不加 `--yes` 只演练，每个动作执行前复查数据库；新文件、清理中的文档、正在处理的文档不报告；rebuild-indices 是 D26 要求的重建入口，需先停 Worker。规则见 decisions.md D31。首轮复核发现并已修复：对正在解析的文档，`repair --fix db-chunks` 会删掉解析中的新片段（另有 3 个小问题和 3 个新增检测项）。已执行：后端测试 499 项通过（T18 新增 36 项）；代码检查通过；命令行冒烟（三种 --help、repair 缺 --fix 时退出码 2、数据库连不上时立即以退出码 1 结束）。未测试（Not Tested）：test_consistency_db.py 12 项（需要 PostgreSQL，含 DEVPLAN 要求的三类不一致 🧪）；从未对真实 OpenSearch 扫描、检查结构和重建；从未在真实数据上跑过。CLAUDE.md 的命令说明待 Barry 同意后补（§4）。没有修改附录 A，没有新下载 |
