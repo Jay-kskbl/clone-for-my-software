@@ -228,8 +228,6 @@ BARRY zou/
   - CLIP 服务和 embed 任务可以复用 `shared.task_queue.PgTaskQueue`，以及 OCR Worker“常驻子进程加载模型、超时或崩溃时杀掉重开”的写法（`services/ocr_worker/ocr_worker/engine_process.py`）。
 - **待改进（T17 记录）**
   - 文本预览接口按 `seq` 排序，扫描页的 OCR 片段排在全部正文片段之后。如果要按页码穿插，需要改预览接口的排序规则。
-- **待 Barry 同意后修改 CLAUDE.md（T17 记录）**
-  - “常用命令”里补上 OCR Worker 的启动命令（`services/ocr_worker/` 目录下 `../../env_check/.venv-ocr/bin/python -m ocr_worker`）和测试命令（main 环境 `../../.venv-main/bin/python -m pytest`；真实识别 `../../env_check/.venv-ocr/bin/python -m unittest tests.test_real_ocr -v`），以及 ocr 环境的位置是 `env_check/.venv-ocr`。按规则 CLAUDE.md 只在 Barry 本人同意后修改。
 - **MVP-0 验收前必须做（T16 记录）**
   - 在有 PostgreSQL 和 OpenSearch（带 analysis-smartcn）的环境里补跑全部集成测试（untested.md 第 5 节），并把前端接到真实后端联调一遍：上传 PDF、Word → 等处理完成 → 检索 → 定位到页或段落 → 删除后搜不到。通过后再打 tag `mvp-0`。
   - 高亮摘要的 HTML 转义要在真实 OpenSearch 上确认（untested.md OS-10）。前端已对摘要做白名单清洗，只放行 `<em>`。
