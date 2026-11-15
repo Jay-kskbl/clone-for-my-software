@@ -243,8 +243,6 @@ BARRY zou/
   - `grade` 0–3 各等级的含义（README 里是建议写法）待 Barry 确认。
 - **给 T22、T26 的补充（T19 记录）**
   - OCR Worker 的参数（`OCR_MIN_CONFIDENCE`、`OCR_PDF_DPI`）还没有记录进实验配置，因为 backend 读不到 OCR Worker 的配置。正式实验前要补上，例如让 OCR Worker 把参数写进 `ocr_results`，或在实验配置里显式填写。
-- **待 Barry 同意后修改 CLAUDE.md（T19 记录）**
-  - “常用命令”里补上实验框架的三个命令（`backend/` 目录、main 环境）：`python -m app.modules.experiments validate`、`python -m app.modules.experiments import`、`python -m app.modules.experiments run --config ../experiments/configs/B1.json`。使用说明见 `experiments/README.md`。
 - **给 T21 的衔接提醒**
   - parse 任务目前不创建 embed 任务。T21 要决定在哪里创建（建议与 OCR 任务一样，在 parse 成功的同一事务里），并按图片内容的 sha256 去重。
 - **待实验决定（T12 记录）**
