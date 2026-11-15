@@ -16,8 +16,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-from app.modules.text_index.client import INDEX_NAMES, OpenSearchClient
-from app.modules.text_index.errors import TextIndexError
+from shared.text_index.client import INDEX_NAMES, OpenSearchClient
+from shared.text_index.errors import TextIndexError
 
 _MAPPINGS_DIR = Path(__file__).parent / "mappings"
 _ALREADY_EXISTS = "resource_already_exists_exception"

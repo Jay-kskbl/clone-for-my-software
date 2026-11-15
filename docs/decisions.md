@@ -170,7 +170,7 @@
 | OpenSearch 能否在本机稳定运行、占用多少内存 | 未测试 | — |
 | 中文分词方案（A13）：analysis-smartcn 还是 IK | Barry 于 2026-11-14 选定 analysis-smartcn（未测试：没有实测数据，阶段五可换） | D26 |
 | 是否启用 OpenSearch 降级预案（A14） | 待定（未测试） | — |
-| PaddleOCR 模型规格、单张图片耗时、内存占用 | 已实测，规格待 Barry 选定。paddlepaddle 3.3.1、paddleocr 3.7.0，CPU。PP-OCRv5 mobile：平均 0.44 s/图，峰值内存约 1.0 GB；默认模型 PP-OCRv6 medium：平均 0.62 s/图，峰值内存约 1.1 GB。三张合成测试图上两者 CER 均为 0，无法据此区分识别质量 | `results/02_ocr_mobile.json`、`results/02_ocr.json` |
+| PaddleOCR 模型规格、单张图片耗时、内存占用 | 已实测；Barry 于 2026-11-15 选定 PP-OCRv5 mobile（D30）。paddlepaddle 3.3.1、paddleocr 3.7.0，CPU。PP-OCRv5 mobile：平均 0.44 s/图，峰值内存约 1.0 GB；默认模型 PP-OCRv6 medium：平均 0.62 s/图，峰值内存约 1.1 GB。三张合成测试图上两者 CER 均为 0，无法据此区分识别质量 | `results/02_ocr_mobile.json`、`results/02_ocr.json` |
 | Chinese-CLIP 模型规格、编码耗时、内存占用、向量维度 | 已实测，运行设备待 Barry 选定。cn_clip 1.6.0、torch 2.15.0，模型 ViT-B-16（文本塔 RoBERTa-wwm-ext-base），向量维度 512。MPS：查询编码 P50 9.1 ms / P95 11.7 ms，图片 37.8 张/秒，峰值内存约 2.2 GB；CPU：P50 20.2 ms / P95 20.5 ms，图片 30.9 张/秒，峰值内存约 2.0 GB。链路合理性检查 5 条中对 4 条（仅验证链路，不是检索效果数据） | `results/03_clip_mps.json`、`results/03_clip.json` |
 | 全部组件同时运行时的总内存 | 未测试（依赖 OpenSearch） | — |
 
@@ -185,7 +185,7 @@
 |---|---|---|
 | 分词方案 | T13 文本索引的 mapping；`deploy/docker-compose.yml` 中 OpenSearch 的镜像 | T13 开始前 |
 | 是否启用降级预案 | T13、T21 的全部实现方式 | T13 开始前 |
-| OCR 模型规格 | T17 OCR Worker | T17 开始前 |
+| OCR 模型规格 | T17 OCR Worker | 已定：PP-OCRv5 mobile（2026-11-15，D30） |
 | CLIP 模型规格与向量维度 | T20 CLIP 服务、T21 向量索引 | T20 开始前 |
 
 T13 起，`deploy/docker-compose.yml` 改为在官方 2.19.1 镜像上安装 analysis-smartcn 的自定义镜像（`deploy/opensearch/Dockerfile`），该镜像从未构建过。是否启用降级预案（A14）仍未确定，T13 按“不启用”实现。
@@ -413,7 +413,7 @@ GLOBAL §2 P1 规定“某页文本层有效字符数低于配置阈值时，该
 - 拆开时，在窗口的最后四分之一里找断点，优先级为：换行，句末标点（。！？；!?;），空白和逗号。找不到才在上限处硬断开。英文句点不单独作断点，因为“3.14”“v1.2”里的点不是句末。
 - 长度按字符数计算，中文一个字、英文一个字母都算一个。默认 `CHUNK_MAX_CHARS=500`、`CHUNK_OVERLAP_CHARS=50`，配置要求重叠不超过上限的一半。两个默认值都是经验值，阶段五作为实验参数调整。
 - parse_version 由会影响片段内容的全部输入确定性地算出：切分算法版本（代码常量 `CHUNKER_VERSION`，改切分规则时加一）、两个切分参数、解析器名称和版本、调用方传入的解析参数（例如 PDF 的 `pdf_ocr_min_chars`）。形如 `c1-m500-o50-1a2b3c4d5e6f`：前缀便于肉眼辨认参数，后面 12 位是全部输入的 SHA-256。任何一项变化，版本号都随之变化，旧版本的片段整体删除（附录 A7）。
-- 切分模块只依赖 `shared` 和标准库，不依赖 backend 的其他部分，以后 OCR Worker（ocr 环境）需要时可以整体移到 `shared`。
+- 切分模块只依赖 `shared` 和标准库，不依赖 backend 的其他部分。已在 T17 整体移到 `shared/chunking`，供 OCR Worker（ocr 环境）使用（D30）。
 - 同一文档、同一 parse_version 下分几次切分时（正文一次，各页 OCR 各一次），`chunk_blocks` 用 `seq_start` 指定起始序号，由调用方保证各次的序号区间不重叠。具体怎么分配留给 T14/T17。
 
 **代价与局限。**
@@ -433,7 +433,7 @@ GLOBAL §2 P1 规定“某页文本层有效字符数低于配置阈值时，该
 - 统一的超时来自 `OPENSEARCH_TIMEOUT_SECONDS`（默认 10 秒）。索引名可以加前缀 `OPENSEARCH_INDEX_PREFIX`（默认为空），测试用它得到独立的索引，不碰正式数据。
 - 本模块不重试，重试交给任务框架（A3）。
 
-**索引结构**（`backend/app/modules/text_index/mappings/`，纳入版本管理）。
+**索引结构**（`shared/text_index/mappings/`，纳入版本管理；T13 时在 `backend/app/modules/text_index/`，T17 移到 shared，见 D30）。
 
 | 索引 | `_id` | 字段 |
 |---|---|---|
@@ -631,3 +631,67 @@ GLOBAL §2 P1 规定“某页文本层有效字符数低于配置阈值时，该
 - PDF 不能选中文字，也不能在 PDF 页面上高亮关键词，只能跳到命中页。
 - 从预览页后退到检索页时，结果会重新检索并回到页面顶部，不恢复之前的滚动位置。
 - 浏览器检查时发现：浏览器面板隐藏时 `requestAnimationFrame` 不执行，命中片段要等页面真正显示时才会滚动。这是测试环境的现象，正常使用的浏览器不受影响。
+
+### D30 OCR Worker（T17）
+
+代码：`services/ocr_worker/ocr_worker/`（`config`、`models`、`rendering`、`engine`、`engine_process`、`store`、`pipeline`、`loop`、`__main__`），运行在 ocr 环境（`env_check/.venv-ocr`）。
+
+**Barry 的选择（2026-11-15，在编写会话里）。** 三个问题的回答原样记录：“按原计划做 OCR Worker”“PP-OCRv5 mobile (Recommended)”“沿用 env_check/.venv-ocr (Recommended)”。计划的批准原话是“批准，开始写”。往 ocr 环境安装 psycopg、PyMuPDF 前，Barry 又在本会话里确认了一次（`downloads.md` #24–#26）。至此第 2 节“OCR 模型规格”这一待定项定为 PP-OCRv5 mobile。
+
+**模块移到 shared。** OCR Worker 在 ocr 环境里，不能导入 backend（附录 A4），但它要切分、写 chunks 索引、领取任务、检查存储路径。所以下面四样移到 `shared`，backend 改为从 shared 导入：
+
+- `shared/chunking`（原 `backend/app/modules/chunking`，M7）
+- `shared/text_index`（原 `backend/app/modules/text_index`，M8 的索引部分；mapping 文件随之移动，package-data 改在 `shared/pyproject.toml` 声明）
+- `shared/task_queue.py`（`PgTaskQueue`，原在 backend 的 `worker/loop.py`，那里保留一行再导出）
+- `shared/storage_keys.py`（storage_key 的白名单与路径安全检查，backend 存储模块的 `_resolve_key` 改为调用它）
+
+这样路径安全规则只有一处，切分和写索引的代码也只有一份。shared 因此新增依赖 httpx 0.28.1（三个环境里都已有同一版本）。
+
+**识别子进程常驻。** PaddleOCR 在一个常驻子进程里加载，模型只加载一次，实测 mobile 加载约 11 秒。PDF 页的渲染也在这个子进程里做。一页超时、子进程崩溃、租约丢失时，杀掉子进程，下一个任务前重新启动。主进程只负责领取任务、续约和写数据库与索引。
+
+**渲染。** PDF 页按 200 dpi（`OCR_PDF_DPI`）渲染成图片。按页面尺寸算出的像素数超过 `OCR_MAX_PIXELS`（默认 1 亿）时，在渲染前就拒绝。独立图片统一转成 RGB。
+
+**识别结果。**
+
+- 只使用 PaddleOCR 结果里的 `rec_texts`、`rec_scores`、`rec_polys` 三项，它们一一对应。不用 `dt_polys`，因为它包含识别后被过滤掉的框，与文字对不上。
+- `ocr_results` 表没有唯一约束，按“文档 + 识别对象（locator）”先删后插，重复执行结果相同。
+- `model_name` 为 `PP-OCRv5_mobile_det+PP-OCRv5_mobile_rec`。`model_version` 为 `paddleocr-<版本>/det-<sha 前 8 位>/rec-<sha 前 8 位>`，当前是 `paddleocr-3.7.0/det-afa1820c/rec-2460da90`。两个 `inference.pdiparams` 的完整 sha256：检测 `afa1820cb16c1fd0dad589d0f8b389139061c1ef6d68019685fd07be997dda5b`，识别 `2460da90875937c94db97eba74ae3d9e5d4c4c57c42f1f41531c09a26bcc771a`（GLOBAL §3.4 要求记录模型文件的 hash）。
+
+**切分。**
+
+- 一页（或一张图片）里的行用换行拼成一个文本块，再按 D25 的规则切分。不能每行一个块：按 D25，PDF 页和图片的块不与其他块合并，那样每行都会成为一个片段。
+- 切分参数随任务传递：parse 任务创建 ocr 任务时，把 `CHUNK_MAX_CHARS`、`CHUNK_OVERLAP_CHARS` 写进 `payload.chunking`。这样 OCR 片段与同一 parse_version 的正文片段用的是同一套参数，与 OCR Worker 自己的配置无关。
+- 置信度过滤只影响片段：低于 `OCR_MIN_CONFIDENCE` 的行不进入检索，识别结果仍然全部保存。默认 0，即全部保留，阈值是阶段五的实验参数。
+
+**序号。** OCR 片段与正文片段共用 `{document_id}:{parse_version}:{seq}`。正文从 0 连续编号；OCR 从 `OCR_SEQ_BASE = 1,000,000,000` 开始，每个识别对象预留 1000 个：PDF 第 p 页从 1e9 + (p−1)×1000 起，独立图片从 1e9 起。`seq` 是 32 位整数，按此最多容纳约 114 万页。一页切出超过 1000 个片段时报错，不重试。
+
+**一致性（与重新解析、删除的竞争）。**
+
+1. 开始时比较 `payload.parse_version` 与文档当前的版本，不一致（旧版本留下的任务）或文档已删除，就直接成功结束。
+2. 保存结果的事务里，先对文档行加共享锁（`FOR SHARE`）再查一次。文档不存在、已删除或版本已变，就什么都不写，任务成功结束。加锁期间文档不会被硬删除，所以也不会出现外键错误。
+3. 写索引只写不删（新增 `shared.text_index.write_chunks`；`index_document` 改为调用它，行为不变）。先用 `delete_chunk_range` 删掉这一页预留区间里的旧片段。
+4. 写完再查一次：文档被删除了，就撤掉它在索引里的全部数据；被重新解析了，就只撤掉自己写的这个区间，不碰新版本的片段。
+
+**文档状态。** 沿用 D27：OCR 的成败不改变文档状态。
+
+**启动。** 下面任何一项有问题，都打印原因并以退出码 1 结束，不进入“假成功”状态：
+
+- 配置缺项或不合法；
+- 模型目录不存在，提示“本程序不会自动下载模型”；
+- 模型加载失败或超时；
+- 数据库连不上（加载模型后 `ping` 一次）。
+
+运行中数据库中断时不退出，按轮询间隔重试并记日志。不联网、不下载：两个模型都显式指定 `model_dir`，文档方向分类、文档矫正、文本行方向分类三个可选子模型关闭（它们没有本地目录，开着就会触发下载），并以 `PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK` 作为保险。
+
+与 backend 通用 Worker 的差异：通用 Worker 启动时不检查数据库，连不上时在领取循环里按轮询间隔无限重试，只记日志、不退出。两者在运行中断时的行为相同，只有启动时不同。
+
+**配置（`services/ocr_worker/ocr_worker/config.py`，读项目根目录的 `.env`，环境变量优先）。** `OCR_DET_MODEL_DIR`、`OCR_REC_MODEL_DIR`（默认 `models/ocr/` 下的两个目录）、`OCR_DEVICE`（cpu）、`OCR_PDF_DPI`（200）、`OCR_MIN_CONFIDENCE`（0）、`OCR_MAX_PIXELS`（1 亿）、`OCR_WORKER_LEASE_SECONDS`（60）、`OCR_WORKER_HEARTBEAT_SECONDS`（15，不超过租约的一半）、`OCR_WORKER_POLL_SECONDS`（2）、`OCR_WORKER_TASK_TIMEOUT_SECONDS`（300）、`OCR_WORKER_LOAD_TIMEOUT_SECONDS`（180）、`OCR_WORKER_MEMORY_LIMIT_MB`（3072）、`OCR_WORKER_MAX_TASKS`（200）。
+
+**代价与局限。**
+
+- 文本预览接口按 `seq` 排序，所以扫描页的 OCR 片段排在全部正文片段之后，不按页码穿插。
+- 行的顺序按 PaddleOCR 的输出，多栏排版可能错序。
+- 真实识别只在 3 种现场生成的图上验证过（扫描版 PDF 页、独立图片、空白图片），没有用真实扫描件或手机照片试过。
+- 子进程的内存上限在 macOS 上不生效（D16），启动时会打印“无法设置识别子进程的内存上限”，只受超时保护。
+- 识别子进程常驻，约占 1 GB 内存（T00 实测峰值约 1.0 GB）。
+- 单个 Worker 串行处理，没有并发。

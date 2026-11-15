@@ -12,6 +12,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from shared.text_index import client_from_settings
 
 from app.api import auth, document_text, documents, health, tasks
 from app.api import search as search_api
@@ -21,7 +22,6 @@ from app.config import Settings, load_settings
 from app.core.errors import ConfigError
 from app.db.session import make_engine, make_session_factory
 from app.modules.storage import LocalStorage
-from app.modules.text_index import client_from_settings
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:

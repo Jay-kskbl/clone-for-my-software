@@ -11,12 +11,12 @@
 """
 
 from shared.tasks import Task
+from shared.text_index import OpenSearchClient, delete_document, ensure_indices
 from sqlalchemy import delete
 from sqlalchemy.orm import Session
 
 from app.db.models import Document
 from app.modules.storage import LocalStorage
-from app.modules.text_index import OpenSearchClient, delete_document, ensure_indices
 from app.worker.context import task_context
 from app.worker.handlers.errors import PipelineError
 

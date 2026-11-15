@@ -9,12 +9,12 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 
+from shared.text_index import OpenSearchClient, client_from_settings
 from sqlalchemy.orm import Session
 
 from app.config import Settings, load_settings
 from app.db.session import make_engine, make_session_factory
 from app.modules.storage import LocalStorage
-from app.modules.text_index import OpenSearchClient, client_from_settings
 
 
 @dataclass(frozen=True)

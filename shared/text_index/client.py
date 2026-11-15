@@ -13,7 +13,7 @@ from typing import Any
 
 import httpx
 
-from app.modules.text_index.errors import TextIndexError, TextIndexUnavailable
+from shared.text_index.errors import TextIndexError, TextIndexUnavailable
 
 # 两个索引的逻辑名（附录 A8）。实际的索引名是“前缀 + 逻辑名”
 DOC_META = "doc_meta"

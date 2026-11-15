@@ -11,8 +11,7 @@ import uuid
 import httpx
 import pytest
 from shared.contracts import Chunk, DocxParaLocator, PdfPageLocator
-
-from app.modules.text_index import (
+from shared.text_index import (
     CHUNKS,
     DOC_META,
     OpenSearchClient,
@@ -24,7 +23,7 @@ from app.modules.text_index import (
     index_document,
     load_index_definition,
 )
-from app.modules.text_index import indexer as indexer_module
+from shared.text_index import indexer as indexer_module
 
 DOCUMENT_ID = uuid.UUID("11111111-2222-4333-8444-555555555555")
 OTHER_DOCUMENT_ID = uuid.UUID("99999999-2222-4333-8444-555555555555")

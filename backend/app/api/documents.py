@@ -8,6 +8,12 @@ from urllib.parse import quote
 
 from fastapi import APIRouter, File, Form, Query, Response, UploadFile
 from fastapi.responses import StreamingResponse
+from shared.text_index import (
+    OpenSearchClient,
+    TextIndexError,
+    ensure_indices,
+    index_doc_meta,
+)
 from sqlalchemy.orm import Session
 
 from app.api.deps import (
@@ -40,12 +46,6 @@ from app.modules.documents.tags import (
     tags_by_document,
 )
 from app.modules.storage import StoredFileNotFoundError
-from app.modules.text_index import (
-    OpenSearchClient,
-    TextIndexError,
-    ensure_indices,
-    index_doc_meta,
-)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["documents"])

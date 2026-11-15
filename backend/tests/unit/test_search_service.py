@@ -11,11 +11,11 @@ from types import SimpleNamespace
 import httpx
 import pytest
 from shared.contracts import Evidence
+from shared.text_index import OpenSearchClient
 
 from app.core.errors import RequestInvalidError, SearchUnavailableError
 from app.modules.search import SearchParams, SearchRequestData, params_from_settings, search
 from app.modules.search import service as service_module
-from app.modules.text_index import OpenSearchClient
 
 A = uuid.UUID("aaaaaaaa-0000-4000-8000-000000000000")
 B = uuid.UUID("bbbbbbbb-0000-4000-8000-000000000000")

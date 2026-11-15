@@ -5,6 +5,7 @@ from typing import Annotated
 
 from fastapi import Depends, Query, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from shared.text_index import OpenSearchClient
 from sqlalchemy.orm import Session
 
 from app.config import Settings
@@ -13,7 +14,6 @@ from app.core.security import InvalidTokenError, decode_access_token
 from app.db.models import User
 from app.modules.auth.permissions import ADMIN_ROLE
 from app.modules.storage import LocalStorage
-from app.modules.text_index import OpenSearchClient
 
 # auto_error=False：缺少或格式不对的 Authorization 头由下面统一转成 401 和项目的错误结构，
 # 而不是 FastAPI 默认的响应。

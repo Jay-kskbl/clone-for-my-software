@@ -1,0 +1,18 @@
+# OCR Worker（ocr 环境）的依赖，版本锁定（GLOBAL §8.3）。与 main 环境的包不得混装。
+#
+# 当前的 ocr 环境是 env_check/.venv-ocr（Python 3.11.18，T00 实测时创建，Barry 决定沿用）。
+# 在新机器上重建时：
+#   python3.11 -m venv .venv-ocr
+#   .venv-ocr/bin/pip install -r services/ocr_worker/requirements.txt
+#   .venv-ocr/bin/pip install -e shared
+#
+# 直接依赖：
+paddlepaddle==3.3.1      # 深度学习框架（CPU 版）
+paddleocr==3.7.0         # PP-OCR 检测 + 识别
+paddlex==3.7.2           # paddleocr 的依赖，同样锁定（它决定模型的加载方式）
+PyMuPDF==1.28.2          # PDF 页渲染、图片解码（与 main 环境同一版本）
+psycopg[binary]==3.3.9   # 领取任务、写识别结果和片段（shared 的依赖，同版本）
+pydantic==2.14.3         # 数据契约与配置校验（与 shared 同版本）
+httpx==0.28.1            # 写 chunks 索引（shared.text_index，与 main 同版本）
+numpy==2.3.5             # 像素数组（paddleocr 的依赖，锁定以便复现）
+# 间接依赖的完整清单见 env_check/results/freeze-ocr.txt（安装后由 pip freeze 生成）

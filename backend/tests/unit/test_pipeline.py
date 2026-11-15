@@ -20,14 +20,14 @@ import httpx
 import openpyxl
 import pymupdf
 import pytest
+from shared.chunking import ChunkingParams, make_parse_version
 from shared.tasks import TASK_CLEANUP, TASK_OCR, TASK_PARSE, Task
+from shared.text_index import OpenSearchClient, TextIndexUnavailable
 
 from app.db.models import Document, DocumentChunk, ImageAsset, ProcessingTask
-from app.modules.chunking import ChunkingParams, make_parse_version
 from app.modules.parsing import ParseError
 from app.modules.storage import LocalStorage
 from app.modules.storage.filetype import DOCX, JPEG, PDF, PNG, XLSX
-from app.modules.text_index import OpenSearchClient, TextIndexUnavailable
 from app.worker import registry
 from app.worker.handlers import (
     PipelineError,
@@ -352,7 +352,11 @@ def test_scanned_pdf_creates_one_ocr_task_per_page_and_no_chunks(events, index, 
     assert [t.task_type for t in tasks] == [TASK_OCR] * 3
     assert all(t.document_id == document.id for t in tasks)
     assert [t.payload for t in tasks] == [
-        {"parse_version": document.parse_version, "locator": {"type": "pdf_page", "page": n}}
+        {
+            "parse_version": document.parse_version,
+            "locator": {"type": "pdf_page", "page": n},
+            "chunking": {"max_chars": 500, "overlap_chars": 50},
+        }
         for n in (1, 2, 3)
     ]
     # 没有正文片段时不发批量写入，但仍要清掉这个文档其他版本的旧片段

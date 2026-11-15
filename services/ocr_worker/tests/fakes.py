@@ -1,0 +1,63 @@
+"""测试用的假识别引擎。必须是模块顶层的函数和类：识别子进程用 spawn 启动，要按名字导入它们。"""
+
+import os
+import time
+
+from ocr_worker.engine import RecognizedLine
+from ocr_worker.rendering import RenderedImage
+
+BOX = ((0.0, 0.0), (10.0, 0.0), (10.0, 5.0), (0.0, 5.0))
+
+
+class EchoEngine:
+    """按图片尺寸“识别”出一行固定的文字，用来确认渲染结果确实传到了引擎。"""
+
+    library_version = "fake-1.0"
+
+    def recognize(self, image: RenderedImage) -> list[RecognizedLine]:
+        assert len(image.rgb) == image.width * image.height * 3
+        return [
+            RecognizedLine(text=f"尺寸 {image.width}x{image.height}", confidence=0.9, bbox=BOX),
+            RecognizedLine(text="第二行文字", confidence=0.3, bbox=BOX),
+        ]
+
+
+class SlowEngine(EchoEngine):
+    def recognize(self, image: RenderedImage) -> list[RecognizedLine]:
+        time.sleep(30)
+        return []
+
+
+class CrashingEngine(EchoEngine):
+    def recognize(self, image: RenderedImage) -> list[RecognizedLine]:
+        os._exit(3)  # 模拟解释器崩溃：不报告任何结果就退出
+
+
+class RaisingEngine(EchoEngine):
+    def recognize(self, image: RenderedImage) -> list[RecognizedLine]:
+        raise RuntimeError("识别库内部错误")
+
+
+def echo_engine() -> EchoEngine:
+    return EchoEngine()
+
+
+def slow_engine() -> SlowEngine:
+    return SlowEngine()
+
+
+def crashing_engine() -> CrashingEngine:
+    return CrashingEngine()
+
+
+def raising_engine() -> RaisingEngine:
+    return RaisingEngine()
+
+
+def broken_engine() -> EchoEngine:
+    raise FileNotFoundError("模型文件缺失")
+
+
+def slow_loading_engine() -> EchoEngine:
+    time.sleep(30)
+    return EchoEngine()

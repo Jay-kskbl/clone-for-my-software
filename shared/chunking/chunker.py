@@ -22,6 +22,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from uuid import UUID
 
+from shared.chunking.splitter import split_spans
 from shared.contracts import (
     Chunk,
     DocxParaLocator,
@@ -31,8 +32,6 @@ from shared.contracts import (
     TextBlock,
     XlsxRangeLocator,
 )
-
-from app.modules.chunking.splitter import split_spans
 
 # 切分算法的版本。改动切分规则（不是参数）时加一，parse_version 随之变化，旧片段被整体替换
 CHUNKER_VERSION = 1

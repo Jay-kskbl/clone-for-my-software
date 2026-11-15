@@ -13,6 +13,9 @@ from typing import Protocol
 
 import psycopg
 from shared import tasks
+
+# PgTaskQueue 已移到 shared（OCR Worker 也要用）；__main__ 和测试仍从这里导入
+from shared.task_queue import PgTaskQueue  # noqa: F401
 from shared.tasks import Task
 
 from app.worker.runner import Handler, RunResult, run_in_subprocess
@@ -28,59 +31,6 @@ class TaskQueue(Protocol):
     def complete(self, task_id: uuid.UUID) -> bool: ...
     def fail(self, task_id: uuid.UUID, error: str, *, retryable: bool) -> str | None: ...
     def reset(self) -> None: ...
-
-
-class PgTaskQueue:
-    """绑定了 worker_id 和租约时长的 PostgreSQL 任务队列。"""
-
-    def __init__(self, database_url: str, *, worker_id: str, lease_seconds: float) -> None:
-        self._database_url = database_url
-        self._worker_id = worker_id
-        self._lease_seconds = lease_seconds
-        self._conn: psycopg.Connection | None = None
-
-    def _connection(self) -> psycopg.Connection:
-        if self._conn is None or self._conn.closed:
-            # autocommit：shared.tasks 的每个操作自己开事务、自己提交
-            self._conn = psycopg.connect(self._database_url, autocommit=True)
-        return self._conn
-
-    def claim(self, task_types: Sequence[str]) -> Task | None:
-        return tasks.claim(
-            self._connection(),
-            worker_id=self._worker_id,
-            task_types=task_types,
-            lease_seconds=self._lease_seconds,
-        )
-
-    def renew(self, task_id: uuid.UUID) -> bool:
-        return tasks.renew(
-            self._connection(),
-            task_id=task_id,
-            worker_id=self._worker_id,
-            lease_seconds=self._lease_seconds,
-        )
-
-    def complete(self, task_id: uuid.UUID) -> bool:
-        return tasks.complete(self._connection(), task_id=task_id, worker_id=self._worker_id)
-
-    def fail(self, task_id: uuid.UUID, error: str, *, retryable: bool) -> str | None:
-        return tasks.fail(
-            self._connection(),
-            task_id=task_id,
-            worker_id=self._worker_id,
-            error=error,
-            retryable=retryable,
-        )
-
-    def reset(self) -> None:
-        """丢弃当前连接；下次操作时重新连接。数据库出错后调用。"""
-        if self._conn is not None:
-            try:
-                self._conn.close()
-            except psycopg.Error:
-                pass
-            self._conn = None
 
 
 @dataclass(frozen=True)

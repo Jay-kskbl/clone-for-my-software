@@ -3,10 +3,12 @@ name = "docmgr-shared"
 version = "0.1.0"
 description = "所有环境（main / ocr / clip）共用：数据契约、ID 规则、任务领取库"
 requires-python = ">=3.11"
-# 这个包会被装进三个虚拟环境，依赖必须保持最少（DEVPLAN §2：只依赖 pydantic + psycopg）。
+# 这个包会被装进三个虚拟环境，依赖必须保持最少。
+# T17 起多了 httpx：文本索引（shared/text_index）移到这里，OCR Worker 也要写 chunks 索引。
 dependencies = [
     "pydantic==2.14.3", # 数据契约
     "psycopg[binary]==3.3.9", # 任务队列（shared/tasks.py）直接访问 PostgreSQL
+    "httpx==0.28.1", # 文本索引（shared/text_index）调用 OpenSearch 的 REST 接口
 ]
 
 [project.optional-dependencies]
@@ -18,8 +20,12 @@ build-backend = "setuptools.build_meta"
 
 # 本目录自身就是 shared 包（import shared.contracts / shared.ids）
 [tool.setuptools]
-packages = ["shared", "shared.contracts"]
+packages = ["shared", "shared.contracts", "shared.chunking", "shared.text_index"]
 package-dir = { "shared" = "." }
+
+[tool.setuptools.package-data]
+# 两个索引的 mapping 是随代码一起发布的数据文件；不声明的话，非 editable 安装时不会被带上
+"shared.text_index" = ["mappings/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

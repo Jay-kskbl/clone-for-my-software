@@ -1,6 +1,6 @@
 # 未测试清单（Not Tested）
 
-更新日期：2026-11-15（T16 完成后）
+更新日期：2026-11-15（T17 完成后）
 
 这里列出**已经写好但从未实际执行过**的测试，以及其他没有经过验证的性质。
 规则来自 GLOBAL.md“测试执行限制与代码验证要求”：跑不了的测试不强行执行、不安装工具，
@@ -22,11 +22,12 @@
 | T14 解析流水线 | `backend/tests/integration/test_pipeline_db.py` | 23 | 本机没有 PostgreSQL；其中 2 项端到端测试还需要 OpenSearch | 已复核，未发现问题 |
 | T15 检索 v1 | `backend/tests/integration/test_search_db.py` | 20 | 本机没有 PostgreSQL；其中 1 项还需要 OpenSearch | 已复核，未发现阻塞问题；局限见 `decisions.md` D28 |
 | T16 抽取文本接口 | `backend/tests/integration/test_document_text.py` | 11 | 本机没有 PostgreSQL | 已复核，未发现问题 |
-| **合计** | | **158** | | |
+| T17 OCR Worker 读写数据库 | `backend/tests/integration/test_ocr_worker_db.py` | 10 | 本机没有 PostgreSQL | 已复核，未发现问题 |
+| **合计** | | **168** | | |
 
 T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器）和 T12（切分）不需要数据库，它们的测试全部在本机执行并通过，没有未测试项。
 
-对照：当前能在本机执行的测试，`backend/` 462 项、`shared/` 93 项、`frontend/` 48 项，全部通过。
+对照：当前能在本机执行的测试，`backend/` 463 项、`shared/` 105 项、`services/ocr_worker/` 63 项（main 环境；另有 4 项真实识别测试在 ocr 环境里运行并通过）、`frontend/` 48 项，全部通过。
 
 ## 2. 影响最大的几项
 
@@ -147,6 +148,14 @@ OpenSearch 用假的网络层代替（替换 `app.state.text_index`），专门�
 - 跳转：`test_chunk_id_jumps_to_the_page_containing_it`、`test_stale_chunk_id_falls_back_to_the_first_page`、`test_invalid_or_foreign_chunk_id_is_422`（2）
 - 其他：`test_unparsed_document_returns_an_empty_list`、`test_permissions`、`test_deleted_or_unknown_document_is_404`、`test_invalid_source_type_is_422`
 
+### T17 `test_ocr_worker_db.py`（10）
+
+需要 PostgreSQL。用 OCR Worker 自己的 `PgStore`（psycopg 直接写 SQL）对真实表结构读写：
+
+- `test_document_state_is_read`、`test_save_writes_result_and_chunks`、`test_saving_the_same_page_twice_replaces_instead_of_adding`、`test_other_pages_and_body_chunks_are_untouched`、`test_empty_result_still_replaces_the_old_one`、`test_failure_inside_the_transaction_leaves_the_old_data`、`test_hard_deleting_the_document_removes_ocr_rows`
+- 竞争：`test_save_refuses_when_the_document_was_reparsed`、`test_save_refuses_when_the_document_was_deleted`
+- `test_ping`
+
 ## 4. 不是测试、但同样没有验证过的性质
 
 | 项目 | 说明 | 记录位置 |
@@ -164,7 +173,10 @@ OpenSearch 用假的网络层代替（替换 `app.state.text_index`），专门�
 | Word、Excel、图片解析器在真实文件上的表现 | T11 的测试文件是用 python-docx、openpyxl、PyMuPDF 现场生成的；没有用 Microsoft Word / Excel / WPS 实际保存的文件、手机或相机拍的照片验证过。尤其是 Excel 公式的缓存值，测试里是手工改 XML 模拟的 | `decisions.md` D24 |
 | 解析超时对真实解析器的作用 | 超时在 Worker 子进程边界执行，机制本身有测试（`test_worker_runner.py`）；但解析器要到 T14 才接入 Worker，“一个真的卡住的解析被杀掉”还没有端到端跑过 | `decisions.md` D24 |
 | 两个 mapping 文件能否被 OpenSearch 接受 | `doc_meta.json`、`chunks.json` 从未被任何 OpenSearch 接受过：分析器 `docmgr_text` 的定义 `{"type": "smartcn"}`（依赖插件注册的 smartcn 分析器类型）、在 index 设置里改写默认相似度为 BM25 的写法、`dynamic: strict`、`locator` 的 `enabled: false`。任何一处不被 2.19.1 接受，创建索引就整体失败 | `decisions.md` D26 |
-| mapping 文件随安装包发布 | `backend/pyproject.toml` 已声明 package-data（`app.modules.text_index` 下的 `mappings/*.json`），只确认过该配置能被正确读出；没有做过普通（非 editable）安装来验证文件确实被打包。验证方法：在一个临时虚拟环境里 `pip install ./backend`（会联网下载依赖，按规则先征得同意），然后确认 `site-packages/app/modules/text_index/mappings/` 下有两个 JSON 文件 | `decisions.md` D26 |
+| mapping 文件随安装包发布 | T17 起 mapping 在 `shared/text_index/mappings/`，`shared/pyproject.toml` 声明了 package-data（`shared.text_index` 下的 `mappings/*.json`）。两个环境都是 editable 安装，没有做过普通安装来验证文件确实被打包。验证方法：在一个临时虚拟环境里 `pip install ./shared`（会联网下载依赖，按规则先征得同意），然后确认 `site-packages/shared/text_index/mappings/` 下有两个 JSON 文件 | `decisions.md` D26、D30 |
+| OCR Worker 的完整链路 | 从未连过真实的 PostgreSQL 和 OpenSearch：领取 ocr 任务 → 识别 → 写 OCRResult 和 DocumentChunk → 写 chunks 索引 → 复查。主循环、续约、超时杀子进程只用假队列和假数据库测过（`services/ocr_worker/tests/`）；识别本身在 ocr 环境里用真实模型测过（4 项通过） | `decisions.md` D30 |
+| OCR 在真实文件上的表现 | 只用 PyMuPDF 现场生成的扫描版 PDF 页、图片和空白图验证过；没有真实扫描件、手机照片、多栏排版、竖排或手写文字 | `decisions.md` D30 |
+| OCR 子进程的内存上限 | `OCR_WORKER_MEMORY_LIMIT_MB` 用 `RLIMIT_AS` 实现，只在 Linux 上有效；本机（macOS）启动时打印“无法设置识别子进程的内存上限”，只受超时保护。没有在 Linux 上验证过 | `decisions.md` D16、D30 |
 | `deploy/opensearch/Dockerfile` | 从未构建过。安装 analysis-smartcn 需要联网 | `decisions.md` D26 |
 | `deploy/docker-compose.yml` 的语法 | 只用 macOS 自带的 Ruby 读过一遍 YAML，确认结构和 `build`、`image` 两项能读出来；没有用 `docker compose config` 校验过（本机没有 Docker），compose 自己的规则没有检查 | — |
 | smartcn 的切分效果 | A13 选定时没有任何实测数据，切分是否合理、对 B0–B2 的影响要到阶段五 | `decisions.md` A13 |
@@ -223,7 +235,7 @@ OpenSearch 用假的网络层代替（替换 `app.state.text_index`），专门�
 
    预期 20 项全部通过。
 7. 高亮摘要的转义（没有自动化测试，手工做一次）：用一个带随机前缀的测试索引，写入一条 `text` 为 `<script>alert(1)</script> 报销标准` 的片段，分别查“报销”（有命中词）和只靠词干匹配、没有可高亮词的查询，确认返回的 `evidence.snippet` 里 `<script>` 显示为 `&lt;script&gt;`，只有 `<em>` 是标签。结果记到本文件第 4 节对应的行。
-8. 同时设置 `TEST_DATABASE_URL` 和 `TEST_OPENSEARCH_URL` 运行整个 `pytest`，预期 620 项全部运行，0 项跳过。
+8. 同时设置 `TEST_DATABASE_URL` 和 `TEST_OPENSEARCH_URL` 运行整个 `pytest`，预期 631 项全部运行，0 项跳过（backend 目录）。
 
 ## 6. OpenSearch 相关的未测试项与补测步骤
 

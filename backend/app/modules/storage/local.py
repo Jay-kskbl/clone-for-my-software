@@ -17,6 +17,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import BinaryIO
 
+from shared.storage_keys import InvalidStorageKeyError as SharedInvalidStorageKeyError
+from shared.storage_keys import resolve_storage_key
+
 from app.modules.storage.errors import (
     EmptyFileError,
     FileTooLargeError,
@@ -25,7 +28,7 @@ from app.modules.storage.errors import (
     StoredFileNotFoundError,
     UnsupportedFileTypeError,
 )
-from app.modules.storage.filetype import SUPPORTED_TYPES, FileType, detect_file_type
+from app.modules.storage.filetype import FileType, detect_file_type
 
 # 这两个标志不是每个系统都有：O_NOFOLLOW 在 Windows 上不存在（那里只剩 _resolve_key 的检查），
 # O_BINARY 只在 Windows 上存在且必须加上，否则文件会被当成文本读。
@@ -35,12 +38,6 @@ _O_BINARY = getattr(os, "O_BINARY", 0)
 _TMP_DIR_NAME = ".tmp"
 _COPY_CHUNK_BYTES = 1024 * 1024
 
-_UUID_PATTERN = r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
-# storage_key 只接受本模块自己生成的形状。白名单比“禁止 ../”可靠：
-# 绝对路径、上级目录、反斜杠、空字节、多余的层级都匹配不上。
-_KEY_RE = re.compile(
-    rf"[0-9]{{4}}/{_UUID_PATTERN}/[0-9a-f]{{64}}\.(?:{'|'.join(t.ext for t in SUPPORTED_TYPES)})"
-)
 _TOKEN_RE = re.compile(r"[0-9a-f]{32}")
 
 
@@ -189,15 +186,11 @@ class LocalStorage:
 
     def _resolve_key(self, storage_key: str) -> Path:
         """storage_key → 根目录内的绝对路径。不合法或会逃出根目录时抛 InvalidStorageKeyError。"""
-        if not isinstance(storage_key, str) or not _KEY_RE.fullmatch(storage_key):
-            raise InvalidStorageKeyError("storage_key 格式不合法")
-
-        path = self._root / storage_key
-        # 格式检查挡住了 ../ 和绝对路径，这里挡符号链接：
-        # 中间目录若是符号链接，解析后的父目录就不等于按字面拼出来的父目录。
-        if path.parent.resolve() != path.parent or path.is_symlink():
-            raise InvalidStorageKeyError("storage_key 指向存储根目录之外")
-        return path
+        # 规则只写在一处（shared/storage_keys.py），OCR Worker 用的是同一份
+        try:
+            return resolve_storage_key(self._root, storage_key)
+        except SharedInvalidStorageKeyError as exc:
+            raise InvalidStorageKeyError(str(exc)) from None
 
     @staticmethod
     def _copy_to(stream: BinaryIO, dest: Path, max_size: int | None) -> tuple[str, int]:

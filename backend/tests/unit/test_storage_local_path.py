@@ -58,3 +58,12 @@ def test_local_path_does_not_keep_the_file_open(storage):
     # 取完路径后文件可以被正常删除（在 Windows 上，仍被打开的文件删不掉）
     storage.delete(stored.storage_key)
     assert not path.exists()
+
+
+def test_storage_extensions_in_shared_match_the_supported_types():
+    # 路径安全检查在 shared/storage_keys.py，扩展名清单必须与存储模块支持的类型一致
+    from shared.storage_keys import STORAGE_EXTENSIONS
+
+    from app.modules.storage.filetype import SUPPORTED_TYPES
+
+    assert sorted(STORAGE_EXTENSIONS) == sorted(t.ext for t in SUPPORTED_TYPES)

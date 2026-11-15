@@ -32,15 +32,22 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
+from shared.chunking import ChunkingParams, chunk_document, make_parse_version
 from shared.contracts import Chunk, OcrLocator, ParsedDocument
 from shared.ids import make_image_id
 from shared.tasks import STATUS_PROCESSING, STATUS_SUCCEEDED, TASK_OCR, Task
+from shared.text_index import (
+    OpenSearchClient,
+    delete_document,
+    ensure_indices,
+    index_doc_meta,
+    index_document,
+)
 from sqlalchemy import delete, or_, select
 from sqlalchemy.orm import Session
 
 from app.config import Settings
 from app.db.models import Document, DocumentChunk, ImageAsset, ProcessingTask
-from app.modules.chunking import ChunkingParams, chunk_document, make_parse_version
 from app.modules.documents.tags import tags_by_document
 from app.modules.parsing import (
     parse_docx,
@@ -55,13 +62,6 @@ from app.modules.storage import (
     StoredFileNotFoundError,
 )
 from app.modules.storage.filetype import DOCX, JPEG, PDF, PNG, XLSX
-from app.modules.text_index import (
-    OpenSearchClient,
-    delete_document,
-    ensure_indices,
-    index_doc_meta,
-    index_document,
-)
 from app.worker.context import task_context
 from app.worker.handlers.errors import PipelineError
 
@@ -165,8 +165,15 @@ def _record_image_asset(
     )
 
 
-def _ocr_payload(parse_version: str, target: OcrLocator) -> dict[str, Any]:
-    return {"parse_version": parse_version, "locator": target.model_dump(mode="json")}
+def _ocr_payload(parse_version: str, target: OcrLocator, params: ChunkingParams) -> dict[str, Any]:
+    """ocr 任务的参数。切分参数随任务一起交给 OCR Worker：OCR 片段必须与正文片段
+    按同一套参数切分，parse_version 才名副其实；不能依赖 ocr 环境自己的配置恰好相同。
+    """
+    return {
+        "parse_version": parse_version,
+        "locator": target.model_dump(mode="json"),
+        "chunking": {"max_chars": params.max_chars, "overlap_chars": params.overlap_chars},
+    }
 
 
 def _payload_key(payload: dict[str, Any]) -> str:
@@ -174,7 +181,11 @@ def _payload_key(payload: dict[str, Any]) -> str:
 
 
 def _create_ocr_tasks(
-    session: Session, document_id: uuid.UUID, parse_version: str, targets: Sequence[OcrLocator]
+    session: Session,
+    document_id: uuid.UUID,
+    parse_version: str,
+    targets: Sequence[OcrLocator],
+    params: ChunkingParams,
 ) -> int:
     """每个需要 OCR 的页或图片一个任务。已经为同一版本的同一对象建过任务的不再建。
 
@@ -192,7 +203,7 @@ def _create_ocr_tasks(
     }
     created = 0
     for target in targets:
-        payload = _ocr_payload(parse_version, target)
+        payload = _ocr_payload(parse_version, target, params)
         if _payload_key(payload) in existing:
             continue
         session.add(ProcessingTask(task_type=TASK_OCR, document_id=document_id, payload=payload))
@@ -256,7 +267,7 @@ def run_parse(
 
     document.status = STATUS_SUCCEEDED
     document.parse_version = parse_version
-    _create_ocr_tasks(session, document.id, parse_version, parsed.ocr_targets)
+    _create_ocr_tasks(session, document.id, parse_version, parsed.ocr_targets, params)
     session.commit()
 
 

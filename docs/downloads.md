@@ -32,7 +32,7 @@ GLOBAL.md 规定不安装任何新内容；确实需要时先问 Barry，批准�
 | 19 | 2026-11-14 13:27 | openpyxl | 3.1.5 | PyPI | `openpyxl/` | 约 2.0 MB | Excel 解析（M5） | T11 | Barry 于 2026-11-14 批准（`decisions.md` D24） |
 | 20 | 2026-11-14 13:27 | et-xmlfile | 2.0.0 | PyPI | `et_xmlfile/` | 约 92 KB | openpyxl 的依赖 | T11 | 同上，随 #19 自动安装 |
 
-小计：11 个包，安装后约 83.8 MB。编号 8–16、21–23 是下面的 Node.js 和 npm 包。
+小计：11 个包，安装后约 83.8 MB。编号 8–16、21–23 是下面的 Node.js 和 npm 包，24–28 是 ocr 环境的包和 OCR 模型。
 
 说明：
 
@@ -90,9 +90,34 @@ Barry 于 2026-11-14 批准。
 - #22、#23 没有安装脚本，安装时没有执行任何代码。npm 提示 fsevents 2.3.3（T10 已装）有安装脚本未被允许，与本次安装无关。
 - 本次安装共占用约 65.4 MB，其中约 27.9 MB 是浏览器里用不到的 #23。#22、#23 安装前没有预料到；Barry 于 2026-11-15 决定保留（浏览器用不到，不进打包结果）。
 
-### 2.5 合计
+### 2.5 Python 包（ocr 环境，T17）
 
-T05 至 T16：Python 包约 84 MB，Node.js 约 222 MB，npm 包约 248 MB（T10 约 183 MB，T16 约 65 MB），共约 554 MB。
+2026-11-15 13:06 安装，来源 PyPI，装在 `env_check/.venv-ocr/lib/python3.11/site-packages/`（T00 环境实测时建的 ocr 环境，T17 起 OCR Worker 也用它）。
+命令：`env_check/.venv-ocr/bin/pip install "psycopg[binary]==3.3.9" "PyMuPDF==1.28.2"`。版本与 main 环境相同。
+
+| # | 时间 | 内容 | 版本 | 安装位置 | 安装后大小 | 用途 | 批准 |
+|---|---|---|---|---|---|---|---|
+| 24 | 2026-11-15 13:06 | PyMuPDF | 1.28.2 | `pymupdf/`、`fitz/` | 约 58.1 MB | OCR Worker 把 PDF 页渲染成图片 | Barry 于 2026-11-15 批准：在编写会话里批准 T17 计划（“批准，开始写”），又在本会话里选“同意，现在安装 (Recommended)” |
+| 25 | 2026-11-15 13:06 | psycopg | 3.3.9 | `psycopg/` | 约 1.8 MB | OCR Worker 访问 PostgreSQL（任务队列、写 OCR 结果） | 同上 |
+| 26 | 2026-11-15 13:06 | psycopg-binary | 3.3.9 | `psycopg_binary/` | 约 9.7 MB | psycopg 的二进制实现（`[binary]` 附加项） | 同上，随 #25 安装 |
+
+- 大小按各包 `RECORD` 文件逐个统计。psycopg 依赖的 typing-extensions 环境里已有 4.16.0，没有重新下载。除这三个包外没有带入其他包（安装前后 `pip freeze` 比对）。
+- 项目的 shared 包将以开发模式（`pip install -e`）装进同一环境，不从网络下载代码；它的依赖都已在环境里。装好后在这里补记。
+
+**OCR 模型（本地复制，没有下载）**
+
+T17 不再从网络下载模型。下面两个目录是 2026-11-13 T00 环境实测时，PaddleOCR 第一次运行自动从 Hugging Face 下载到 `~/.paddlex/official_models/` 的（当时没有在本文件登记，这里补记）。2026-11-15 由本会话复制到项目的 `models/ocr/`。`models/` 已在 `.gitignore` 中，不进版本库。
+
+| # | 内容 | 来源 | 位置 | 大小 | `inference.pdiparams` 的 sha256 | 用途 |
+|---|---|---|---|---|---|---|
+| 27 | PP-OCRv5_mobile_det（文本检测，Apache-2.0） | Hugging Face，经 `~/.paddlex/official_models/` 复制 | `models/ocr/PP-OCRv5_mobile_det/` | 约 4.8 MB | `afa1820cb16c1fd0dad589d0f8b389139061c1ef6d68019685fd07be997dda5b` | OCR Worker（T17） |
+| 28 | PP-OCRv5_mobile_rec（文本识别，Apache-2.0） | 同上 | `models/ocr/PP-OCRv5_mobile_rec/` | 约 16 MB | `2460da90875937c94db97eba74ae3d9e5d4c4c57c42f1f41531c09a26bcc771a` | 同上 |
+
+- `~/.paddlex/official_models/` 里还有 T00 下载的 PP-OCRv6_medium_det（约 59 MB）、PP-OCRv6_medium_rec（约 73 MB），项目不用，没有复制。
+
+### 2.6 合计
+
+T05 至 T17：Python 包约 154 MB（main 环境约 84 MB，ocr 环境 T17 新增约 70 MB），Node.js 约 222 MB，npm 包约 248 MB（T10 约 183 MB，T16 约 65 MB），共约 624 MB；另有从本机缓存复制的 OCR 模型约 21 MB。
 
 ## 3. 没有下载、但曾经考虑过的
 

@@ -19,8 +19,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from shared.contracts import Evidence, SourceType
-
-from app.modules.text_index import (
+from shared.text_index import (
     CHUNKS,
     DOC_META,
     OpenSearchClient,

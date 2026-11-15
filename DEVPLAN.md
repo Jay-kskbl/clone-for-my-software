@@ -51,7 +51,7 @@ BARRY zou/
 ├── docs/                      architecture.md  data-model.md  api.md  env_report.md  decisions.md
 │                              untested.md（未测试清单）  downloads.md（下载与安装记录）
 ├── env_check/                 阶段一环境实测脚本
-├── shared/                    【所有环境共用】数据契约(§3.5)、ID 规则、任务领取库 —— 只依赖 pydantic + psycopg
+├── shared/                    【所有环境共用】数据契约(§3.5)、ID 规则、任务领取库、切分(M7)、文本索引(M8)、存储路径检查 —— 依赖 pydantic + psycopg + httpx（T17 起）
 ├── backend/                   【main 环境】
 │   ├── app/
 │   │   ├── main.py  config.py
@@ -63,8 +63,6 @@ BARRY zou/
 │   │   │   ├── documents/     M2
 │   │   │   ├── storage/       M3
 │   │   │   ├── parsing/       M5
-│   │   │   ├── chunking/      M7
-│   │   │   ├── text_index/    M8
 │   │   │   ├── vector_index/  M10
 │   │   │   ├── search/        M11（编排 + rrf.py）
 │   │   │   └── consistency/   M13
@@ -168,7 +166,7 @@ BARRY zou/
 - [x] **T16 前端检索页**
   -   搜索框、结果列表（文件名 + 命中片段高亮 + 来源位置）、PDF 用 pdf.js 打开并跳到对应页、Word/Excel 显示抽取文本
   -   **里程碑 MVP-0（打 tag `mvp-0`）：** 上传 PDF/Word → 检索 → 定位到页/段落 → 删除后搜不到（T16 完成时**未达成**，没有打 tag，原因见 §5 T16）
-- [ ] **T17 M6 OCR Worker** 🔒（ocr 环境）
+- [x] **T17 M6 OCR Worker** 🔒（ocr 环境）
   -   `services/ocr_worker`：只领取 ocr 任务；图片或 PDF 页 → OCRResult → 生成 `source_type=ocr` 的 chunks → 创建索引任务
   -   模型路径来自配置，缺失时启动报错；记录模型名称和版本
   -   🧪 识别生成的测试图；OCR 失败时任务标记 failed，原文件仍在
@@ -224,11 +222,14 @@ BARRY zou/
 以下是 2026-11-14 核查 T05–T10 时发现、但不属于已完成任务范围的事项，留给后续任务或由 Barry 决定：
 
 - **（T14 已解决）** 之前记给 T14 的提醒都已处理，做法见 `decisions.md` D27：存储新增 `local_path()`；文档状态只跟随 parse 任务的规则已定，并在任务失败、回收、重试时一并更新；parse 处理函数开头检查文档是否已删除；按 `mime_type` 选解析器，图片写 `image_assets`；`parser_options` 只传 PDF 的 `pdf_ocr_min_chars`；索引改为在每个任务开始时 `ensure_indices`（没有放在 API、Worker 启动时）；上传后由 parse 任务写 `doc_meta`，删除由 cleanup 任务调用 `delete_document`，改标签接口提交后尽力同步 `doc_meta`；`TextIndexUnavailable` / `TextIndexError` / `ParseError` / `PipelineError` 都由 Worker 按 `retryable` 处理。
-- **给 T17（OCR Worker）的衔接提醒**
-  - 处理 ocr 任务前，先比较 `payload.parse_version` 与文档当前的 `parse_version`，不一致就直接成功结束：文档重新解析后，旧版本的 OCR 任务不会被删除（D27）。
-  - OCR 片段与正文片段共用 `{document_id}:{parse_version}:{seq}` 序号空间。OCR 任务是一页（或一张图片）一个、分次执行的，每次的 `seq_start` 必须互不重叠并且是确定性的，例如按页码预留区间；用 `chunk_blocks` 的 `seq_start` 实现。重新解析正文时，parse 只删正文片段，同一版本的 OCR 片段保留；`index_document` 也不会删除同一版本的已有片段。
-  - OCR Worker 在 ocr 环境里，不能导入 backend。如果要在 OCR Worker 里切分，先把 `backend/app/modules/chunking` 移到 `shared`（它只依赖 shared 和标准库）；也可以让 OCR Worker 只写 OCRResult，由通用 Worker 切分。二选一在 T17 定。
-  - 文档状态目前不反映 OCR 的成败。如果需要“OCR 失败”的提示，在 T17 定规则。
+- **给 T18（一致性检查）的补充（T17 记录）**
+  - 对账要覆盖 OCR：每条 `ocr_results` 都应对应文档当前版本的一个 OCR 对象；OCR 片段（`source_type=ocr`，seq 从 1e9 起）在数据库和 chunks 索引里应当一致；旧版本或已删除文档留下的 OCR 片段要能发现并清理。
+- **给 T20、T21（CLIP）的参考（T17 记录）**
+  - CLIP 服务和 embed 任务可以复用 `shared.task_queue.PgTaskQueue`，以及 OCR Worker“常驻子进程加载模型、超时或崩溃时杀掉重开”的写法（`services/ocr_worker/ocr_worker/engine_process.py`）。
+- **待改进（T17 记录）**
+  - 文本预览接口按 `seq` 排序，扫描页的 OCR 片段排在全部正文片段之后。如果要按页码穿插，需要改预览接口的排序规则。
+- **待 Barry 同意后修改 CLAUDE.md（T17 记录）**
+  - “常用命令”里补上 OCR Worker 的启动命令（`services/ocr_worker/` 目录下 `../../env_check/.venv-ocr/bin/python -m ocr_worker`）和测试命令（main 环境 `../../.venv-main/bin/python -m pytest`；真实识别 `../../env_check/.venv-ocr/bin/python -m unittest tests.test_real_ocr -v`），以及 ocr 环境的位置是 `env_check/.venv-ocr`。按规则 CLAUDE.md 只在 Barry 本人同意后修改。
 - **MVP-0 验收前必须做（T16 记录）**
   - 在有 PostgreSQL 和 OpenSearch（带 analysis-smartcn）的环境里补跑全部集成测试（untested.md 第 5 节），并把前端接到真实后端联调一遍：上传 PDF、Word → 等处理完成 → 检索 → 定位到页或段落 → 删除后搜不到。通过后再打 tag `mvp-0`。
   - 高亮摘要的 HTML 转义要在真实 OpenSearch 上确认（untested.md OS-10）。前端已对摘要做白名单清洗，只放行 `<em>`。
@@ -286,3 +287,4 @@ BARRY zou/
 | T14 | 2026-11-15 | eecd032 | 代码由“T11 实施 (fork)”会话编写（Barry 在该会话里让开始 T14），复核、测试、文档和提交由本会话完成。parse 任务：读文档（已删除则不做）→ processing → 确保索引并写 doc_meta → 按 mime_type 解析、切分 → 换掉正文片段并登记图片 → 写 chunks 索引 → 复查是否被删除 → succeeded + parse_version + 按页创建 OCR 任务。cleanup 任务：只清理已软删除的文档，顺序为索引 → 文件 → 硬删除（最后一步，级联删除连任务记录一起删掉）。文档状态只跟随 parse 任务，最终失败时由 `shared/tasks.py` 的 fail / reclaim_expired 在同一事务里改为 failed；重试 failed 的 parse 任务时文档回到 pending。改标签后尽力同步 doc_meta；compose 关闭 `action.auto_create_index`；存储新增 `local_path()`。规则与局限见 decisions.md D27。已执行：后端测试 415 项通过（T14 新增 37 项：流水线 30、local_path 7），shared 93 项通过，代码检查通过。**未测试（Not Tested）**：`tests/integration/test_pipeline_db.py` 的 23 项，包括 DEVPLAN 要求的 🧪 端到端（上传 PDF → 等任务完成 → chunks 索引中有该文档的数据）。原因是本机没有 PostgreSQL，其中 2 项还需要 OpenSearch。`shared/tasks.py` 新增的 SQL 从未执行，真实子进程里的处理函数从未运行，`action.auto_create_index` 未验证。已登记到 docs/untested.md。复核时指出的 1 个应修问题（改标签可能让 OpenSearch 自动建出错误的索引）和 1 处文字错误已由编写会话修改。没有修改附录 A，没有新下载 |
 | T15 | 2026-11-15 | 68385a0 | 代码由“T11 实施 (fork)”会话编写（Barry 在该会话里让开始 T15），复核、测试、文档和提交由本会话完成。融合方式由 Barry 于 2026-11-15 在该会话选定“T15 就用 RRF (Recommended)”：`rrf.py` 从 T22 提前到 T15，k=60、每通道取前 100 个文件，都放配置；T22 只加图像通道、降级和消融配置。实现见 decisions.md D28：校验 → meta（doc_meta，文件名与标签）、text（chunks BM25，collapse 取每文档最佳片段作证据）两路 → RRF（只用名次，同分按 document_id 排序）→ 数据库二次校验（accessible_filter，不缓存）→ 先过滤后截取 top_k → 写 SearchLog；普通用户两路带可访问 ID 的 terms 前置过滤（只为召回），管理员不加；任何一路出错整体 503 SEARCH_UNAVAILABLE，故障也写日志；索引不存在时查询路径先建索引再查；图像通道未实现，默认关闭，开启时报 unavailable。新增 POST /api/search、SearchUnavailableError（503）、11 项 SEARCH_* 配置。已执行：后端测试 462 项通过（T15 新增 47 项，RRF、检索编排、配置），shared 93 项通过，代码检查通过。未测试（Not Tested）：`test_search_db.py` 20 项（19 项需要 PostgreSQL，1 项另需 OpenSearch），含 DEVPLAN 的四项 🧪；查询体从未被真实 OpenSearch 接受过；高亮转义待实测（untested.md OS-10）。复核发现 6 处局限，未改代码，写进 D28。没有修改附录 A，没有新下载 |
 | T16 | 2026-11-15 | 066350f | 代码由“T11 实施 (fork)”会话编写（Barry 在该会话里让开始 T16），复核、测试、浏览器检查、文档和提交由本会话完成。新增后端接口 GET /api/documents/{id}/text（当前版本片段，按 seq 排序，来自数据库；chunk_id 直接跳到所在页）；前端检索页（检索词进地址栏，503 与无结果分开显示，失败通道逐个提示）、预览页（PDF 用 pdf.js 画在 canvas 并跳到命中页，图片原生显示，Word/Excel 显示抽取文本并滚到命中片段）、顶部导航、文件列表“查看”。规则见 decisions.md D29；D22 改为“只在两处用 v-html，都先转义再只插入 <em>”。新增依赖 pdfjs-dist 6.5.438，Barry 于 2026-11-15 批准（先在编写会话选“同意安装 6.5.438 (Recommended)”，又在本会话选“同意，现在安装 (Recommended)”），随之自动带入 @napi-rs/canvas 两个可选包（约 28 MB，浏览器不用；Barry 随后决定保留），已登记 downloads.md #21–#23。已执行：后端测试 462 项通过；前端类型检查、构建通过，单元测试 48 项通过（T16 新增 18 项）；浏览器检查是对着临时模拟接口做的（模拟接口不是项目代码，没有提交）：检索结果、摘要里的 <script> 和 <img onerror> 只显示成文字、空结果与 503 分开显示、图像通道提示、刷新保留检索词、PDF 跳到命中页及翻页/页码/缩放、Word 分页并滚到命中段（首轮发现直接打开不滚动，修复后复查通过）、图片预览。未测试（Not Tested）：test_document_text.py 11 项（需要 PostgreSQL）；前端与真实后端联调；页面组件无自动化测试；PDF 只用测试文件验证过。**MVP-0 里程碑未达成，没有打 tag**：全部数据库与 OpenSearch 测试都没有运行，前后端没有联调。没有修改附录 A |
+| T17 | 2026-11-15 | （待填） | 计划由 Barry 在编写会话里批准（“批准，开始写”；选择“按原计划做 OCR Worker”“PP-OCRv5 mobile (Recommended)”“沿用 env_check/.venv-ocr (Recommended)”）；代码由“T11 实施 (fork)”会话编写，测试、复核、文档和提交由本会话完成。`services/ocr_worker`：只领取 ocr 任务，常驻识别子进程（模型只加载一次），PDF 页 200 dpi 渲染，识别结果按“文档 + 对象”替换，一页的行拼成一个文本块后切分，OCR 片段序号从 1e9 起每页预留 1000 个，保存时加锁复查版本、写索引只写不删、写完复查；启动时配置、模型、数据库任一有问题即退出码 1，不联网下载模型。chunking、text_index、PgTaskQueue、存储路径检查移到 shared（shared 新增 httpx 依赖）；parse 创建 ocr 任务时带上切分参数。规则见 decisions.md D30。新增下载：ocr 环境的 PyMuPDF 1.28.2、psycopg 3.3.9、psycopg-binary 3.3.9（Barry 批准，downloads.md #24–#26）；OCR 模型从本机缓存复制到 models/ocr（#27、#28，不进版本库）；shared 以 editable 方式离线装入两个环境。已执行：后端测试 463 项通过；shared 105 项通过；services/ocr_worker 63 项通过（main 环境）；🧪 真实识别 4 项在 ocr 环境通过（扫描版 PDF 页、独立图片、空白图、模型版本记录），用的是本地模型，~/.paddlex 没有新增模型、没有联网；启动检查三项通过（缺配置、模型目录不存在、数据库连不上都在约 1 秒内以退出码 1 结束）；代码检查通过。首轮复核发现并已修复：每行 OCR 文字各成一个片段；重新解析时 OCR 可能删掉新版本的索引片段；一个无效的测试用例；启动时连不上数据库不退出。未测试（Not Tested）：test_ocr_worker_db.py 10 项（需要 PostgreSQL）；OCR Worker 完整链路从未连真实数据库和 OpenSearch；真实扫描件；Linux 上的内存上限。CLAUDE.md 的命令说明待 Barry 同意后补（§4）。没有修改附录 A |

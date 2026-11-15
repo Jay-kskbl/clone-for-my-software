@@ -13,8 +13,7 @@ import uuid
 
 import pytest
 from shared.contracts import Chunk, PdfPageLocator
-
-from app.modules.text_index import (
+from shared.text_index import (
     CHUNKS,
     DOC_META,
     INDEX_NAMES,

@@ -27,6 +27,7 @@ from dataclasses import dataclass, field
 from typing import Any, Literal
 
 from shared.contracts import Channel, Evidence, SearchHit, SourceType
+from shared.text_index import OpenSearchClient, TextIndexError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -36,7 +37,6 @@ from app.modules.auth.permissions import ADMIN_ROLE, accessible_document_ids, ac
 from app.modules.search import channels as channel_queries
 from app.modules.search.params import CHANNELS, SearchParams
 from app.modules.search.rrf import fuse
-from app.modules.text_index import OpenSearchClient, TextIndexError
 
 logger = logging.getLogger(__name__)
 

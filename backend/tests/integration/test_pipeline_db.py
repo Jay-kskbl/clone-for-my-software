@@ -20,6 +20,7 @@ import pytest
 from fastapi.testclient import TestClient
 from shared import tasks
 from shared.tasks import TASK_CLEANUP, TASK_OCR, TASK_PARSE, Task
+from shared.text_index import CHUNKS, DOC_META, INDEX_NAMES, OpenSearchClient
 from sqlalchemy import func, select
 
 from app.config import Settings
@@ -29,7 +30,6 @@ from app.modules.auth import create_user
 from app.modules.documents.tags import replace_document_tags
 from app.modules.documents.tasks import retry_task
 from app.modules.storage import LocalStorage
-from app.modules.text_index import CHUNKS, DOC_META, INDEX_NAMES, OpenSearchClient
 from app.worker.handlers import PipelineError, run_cleanup, run_parse
 from app.worker.loop import PgTaskQueue, WorkerOptions, run_worker
 from app.worker.registry import HANDLERS

@@ -12,6 +12,13 @@ import docx
 import openpyxl
 import pytest
 from parsing_helpers import ZIP_LIMITS
+from shared.chunking import (
+    ChunkingParams,
+    chunk_blocks,
+    chunk_document,
+    make_parse_version,
+    split_spans,
+)
 from shared.contracts import (
     Chunk,
     DocxParaLocator,
@@ -23,13 +30,6 @@ from shared.contracts import (
 )
 from shared.ids import PARSE_VERSION_PATTERN, make_chunk_id, make_image_id
 
-from app.modules.chunking import (
-    ChunkingParams,
-    chunk_blocks,
-    chunk_document,
-    make_parse_version,
-    split_spans,
-)
 from app.modules.parsing import parse_docx, parse_xlsx
 
 DOC = uuid.UUID("11111111-2222-4333-8444-555555555555")

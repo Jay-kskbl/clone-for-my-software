@@ -18,17 +18,17 @@ import uuid
 import httpx
 import pytest
 from shared.contracts import Chunk, PdfPageLocator
-from sqlalchemy import func, select
-
-from app.db.models import Document, DocumentShare, SearchLog, User
-from app.modules.auth import create_user
-from app.modules.text_index import (
+from shared.text_index import (
     INDEX_NAMES,
     OpenSearchClient,
     ensure_indices,
     index_doc_meta,
     index_document,
 )
+from sqlalchemy import func, select
+
+from app.db.models import Document, DocumentShare, SearchLog, User
+from app.modules.auth import create_user
 
 PASSWORD = "correct-horse-battery"
 VERSION = "c1-m500-o50-aaaaaaaaaaaa"

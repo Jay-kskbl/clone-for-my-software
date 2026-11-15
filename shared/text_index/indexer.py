@@ -17,10 +17,10 @@ from typing import Any
 from uuid import UUID
 
 import httpx
-from shared.contracts import Chunk
 
-from app.modules.text_index.client import CHUNKS, DOC_META, OpenSearchClient
-from app.modules.text_index.errors import TextIndexError, TextIndexUnavailable
+from shared.contracts import Chunk
+from shared.text_index.client import CHUNKS, DOC_META, OpenSearchClient
+from shared.text_index.errors import TextIndexError, TextIndexUnavailable
 
 # 一次批量请求最多带多少个片段。片段上限 500 字左右，500 个大约 1 MB
 BULK_BATCH_SIZE = 500
@@ -115,15 +115,7 @@ def index_document(
         },
         refresh=refresh,
     )
-    for batch in _batches(chunks):
-        response = client.request(
-            "POST",
-            "/_bulk",
-            params=_refresh(refresh),
-            content=_bulk_body(index, batch),
-            headers=_NDJSON,
-        )
-        _check_bulk_result(response)
+    write_chunks(client, chunks, refresh=refresh)
 
 
 def index_doc_meta(
@@ -160,3 +152,53 @@ def delete_document(client: OpenSearchClient, document_id: UUID, *, refresh: boo
         params=_refresh(refresh),
         also_accept={404},
     )
+
+
+def delete_chunk_range(
+    client: OpenSearchClient,
+    *,
+    document_id: UUID,
+    parse_version: str,
+    seq_from: int,
+    seq_to: int,
+    refresh: bool = True,
+) -> int:
+    """删除一个文档在某个版本下、序号在 [seq_from, seq_to) 里的片段，返回删掉的条数。
+
+    OCR Worker 重新识别一页时用它清掉这一页的旧片段：index_document 只删别的版本，
+    同一版本里这一页如果这次切出的片段变少了，多出来的旧片段要靠这里删掉。
+    """
+    return _delete_by_query(
+        client,
+        client.index_name(CHUNKS),
+        {
+            "bool": {
+                "filter": [
+                    {"term": {"document_id": str(document_id)}},
+                    {"term": {"parse_version": parse_version}},
+                    {"range": {"seq": {"gte": seq_from, "lt": seq_to}}},
+                ]
+            }
+        },
+        refresh=refresh,
+    )
+
+
+def write_chunks(
+    client: OpenSearchClient, chunks: Sequence[Chunk], *, refresh: bool = True
+) -> None:
+    """批量写入（覆盖）这些片段，_id = chunk_id。不删除任何已有数据。
+
+    OCR Worker 用它写一页的 OCR 片段：不能用 index_document，因为它会删除这个文档
+    “其他版本”的片段——识别期间文档恰好被重新解析时，会把新版本的片段误删。
+    """
+    index = client.index_name(CHUNKS)
+    for batch in _batches(chunks):
+        response = client.request(
+            "POST",
+            "/_bulk",
+            params=_refresh(refresh),
+            content=_bulk_body(index, batch),
+            headers=_NDJSON,
+        )
+        _check_bulk_result(response)

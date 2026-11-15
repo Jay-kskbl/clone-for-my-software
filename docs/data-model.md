@@ -176,6 +176,8 @@ erDiagram
 
 `(document_id, parse_version, seq)` 唯一。
 
+**seq 的区间约定（T17，`decisions.md` D30）**：正文片段从 0 连续编号；OCR 片段从 1,000,000,000 开始，每个识别对象预留 1000 个——PDF 第 p 页从 1,000,000,000 + (p−1)×1000 起，独立图片从 1,000,000,000 起。两类片段共用 `(document_id, parse_version, seq)` 唯一约束，区间互不重叠。重新解析正文只删正文片段，OCR Worker 只删自己那一页的区间。
+
 ### image_assets —— 图片资源
 
 | 字段 | 类型 | 说明 |
@@ -194,8 +196,10 @@ erDiagram
 | document_id | uuid，外键 → documents（级联），有索引 | |
 | locator | jsonb | 被识别的对象：PDF 的某一页或一张图片 |
 | lines | jsonb | 每行的文字、四点 bbox、置信度（`shared.contracts.OCRLine`） |
-| model_name / model_version | varchar | OCR 模型名称和版本 |
+| model_name / model_version | varchar | OCR 模型名称和版本（T17 起为 `PP-OCRv5_mobile_det+PP-OCRv5_mobile_rec` 和 `paddleocr-<版本>/det-<sha8>/rec-<sha8>`，见 `decisions.md` D30） |
 | created_at | timestamptz | |
+
+表上没有唯一约束。OCR Worker 按“`document_id` + `locator`（jsonb 按值比较）”先删后插，一个识别对象只保留最新的一条，重复执行结果相同（T17）。
 
 ### image_embeddings —— 图片向量
 

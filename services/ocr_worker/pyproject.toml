@@ -1,0 +1,18 @@
+[project]
+name = "docmgr-ocr-worker"
+version = "0.1.0"
+description = "基于多模态信息检索的智能文档管理系统 —— OCR Worker（ocr 环境）"
+requires-python = ">=3.11"
+# 依赖的确切版本见 requirements.txt（ocr 环境整体锁定，GLOBAL §8.3）。
+# 不写在这里：本目录不打包安装，直接在 services/ocr_worker/ 下用 python -m ocr_worker 运行
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]

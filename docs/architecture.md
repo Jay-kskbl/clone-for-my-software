@@ -81,9 +81,9 @@ flowchart TB
 | M3 | 存储抽象 | 字节流 → `storage_key`；按 key 读取、删除 | `backend/app/modules/storage` | 是 | T05 | 已完成 |
 | M4 | 任务框架 | 任务 → 状态流转（领取、租约、重试、幂等） | `shared/tasks.py`、`backend/app/worker` | — | T07、T14 | 已完成（数据库集成测试未测试）；T14 登记了 parse、cleanup 两个处理函数 |
 | M5 | 文档解析 | 文件路径 → `ParsedDocument`（纯函数） | `backend/app/modules/parsing` | 是 | T09、T11 | 已完成：PDF（T09），Word、Excel、图片（T11）；已接入 Worker 的 parse 任务（T14） |
-| M6 | OCR | 图片 → `OCRResult` | `services/ocr_worker` | 是 | T17 | 未开始 |
-| M7 | 切分 | `ParsedDocument` → `Chunk[]`（纯函数） | `backend/app/modules/chunking` | 是 | T12 | 已完成（T12）；已接入 Worker 的 parse 任务（T14） |
-| M8 | 文本索引与 BM25 | `Chunk[]` / 查询 → 排序列表 | `backend/app/modules/text_index` | — | T13、T15 | 索引的创建、写入、删除已完成（T13），由 parse、cleanup 任务和改标签接口调用（T14），都未在真实 OpenSearch 上运行；BM25 查询在 M11 里实现（T15） |
+| M6 | OCR | 图片 → `OCRResult` | `services/ocr_worker` | 是 | T17 | 已完成（T17，`decisions.md` D30）：PP-OCRv5 mobile，ocr 环境；真实识别已在本机测试图上通过，未连真实数据库和 OpenSearch 运行 |
+| M7 | 切分 | `ParsedDocument` → `Chunk[]`（纯函数） | `shared/chunking`（T17 前在 `backend/app/modules/chunking`） | 是 | T12 | 已完成（T12）；parse 任务（T14）和 OCR Worker（T17）都使用 |
+| M8 | 文本索引与 BM25 | `Chunk[]` / 查询 → 排序列表 | `shared/text_index`（T17 前在 `backend/app/modules/text_index`）；查询在 `backend/app/modules/search` | — | T13、T15 | 索引的创建、写入、删除已完成（T13），由 parse、cleanup 任务和改标签接口调用（T14），都未在真实 OpenSearch 上运行；BM25 查询在 M11 里实现（T15） |
 | M9 | CLIP 模型服务 | 图片 / 文本 → 向量 | `services/clip_service` | 是 | T20 | 未开始 |
 | M10 | 向量索引 | 向量 → 排序列表 | `backend/app/modules/vector_index` | — | T21 | 未开始 |
 | M11 | 检索编排与 RRF | 查询 → `SearchHit[]` | `backend/app/modules/search` | — | T15、T22 | v1 已完成（T15）：meta、text 两路、RRF、数据库二次校验、检索日志；图像通道待 T22（`decisions.md` D28） |
@@ -129,7 +129,7 @@ flowchart LR
 |---|---|---|---|
 | API 服务 | main | HTTP 接口、鉴权、检索编排 | 系统不可用 |
 | 通用 Worker | main | 解析、切分、BM25 索引、清理任务 | 新上传的文件停留在“等待处理”，已有文件照常检索 |
-| OCR Worker | ocr | 只处理 OCR 任务 | 扫描件和图片暂时没有 OCR 文字，其余不受影响 |
+| OCR Worker | ocr | 只处理 OCR 任务；`services/ocr_worker` 目录下 `../../env_check/.venv-ocr/bin/python -m ocr_worker` 启动，识别子进程常驻加载模型 | 扫描件和图片暂时没有 OCR 文字，其余不受影响 |
 | CLIP 模型服务 | clip | 常驻加载模型，编码图片和查询文本 | 图像通道降级，检索结果只来自文本通道，并在响应中标记 |
 
 三个环境通过 `shared/` 包共用数据契约、ID 规则和任务领取逻辑，`shared/` 只依赖 pydantic 和 psycopg。
@@ -160,12 +160,15 @@ sequenceDiagram
 ```
 Worker 领取任务（SELECT … FOR UPDATE SKIP LOCKED，写入租约）
   └─ M5 解析 ─┬─ 有文本层的内容 ───────────→ M7 切分 → 写 DocumentChunk → M8 写 chunks 索引（source_type=body）
-              ├─ 扫描页 / 图片 → 创建 ocr 任务 → OCR Worker：M6 识别 → M7 切分 → M8 写 chunks 索引（source_type=ocr）
+              ├─ 扫描页 / 图片 → 创建 ocr 任务（一页或一张图一个）→ OCR Worker：比对版本 → 渲染 → M6 识别 → 写 OCRResult
+              │                  → M7 切分（一页一个文本块）→ 写 DocumentChunk（source_type=ocr）→ M8 写 chunks 索引 → 复查
               └─ 图片 ────────→ 创建 embed 任务 → M9 编码 → 写 ImageEmbedding → M10 写向量索引
   └─ 回写任务和文档状态：succeeded，或 failed + 失败原因
 ```
 
 T14 的实现（`decisions.md` D27）：parse 任务先写 `doc_meta`，再解析、切分、写 DocumentChunk、写 `chunks` 索引，最后把文档标为 succeeded 并按页（或整张图片）创建 ocr 任务；embed 任务尚未创建（T21）。文档状态只跟随 parse 任务。
+
+T17 的实现（`decisions.md` D30）：OCR Worker 在 ocr 环境运行，只领取 ocr 任务，切分和写索引用 shared 里的同一份代码（`shared.chunking`、`shared.text_index`）。OCR 片段的序号从 10 亿开始、每页预留 1000 个，与正文片段不重叠；保存时加锁复查版本，写索引只写不删，避免与重新解析、删除竞争。
 
 任务框架保证的四件事（GLOBAL §3.3，附录 A3）：
 
@@ -230,7 +233,7 @@ DELETE /api/documents/{id}
 - 文件名不写进 `chunks`，避免一个文件的每个片段都给文件名加一次分（附录 A8）。
 - B1 与 B2 的区别只是 `source_type` 的过滤条件，不维护两套索引。
 - 向量检索用精确计算，不用近似索引（附录 A12）。
-- 中文分词用 analysis-smartcn（附录 A13，Barry 于 2026-11-14 选定，未经实测）。mapping 文件在 `backend/app/modules/text_index/mappings/`，纳入版本管理；两个索引都是 strict mapping，不含权限字段（附录 A10），结构说明见 `decisions.md` D26。
+- 中文分词用 analysis-smartcn（附录 A13，Barry 于 2026-11-14 选定，未经实测）。mapping 文件在 `shared/text_index/mappings/`，纳入版本管理；两个索引都是 strict mapping，不含权限字段（附录 A10），结构说明见 `decisions.md` D26。
 
 ## 7. 故障与降级
 
