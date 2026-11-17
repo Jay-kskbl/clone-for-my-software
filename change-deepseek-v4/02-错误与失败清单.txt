@@ -1,0 +1,180 @@
+﻿基于多模态信息检索的智能文档管理系统
+T00–T19 测试：错误与失败清单
+更新时间：2026-11-16 11:00（Asia/Shanghai）
+测试机器：Windows 11 (10.0.22621, AMD64)
+Python 3.14.0（C:\Users\lenovo\AppData\Local\Programs\Python\Python314）
+PostgreSQL 16.15（本地免安装实例，127.0.0.1:55432）
+OpenSearch 2.19.1（本地免安装实例，127.0.0.1:9200，analysis-smartcn 2.19.1）
+说明：原项目的 .md 文件未改动；修复与测试先在 work/project 验证副本中进行。
+
+======================================================================
+一、当前仍未通过的测试（8 项）
+======================================================================
+
+【F01】Windows 符号链接权限不足（8 项）
+----------------------------------------------------------------------
+错误：OSError: [WinError 1314] 客户端没有所需的特权。
+原因：当前进程没有 SeCreateSymbolicLinkPrivilege，且 Windows 开发者模式未开启。
+      账户 lenovo 属于 Administrators，但 UAC 过滤了管理员令牌。
+
+shared（2 项）：
+  shared/tests/test_storage_keys.py::test_symlinked_directory_is_rejected
+  shared/tests/test_storage_keys.py::test_symlinked_file_is_rejected
+
+backend（6 项）：
+  backend/tests/unit/test_consistency.py::test_symlinks_are_never_treated_as_stored_files
+  backend/tests/unit/test_storage.py::test_file_symlink_pointing_outside_rejected
+  backend/tests/unit/test_storage.py::test_directory_symlink_pointing_outside_rejected[year]
+  backend/tests/unit/test_storage.py::test_directory_symlink_pointing_outside_rejected[document]
+  backend/tests/unit/test_storage.py::test_put_refuses_to_write_through_directory_symlink
+  backend/tests/unit/test_storage.py::test_symlinked_temp_directory_refused_at_startup
+
+影响：这 8 项验证“存储路径不能通过符号链接逃逸”，目前尚未实际执行通过。
+解决：开启 Windows 开发者模式，或以管理员身份运行这 8 项测试。
+状态：未通过（环境权限限制，不是代码缺陷）。
+
+======================================================================
+二、已定位并已修复的问题（在 work/project 验证副本中）
+======================================================================
+
+【E01】alembic.ini 中文注释导致数据库迁移在中文 Windows 崩溃（已修复）
+----------------------------------------------------------------------
+原错误：UnicodeDecodeError: 'gbk' codec can't decode byte 0x80 ...
+原因：configparser 在 Windows 中文区域按 cp936/GBK 读取 UTF-8 配置文件。
+影响：171 项数据库集成测试在 setup 阶段全部 ERROR。
+修复：backend/alembic.ini 第 1 行中文注释改为 ASCII 英文。
+验证：test_migrations.py 14 项全部通过。
+状态：验证副本已修复；原目录待写回。
+
+【E02】实验结果的 raw_results_path 使用 Windows 反斜杠（已修复）
+----------------------------------------------------------------------
+原错误：assert 'experiments\\runs\\...'.startswith('experiments/runs/') 失败
+位置：backend/app/modules/experiments/__main__.py
+修复：run_dir.relative_to(root.parent).as_posix()
+验证：test_experiments_db.py 8 项全部通过。
+状态：验证副本已修复；原目录待写回。
+
+【E03】实验测试按系统默认编码读取 UTF-8 结果文件（已修复）
+----------------------------------------------------------------------
+原错误：UnicodeDecodeError: 'gbk' codec can't decode byte 0xae ...
+位置：backend/tests/integration/test_experiments_db.py（3 处 read_text）
+修复：read_text(encoding="utf-8")
+验证：实验框架 8 项全部通过。
+
+【E04】中文文本排序断言依赖 Unicode 码点顺序（已修复）
+----------------------------------------------------------------------
+失败 1：test_ocr_worker_db.py::test_other_pages_and_body_chunks_are_untouched
+  实际排序：['正文', '第一页重识别', '第二页']
+  原断言：['第一页重识别', '第二页', '正文']
+失败 2：test_consistency_db.py::test_chunks_of_a_document_being_parsed_are_never_deleted
+  实际排序：['c1-m300-o50-...', 'c1-m500-o50-...']
+  原断言：[V1, V2]（V1、V2 字符串并非升序）
+修复：断言改为与 sorted([...]) 比较。
+验证：两项均通过。
+
+【E05】检索失败日志测试没有创建可访问文档（已修复）
+----------------------------------------------------------------------
+失败：test_search_db.py::test_every_search_is_logged_including_failures
+  实际 meta 状态 'ok'，期望 'unavailable'。
+原因：该用户没有任何可访问文档，两个通道都直接短路返回，不会访问 OpenSearch，
+      因此没有触发服务故障，状态自然是 ok。
+修复：测试开头 add_document(session, alice)，使通道真正访问故障服务。
+验证：通过。
+
+【E06】过期 OCR 结果测试把任务设成了 pending（已修复）
+----------------------------------------------------------------------
+失败：test_consistency_db.py::test_stale_ocr_results_are_removed
+  实际仍保留 page 2 的识别结果。
+原因：测试创建的 OCR 任务状态是默认 pending，文档因此被视为 busy；
+      analyze 按设计跳过 busy 文档的 OCR 问题，repair 不会删除。
+修复：测试任务状态改为 succeeded（仍用于标记当前 OCR 目标，但不再表示正在处理）。
+验证：通过。
+
+【E07】env_check/_common.py 在 Windows 上导入 Unix 专用 resource 模块（已修复）
+----------------------------------------------------------------------
+错误：ModuleNotFoundError: No module named 'resource'
+修复：try/except ImportError，Windows 下 resource=None，peak_rss_mb 返回 None。
+验证：01_check_opensearch.py 正常完成。
+
+【E08】OpenSearch 插件安装器 AccessDenied（环境问题，已绕过）
+----------------------------------------------------------------------
+原错误：java.nio.file.AccessDeniedException:
+  ...\plugins\.installing-...\analysis-smartcn-2.19.1.jar
+绕过：把官方插件 zip 手工解压到 plugins/analysis-smartcn。
+验证：_cat/plugins 显示 analysis-smartcn 2.19.1；13 项索引测试全部通过。
+说明：这是 Windows 文件权限/安装器的环境问题，不是项目代码缺陷。
+
+======================================================================
+三、已完成并通过的测试（本机真实执行）
+======================================================================
+
+1) backend 完整套件（PostgreSQL + OpenSearch）
+   - 722 通过，6 失败（全部是 F01 符号链接权限），0 跳过
+   - 总计 728 项，覆盖 T03、T06、T07、T08、T14、T15、T16、T17、T18、T19
+   - 包括：
+     * T07 崩溃恢复、并发不重复领取、幂等、超过重试上限标记 failed
+     * T08 上传失败不留半成品、删除后不可见、非法类型拒绝
+     * T14 上传 → Worker 真实子进程 → 索引 → 删除 → 清理 端到端
+     * T15 删除/取消共享即时生效、故障与无结果可区分、文件级去重
+     * T18 人为制造磁盘/索引/数据库三类不一致，全部检测并修复
+     * T19 完整实验运行、指标、实验记录、检索失败标记不完整
+
+2) OpenSearch 专项
+   - tests/opensearch/test_text_index_live.py：13 项全部通过
+   - test_pipeline_db.py + test_search_db.py 真实索引部分：43 项全部通过
+   - mapping、smartcn 分词、重复索引、删除、版本替换、高亮、权限过滤均已验证
+
+3) shared
+   - 103 通过，2 失败（F01 符号链接）
+
+4) frontend
+   - 单元测试 48 项全部通过
+   - 类型检查通过
+   - 生产构建成功（仅 Vite 大包提示，不是错误）
+
+5) T00 环境实测（本机 Windows）
+   - OpenSearch 2.19.1 启动成功，analysis-smartcn 已加载
+   - smartcn 切分：22 个词；standard：34 个单字（smartcn 明显更适合中文）
+   - BM25 检索、带权限过滤的精确向量检索均正常
+   - 延迟：BM25 P50 15.28 ms / P95 26.93 ms
+          精确向量 P50 16.89 ms / P95 30.06 ms
+          过滤向量 P50 16.01 ms / P95 26.31 ms
+   - JVM 堆：475.5 / 1024 MB
+   - 高亮转义已验证：
+     <script>alert(1)</script> 报销标准
+     → &lt;script&gt;alert(1)&lt;&#x2F;script&gt; <em>报销</em>标准
+
+======================================================================
+四、尚未验证的项目（不属于失败，但也不能写成“已验证”）
+======================================================================
+
+1) 前端与真实后端的浏览器联调（T10、T16）
+   - 前端单元测试、类型检查、构建已通过
+   - 尚未在浏览器里点击完整流程；后端 API 链路已由 T14/T15 端到端测试覆盖
+
+2) T00 的 OCR / CLIP 并发内存（OS-6）
+   - 本机未安装 OCR / CLIP 环境，未同时运行四个组件
+   - OpenSearch JVM 堆已实测（1 GB）
+
+3) IK 分词器（OS-2）
+   - 没有与 OpenSearch 2.19.1 匹配的 IK 插件，未安装；smartcn 已实测可用
+
+4) 真实扫描件、手机照片、Office 实际保存文件
+   - 仍使用测试生成的文件；原清单第 4 节的相关项目仍未验证
+
+5) T19 的真实评测数据
+   - 框架与测试已通过，但没有 200–500 个真实文档和人工标注；
+     MVP-1 仍不能认定为达成
+
+======================================================================
+五、结论
+======================================================================
+
+代码层面的阻塞性缺陷已全部定位并修复（E01–E07）。
+本机可执行的测试已全部通过：
+  backend 722/722（除 8 项符号链接权限）
+  shared 103/105
+  frontend 48/48
+  OpenSearch 专项 13/13 + 43/43
+剩余唯一失败是 Windows 符号链接权限，需要管理员权限或开发者模式；
+另有少量“需要真实数据/浏览器/OCR/CLIP”的项目无法在本机完成。

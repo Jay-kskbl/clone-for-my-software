@@ -1,0 +1,102 @@
+======================================================================
+change-deepseek-v4 汇总说明
+======================================================================
+生成时间：2026-11-16（Asia/Shanghai）
+项目目录：C:\Users\lenovo\Desktop\my-software-main\my-software-main
+汇总目录：C:\Users\lenovo\Desktop\my-software-main\my-software-main\change-deepseek-v4
+
+用途：
+  把本次 T00–T19 测试补全、真实 OCR 全链路验证、逐文件测试结果和全部代码修改
+  集中到一个文件夹，便于论文、答辩、复核和后续交接。
+
+一、目录内容
+----------------------------------------------------------------------
+00-汇总说明.txt                     本文件
+00-文件清单.txt                     文件大小与 SHA256 清单
+01-修改记录.txt                     当时写的修改记录（C01–C11 简版 + OCR 补充）
+02-错误与失败清单.txt               测试中发现的问题、原因、修复和验证
+03-测试结果逐文件汇总.txt           11 个连调测试文件的逐文件结果
+04-代码修改全部明细.txt             C01–C12 + N01 的完整逐处明细
+                                    （位置、原因、修改前后源码、验证结果）
+
+test-results\
+  integration-results.xml           190 个连调测试的原始 JUnit 明细
+  ocr-e2e\20261116-143732\
+    api.log                         OCR 全链路验证时的 API 日志
+    backend-worker.log              后端 Worker 日志
+    ocr-worker.log                  OCR Worker 日志（模型加载、任务完成）
+    ocr-smoke.png                   本次 OCR 识别用的测试图片
+
+modified-files\
+  backend\alembic.ini
+  backend\app\modules\experiments\__main__.py
+  backend\tests\integration\test_experiments_db.py
+  backend\tests\integration\test_consistency_db.py
+  backend\tests\integration\test_ocr_worker_db.py
+  backend\tests\integration\test_search_db.py
+  env_check\_common.py
+  services\ocr_worker\ocr_worker\engine_process.py
+  services\ocr_worker\ocr_worker\engine.py
+  storage-smoke\ocr_e2e.py
+
+说明：modified-files 是按原项目相对路径复制的“修改后”源码，便于直接对照；
+      修改前的源码和逐处说明见 04-代码修改全部明细.txt。
+
+二、测试结论
+----------------------------------------------------------------------
+11 个连调测试文件（需要 PostgreSQL / OpenSearch）：
+  190 passed，0 failed，0 skipped。
+  逐文件结果见 03-测试结果逐文件汇总.txt；
+  原始 JUnit 明细见 test-results/integration-results.xml。
+
+真实 OCR：
+  services/ocr_worker 主环境：63 passed，4 skipped（跳过项需 ocr 环境）。
+  services/ocr_worker ocr 环境：tests/test_real_ocr.py 4/4 passed。
+  真实 OCR 全链路：上传图片 -> 解析 -> OCR -> 写索引 -> 检索命中 -> 删除清理，PASS。
+  OCR 识别文本：智能文档管理系统 / OCR SMOKE 2026。
+
+其它已执行测试（来自 01-修改记录.txt）：
+  backend 完整套件：728 passed，0 failed，0 skipped。
+  shared 完整套件：105 passed，0 failed，0 skipped。
+  frontend：48 passed，类型检查通过，生产构建成功。
+  ruff：backend / shared / services/ocr_worker 全部通过。
+
+三、代码修改结论
+----------------------------------------------------------------------
+已修改文件：9 个。
+编号修改：C01–C12，共 12 个编号，对应 14 个代码位置
+          （C10、C11 各含两个位置）。
+新增测试脚本：N01，storage-smoke/ocr_e2e.py。
+全部逐处明细（含修改前/修改后完整相关代码块）见 04-代码修改全部明细.txt。
+
+四、没有修改的内容
+----------------------------------------------------------------------
+没有修改任何 .md 文件。
+没有创建 .env。
+没有修改数据库表结构、API 契约、索引 mapping 或依赖版本。
+原项目目录不是 Git 仓库（没有 .git），因此没有 commit。
+
+注意：docs/untested.md 仍显示旧的“未测试”状态，因为 Barry 要求不能修改任何 .md；
+      本次实际执行结果以 03-测试结果逐文件汇总.txt 和
+      test-results/integration-results.xml 为准。
+
+五、没有放进本文件夹的内容
+----------------------------------------------------------------------
+以下内容体积大或属于运行环境，仍保留在原项目目录，不复制到本汇总目录：
+  .venv-main\、env_check\.venv-ocr\、frontend\node_modules\、
+  models\、storage\、storage-smoke\ 的运行日志和测试图片副本（日志已复制）、
+  PostgreSQL 数据目录、OpenSearch 安装目录。
+本文件夹只汇总“改动、记录、结果和证据”，不是完整项目快照。
+
+六、怎么读
+----------------------------------------------------------------------
+1. 先看 00-文件清单.txt，确认文件完整性和 SHA256。
+2. 看 03-测试结果逐文件汇总.txt，了解 11 个连调文件的结果。
+3. 看 04-代码修改全部明细.txt，逐处核对修改前后的源码。
+4. 需要逐项测试证据时，打开 test-results/integration-results.xml，
+   每个 <testcase> 就是一个测试；没有 failure/error/skipped 子节点表示通过。
+5. 需要直接对照修改后的源码时，看 modified-files\ 下对应文件。
+
+======================================================================
+汇总结束
+======================================================================

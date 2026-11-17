@@ -1,0 +1,13 @@
+[32mCreating model: ('PP-OCRv5_mobile_det', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\my-software-main\\models\\ocr\\PP-OCRv5_mobile_det', None)[0m
+INFO: Could not find files for the given pattern(s).
+C:\Users\lenovo\Desktop\my-software-main\my-software-main\env_check\.venv-ocr\Lib\site-packages\paddle\utils\cpp_extension\extension_utils.py:712: UserWarning: No ccache found. Please be aware that recompiling all source files may be required. You can download and install ccache from: https://github.com/ccache/ccache/blob/master/doc/INSTALL.md
+  warnings.warn(warning_message)
+[32mCreating model: ('PP-OCRv5_mobile_rec', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\my-software-main\\models\\ocr\\PP-OCRv5_mobile_rec', None)[0m
+2026-11-16 14:37:51,166 INFO ocr_worker OCR 模型已加载：PP-OCRv5_mobile_det+PP-OCRv5_mobile_rec，paddleocr-3.7.0/det-afa1820c/rec-2460da90
+2026-11-16 14:37:51,591 INFO ocr_worker.loop 开始 OCR 任务 7d31c000-c31d-466e-8819-71a210e721bd（文档 4a6f0b02-dd58-4ab6-bec4-069da6f0ff20，第 1/3 次尝试）
+2026-11-16 14:37:53,623 INFO httpx HTTP Request: HEAD http://127.0.0.1:9200/smokeocr20261116143732doc_meta "HTTP/1.1 200 OK"
+2026-11-16 14:37:53,626 INFO httpx HTTP Request: HEAD http://127.0.0.1:9200/smokeocr20261116143732chunks "HTTP/1.1 200 OK"
+2026-11-16 14:37:53,672 INFO httpx HTTP Request: POST http://127.0.0.1:9200/smokeocr20261116143732chunks/_delete_by_query?refresh=true&conflicts=proceed "HTTP/1.1 200 OK"
+2026-11-16 14:37:53,987 INFO httpx HTTP Request: POST http://127.0.0.1:9200/_bulk?refresh=true "HTTP/1.1 200 OK"
+2026-11-16 14:37:53,990 INFO ocr_worker.loop 任务 7d31c000-c31d-466e-8819-71a210e721bd 完成（processed:2-lines:1-chunks）
+2026-11-16 14:37:53,991 INFO ocr_worker 已处理 1 个任务，退出

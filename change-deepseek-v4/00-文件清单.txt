@@ -1,0 +1,27 @@
+change-deepseek-v4 文件清单
+生成时间：2026-11-16 17:05:54
+说明：相对路径以 change-deepseek-v4 为根；SHA256 用于校验复制后的文件与原文件一致。
+
+序号	相对路径	大小(字节)	SHA256
+1	00-汇总说明.txt	5466	dee58df3c519a175f73f2caa32eeac24c474ecf3f7f8b9d3aa5a73b09a17cf46
+2	01-修改记录.txt	23379	e45923db8a73125fb891a54a31e3b539ac05b6dfbde3b49b0d21911ba7e1213c
+3	02-错误与失败清单.txt	9952	72e94951067154ca575ea469cac29aa17bb42bb18aa3f32dbe8bccd0ff97a574
+4	03-测试结果逐文件汇总.txt	4667	c0905f4ee016622a7978ff0c88f51f70eb189343222cd924ae0dc48338e19f74
+5	04-代码修改全部明细.txt	33057	a2ab4fd1363ee5d05c52849b0d0fde16ca67105360fa0c6847a83aeabf9ecdd2
+6	modified-files\backend\alembic.ini	754	bc411cce05e42ba3ab1fefe776aa8172ddafc6ba673cbff8172bf765e42be83e
+7	modified-files\backend\app\modules\experiments\__main__.py	15392	8390827d2319ea165933e5d20567697e30c13b69b017ad0d484a49c91f644681
+8	modified-files\backend\tests\integration\test_consistency_db.py	13805	cab69a6e7e925dbd870f9199d1186c933f0864d42cecfff38bfe5826b514a63d
+9	modified-files\backend\tests\integration\test_experiments_db.py	10677	6374b2da4fe08a774fd64ff816634a62d6746d32df85a4db4da5c3263a67013f
+10	modified-files\backend\tests\integration\test_ocr_worker_db.py	7570	0a829833beac1a5f9e3da8e655a18a7baee8424d1eca0e5682b3e80007bbefc2
+11	modified-files\backend\tests\integration\test_search_db.py	13303	72e27cd27467099cc3c83c47934359e962b792cad743cadeed9164a2ab78cd3b
+12	modified-files\env_check\_common.py	4989	5a2f017e92542c60edf6c6108d00ab0292ea20ae087856ce311b412d499b803a
+13	modified-files\services\ocr_worker\ocr_worker\engine_process.py	7738	18d2cf4d1e829d48a0333312f040a2603a884299f3f4a3f8e7ac343c7d896a93
+14	modified-files\services\ocr_worker\ocr_worker\engine.py	4359	dc9af434196ddc80cd3c2f517074fe871fc8e420c13ce69c9e5207b1cbc2fd87
+15	modified-files\storage-smoke\ocr_e2e.py	12861	62488a68fc99a6080cc681ca77022c3fc9c68d90f67c8250ad23282d66b2589d
+16	test-results\integration-results.xml	24332	4369462ad56d8170bcf3b4661fac2542412003bf2bac73d72b61341a0dd0ee4a
+17	test-results\ocr-e2e\20261116-143732\api.log	2282	58674c384e7fceda7d9c26c3dde383760369e743bb84c324e950617b55a89e31
+18	test-results\ocr-e2e\20261116-143732\backend-worker.log	1763	3e5827b3fc77212d263d88a77198f019fc7fe51ae2eafbf47187d2c56b045627
+19	test-results\ocr-e2e\20261116-143732\ocr-smoke.png	27967	683a4efe5d38768d70164d9091a4cb146da5bb3c13c5192d3413c4129d5ef0bf
+20	test-results\ocr-e2e\20261116-143732\ocr-worker.log	1801	5fe2e73a8de12608e71d35de10667cb22a203fedc48a0f6b034cd35e787669cc
+
+合计：20 个文件，226114 字节

@@ -1,0 +1,771 @@
+======================================================================
+代码修改全部明细（T00–T19 测试补全 + 真实 OCR 全链路）
+======================================================================
+项目：基于多模态信息检索的智能文档管理系统
+项目目录：C:\Users\lenovo\Desktop\my-software-main\my-software-main
+记录时间：2026-11-16（Asia/Shanghai）
+测试环境：Windows 11 / Python 3.14.0 / PostgreSQL 16.15 / OpenSearch 2.19.1 + analysis-smartcn
+
+说明：
+1. 本文件记录为完成 T00–T19 测试补全和真实 OCR 全链路验证所做的全部代码修改。
+2. 共修改 9 个已有文件，编号 C01–C12；其中 C10、C11 各包含两个代码位置。
+3. 另新增 1 个测试脚本 N01（storage-smoke/ocr_e2e.py），不属于生产代码。
+4. 所有 .md 文件均未修改；没有创建 .env；没有修改数据库表结构、API 契约、
+   索引 mapping 或依赖版本。
+5. “修改前”内容取自修改当时的记录；“修改后”内容取自当前文件。
+6. 原项目目录不是 Git 仓库（没有 .git），因此没有 commit；修改已直接写回原目录。
+
+======================================================================
+一、修改总表
+======================================================================
+编号  文件                                                          当前位置        类型
+----  ------------------------------------------------------------  --------------  ----------------
+C01   backend/alembic.ini                                          第 1–2 行       生产配置
+C02   backend/app/modules/experiments/__main__.py                  第 316 行       生产代码
+C03   backend/tests/integration/test_experiments_db.py             第 230–233 行   测试代码
+C04   backend/tests/integration/test_experiments_db.py             第 272–275 行   测试代码
+C05   backend/tests/integration/test_experiments_db.py             第 277 行       测试代码
+C06   backend/tests/integration/test_consistency_db.py             第 218–225 行   测试代码
+C07   backend/tests/integration/test_consistency_db.py             第 407 行       测试代码
+C08   backend/tests/integration/test_ocr_worker_db.py              第 159 行       测试代码
+C09   backend/tests/integration/test_search_db.py                  第 268–272 行   测试代码
+C10   env_check/_common.py                                         第 12–15 行     环境脚本
+                                                                    第 47–54 行
+C11   services/ocr_worker/ocr_worker/engine_process.py             第 144–150 行   生产代码
+                                                                    第 181–187 行
+C12   services/ocr_worker/ocr_worker/engine.py                     第 69–71 行     生产代码
+N01   storage-smoke/ocr_e2e.py                                     新增文件        测试脚本
+
+合计：已修改文件 9 个，编号修改 12 处，对应 14 个代码位置
+      （C10、C11 各含两个位置）；另新增测试脚本 1 个（N01）。
+
+======================================================================
+二、逐处修改明细
+======================================================================
+
+----------------------------------------------------------------------
+C01  backend/alembic.ini
+----------------------------------------------------------------------
+文件：C:\Users\lenovo\Desktop\my-software-main\my-software-main\backend\alembic.ini
+位置：第 1–2 行
+类型：生产配置 / Windows 编码兼容
+修改内容：把中文注释改成 ASCII 英文注释，避免 configparser 在中文 Windows 上
+          按 cp936/GBK 读取 UTF-8 文件时触发 UnicodeDecodeError。
+
+[修改前]
+# 数据库地址不写在这里：由 app/db/migrations/env.py 从配置（环境变量 / .env）读取。
+
+[修改后]
+# Database URL is not set here: app/db/migrations/env.py reads it from configuration
+# (environment variables / .env).
+
+影响：只改注释文字，配置项和运行行为完全不变。
+验证：backend/tests/integration/test_migrations.py 14 项全部通过。
+
+----------------------------------------------------------------------
+C02  backend/app/modules/experiments/__main__.py
+----------------------------------------------------------------------
+文件：C:\Users\lenovo\Desktop\my-software-main\my-software-main\backend\app\modules\experiments\__main__.py
+位置：第 316 行
+类型：生产代码 / Windows 路径格式
+修改内容：raw_results_path 写入数据库时改用 POSIX 正斜杠，避免 Windows 上
+          出现 experiments\runs\... 与项目其他位置和测试约定不一致。
+
+[修改前]
+    run_row.raw_results_path = str(run_dir.relative_to(root.parent))
+
+[修改后]
+    run_row.raw_results_path = run_dir.relative_to(root.parent).as_posix()
+
+影响：数据库中的实验记录路径跨平台一致；不改变实际文件位置。
+验证：test_experiments_db.py 8 项全部通过。
+
+----------------------------------------------------------------------
+C03  backend/tests/integration/test_experiments_db.py（第 1 处）
+----------------------------------------------------------------------
+文件：C:\Users\lenovo\Desktop\my-software-main\my-software-main\backend\tests\integration\test_experiments_db.py
+位置：第 230–233 行
+类型：测试代码 / 文件编码
+修改内容：results.jsonl 由生产代码以 UTF-8 写入，测试读取时显式指定 UTF-8，
+          避免 Windows 默认 GBK 解码中文时报 UnicodeDecodeError；同时按 ruff
+          行宽要求换行。
+
+[修改前]
+    records = [json.loads(line) for line in (run_dir / "results.jsonl").read_text().splitlines()]
+
+[修改后]
+    records = [
+        json.loads(line)
+        for line in (run_dir / "results.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+
+验证：test_experiments_db.py 8 项全部通过。
+
+----------------------------------------------------------------------
+C04  backend/tests/integration/test_experiments_db.py（第 2 处）
+----------------------------------------------------------------------
+文件：C:\Users\lenovo\Desktop\my-software-main\my-software-main\backend\tests\integration\test_experiments_db.py
+位置：第 272–275 行
+类型：测试代码 / 文件编码
+修改内容：同 C03，读取“检索服务不可用”场景的 results.jsonl 时显式指定 UTF-8。
+
+[修改前]
+    records = [json.loads(line) for line in (run_dir / "results.jsonl").read_text().splitlines()]
+
+[修改后]
+    records = [
+        json.loads(line)
+        for line in (run_dir / "results.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+
+验证：test_experiments_db.py 8 项全部通过。
+
+----------------------------------------------------------------------
+C05  backend/tests/integration/test_experiments_db.py（第 3 处）
+----------------------------------------------------------------------
+文件：C:\Users\lenovo\Desktop\my-software-main\my-software-main\backend\tests\integration\test_experiments_db.py
+位置：第 277 行
+类型：测试代码 / 文件编码
+修改内容：config.json 同样是 UTF-8，读取时显式指定编码。
+
+[修改前]
+    assert json.loads((run_dir / "config.json").read_text())["complete"] is False
+
+[修改后]
+    assert json.loads((run_dir / "config.json").read_text(encoding="utf-8"))["complete"] is False
+
+验证：test_experiments_db.py 8 项全部通过。
+
+----------------------------------------------------------------------
+C06  backend/tests/integration/test_consistency_db.py（第 1 处）
+----------------------------------------------------------------------
+文件：C:\Users\lenovo\Desktop\my-software-main\my-software-main\backend\tests\integration\test_consistency_db.py
+位置：第 218–225 行
+类型：测试代码 / 测试前置数据
+修改内容：test_stale_ocr_results_are_removed 需要 page 1 的 OCR 任务作为
+          “当前有效目标”，原测试没有写 status，默认 pending 会让文档被视为
+          busy，一致性检查按设计跳过该文档的 OCR 问题。改为 succeeded：
+          仍然是有效的 OCR 目标，但不再表示“正在处理”。
+
+[修改前]
+        ProcessingTask(
+            task_type="ocr",
+            document_id=document.id,
+            payload={"parse_version": V1, "locator": PAGE1},
+        )
+
+[修改后]
+        ProcessingTask(
+            task_type="ocr",
+            document_id=document.id,
+            status="succeeded",
+            payload={"parse_version": V1, "locator": PAGE1},
+        )
+
+验证：test_consistency_db.py 12 项全部通过。
+
+----------------------------------------------------------------------
+C07  backend/tests/integration/test_consistency_db.py（第 2 处）
+----------------------------------------------------------------------
+文件：C:\Users\lenovo\Desktop\my-software-main\my-software-main\backend\tests\integration\test_consistency_db.py
+位置：第 407 行
+类型：测试代码 / 跨平台排序
+修改内容：代码已经 sorted(...)，但期望值 [V1, V2] 本身不是升序；
+          改为与 sorted([V1, V2]) 比较。
+
+[修改前]
+    assert sorted(session.scalars(select(DocumentChunk.parse_version)).all()) == [V1, V2]
+
+[修改后]
+    assert sorted(session.scalars(select(DocumentChunk.parse_version)).all()) == sorted([V1, V2])
+
+验证：test_consistency_db.py 12 项全部通过。
+
+----------------------------------------------------------------------
+C08  backend/tests/integration/test_ocr_worker_db.py
+----------------------------------------------------------------------
+文件：C:\Users\lenovo\Desktop\my-software-main\my-software-main\backend\tests\integration\test_ocr_worker_db.py
+位置：第 159 行
+类型：测试代码 / 中文排序
+修改内容：texts 已经 sorted(...)，但期望列表按人工书写顺序排列；
+          Python 按 Unicode 码点排序，实际顺序为 ['正文', '第一页重识别', '第二页']。
+          改为与 sorted([...]) 比较。
+
+[修改前]
+    assert texts == ["第一页重识别", "第二页", "正文"]
+
+[修改后]
+    assert texts == sorted(["第一页重识别", "第二页", "正文"])
+
+验证：test_ocr_worker_db.py 10 项全部通过。
+
+----------------------------------------------------------------------
+C09  backend/tests/integration/test_search_db.py
+----------------------------------------------------------------------
+文件：C:\Users\lenovo\Desktop\my-software-main\my-software-main\backend\tests\integration\test_search_db.py
+位置：第 268–272 行
+类型：测试代码 / 测试前置数据
+修改内容：test_every_search_is_logged_including_failures 要验证“检索失败也写日志”。
+          原测试用户没有任何可访问文档，meta/text 两个通道都会直接短路返回，
+          不会访问 OpenSearch，因此不会触发服务故障。增加一个可访问文档，
+          让通道真正请求故障服务。
+
+[修改前]
+def test_every_search_is_logged_including_failures(client, session, alice):
+    headers = login(client, "alice")
+
+    search(client, headers, "第一次")  # 检索服务不可用 → 503
+
+[修改后]
+def test_every_search_is_logged_including_failures(client, session, alice):
+    headers = login(client, "alice")
+    add_document(session, alice)
+
+    search(client, headers, "第一次")  # 检索服务不可用 → 503
+
+验证：test_search_db.py 20 项全部通过（含真实 OpenSearch 1 项）。
+
+----------------------------------------------------------------------
+C10  env_check/_common.py（两个位置）
+----------------------------------------------------------------------
+文件：C:\Users\lenovo\Desktop\my-software-main\my-software-main\env_check\_common.py
+类型：环境实测脚本 / Windows 兼容
+修改内容：resource 是 Unix 专用模块，Windows 上 import 会直接失败；
+          peak_rss_mb() 依赖 resource，需要给出 Windows 下的降级值。
+
+位置 1：第 12–15 行
+
+[修改前]
+import resource
+
+[修改后]
+try:
+    import resource
+except ImportError:  # Windows 没有 resource 模块
+    resource = None  # type: ignore[assignment]
+
+位置 2：第 47–54 行
+
+[修改前]
+def peak_rss_mb() -> float:
+    """进程生命周期内的峰值常驻内存（MB）。
+
+    ru_maxrss 的单位：macOS 为字节，Linux 为 KB —— 这里统一换算。
+    """
+    peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    if sys.platform == "darwin":
+        return round(peak / 1024 / 1024, 1)
+    return round(peak / 1024, 1)
+
+[修改后]
+def peak_rss_mb() -> float | None:
+    """进程生命周期内的峰值常驻内存（MB）。
+
+    ru_maxrss 的单位：macOS 为字节，Linux 为 KB —— 这里统一换算。
+    """
+    if resource is None:  # Windows 没有 resource 模块
+        return None
+    peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    if sys.platform == "darwin":
+        return round(peak / 1024 / 1024, 1)
+    return round(peak / 1024, 1)
+
+验证：01_check_opensearch.py 在本机 Windows 上完整运行并输出结果。
+
+----------------------------------------------------------------------
+C11  services/ocr_worker/ocr_worker/engine_process.py（两个位置）
+----------------------------------------------------------------------
+文件：C:\Users\lenovo\Desktop\my-software-main\my-software-main\services\ocr_worker\ocr_worker\engine_process.py
+类型：生产代码 / Windows 子进程时序
+修改内容：子进程崩溃时，父进程先收到管道 EOF，再读取 process.exitcode。
+          在 Windows 上此时进程可能尚未完全退出，exitcode 为 None，
+          错误信息会变成“退出码 None”。先 join 等待子进程结束，再读取退出码。
+
+位置 1：第 144–150 行
+
+[修改前]
+        except EOFError:
+            exitcode = process.exitcode
+            self._stop()
+            raise EngineStartError(f"OCR 子进程启动时异常退出（退出码 {exitcode}）") from None
+
+[修改后]
+        except EOFError:
+            process.join(_KILL_WAIT_SECONDS)
+            exitcode = process.exitcode
+            self._stop()
+            raise EngineStartError(f"OCR 子进程启动时异常退出（退出码 {exitcode}）") from None
+
+位置 2：第 181–187 行
+
+[修改前]
+                except EOFError:
+                    exitcode = self._process.exitcode
+                    self._stop()
+                    return EngineResult(ok=False, error=f"识别子进程异常退出（退出码 {exitcode}）")
+
+[修改后]
+                except EOFError:
+                    self._process.join(_KILL_WAIT_SECONDS)
+                    exitcode = self._process.exitcode
+                    self._stop()
+                    return EngineResult(ok=False, error=f"识别子进程异常退出（退出码 {exitcode}）")
+
+验证：services/ocr_worker 主环境 63 项通过、4 项跳过；
+      ocr 环境真实识别 4 项全部通过。
+
+----------------------------------------------------------------------
+C12  services/ocr_worker/ocr_worker/engine.py
+----------------------------------------------------------------------
+文件：C:\Users\lenovo\Desktop\my-software-main\my-software-main\services\ocr_worker\ocr_worker\engine.py
+位置：第 69–71 行（PaddleOCR 调用内部）
+类型：生产代码 / Windows CPU 推理兼容
+修改内容：PaddlePaddle 3.3.1 在 Windows CPU 上启用 oneDNN 时，加载
+          PP-OCRv5 模型会报 NotImplementedError:
+          ConvertPirAttribute2RuntimeAttribute not support
+          [pir::ArrayAttribute<pir::DoubleAttribute>]。
+          在 Windows 上关闭 mkldnn，非 Windows 保持原行为。
+
+[修改前]
+        self._ocr = PaddleOCR(
+            text_detection_model_name=det_dir.name,
+            text_detection_model_dir=str(det_dir),
+            text_recognition_model_name=rec_dir.name,
+            text_recognition_model_dir=str(rec_dir),
+            use_doc_orientation_classify=False,
+            use_doc_unwarping=False,
+            use_textline_orientation=False,
+            device=device,
+        )
+
+[修改后]
+        self._ocr = PaddleOCR(
+            text_detection_model_name=det_dir.name,
+            text_detection_model_dir=str(det_dir),
+            text_recognition_model_name=rec_dir.name,
+            text_recognition_model_dir=str(rec_dir),
+            use_doc_orientation_classify=False,
+            use_doc_unwarping=False,
+            use_textline_orientation=False,
+            # PaddlePaddle 3.3.1 在 Windows CPU 上启用 oneDNN 时会拒绝加载
+            # PP-OCRv5 的 PIR 属性（NotImplementedError），关闭后推理正常。
+            enable_mkldnn=os.name != "nt",
+            device=device,
+        )
+
+影响：只影响 CPU 推理路径，不改模型、接口、数据库或索引结构。
+验证：tests/test_real_ocr.py 4/4 通过；真实 OCR 全链路 PASS。
+
+======================================================================
+三、新增测试脚本
+======================================================================
+
+----------------------------------------------------------------------
+N01  storage-smoke/ocr_e2e.py（新增文件）
+----------------------------------------------------------------------
+文件：C:\Users\lenovo\Desktop\my-software-main\my-software-main\storage-smoke\ocr_e2e.py
+类型：测试脚本（不是生产代码，不参与应用运行）
+用途：用普通 Python subprocess 启动 API、后端 Worker 和 OCR Worker，
+      验证“上传图片 -> 解析 -> OCR -> 写索引 -> 检索命中 -> 删除清理”全链路。
+说明：没有使用 Start-Job、ScriptBlock::Create、EncodedCommand 等动态 PowerShell 写法。
+[修改前]
+文件不存在。
+
+[修改后]
+以下为新增文件完整内容：
+
+"""Real OCR end-to-end smoke test.
+
+Starts the API, the backend worker, and one OCR worker with plain Python
+subprocess calls, then verifies:
+
+    upload image -> parse -> OCR worker -> chunks in index -> search hit
+
+All paths and settings are explicit; nothing is downloaded and no shell
+string is built dynamically.
+"""
+
+from __future__ import annotations
+
+import os
+import subprocess
+import sys
+import time
+import uuid
+from collections.abc import Callable
+from pathlib import Path
+from typing import TypeVar
+
+import httpx
+import pymupdf
+
+ROOT = Path(__file__).resolve().parents[1]
+MAIN_PY = ROOT / ".venv-main" / "Scripts" / "python.exe"
+OCR_PY = ROOT / "env_check" / ".venv-ocr" / "Scripts" / "python.exe"
+BACKEND_DIR = ROOT / "backend"
+OCR_DIR = ROOT / "services" / "ocr_worker"
+
+DATABASE_URL = "postgresql://docmgr:change-me@127.0.0.1:55432/docmgr_test"
+OPENSEARCH_URL = "http://127.0.0.1:9200"
+API_PORT = 8011
+API_URL = f"http://127.0.0.1:{API_PORT}"
+
+RUN_ID = time.strftime("%Y%m%d-%H%M%S")
+INDEX_PREFIX = f"smokeocr{RUN_ID.replace('-', '')}"
+RUN_DIR = ROOT / "storage-smoke" / "ocr-e2e" / RUN_ID
+
+T = TypeVar("T")
+
+
+def say(message: str) -> None:
+    print(message, flush=True)
+
+
+def wait_for(what: str, probe: Callable[[], T | None], timeout: float) -> T:
+    deadline = time.monotonic() + timeout
+    last_error: Exception | None = None
+    while time.monotonic() < deadline:
+        try:
+            value = probe()
+            if value is not None:
+                return value
+        except Exception as exc:  # keep polling until the deadline
+            last_error = exc
+        time.sleep(0.5)
+    suffix = f"; last error: {last_error}" if last_error else ""
+    raise TimeoutError(f"timed out waiting for {what}{suffix}")
+
+
+def log_tail(path: Path, lines: int = 40) -> str:
+    try:
+        content = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return "(log not available)"
+    return "\n".join(content[-lines:])
+
+
+def make_image(path: Path) -> None:
+    doc = pymupdf.open()
+    page = doc.new_page(width=520, height=180)
+    page.insert_text((30, 65), "智能文档管理系统", fontname="china-s", fontsize=30)
+    page.insert_text((30, 130), "OCR SMOKE 2026", fontname="helv", fontsize=30)
+    path.write_bytes(page.get_pixmap(dpi=180).tobytes("png"))
+    doc.close()
+
+
+def main() -> int:
+    RUN_DIR.mkdir(parents=True, exist_ok=True)
+    storage_dir = RUN_DIR / "storage"
+    image_path = RUN_DIR / "ocr-smoke.png"
+    make_image(image_path)
+    say(f"run dir: {RUN_DIR}")
+
+    env = os.environ.copy()
+    env.update(
+        {
+            "DATABASE_URL": DATABASE_URL,
+            "OPENSEARCH_URL": OPENSEARCH_URL,
+            "CLIP_SERVICE_URL": "http://127.0.0.1:8001",
+            "JWT_SECRET": "ocr-smoke-only-secret-0123456789abcdef",
+            "STORAGE_ROOT": str(storage_dir),
+            "OPENSEARCH_INDEX_PREFIX": INDEX_PREFIX,
+            "PYTHONUNBUFFERED": "1",
+            "PYTHONIOENCODING": "utf-8",
+            "WORKER_MAX_TASKS": "50",
+            "WORKER_POLL_SECONDS": "0.5",
+        }
+    )
+
+    handles = []
+    processes: list[tuple[str, subprocess.Popen]] = []
+
+    def start(
+        name: str,
+        args: list[str],
+        cwd: Path,
+        log_name: str,
+        extra: dict[str, str] | None = None,
+    ):
+        child_env = env.copy()
+        if extra:
+            child_env.update(extra)
+        handle = open(RUN_DIR / log_name, "w", encoding="utf-8")
+        handles.append(handle)
+        process = subprocess.Popen(
+            args,
+            cwd=str(cwd),
+            env=child_env,
+            stdout=handle,
+            stderr=subprocess.STDOUT,
+        )
+        processes.append((name, process))
+        say(f"started {name} (pid {process.pid})")
+        return process
+
+    def stop_all() -> None:
+        for name, process in reversed(processes):
+            if process.poll() is None:
+                process.terminate()
+                try:
+                    process.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait(timeout=5)
+                say(f"stopped {name}")
+        for handle in handles:
+            handle.close()
+
+    api_log = RUN_DIR / "api.log"
+    worker_log = RUN_DIR / "backend-worker.log"
+    ocr_log = RUN_DIR / "ocr-worker.log"
+    try:
+        start(
+            "api",
+            [
+                str(MAIN_PY),
+                "-m",
+                "uvicorn",
+                "app.main:create_app",
+                "--factory",
+                "--host",
+                "127.0.0.1",
+                "--port",
+                str(API_PORT),
+            ],
+            BACKEND_DIR,
+            api_log.name,
+        )
+        start("backend-worker", [str(MAIN_PY), "-m", "app.worker"], BACKEND_DIR, worker_log.name)
+
+        with httpx.Client(base_url=API_URL, timeout=20.0) as client:
+            def healthy() -> dict | None:
+                response = client.get("/health")
+                if response.status_code != 200:
+                    return None
+                data = response.json()
+                if data["database"]["status"] == "ok" and data["opensearch"]["status"] == "ok":
+                    return data
+                return None
+
+            health = wait_for("API health", healthy, 90)
+            say(
+                "health ok: database={}, opensearch={}, clip={}".format(
+                    health["database"]["status"],
+                    health["opensearch"]["status"],
+                    health["clip_service"]["status"],
+                )
+            )
+
+            username = "ocrsmoke_" + uuid.uuid4().hex[:8]
+            password = "SmokePass2026!"
+            response = client.post(
+                "/api/auth/register", json={"username": username, "password": password}
+            )
+            response.raise_for_status()
+            response = client.post(
+                "/api/auth/login", json={"username": username, "password": password}
+            )
+            response.raise_for_status()
+            headers = {"Authorization": f"Bearer {response.json()['access_token']}"}
+            say(f"registered and logged in as {username}")
+
+            response = client.post(
+                "/api/documents",
+                headers=headers,
+                files={"file": ("ocr-smoke.png", image_path.read_bytes(), "image/png")},
+            )
+            response.raise_for_status()
+            document = response.json()
+            document_id = document["id"]
+            say(f"uploaded document {document_id}")
+
+            def parsed() -> dict | None:
+                item = client.get(f"/api/documents/{document_id}", headers=headers)
+                if item.status_code != 200:
+                    return None
+                data = item.json()
+                if data["status"] == "failed":
+                    raise RuntimeError("parse task failed")
+                return data if data["status"] == "succeeded" else None
+
+            wait_for("parse task", parsed, 120)
+            say("parse task succeeded")
+
+            tasks = client.get(f"/api/documents/{document_id}/tasks", headers=headers).json()[
+                "items"
+            ]
+            ocr_tasks = [task for task in tasks if task["task_type"] == "ocr"]
+            if not ocr_tasks:
+                raise RuntimeError("parse succeeded but no OCR task was created")
+            say(f"OCR task queued: {ocr_tasks[0]['id']}")
+
+            ocr_process = start(
+                "ocr-worker",
+                [str(OCR_PY), "-m", "ocr_worker"],
+                OCR_DIR,
+                ocr_log.name,
+                {"OCR_WORKER_MAX_TASKS": "1", "OCR_WORKER_POLL_SECONDS": "0.5"},
+            )
+            try:
+                returncode = ocr_process.wait(timeout=300)
+            except subprocess.TimeoutExpired:
+                ocr_process.kill()
+                raise RuntimeError("OCR worker timed out")
+            if returncode != 0:
+                raise RuntimeError(f"OCR worker exited with {returncode}\n{log_tail(ocr_log)}")
+            say("OCR worker exited successfully")
+
+            def ocr_succeeded() -> dict | None:
+                items = client.get(
+                    f"/api/documents/{document_id}/tasks", headers=headers
+                ).json()["items"]
+                for task in items:
+                    if task["task_type"] != "ocr":
+                        continue
+                    if task["status"] == "failed":
+                        raise RuntimeError(f"OCR task failed: {task.get('error')}")
+                    if task["status"] == "succeeded":
+                        return task
+                return None
+
+            wait_for("OCR task completion", ocr_succeeded, 30)
+            say("OCR task succeeded")
+
+            def ocr_text() -> str | None:
+                response = client.get(
+                    f"/api/documents/{document_id}/text",
+                    params={"source_type": "ocr", "page_size": 100},
+                    headers=headers,
+                )
+                response.raise_for_status()
+                text = "".join(item["text"] for item in response.json()["items"])
+                normalized = "".join(text.split())
+                if "智能文档管理系统" in normalized and "2026" in normalized:
+                    return text
+                return None
+
+            recognized = wait_for("OCR text in database", ocr_text, 30)
+            say(f"OCR text stored: {recognized!r}")
+
+            search_body = {
+                "query": "智能文档管理系统",
+                "top_k": 10,
+                "channels": {"meta": False, "text": True, "image": False},
+                "source_types": ["ocr"],
+            }
+
+            def search_hit() -> dict | None:
+                response = client.post("/api/search", json=search_body, headers=headers)
+                response.raise_for_status()
+                for hit in response.json()["hits"]:
+                    if hit["document"]["id"] == document_id:
+                        return hit
+                return None
+
+            hit = wait_for("OCR search hit", search_hit, 60)
+            evidence = hit.get("evidence") or {}
+            if evidence.get("source_type") != "ocr":
+                raise RuntimeError(f"search hit did not come from OCR chunk: {evidence}")
+            say(
+                "search hit via OCR chunk: {} (snippet={!r})".format(
+                    evidence.get("chunk_id"), evidence.get("snippet", "")[:120]
+                )
+            )
+
+            response = client.delete(f"/api/documents/{document_id}", headers=headers)
+            if response.status_code != 204:
+                raise RuntimeError(f"delete returned {response.status_code}")
+
+            wait_for(
+                "document deletion",
+                lambda: True
+                if client.get(f"/api/documents/{document_id}", headers=headers).status_code == 404
+                else None,
+                20,
+            )
+
+            def no_ocr_chunks() -> bool | None:
+                response = httpx.post(
+                    f"{OPENSEARCH_URL}/{INDEX_PREFIX}chunks/_count",
+                    json={"query": {"term": {"document_id": document_id}}},
+                    timeout=5.0,
+                )
+                if response.status_code >= 400:
+                    return None
+                return True if response.json().get("count", 0) == 0 else None
+
+            wait_for("cleanup of OCR chunks", no_ocr_chunks, 60)
+            say("document deleted and OCR chunks removed")
+
+            response = client.post("/api/search", json=search_body, headers=headers)
+            response.raise_for_status()
+            still_listed = [
+                item for item in response.json()["hits"] if item["document"]["id"] == document_id
+            ]
+            if still_listed:
+                raise RuntimeError("deleted document is still searchable")
+            say("deleted document is no longer searchable")
+
+    except Exception as exc:
+        print(f"FAILED: {type(exc).__name__}: {exc}", file=sys.stderr)
+        for name, path in (
+            ("api", api_log),
+            ("backend-worker", worker_log),
+            ("ocr-worker", ocr_log),
+        ):
+            print(f"--- {name} log tail ---\n{log_tail(path)}", file=sys.stderr)
+        return 1
+    finally:
+        stop_all()
+        try:
+            response = httpx.delete(
+                f"{OPENSEARCH_URL}/{INDEX_PREFIX}doc_meta,{INDEX_PREFIX}chunks", timeout=10.0
+            )
+            if response.status_code < 400:
+                say(f"removed smoke indices with prefix {INDEX_PREFIX}")
+        except Exception:
+            pass
+
+    say("PASS: real OCR end-to-end chain is working")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+
+
+======================================================================
+四、验证汇总
+======================================================================
+连调测试（11 个文件）：190 passed，0 failed，0 skipped。
+  test_migrations.py                 14/14
+  test_auth.py                       20/20
+  test_task_queue.py                 18/18
+  test_documents.py                  41/41
+  test_text_index_live.py            13/13
+  test_pipeline_db.py                23/23
+  test_search_db.py                  20/20
+  test_document_text.py              11/11
+  test_ocr_worker_db.py              10/10
+  test_consistency_db.py             12/12
+  test_experiments_db.py             8/8
+
+真实 OCR：
+  services/ocr_worker 主环境：63 passed，4 skipped（跳过项需 ocr 环境）
+  services/ocr_worker ocr 环境：tests/test_real_ocr.py 4/4 passed
+  真实 OCR 全链路：PASS
+
+其它已执行测试（来自修改记录.txt）：
+  backend 完整套件：728 passed，0 failed，0 skipped
+  shared 完整套件：105 passed，0 failed，0 skipped
+  frontend：48 passed，类型检查通过，生产构建成功
+  ruff：backend / shared / services/ocr_worker 全部通过
+
+原始测试明细：
+  storage-smoke/integration-results.xml（190 个 testcase）
+逐文件结果：
+  测试结果逐文件汇总.txt
+
+======================================================================
+记录结束
+======================================================================

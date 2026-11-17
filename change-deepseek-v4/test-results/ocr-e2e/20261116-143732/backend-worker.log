@@ -1,0 +1,23 @@
+2026-11-16 14:37:35,237 INFO app.worker Worker Barry-Zou:13048:bac811ac 启动，可处理的任务类型：['cleanup', 'parse']
+2026-11-16 14:37:38,343 INFO app.worker.loop 开始任务 6e3b69be-1cc9-4b8f-8324-81fa16964db1（类型 parse，文档 4a6f0b02-dd58-4ab6-bec4-069da6f0ff20，第 1/3 次尝试）
+当前系统不支持设置内存上限，本任务只受超时保护
+2026-11-16 14:37:54,552 INFO app.worker.loop 开始任务 35ea23eb-9b7d-4a5a-ba63-ec81d8e1f16e（类型 cleanup，文档 4a6f0b02-dd58-4ab6-bec4-069da6f0ff20，第 1/3 次尝试）
+当前系统不支持设置内存上限，本任务只受超时保护
+Process SpawnProcess-2:
+Traceback (most recent call last):
+  File "C:\Users\lenovo\AppData\Local\Programs\Python\Python314\Lib\multiprocessing\process.py", line 320, in _bootstrap
+    self.run()
+    ~~~~~~~~^^
+  File "C:\Users\lenovo\AppData\Local\Programs\Python\Python314\Lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\Desktop\my-software-main\my-software-main\backend\app\worker\runner.py", line 80, in _child_main
+    conn.send(None)
+    ~~~~~~~~~^^^^^^
+  File "C:\Users\lenovo\AppData\Local\Programs\Python\Python314\Lib\multiprocessing\connection.py", line 212, in send
+    self._send_bytes(_ForkingPickler.dumps(obj))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\AppData\Local\Programs\Python\Python314\Lib\multiprocessing\connection.py", line 295, in _send_bytes
+    ov, err = _winapi.WriteFile(self._handle, buf, overlapped=True)
+              ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+BrokenPipeError: [WinError 232] 管道正在被关闭。
