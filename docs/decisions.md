@@ -171,7 +171,7 @@
 | 中文分词方案（A13）：analysis-smartcn 还是 IK | Barry 于 2026-11-14 选定 analysis-smartcn（未测试：没有实测数据，阶段五可换） | D26 |
 | 是否启用 OpenSearch 降级预案（A14） | 待定（未测试） | — |
 | PaddleOCR 模型规格、单张图片耗时、内存占用 | 已实测；Barry 于 2026-11-15 选定 PP-OCRv5 mobile（D30）。paddlepaddle 3.3.1、paddleocr 3.7.0，CPU。PP-OCRv5 mobile：平均 0.44 s/图，峰值内存约 1.0 GB；默认模型 PP-OCRv6 medium：平均 0.62 s/图，峰值内存约 1.1 GB。三张合成测试图上两者 CER 均为 0，无法据此区分识别质量 | `results/02_ocr_mobile.json`、`results/02_ocr.json` |
-| Chinese-CLIP 模型规格、编码耗时、内存占用、向量维度 | 已实测，运行设备待 Barry 选定。cn_clip 1.6.0、torch 2.15.0，模型 ViT-B-16（文本塔 RoBERTa-wwm-ext-base），向量维度 512。MPS：查询编码 P50 9.1 ms / P95 11.7 ms，图片 37.8 张/秒，峰值内存约 2.2 GB；CPU：P50 20.2 ms / P95 20.5 ms，图片 30.9 张/秒，峰值内存约 2.0 GB。链路合理性检查 5 条中对 4 条（仅验证链路，不是检索效果数据） | `results/03_clip_mps.json`、`results/03_clip.json` |
+| Chinese-CLIP 模型规格、编码耗时、内存占用、向量维度 | 已实测；Barry 于 2026-11-17 选定 ViT-B-16、默认 CPU（D33）。cn_clip 1.6.0、torch 2.15.0，模型 ViT-B-16（文本塔 RoBERTa-wwm-ext-base），向量维度 512。MPS：查询编码 P50 9.1 ms / P95 11.7 ms，图片 37.8 张/秒，峰值内存约 2.2 GB；CPU：P50 20.2 ms / P95 20.5 ms，图片 30.9 张/秒，峰值内存约 2.0 GB。链路合理性检查 5 条中对 4 条（仅验证链路，不是检索效果数据） | `results/03_clip_mps.json`、`results/03_clip.json` |
 | 全部组件同时运行时的总内存 | 未测试（依赖 OpenSearch） | — |
 
 实测中的两点说明：
@@ -186,7 +186,7 @@
 | 分词方案 | T13 文本索引的 mapping；`deploy/docker-compose.yml` 中 OpenSearch 的镜像 | T13 开始前 |
 | 是否启用降级预案 | T13、T21 的全部实现方式 | T13 开始前 |
 | OCR 模型规格 | T17 OCR Worker | 已定：PP-OCRv5 mobile（2026-11-15，D30） |
-| CLIP 模型规格与向量维度 | T20 CLIP 服务、T21 向量索引 | T20 开始前 |
+| CLIP 模型规格与向量维度 | T20 CLIP 服务、T21 向量索引 | 已定：ViT-B-16，512 维，默认 CPU（2026-11-17，D33） |
 
 T13 起，`deploy/docker-compose.yml` 改为在官方 2.19.1 镜像上安装 analysis-smartcn 的自定义镜像（`deploy/opensearch/Dockerfile`），该镜像从未构建过。是否启用降级预案（A14）仍未确定，T13 按“不启用”实现。
 
@@ -829,3 +829,57 @@ GLOBAL §2 P1 规定“某页文本层有效字符数低于配置阈值时，该
 - K 最大为 `SEARCH_MAX_TOP_K`（默认 100）。
 - 运行中途出现数据库错误时，命令以“无法连接数据库”退出，已跑完的查询不会写进 `results.jsonl`。
 - 没有 CER 评测，也没有性能实验（T27）。
+
+### D33 CLIP 模型服务（T20）
+
+代码：`services/clip_service/`（`config`、`core`、`models`、`encoder`、`app`、`__main__`）。接口见 `api.md` §9。
+
+**批准。** Barry 于 2026-11-17 在本会话批准计划（“批准，开始写”），并选定“装 FastAPI (Recommended)”“默认 CPU，可配置 (Recommended)”。没有修改附录 A，没有动数据库表和索引结构。
+
+**模型与环境。**
+
+- 模型：Chinese-CLIP ViT-B-16（文本塔 RoBERTa-wwm-ext-base），512 维，预训练权重，只做推理（GLOBAL §5 第 1 条）。
+- clip 环境沿用 T00 实测时建的 `env_check/.venv-clip`（与 D30 沿用 ocr 环境的做法相同）。依赖锁定在 `services/clip_service/requirements.txt`。
+- 权重文件从 `env_check/models/` 复制到 `models/clip/clip_cn_vit-b-16.pt`（本地复制，没有下载；`models/` 不进 Git）。sha256 为 `5997ef32c50de18f3ac06eb5d746c324a639053c3bed8f2986f97ebb22b2ecde`，与 T00 记录的一致。
+- lmdb：cn_clip 1.6.0 声明依赖 `lmdb==1.3.0`，本机装不上，环境里是 3.0.0。已确认本服务导入和推理都正常（17 项真实模型测试通过）；重建环境时 cn_clip 要用 `--no-deps` 安装，写在 requirements.txt 里。§2 留下的这一处到此确认。
+
+**运行设备默认 CPU。** `CLIP_DEVICE` 可选 `cpu`、`mps`、`cuda`，默认 `cpu`。理由：Barry 的 Mac 和 Windows 补测机上都能用同一设置，结果可复现；T00 实测 CPU 查询编码 P50 20.2 ms，对毕设规模够用。选了本机不支持的设备时启动报错，不自动回退——回退会让实验记录的设备与实际不符。
+
+**启动顺序与失败处理（GLOBAL §3.4、§8.2、§12）。** 读配置 → 检查权重文件 → 加载模型并用一条文本自检 → 开始监听。任何一步有问题都以退出码 1 结束，所以服务能连上就代表模型可用。
+
+- 不使用 `cn_clip.load_from_name`：它在文件缺失时会自动下载。改为自己读本地文件再调 `create_model`。
+- 读权重用 `torch.load(weights_only=True)`，只读张量，不执行文件里夹带的代码。
+- 配置和文件检查放在导入 torch 之前，缺文件时约 1 秒内报错退出。
+- `CLIP_MODEL_SHA256` 填了就核对，不一致不启动；不填只记录。
+
+**模型版本。** `model_name` = `ViT-B-16`；`model_version` = `cn_clip-{cn_clip 版本}-{权重 sha256 前 12 位}`，现为 `cn_clip-1.6.0-5997ef32c50d`，不超过 64 个字符（`image_embeddings.model_version` 的长度）。权重或库版本变了，版本字符串就变，T21 按 `(sha256, model_name, model_version)` 去重时不会把旧向量当成新模型的。预处理规则如果改动，目前**不会**反映在版本里，改预处理时要手动处理旧向量（见局限）。
+
+**固定的预处理（GLOBAL §4.3）。**
+
+- 图片：只接受 PNG、JPEG（与上传允许的图片类型一致），按内容判断 → 按 EXIF 方向摆正 → 转 RGB（透明通道直接丢弃）→ cn_clip 自带变换：双三次插值缩放到 224×224（不保持宽高比）、按 CLIP 的均值方差归一化。
+- EXIF 摆正是本项目加的一步：手机照片靠 EXIF 记录方向，浏览器显示时会摆正，编码也应当用摆正后的画面。
+- 文本：cn_clip 分词器，上下文 52 个 token，超出截断。
+- 输出：L2 归一化的 float32 向量。出现非有限值或零向量时报 500，不返回。
+
+**接口取舍。**
+
+- `/encode/image` 的请求体直接是图片字节：不需要 python-multipart，调用方也简单。一次一张；T21 如果需要批量再评估。
+- 图片大小分两层限制：字节数边读边数（不信任 `Content-Length`）；像素数在解码前按文件头判断，防止像素炸弹。超过字节上限时把请求体读完再回 413——首轮测试发现提前断开时，调用方看到的是连接中断而不是 413。
+- 推理加一把锁，一次只算一个请求。超时由调用方负责（附录 A5，T22 实现）。
+- 默认只监听 `127.0.0.1`，没有鉴权。
+- 错误格式与后端一致；错误信息和日志都不含输入内容（GLOBAL §7.2）。
+- 接口层（`app.py`）不依赖 torch，编码器从外面传入：接口测试用假编码器在 main 环境里跑，真实模型测试在 clip 环境里跑。
+
+**新增配置。** `CLIP_MODEL_PATH`、`CLIP_MODEL_NAME`、`CLIP_MODEL_SHA256`、`CLIP_DEVICE`、`CLIP_HOST`、`CLIP_PORT`、`CLIP_MAX_IMAGE_BYTES`、`CLIP_MAX_IMAGE_PIXELS`、`CLIP_MAX_TEXTS`、`CLIP_MAX_TEXT_CHARS`，全部可选，默认值见 `.env.example`。后端用的 `CLIP_SERVICE_URL` 是另一个变量，端口要与 `CLIP_PORT` 一致。
+
+**实测（2026-11-17，本机，CPU）。** 加载约 1.3 秒；加载并处理过几个请求后进程内存约 1.3 GB（`ps` 的 RSS，单次观察，不是正式性能数据，T27 再测）。
+
+**局限。**
+
+- 只在 macOS、CPU 上运行过。MPS、CUDA、Windows、Linux 都没有测。
+- 同一输入向量完全一致只在“同一进程、CPU、同一批次组成”下验证过；同一文本单独编码和放在一批里编码，结果只保证余弦相似度大于 0.9999，不保证逐位相同。不同机器之间是否逐位相同没有验证。
+- 预处理规则没有编进 `model_version`。
+- 超过字节上限的请求体会被读完再拒绝，占用连接但不占内存；服务只监听本机，没有再加读取总量的硬上限。
+- 缩放不保持宽高比（cn_clip 的标准做法），长宽比悬殊的图片会被压扁。
+- 没有做请求排队长度限制；并发很多时后到的请求只是等待，由调用方的超时兜底。
+- cn_clip 加载模型时会往标准输出打印几行模型配置，没有屏蔽。

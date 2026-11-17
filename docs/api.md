@@ -410,3 +410,52 @@ B2 只开 `text` 且两种来源都查；B3 三个通道全开。
 - 文档替换或版本接口（替换文件即上传新文档、删除旧文档）
 - Word、Excel 的原样排版预览
 - 问答、摘要、推荐类接口
+
+## 9. CLIP 模型服务的接口（内部，T20 已实现）
+
+由 `services/clip_service`（clip 环境）提供，默认监听 `http://127.0.0.1:8001`，只给后端和 Worker 调用，**没有鉴权，不对浏览器开放**。前面各节的 `/api/...` 接口都不在这个服务上。规则见 `decisions.md` D33。
+
+三个接口的成功响应都带 `model_name`、`model_version`、`dim`（GLOBAL §4.3）。向量已做 L2 归一化，两个向量的点积就是余弦相似度。错误响应的格式与 §1.2 相同。
+
+### 9.1 GET /health
+
+模型在服务开始监听之前就已加载，所以能连上就是可用。后端的 `/health`（§3）只看这里是否返回 200。
+
+```json
+{ "status": "ok", "model_name": "ViT-B-16", "model_version": "cn_clip-1.6.0-5997ef32c50d", "dim": 512, "device": "cpu" }
+```
+
+`model_version` = cn_clip 版本 + 权重文件 sha256 的前 12 位。
+
+### 9.2 POST /encode/text
+
+请求（`application/json`，不允许其他字段）：
+
+```json
+{ "texts": ["会议室里的白板照片"] }
+```
+
+响应 200，`vectors` 与 `texts` 一一对应：
+
+```json
+{ "model_name": "ViT-B-16", "model_version": "cn_clip-1.6.0-5997ef32c50d", "dim": 512, "vectors": [[0.068, 0.014, "..."]] }
+```
+
+- 限制：1 至 `CLIP_MAX_TEXTS`（默认 32）条；每条不能为空白，不超过 `CLIP_MAX_TEXT_CHARS`（默认 1000）个字符。模型只用前 52 个 token，更长的部分被截断，不报错。
+- 错误：422 `VALIDATION_ERROR`
+
+### 9.3 POST /encode/image
+
+请求体就是一张图片的字节（不是 multipart，也不是 JSON），一次一张。只接受 PNG 和 JPEG，按内容判断，不看 `Content-Type`。
+
+响应 200：
+
+```json
+{ "model_name": "ViT-B-16", "model_version": "cn_clip-1.6.0-5997ef32c50d", "dim": 512, "vector": [0.021, -0.043, "..."] }
+```
+
+- 错误：
+  - 413 `IMAGE_TOO_LARGE`：字节数超过 `CLIP_MAX_IMAGE_BYTES`（默认 50 MB），或像素数超过 `CLIP_MAX_IMAGE_PIXELS`（默认 1 亿）
+  - 422 `INVALID_IMAGE`：请求体为空、不是 PNG 或 JPEG、文件截断或损坏
+  - 500 `ENCODE_FAILED`：推理过程出错（例如内存不足）
+- 超时由调用方设置（附录 A5）。服务一次只算一个请求，其余排队。

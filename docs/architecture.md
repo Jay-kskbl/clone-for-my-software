@@ -84,7 +84,7 @@ flowchart TB
 | M6 | OCR | 图片 → `OCRResult` | `services/ocr_worker` | 是 | T17 | 已完成（T17，`decisions.md` D30）：PP-OCRv5 mobile，ocr 环境；真实识别已在本机测试图上通过，未连真实数据库和 OpenSearch 运行 |
 | M7 | 切分 | `ParsedDocument` → `Chunk[]`（纯函数） | `shared/chunking`（T17 前在 `backend/app/modules/chunking`） | 是 | T12 | 已完成（T12）；parse 任务（T14）和 OCR Worker（T17）都使用 |
 | M8 | 文本索引与 BM25 | `Chunk[]` / 查询 → 排序列表 | `shared/text_index`（T17 前在 `backend/app/modules/text_index`）；查询在 `backend/app/modules/search` | — | T13、T15 | 索引的创建、写入、删除已完成（T13），由 parse、cleanup 任务和改标签接口调用（T14），都未在真实 OpenSearch 上运行；BM25 查询在 M11 里实现（T15） |
-| M9 | CLIP 模型服务 | 图片 / 文本 → 向量 | `services/clip_service` | 是 | T20 | 未开始 |
+| M9 | CLIP 模型服务 | 图片 / 文本 → 向量 | `services/clip_service` | 是 | T20 | 已完成（T20，`decisions.md` D33）：`/health`、`/encode/text`、`/encode/image`；还没有调用方（T21、T22） |
 | M10 | 向量索引 | 向量 → 排序列表 | `backend/app/modules/vector_index` | — | T21 | 未开始 |
 | M11 | 检索编排与 RRF | 查询 → `SearchHit[]` | `backend/app/modules/search` | — | T15、T22 | v1 已完成（T15）：meta、text 两路、RRF、数据库二次校验、检索日志；图像通道待 T22（`decisions.md` D28） |
 | M12 | 实验评测 | 实验配置 → 指标 + 原始结果 | 代码 `backend/app/modules/experiments`，数据 `experiments/` | — | T19 | 框架已完成（T19，`decisions.md` D32）：B0–B2 配置、P/R/nDCG、分层报告；还没有评测数据 |

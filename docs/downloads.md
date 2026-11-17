@@ -115,9 +115,39 @@ T17 不再从网络下载模型。下面两个目录是 2026-11-13 T00 环境实
 
 - `~/.paddlex/official_models/` 里还有 T00 下载的 PP-OCRv6_medium_det（约 59 MB）、PP-OCRv6_medium_rec（约 73 MB），项目不用，没有复制。
 
-### 2.6 合计
+### 2.6 Python 包（clip 环境，T20）
 
-T05 至 T17：Python 包约 154 MB（main 环境约 84 MB，ocr 环境 T17 新增约 70 MB），Node.js 约 222 MB，npm 包约 248 MB（T10 约 183 MB，T16 约 65 MB），共约 624 MB；另有从本机缓存复制的 OCR 模型约 21 MB。
+2026-11-17 安装，来源 PyPI，装在 `env_check/.venv-clip/lib/python3.11/site-packages/`（T00 环境实测时建的 clip 环境，T20 起 CLIP 服务也用它）。
+命令：`env_check/.venv-clip/bin/pip install fastapi==0.162.5 uvicorn==0.54.0 pydantic==2.14.3`。三个直接依赖的版本与 main 环境相同。
+批准：Barry 于 2026-11-17 在本会话选“装 FastAPI (Recommended)”。
+
+| # | 内容 | 版本 | 安装位置 | 安装后大小 | 用途 |
+|---|---|---|---|---|---|
+| 29 | fastapi | 0.162.5 | `fastapi/` | 约 1.8 MB | CLIP 服务的 HTTP 接口 |
+| 30 | uvicorn | 0.54.0 | `uvicorn/` | 约 0.9 MB | ASGI 服务器 |
+| 31 | pydantic | 2.14.3 | `pydantic/` | 约 4.2 MB | 配置校验、请求与响应结构 |
+| 32 | pydantic-core | 2.50.4 | `pydantic_core/` | 约 4.7 MB | pydantic 的依赖 |
+| 33 | starlette | 1.10.0 | `starlette/` | 约 0.8 MB | fastapi 的依赖 |
+| 34 | opentelemetry-api | 1.45.2 | `opentelemetry/` | 约 0.5 MB | 随上面的包自动带入，本项目不直接使用 |
+| 35 | annotated-types | 0.8.0 | `annotated_types/` | 约 60 KB | pydantic 的依赖 |
+| 36 | annotated-doc | 0.0.6 | `annotated_doc/` | 约 16 KB | fastapi 的依赖 |
+| 37 | typing-inspection | 0.4.5 | `typing_inspection/` | 约 100 KB | pydantic 的依赖 |
+
+- 共 9 个包，约 13 MB（按 `du` 统计各包目录）。征求同意时说的是“约 8 个包、十几 MB”，实际多出 #34 opentelemetry-api，安装前没有预料到。
+- anyio、h11、click、idna、typing_extensions 环境里已有，没有重新下载。安装后重新生成了 `env_check/results/freeze-clip.txt`。
+- 没有装 pytest、httpx：接口测试在 main 环境里跑，真实模型测试用标准库 unittest 和 urllib。
+
+**CLIP 模型（本地复制，没有下载）**
+
+| # | 内容 | 来源 | 位置 | 大小 | sha256 | 用途 |
+|---|---|---|---|---|---|---|
+| 38 | Chinese-CLIP ViT-B-16 权重 `clip_cn_vit-b-16.pt` | 2026-11-13 T00 环境实测时由 cn_clip 自动下载到 `env_check/models/`（当时没有在本文件登记，这里补记）；2026-11-17 复制到项目的 `models/clip/` | `models/clip/clip_cn_vit-b-16.pt` | 约 718 MB | `5997ef32c50de18f3ac06eb5d746c324a639053c3bed8f2986f97ebb22b2ecde` | CLIP 服务（T20） |
+
+- `env_check/models/` 里的原文件没有删，两份各占约 718 MB。是否删掉原文件由 Barry 决定。两个目录都在 `.gitignore` 中。
+
+### 2.7 合计
+
+T05 至 T17：Python 包约 154 MB（main 环境约 84 MB，ocr 环境 T17 新增约 70 MB），Node.js 约 222 MB，npm 包约 248 MB（T10 约 183 MB，T16 约 65 MB），共约 624 MB；另有从本机缓存复制的 OCR 模型约 21 MB。T20 新增：clip 环境 Python 包约 13 MB，从本机复制的 CLIP 权重约 718 MB。
 
 ## 3. 没有下载、但曾经考虑过的
 

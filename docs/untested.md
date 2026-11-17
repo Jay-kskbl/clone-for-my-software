@@ -217,6 +217,21 @@ OpenSearch 用假的网络层代替（替换 `app.state.text_index`），专门�
 | 高亮摘要的 HTML 转义 | 原文含 `<script>` 等标签时，命中片段和 `no_match_size` 截取的片段是否都被转义，需要在 OpenSearch 上实测（第 5 节 OpenSearch 测试第 7 步）。前端（T16）用 `v-html` 显示摘要之前必须确认 | `decisions.md` D28 |
 | OpenSearch、中文分词、并发内存 | T00 环境实测中未完成的部分。补测步骤见第 6 节 | `env_check/未测试/清单.md` |
 
+### T20 CLIP 服务（2026-11-17 登记）
+
+T20 的测试都在本机实际运行过（接口测试 39 项，真实模型测试 17 项，见 DEVPLAN §5 T20）。下面是没有验证过的性质：
+
+| 项目 | 说明 | 记录位置 |
+|---|---|---|
+| CPU 以外的设备 | `CLIP_DEVICE=mps`、`cuda` 从未运行；只核对过“选了不支持的设备就报错退出”的代码 | `decisions.md` D33 |
+| 其他操作系统 | 只在 macOS（arm64）上运行过。Windows、Linux 没有测，clip 环境也没有在别的机器上按 requirements.txt 重建过 | `decisions.md` D33 |
+| 跨机器的向量一致性 | 同一输入向量稳定只在同一进程里验证过；不同机器、不同 torch 版本之间是否逐位相同没有验证 | `decisions.md` D33 |
+| 后端 `/health` 对着真实 CLIP 服务 | 后端的检查只看 `GET /health` 是否 200，已用 curl 确认服务返回 200；没有同时启动后端实际看一次 `clip_service: ok` | `api.md` §3、§9.1 |
+| 真实图片 | 测试图片都是现场生成的纯色或色块图。真实照片、带 EXIF 的手机照片、渐进式 JPEG、接近 50 MB 的大图没有测 | — |
+| 并发与长时间运行 | 没有并发压测，没有长时间运行观察内存；吞吐和内存留给 T27 | DEVPLAN T27 |
+| 端口被占用 | 没有测；按 uvicorn 的行为会报错退出 | — |
+| OCR 与 CLIP 同时运行的内存（OS-6） | 现在 CLIP 服务已有，可以补测，尚未做 | 第 6 节 |
+
 ## 5. 补测方法
 
 需要一个 PostgreSQL 16 实例和一个**空的**专用测试库（库里已有表时测试会直接失败，不会清库）。
