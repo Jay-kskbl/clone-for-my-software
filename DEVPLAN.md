@@ -257,7 +257,7 @@ BARRY zou/
   - 向量维度 512，T21 建向量索引的 mapping 时用；换模型要重建向量索引。
   - T20 没有用到 `shared.task_queue` 和常驻子进程的写法（上面 T17 的建议）：CLIP 服务不领任务，进程本身就是隔离边界。embed 任务在哪个进程里领取由 T21 决定。
 - **待 Barry 决定（T20 记录）**
-  - `CLAUDE.md` 的“常用命令”还没有加 CLIP 服务的启动和测试命令（命令写在 `services/clip_service/clip_service/__main__.py` 和 `tests/test_real_clip.py` 的开头）。
+  - ~~`CLAUDE.md` 的“常用命令”还没有加 CLIP 服务的启动和测试命令~~（Barry 于 2026-11-17 同意，已补）。
   - `env_check/models/clip_cn_vit-b-16.pt`（约 718 MB）已复制到 `models/clip/`，原文件是否删除。
 - **给 T21 的衔接提醒**
   - parse 任务目前不创建 embed 任务。T21 要决定在哪里创建（建议与 OCR 任务一样，在 parse 成功的同一事务里），并按图片内容的 sha256 去重。
