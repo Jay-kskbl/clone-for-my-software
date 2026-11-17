@@ -267,6 +267,7 @@ def test_search_service_down_is_503_search_unavailable(client, session, alice):
 
 def test_every_search_is_logged_including_failures(client, session, alice):
     headers = login(client, "alice")
+    add_document(session, alice)
 
     search(client, headers, "第一次")  # 检索服务不可用 → 503
 

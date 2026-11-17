@@ -313,7 +313,7 @@ def cmd_run(args: argparse.Namespace, root: Path, settings: Any, session: Sessio
 
     run_row.config = full_config
     run_row.metrics = result.metrics
-    run_row.raw_results_path = str(run_dir.relative_to(root.parent))
+    run_row.raw_results_path = run_dir.relative_to(root.parent).as_posix()
     run_row.finished_at = datetime.now(UTC)
     session.add(run_row)
     session.commit()

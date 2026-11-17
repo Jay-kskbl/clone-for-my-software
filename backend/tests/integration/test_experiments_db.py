@@ -227,7 +227,10 @@ def test_full_run_writes_results_metrics_and_an_experiment_row(
     assert saved["versions"]["parse_versions"] == [V1]
     assert saved["opensearch"]["version"] == "2.19.1"
     assert saved["complete"] is True
-    records = [json.loads(line) for line in (run_dir / "results.jsonl").read_text().splitlines()]
+    records = [
+        json.loads(line)
+        for line in (run_dir / "results.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
     assert len(records) == 4  # 2 条查询 × 2 次
     q1 = next(r for r in records if r["query_id"] == "q1")
     assert [x["file_id"] for x in q1["ranking"]] == ["f1", "f2"]
@@ -266,6 +269,9 @@ def test_run_with_search_service_down_is_incomplete(session, settings, root):
     assert cli.cmd_run(args, root, settings, session) == 2
 
     (run_dir,) = (root / "runs").iterdir()
-    records = [json.loads(line) for line in (run_dir / "results.jsonl").read_text().splitlines()]
+    records = [
+        json.loads(line)
+        for line in (run_dir / "results.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
     assert all(r["ok"] is False for r in records)
-    assert json.loads((run_dir / "config.json").read_text())["complete"] is False
+    assert json.loads((run_dir / "config.json").read_text(encoding="utf-8"))["complete"] is False

@@ -219,6 +219,7 @@ def test_stale_ocr_results_are_removed(session, storage, make_document):
         ProcessingTask(
             task_type="ocr",
             document_id=document.id,
+            status="succeeded",
             payload={"parse_version": V1, "locator": PAGE1},
         )
     )
@@ -403,5 +404,5 @@ def test_chunks_of_a_document_being_parsed_are_never_deleted(session, storage, m
     )
 
     session.expire_all()
-    assert sorted(session.scalars(select(DocumentChunk.parse_version)).all()) == [V1, V2]
+    assert sorted(session.scalars(select(DocumentChunk.parse_version)).all()) == sorted([V1, V2])
     assert any("正在解析" in line for line in report.skipped)

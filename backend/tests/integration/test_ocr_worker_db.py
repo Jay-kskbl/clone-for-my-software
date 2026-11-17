@@ -156,7 +156,7 @@ def test_other_pages_and_body_chunks_are_untouched(store, document, session):
     save(store, document, 1, ["第一页重识别"])
 
     texts = sorted(c.text for c in rows(session, DocumentChunk, document))
-    assert texts == ["第一页重识别", "第二页", "正文"]
+    assert texts == sorted(["第一页重识别", "第二页", "正文"])
     assert len(rows(session, OCRResult, document)) == 2
 
 

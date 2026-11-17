@@ -66,6 +66,9 @@ class PaddleEngine:
             use_doc_orientation_classify=False,
             use_doc_unwarping=False,
             use_textline_orientation=False,
+            # PaddlePaddle 3.3.1 在 Windows CPU 上启用 oneDNN 时会拒绝加载
+            # PP-OCRv5 的 PIR 属性（NotImplementedError），关闭后推理正常。
+            enable_mkldnn=os.name != "nt",
             device=device,
         )
 

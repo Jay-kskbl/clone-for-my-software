@@ -144,6 +144,7 @@ class EngineProcess:
         try:
             message = parent_conn.recv()
         except EOFError:
+            process.join(_KILL_WAIT_SECONDS)
             exitcode = process.exitcode
             self._stop()
             raise EngineStartError(f"OCR 子进程启动时异常退出（退出码 {exitcode}）") from None
@@ -180,6 +181,7 @@ class EngineProcess:
                 try:
                     message = self._conn.recv()
                 except EOFError:
+                    self._process.join(_KILL_WAIT_SECONDS)
                     exitcode = self._process.exitcode
                     self._stop()
                     return EngineResult(ok=False, error=f"识别子进程异常退出（退出码 {exitcode}）")

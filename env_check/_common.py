@@ -8,7 +8,12 @@ from __future__ import annotations
 import json
 import os
 import platform
-import resource
+
+try:
+    import resource
+except ImportError:  # Windows 没有 resource 模块
+    resource = None  # type: ignore[assignment]
+
 import subprocess
 import sys
 import time
@@ -39,11 +44,13 @@ def rss_mb() -> float | None:
     return round(psutil.Process().memory_info().rss / 1024 / 1024, 1)
 
 
-def peak_rss_mb() -> float:
+def peak_rss_mb() -> float | None:
     """进程生命周期内的峰值常驻内存（MB）。
 
     ru_maxrss 的单位：macOS 为字节，Linux 为 KB —— 这里统一换算。
     """
+    if resource is None:  # Windows 没有 resource 模块
+        return None
     peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     if sys.platform == "darwin":
         return round(peak / 1024 / 1024, 1)
