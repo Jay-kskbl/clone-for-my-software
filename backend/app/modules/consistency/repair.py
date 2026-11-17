@@ -123,11 +123,12 @@ def _current_chunks(session: Session, document: Document) -> list[Chunk]:
 def reindex_document(session: Session, client: OpenSearchClient, document: Document) -> int:
     """按数据库重建一个文档在两个索引里的数据：先整体删掉，再写当前版本的片段和 doc_meta。
 
-    返回写入的片段数。还没解析过的文档只删不写（doc_meta 由 parse 任务写）。
+    返回写入的片段数。还没有解析版本的文档（等待解析，或解析失败）没有片段可写，但 doc_meta
+    照样写：parse 任务在解析之前就写了 doc_meta，为的是正文解析失败的文件仍能按文件名搜到
+    （handlers/parse.py 第 3 步）。重建不能把这一点丢掉——否则全量重建之后，解析失败的文件
+    就从文件名检索里消失了，而检查又不会报告它。
     """
     delete_document(client, document.id)
-    if document.parse_version is None:
-        return 0
     chunks = _current_chunks(session, document)
     write_chunks(client, chunks)
     tags = tags_by_document(session, [document.id]).get(document.id, [])

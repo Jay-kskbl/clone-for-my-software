@@ -152,7 +152,8 @@ def load_dataset(root: Path = EXPERIMENTS_DIR, *, check_files: bool = True) -> D
                 problems.append(f"{where}：query_id {row['query_id']} 不在 queries.tsv 里")
             if row["file_id"] not in dataset.files:
                 problems.append(f"{where}：file_id {row['file_id']} 不在 manifest.csv 里")
-            if not row["grade"].isdigit() or not 0 <= int(row["grade"]) <= MAX_GRADE:
+            # 不用 isdigit：它对“²”之类的字符也返回 True，而 int() 不接受，校验会中途崩掉
+            if row["grade"] not in {str(g) for g in range(MAX_GRADE + 1)}:
                 problems.append(f"{where}：grade 必须是 0 到 {MAX_GRADE} 的整数")
                 continue
             grade = int(row["grade"])

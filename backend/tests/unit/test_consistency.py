@@ -202,13 +202,28 @@ def test_tag_order_does_not_matter():
     assert analyze(snapshot) == []
 
 
-def test_unparsed_document_is_not_required_in_doc_meta():
+def test_document_waiting_to_be_parsed_is_not_required_in_doc_meta():
     snapshot = consistent_snapshot()
-    # 解析失败的文档：没有解析版本，也不在 doc_meta 里，这是正常的
-    snapshot.db.documents[doc_id(3)] = document(3, parse_version=None, status="failed")
+    # 还在等待解析的文档：doc_meta 由 parse 任务写，现在不在索引里是正常的
+    snapshot.db.documents[doc_id(3)] = document(3, parse_version=None, status="pending", busy=True)
     snapshot.disk.stored[key_of(doc_id(3))] = DiskFile(Path("p"), key_of(doc_id(3)), OLD)
 
     assert analyze(snapshot) == []
+
+
+def test_failed_document_is_still_required_in_doc_meta():
+    """parse 任务在解析之前就写 doc_meta：解析失败的文件仍应能按文件名搜到。"""
+    snapshot = consistent_snapshot()
+    snapshot.db.documents[doc_id(3)] = document(3, parse_version=None, status="failed")
+    snapshot.disk.stored[key_of(doc_id(3))] = DiskFile(Path("p"), key_of(doc_id(3)), OLD)
+    snapshot.index.meta[doc_id(3)] = ("文件3.pdf", ("财务",))
+    assert analyze(snapshot) == []
+
+    # 例如全量重建索引时漏掉了它，或解析在写 doc_meta 之前就失败了
+    del snapshot.index.meta[doc_id(3)]
+    issues = analyze(snapshot)
+    assert kinds(issues) == ["doc_meta_missing"]
+    assert issues[0].repair == REPAIR_INDEX
 
 
 def test_chunks_missing_from_and_extra_in_the_index_are_detected():
@@ -568,3 +583,38 @@ def test_parsed_image_without_image_asset_is_reported():
     assert kinds(analyze(snapshot)) == ["image_asset_missing"]
     snapshot.db.image_assets[doc_id(1)] = "0" * 64
     assert analyze(snapshot) == []
+
+
+# ---- 重建单个文档的索引 ----
+
+
+def test_reindex_keeps_doc_meta_of_a_document_without_parse_version(monkeypatch):
+    """解析失败（没有解析版本）的文档：没有片段可写，但文件名和标签照样写回 doc_meta，
+    否则全量重建之后它就不能按文件名搜到了。"""
+    from types import SimpleNamespace
+
+    from app.modules.consistency import repair
+
+    requests: list[httpx.Request] = []
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, json={"deleted": 0})
+
+    client = OpenSearchClient(
+        "http://search.test:9200", timeout_seconds=1.0, transport=httpx.MockTransport(handle)
+    )
+    failed = SimpleNamespace(id=uuid.UUID(int=7), parse_version=None, filename="扫描件.pdf")
+    monkeypatch.setattr(repair, "tags_by_document", lambda _session, ids: {ids[0]: ["合同"]})
+
+    written = repair.reindex_document(None, client, failed)
+
+    assert written == 0
+    assert not any(r.url.path == "/_bulk" for r in requests)
+    meta = next(r for r in requests if r.method == "PUT")
+    assert meta.url.path == f"/doc_meta/_doc/{failed.id}"
+    assert json.loads(meta.content) == {
+        "document_id": str(failed.id),
+        "filename": "扫描件.pdf",
+        "tags": ["合同"],
+    }

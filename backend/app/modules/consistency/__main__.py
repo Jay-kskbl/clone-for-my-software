@@ -22,7 +22,8 @@ check 只读，不修改任何东西。repair 必须用 --fix 显式列出要修
 和其他后端命令一样读取完整的后端配置，所以 .env 里的必填项（含 JWT_SECRET）都要有。
 
 退出码：0 没有发现问题（或修复完成）；2 发现了问题；1 配置、数据库出错，或检索服务不可用
-（检索服务不可用时仍会报告数据库和磁盘的检查结果）。
+（检索服务不可用时仍会报告数据库和磁盘的检查结果；repair 要修索引类别而检索服务不可用时，
+其余类别照常修复，索引类别跳过，退出码同样是 1）。
 """
 
 import argparse
@@ -117,10 +118,21 @@ def main(argv: list[str] | None = None) -> int:
                     return 1
                 return 2 if issues else 0
 
+            # 检索服务不可用时索引没有被检查，索引类的问题一条也不会出现在 issues 里。
+            # 这时不能说“没有需要修复的问题”并返回 0：其余类别照常处理，最后以退出码 1 结束
+            index_skipped = not index.available and bool(
+                {"index", "rebuild-indices"} & set(args.fix)
+            )
+            if index_skipped:
+                print(
+                    f"检索服务不可用（{index.error}），没有检查索引，"
+                    "index、rebuild-indices 两类这次不会修复；检索服务恢复后请重新运行。",
+                    file=sys.stderr,
+                )
             selected = plan(issues, args.fix)
             if not selected:
                 print("所选类别下没有需要修复的问题。")
-                return 0
+                return 1 if index_skipped else 0
             print(f"将要修复 {len(selected)} 处：")
             for issue in selected:
                 where = f"[{issue.document_id}] " if issue.document_id else ""
@@ -144,7 +156,7 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"已完成：{line}")
             for line in report.skipped:
                 print(f"已跳过：{line}")
-            return 0
+            return 1 if index_skipped else 0
     finally:
         client.close()
         engine.dispose()

@@ -220,8 +220,9 @@ def _index_issues(snapshot: Snapshot) -> list[Issue]:
     for document in sorted(documents.values(), key=lambda d: d.id):
         if document.deleted or document.busy:
             continue
-        # 还没解析过的文档（parse 任务没跑）不要求在 doc_meta 里：doc_meta 在 parse 任务里写
-        if document.parse_version is not None:
+        # 还在等待解析的文档不要求在 doc_meta 里：doc_meta 在 parse 任务里写。
+        # 解析失败的文档要求在：parse 任务在解析之前就写 doc_meta，失败的文件仍应能按文件名搜到
+        if document.parse_version is not None or document.status == "failed":
             meta = index.meta.get(document.id)
             if meta is None:
                 issues.append(

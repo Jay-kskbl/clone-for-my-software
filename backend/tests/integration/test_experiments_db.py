@@ -114,6 +114,46 @@ def test_preflight_reports_every_problem(session):
         assert expected in text
 
 
+def test_preflight_reports_failed_ocr_tasks_of_the_current_version(session):
+    """文档状态只反映 parse：某页 OCR 最终失败时文档仍是 succeeded，要靠这一项拦住。"""
+    user = cli._experiment_user(session, create=True)
+    documents = make_documents(session, user)
+    page = {"type": "pdf_page", "page": 1}
+    session.add_all(
+        [
+            ProcessingTask(
+                task_type="ocr",
+                document_id=documents[0].id,
+                status="failed",
+                payload={"parse_version": V1, "locator": page},
+            ),
+            # 旧版本留下的失败任务与当前数据无关，不算
+            ProcessingTask(
+                task_type="ocr",
+                document_id=documents[1].id,
+                status="failed",
+                payload={"parse_version": "c1-m300-o50-bbbbbbbbbbbb", "locator": page},
+            ),
+        ]
+    )
+    session.commit()
+
+    problems = cli._preflight(session, [d.id for d in documents])
+
+    assert len(problems) == 1 and "1 个 OCR 任务失败" in problems[0]
+
+
+def test_documents_outside_the_dataset_are_counted(session):
+    user = cli._experiment_user(session, create=True)
+    documents = make_documents(session, user)
+    extra_live, extra_deleted = make_documents(session, user)
+    extra_deleted.deleted_at = datetime.now(UTC)
+    session.commit()
+
+    assert cli._outside_dataset(session, [d.id for d in documents]) == 1
+    assert cli._outside_dataset(session, [d.id for d in documents] + [extra_live.id]) == 0
+
+
 def test_version_snapshot_lists_parse_versions_and_ocr_models(session):
     user = cli._experiment_user(session, create=True)
     documents = make_documents(session, user)
@@ -155,6 +195,26 @@ def test_import_uploads_once_and_records_the_mapping(session, settings, root):
         == "parse"
     )
     assert (LocalStorage(settings.storage_root)._root / document.storage_key).exists()
+
+
+def test_import_replaces_a_changed_file_and_deletes_the_old_document(session, settings, root):
+    assert cli.cmd_import(root, settings, session) == 0
+    before = load_document_map(root)
+    (root / "datasets" / "files" / "a.pdf").write_bytes(b"%PDF-1.7\nfile a, revised\n")
+
+    assert cli.cmd_import(root, settings, session) == 0
+
+    after = load_document_map(root)
+    assert after["f2"] == before["f2"]
+    assert after["f1"][0] != before["f1"][0]
+    # 旧文档软删除并建了清理任务：不再参与检索，也不会留在库里占名次
+    old = session.get(Document, uuid.UUID(before["f1"][0]))
+    assert old.deleted_at is not None
+    assert "cleanup" in {
+        t.task_type
+        for t in session.scalars(select(ProcessingTask).where(ProcessingTask.document_id == old.id))
+    }
+    assert session.get(Document, uuid.UUID(after["f1"][0])).deleted_at is None
 
 
 class FakeIndex:

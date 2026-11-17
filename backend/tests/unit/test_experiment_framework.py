@@ -97,6 +97,16 @@ def test_all_problems_are_reported_at_once(tmp_path):
         assert expected in text
 
 
+@pytest.mark.parametrize("grade", ["²", "-1", "1.0", "", "4", "１"])
+def test_grade_that_is_not_a_plain_integer_is_reported_not_a_crash(tmp_path, grade):
+    root = make_root(tmp_path, qrels=QRELS + f"q1\tf3\t{grade}\n")
+
+    with pytest.raises(DatasetError) as excinfo:
+        load_dataset(root)
+
+    assert "grade 必须是 0 到 3" in "\n".join(excinfo.value.problems)
+
+
 def test_contradicting_judgements_are_an_error(tmp_path):
     root = make_root(tmp_path)
     (root / "qrels" / "week2.tsv").write_text(

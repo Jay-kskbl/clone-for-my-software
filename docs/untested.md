@@ -232,6 +232,20 @@ T20 的测试都在本机实际运行过（接口测试 39 项，真实模型测
 | 端口被占用 | 没有测；按 uvicorn 的行为会报错退出 | — |
 | OCR 与 CLIP 同时运行的内存（OS-6） | 现在 CLIP 服务已有，可以补测，尚未做 | 第 6 节 |
 
+### T15–T19 复核修正（2026-11-17 登记，见 `decisions.md` D34）
+
+| 项目 | 原因 | 代码复核 |
+|---|---|---|
+| `test_experiments_db.py::test_preflight_reports_failed_ocr_tasks_of_the_current_version` | 需要 PostgreSQL | 已复核：查询只用到 `processing_tasks` 的 `document_id`、`task_type`、`status`、`payload` 四列，版本比较在 Python 里做 |
+| `test_experiments_db.py::test_documents_outside_the_dataset_are_counted` | 需要 PostgreSQL | 已复核 |
+| `test_experiments_db.py::test_import_replaces_a_changed_file_and_deletes_the_old_document` | 需要 PostgreSQL | 已复核：软删除用的是文档接口同一个 `soft_delete_document` |
+| `consistency repair` 在检索服务不可用时的提示与退出码 1 | 命令要连数据库，本机没有 | 已复核；没有自动化测试 |
+| `consistency repair --fix index`、`rebuild-indices` 给解析失败的文档写回 `doc_meta` | 完整路径需要 PostgreSQL；`reindex_document` 本身有单元测试（已通过） | 已复核 |
+| OCR 识别子进程忽略 Ctrl-C | 没有在终端里对着正在识别的 Worker 实际按过 | 已复核；子进程启动与识别的现有测试（含 ocr 环境真实识别 4 项）通过 |
+| PDF 预览的绘制排队 | 只对着临时模拟接口、用一份 5 页的测试 PDF 检查过；没有自动化测试 | 已复核 |
+
+第 1 节的合计因此是 191 项（原 188 项加上面 3 项）。
+
 ## 5. 补测方法
 
 需要一个 PostgreSQL 16 实例和一个**空的**专用测试库（库里已有表时测试会直接失败，不会清库）。

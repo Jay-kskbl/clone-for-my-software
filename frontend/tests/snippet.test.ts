@@ -61,3 +61,19 @@ describe('highlightText：纯文本里标出关键词', () => {
     expect(highlightText('文本', ['  '])).toBe('文本')
   })
 })
+
+describe('highlightText：关键词不会匹配到转义产生的实体内部', () => {
+  it('搜 amp、lt、39 时，& < \' 的转义保持完整', () => {
+    expect(highlightText('a & b', ['amp'])).toBe('a &amp; b')
+    expect(highlightText('x < y', ['lt'])).toBe('x &lt; y')
+    expect(highlightText("it's 39", ['39'])).toBe('it&#39;s <em>39</em>')
+  })
+
+  it('不区分大小写，显示时保留原文的大小写', () => {
+    expect(highlightText('Python 与 python', ['PYTHON'])).toBe('<em>Python</em> 与 <em>python</em>')
+  })
+
+  it('关键词里的标签不会原样进入页面', () => {
+    expect(highlightText('<img src=x>', ['<img'])).toBe('<em>&lt;img</em> src=x&gt;')
+  })
+})

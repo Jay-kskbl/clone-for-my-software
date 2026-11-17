@@ -36,13 +36,19 @@ export function sanitizeSnippet(snippet: string | null | undefined): string {
 
 /** 在纯文本里把关键词标出来，返回可以放进 v-html 的字符串（预览页里用）。 */
 export function highlightText(text: string, terms: string[]): string {
-  const escaped = neutralize(text.replace(/&/g, '&amp;'))
+  const escape = (part: string) => neutralize(part.replace(/&/g, '&amp;'))
   const words = terms.map((t) => t.trim()).filter((t) => t.length > 0)
-  if (words.length === 0) return escaped
-  // 关键词同样先转义，再按字面匹配（不当作正则）
+  if (words.length === 0) return escape(text)
+  // 在原文上匹配，匹配完再逐段转义。不能先转义再匹配：那样关键词会匹配到转义产生的
+  // 实体内部（例如搜 “amp” 或 “39” 会把 &amp;、&#39; 拆坏）。
+  // 关键词按字面匹配（不当作正则），不区分大小写（检索本身也不区分）
   const pattern = words
-    .map((w) => neutralize(w.replace(/&/g, '&amp;')).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
     .sort((a, b) => b.length - a.length)
     .join('|')
-  return escaped.replace(new RegExp(pattern, 'g'), (match) => `<em>${match}</em>`)
+  // 带捕获组的 split：奇数位置是匹配到的关键词，偶数位置是其余文字
+  return text
+    .split(new RegExp(`(${pattern})`, 'gi'))
+    .map((part, index) => (index % 2 === 1 ? `<em>${escape(part)}</em>` : escape(part)))
+    .join('')
 }

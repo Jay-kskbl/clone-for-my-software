@@ -26,7 +26,8 @@ const degraded = computed(() => channels.value.filter((c) => c.status === 'unava
 
 async function onSearch() {
   const text = query.value.trim()
-  if (!text) return
+  // 上一次检索还没返回时不再发新的（在输入框里连按回车）：两个应答谁后到谁显示，结果会错位
+  if (!text || loading.value) return
   // 检索词放进地址栏：刷新页面或从预览页返回时结果还在
   if (route.query.q !== text) void router.replace({ query: { q: text } })
 

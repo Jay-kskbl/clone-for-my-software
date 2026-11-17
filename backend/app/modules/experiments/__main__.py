@@ -25,6 +25,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from shared.tasks import STATUS_FAILED, TASK_OCR
 from shared.text_index import client_from_settings
 from sqlalchemy import func, select
 from sqlalchemy.exc import OperationalError
@@ -95,7 +96,7 @@ def cmd_validate(root: Path) -> int:
 
 
 def cmd_import(root: Path, settings: Any, session: Session) -> int:
-    from app.modules.documents.service import upload_document
+    from app.modules.documents.service import soft_delete_document, upload_document
 
     try:
         dataset = load_dataset(root)
@@ -105,16 +106,17 @@ def cmd_import(root: Path, settings: Any, session: Session) -> int:
     user = _experiment_user(session, create=True)
     storage = LocalStorage(settings.storage_root)
     mapping = load_document_map(root)
-    imported = skipped = 0
+    imported = skipped = replaced = 0
     for file in dataset.files.values():
         path = root / "datasets" / "files" / file.path
         sha = _sha256(path)
         existing = mapping.get(file.file_id)
-        if existing and existing[1] == sha:
-            document = session.get(Document, uuid.UUID(existing[0]))
-            if document is not None and document.deleted_at is None:
-                skipped += 1
-                continue
+        previous = session.get(Document, uuid.UUID(existing[0])) if existing else None
+        if previous is not None and previous.deleted_at is not None:
+            previous = None
+        if existing and existing[1] == sha and previous is not None:
+            skipped += 1
+            continue
         with path.open("rb") as stream:
             # 不加标签：标签会参与 B0 的文件名/标签检索，人为加上会影响实验结果
             document = upload_document(
@@ -129,8 +131,14 @@ def cmd_import(root: Path, settings: Any, session: Session) -> int:
         mapping[file.file_id] = (str(document.id), sha)
         save_document_map(mapping, root)  # 每导入一个就保存，中途失败也不丢记录
         imported += 1
+        if previous is not None:
+            # 文件内容换过：旧文档不再属于数据集。不删掉的话它仍会被检索到，
+            # 占掉名次、改变 BM25 的统计量，而标注里并没有它（附录 A15：替换即新建，旧的按删除处理）
+            soft_delete_document(session, previous)
+            replaced += 1
     print(
-        f"导入 {imported} 个文件，跳过 {skipped} 个已导入的。请启动 Worker 和 OCR Worker 完成处理。"
+        f"导入 {imported} 个文件（其中 {replaced} 个替换了内容已变的旧文档，旧文档已删除），"
+        f"跳过 {skipped} 个已导入的。请启动 Worker 和 OCR Worker 完成处理。"
     )
     return 0
 
@@ -181,7 +189,43 @@ def _preflight(session: Session, document_ids: list[uuid.UUID]) -> list[str]:
     versions = {d.parse_version for d in documents if d.deleted_at is None}
     if len(versions) > 1:
         problems.append(f"数据集文件的解析版本不一致：{sorted(map(str, versions))}")
+    # 文档状态只反映 parse 任务（D27）：某一页的 OCR 最终失败时文档仍是 succeeded，
+    # 但这一页的文字不在索引里。不检查的话，B2 会在缺了 OCR 文字的数据上得出数字
+    current = {d.id: d.parse_version for d in documents if d.deleted_at is None}
+    failed_ocr = sum(
+        1
+        for document_id, payload in session.execute(
+            select(ProcessingTask.document_id, ProcessingTask.payload).where(
+                ProcessingTask.document_id.in_(document_ids),
+                ProcessingTask.task_type == TASK_OCR,
+                ProcessingTask.status == STATUS_FAILED,
+            )
+        )
+        if document_id in current and (payload or {}).get("parse_version") == current[document_id]
+    )
+    if failed_ocr:
+        problems.append(
+            f"数据集文件有 {failed_ocr} 个 OCR 任务失败，这些页或图片的文字没有进入索引"
+            "（在任务列表里查看原因并重试）"
+        )
     return problems
+
+
+def _outside_dataset(session: Session, document_ids: list[uuid.UUID]) -> int:
+    """库里不属于数据集的未删除文档数。
+
+    实验账号是管理员，检索范围是全库：这些文档会被检索到、占掉名次（指标里一律算不相关），
+    也会改变 BM25 的词频统计。不拦截运行，但要记进 config.json 并提示——正式实验应当在
+    只装了数据集的库上做。
+    """
+    return int(
+        session.scalar(
+            select(func.count())
+            .select_from(Document)
+            .where(Document.deleted_at.is_(None), Document.id.not_in(document_ids))
+        )
+        or 0
+    )
 
 
 def _snapshot_versions(session: Session, document_ids: list[uuid.UUID]) -> dict[str, Any]:
@@ -236,6 +280,13 @@ def cmd_run(args: argparse.Namespace, root: Path, settings: Any, session: Sessio
         if not args.allow_incomplete:
             return 1
         print("已指定 --allow-incomplete，继续运行；结果里会记录这些问题。", file=sys.stderr)
+    outside = _outside_dataset(session, document_ids)
+    if outside:
+        print(
+            f"提示：库里另有 {outside} 个不属于数据集的文档，它们会参与检索并占用名次；"
+            "这个数目会记进 config.json。正式实验请在只有数据集的库上运行。",
+            file=sys.stderr,
+        )
 
     started = datetime.now(UTC)
     # 先建好结果目录再跑查询：名字带微秒和随机后缀，连续运行也不会重名；
@@ -288,6 +339,7 @@ def cmd_run(args: argparse.Namespace, root: Path, settings: Any, session: Sessio
                 "pdf_ocr_min_chars": settings.pdf_ocr_min_chars,
             },
             "dataset": dataset.summary(),
+            "documents_outside_dataset": outside,
             "versions": {**code_versions(), **_snapshot_versions(session, document_ids)},
             "opensearch": opensearch_info(client),
             "machine": machine_info(),

@@ -10,6 +10,7 @@
 
 import logging
 import multiprocessing
+import signal
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -72,6 +73,10 @@ def _child_main(
     factory: Callable[[], Engine], memory_limit_mb: int | None, conn: Connection
 ) -> None:
     """子进程入口：创建引擎，然后逐个处理父进程发来的任务，直到管道关闭。"""
+    # 在终端里按 Ctrl-C 时，信号会同时发给父进程和本进程。父进程的约定是“处理完当前任务
+    # 后退出”；本进程若也响应，正在识别的这一页会被打断并记成一次失败。所以这里忽略它，
+    # 由父进程决定何时结束（关闭管道或直接 kill）
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
     try:
         _limit_memory(memory_limit_mb)
         engine = factory()

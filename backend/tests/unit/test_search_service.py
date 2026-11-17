@@ -458,3 +458,52 @@ def test_params_come_from_settings():
 
     assert (params.rrf_k, params.channel_depth, params.max_top_k) == (30, 200, 50)
     assert params.default_channels == {"meta": True, "text": False, "image": False}
+
+
+# ---- 应答不符合预期时（Fable 5.2 复核补充）----
+
+
+@pytest.mark.parametrize(
+    "response",
+    [
+        httpx.Response(200, text="<html>gateway</html>"),
+        httpx.Response(200, json={"took": 1}),
+        httpx.Response(200, json={"hits": {"hits": None}}),
+        httpx.Response(200, json={"hits": {"hits": [{"_source": {"document_id": str(A)}}]}}),
+    ],
+    ids=["不是 JSON", "没有 hits", "hits 不是列表", "命中里没有排序值"],
+)
+def test_unrecognizable_response_is_503_not_a_crash(os_server, db, response):
+    """状态码 200 但内容不对：这是检索服务的故障，要报 503，不能变成没有说明的 500。"""
+    os_server.failures["/doc_meta/_search"] = response
+
+    with pytest.raises(SearchUnavailableError):
+        run(os_server, query="报销")
+    report = next(r for r in db.logs[-1]["reports"] if r.channel == "meta")
+    assert report.status == "unavailable"
+
+
+def test_index_residue_with_an_invalid_document_id_is_skipped(os_server, db):
+    """索引里的残留数据（document_id 不是合法 UUID）不能让命中它的检索全部失败。"""
+    broken = {"_id": "x", "_source": {"document_id": "not-a-uuid"}, "sort": [9.0, "not-a-uuid"]}
+    os_server.meta_hits = [broken, meta_hit(A, 3.0)]
+    os_server.text_hits = [
+        {**broken, "_source": {**text_hit(B, 1.0)["_source"], "document_id": "not-a-uuid"}},
+        text_hit(A, 2.0),
+    ]
+
+    outcome = run(os_server, query="报销")
+
+    assert ids(outcome) == [A]
+    # 坏数据不占名次
+    assert [c.rank for c in outcome.hits[0].channels] == [1, 1]
+
+
+def test_chunk_violating_the_contract_is_skipped(os_server, db):
+    bad = text_hit(B, 5.0)
+    bad["_source"]["locator"] = {"type": "nonsense"}
+    os_server.text_hits = [bad, text_hit(A, 2.0)]
+
+    outcome = run(os_server, query="报销", channels={"meta": False})
+
+    assert ids(outcome) == [A]

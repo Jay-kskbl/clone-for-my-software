@@ -30,12 +30,25 @@ const pdf = shallowRef<PDFDocumentProxy | null>(null)
 let loadingTask: PDFDocumentLoadingTask | null = null
 let renderTask: RenderTask | null = null
 
+// 每次绘制一个序号：连续翻页、缩放时会有几次绘制同时在等待，只有最新的一次真正去画
+let renderSeq = 0
+
 async function render() {
   if (!pdf.value || !canvas.value) return
-  // 上一次绘制还没完成（连续翻页、缩放）：先取消，避免两次绘制叠在同一个 canvas 上
-  renderTask?.cancel()
+  // 页码输入框被清空时 page 不是整数：等用户输完再画
+  if (!Number.isInteger(page.value) || page.value < 1 || page.value > pageCount.value) return
+  const seq = ++renderSeq
+  const previous = renderTask
   try {
+    // 上一次绘制还没完成：取消它，并等它真正停下、放开 canvas。pdf.js 不允许两次绘制
+    // 同时使用同一个 canvas，不等的话后一次会报错，页面上就会误报“这一页无法显示”
+    if (previous) {
+      previous.cancel()
+      await previous.promise.catch(() => undefined)
+    }
     const pdfPage = await pdf.value.getPage(page.value)
+    // 等待期间又有了更新的绘制请求：这一次作废
+    if (seq !== renderSeq) return
     const viewport = pdfPage.getViewport({ scale: scale.value })
     // 高清屏上按设备像素比放大画布，否则文字发虚；显示尺寸仍按 CSS 像素
     const ratio = window.devicePixelRatio || 1
@@ -45,15 +58,17 @@ async function render() {
     target.style.width = `${Math.floor(viewport.width)}px`
     target.style.height = `${Math.floor(viewport.height)}px`
 
-    renderTask = pdfPage.render({
+    const task = pdfPage.render({
       canvas: target,
       viewport,
       transform: ratio === 1 ? undefined : [ratio, 0, 0, ratio, 0, 0],
     })
-    await renderTask.promise
-    error.value = null
+    renderTask = task
+    await task.promise
+    if (seq === renderSeq) error.value = null
   } catch (e) {
-    if (e instanceof RenderingCancelledException) return
+    // 被更新的绘制取消或取代的，不算失败
+    if (e instanceof RenderingCancelledException || seq !== renderSeq) return
     error.value = '这一页无法显示，可以下载原文件查看'
   }
 }

@@ -114,7 +114,7 @@ class PgStore:
         *,
         parse_version: str,
         seq_range: tuple[int, int],
-    ) -> None:
+    ) -> bool:
         """在一个事务里：换掉这个对象的识别结果和 OCR 片段。重复执行结果相同。
 
         返回 False 表示什么都没写：文档已不存在、已删除，或已被重新解析成别的版本

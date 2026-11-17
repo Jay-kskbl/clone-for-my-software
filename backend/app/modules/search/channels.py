@@ -13,11 +13,13 @@ chunks 索引用 OpenSearch 的 collapse 按 document_id 折叠，每个文档�
 """
 
 import html
+import logging
 import uuid
 from collections.abc import Collection, Sequence
 from dataclasses import dataclass
 from typing import Any
 
+from pydantic import ValidationError
 from shared.contracts import Evidence, SourceType
 from shared.text_index import (
     CHUNKS,
@@ -28,7 +30,10 @@ from shared.text_index import (
     ensure_indices,
 )
 
+logger = logging.getLogger(__name__)
+
 _INDEX_NOT_FOUND = "index_not_found_exception"
+_BAD_RESPONSE = "检索服务返回了无法识别的应答"
 # 两个索引都是 1 个分片，同分时按 document_id 排序，结果完全确定
 _SORT = ["_score", {"document_id": "asc"}]
 
@@ -64,12 +69,36 @@ def _search(client: OpenSearchClient, logical_name: str, body: dict[str, Any]) -
             raise
         ensure_indices(client)
         response = client.request("POST", path, json=body)
-    return response.json()["hits"]["hits"]
+    # 状态码是 200 但内容不是预期的结构（例如中间的代理返回了别的东西）：这是检索服务的故障，
+    # 要报成 503，不能让它变成一个没有说明的 500（GLOBAL §12）
+    try:
+        hits = response.json()["hits"]["hits"]
+    except (ValueError, KeyError, TypeError) as exc:
+        raise TextIndexUnavailable(_BAD_RESPONSE) from exc
+    if not isinstance(hits, list):
+        raise TextIndexUnavailable(_BAD_RESPONSE)
+    return hits
+
+
+def _document_id(hit: dict[str, Any]) -> uuid.UUID | None:
+    """命中的 document_id；索引里的残留数据不是合法 UUID 时返回 None。
+
+    这种数据不可能对应数据库里的文档，跳过即可（一致性检查会报告并清掉它，D31）；
+    不能让一条坏数据使所有命中它的检索都失败。
+    """
+    try:
+        return uuid.UUID(str(hit["_source"]["document_id"]))
+    except (KeyError, TypeError, ValueError):
+        logger.warning("检索结果里有 document_id 不合法的数据，已跳过（_id=%r）", hit.get("_id"))
+        return None
 
 
 def _score(hit: dict[str, Any]) -> float:
     # 显式按 _score 排序时，分数在 sort 数组的第一项
-    return float(hit["sort"][0])
+    try:
+        return float(hit["sort"][0])
+    except (KeyError, IndexError, TypeError, ValueError) as exc:
+        raise TextIndexUnavailable(_BAD_RESPONSE) from exc
 
 
 def search_meta(
@@ -104,11 +133,12 @@ def search_meta(
             }
         },
     }
-    hits = _search(client, DOC_META, body)
-    return ChannelHits(
-        ranking=[(uuid.UUID(hit["_source"]["document_id"]), _score(hit)) for hit in hits],
-        evidence={},
-    )
+    ranking: list[tuple[uuid.UUID, float]] = []
+    for hit in _search(client, DOC_META, body):
+        document_id = _document_id(hit)
+        if document_id is not None:
+            ranking.append((document_id, _score(hit)))
+    return ChannelHits(ranking=ranking, evidence={})
 
 
 def search_text(
@@ -160,18 +190,24 @@ def search_text(
     ranking: list[tuple[uuid.UUID, float]] = []
     evidence: dict[uuid.UUID, Evidence] = {}
     for hit in hits:
-        source = hit["_source"]
-        document_id = uuid.UUID(source["document_id"])
-        if document_id in evidence:
+        document_id = _document_id(hit)
+        if document_id is None or document_id in evidence:
             # collapse 已经保证每个文档一条；这里只是防御，保留排在前面的那一条
             continue
+        source = hit["_source"]
+        fragments = (hit.get("highlight") or {}).get("text")
+        try:
+            snippet = fragments[0] if fragments else html.escape(source["text"][:snippet_chars])
+            best = Evidence(
+                chunk_id=source["chunk_id"],
+                snippet=snippet,
+                source_type=source["source_type"],
+                locator=source["locator"],
+            )
+        except (KeyError, TypeError, ValidationError):
+            # 片段不符合数据契约（不是本系统写入的数据）：同样跳过，不让整次检索失败
+            logger.warning("检索结果里有不符合数据契约的片段，已跳过（_id=%r）", hit.get("_id"))
+            continue
         ranking.append((document_id, _score(hit)))
-        fragments = hit.get("highlight", {}).get("text")
-        snippet = fragments[0] if fragments else html.escape(source["text"][:snippet_chars])
-        evidence[document_id] = Evidence(
-            chunk_id=source["chunk_id"],
-            snippet=snippet,
-            source_type=source["source_type"],
-            locator=source["locator"],
-        )
+        evidence[document_id] = best
     return ChannelHits(ranking=ranking, evidence=evidence)
