@@ -257,7 +257,7 @@ BARRY zou/
   - 向量维度 512，T21 建向量索引的 mapping 时用；换模型要重建向量索引。
   - T20 没有用到 `shared.task_queue` 和常驻子进程的写法（上面 T17 的建议）：CLIP 服务不领任务，进程本身就是隔离边界。embed 任务在哪个进程里领取由 T21 决定。
 - **T15–T19 复核留下的事项（2026-11-17 记录，详见 decisions.md D34）**
-  - 待 Barry 决定：正式实验是否要求库里只有数据集文件（现在只提示并记录 `documents_outside_dataset`，不拦截）；`rebuild-indices` 是否需要一个无条件强制重建的开关（现在只在检查发现索引缺失或结构不一致时才执行）。
+  - 已定（Barry，2026-11-17）：库里有数据集以外的文档时保持只提示并记录 `documents_outside_dataset`，不拦截运行。待 Barry 决定：`rebuild-indices` 是否需要一个无条件强制重建的开关（现在只在检查发现索引缺失或结构不一致时才执行）。
   - 待改进：重新解析与旧版本 OCR 的竞争窗口（旧版本 OCR 片段可能残留，一致性检查能清掉）。修它要改 T14 的 parse 流水线，需要在有 PostgreSQL 的机器上验证后再做。
   - 部署到 Linux 前要实测：OCR 识别子进程的内存上限用的是 `RLIMIT_AS`（默认 3072 MB），PaddlePaddle 可能因此加载失败。
 - **待 Barry 决定（T20 记录）**
