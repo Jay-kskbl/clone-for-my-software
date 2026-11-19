@@ -85,6 +85,7 @@ Barry 于 2026-11-14 批准。
 | 22 | @napi-rs/canvas | 1.1.1 | 约 200 KB | pdfjs-dist 的可选依赖（`optionalDependencies`），只在 Node.js 里渲染 PDF 时用；浏览器里不用（pdfjs-dist 的 `browser` 字段把 `canvas` 设为 `false`） | 随 #21 自动安装；Barry 于 2026-11-15 决定保留 |
 | 23 | @napi-rs/canvas-darwin-arm64 | 1.1.1 | 约 27.9 MB | #22 的 macOS arm64 原生二进制（`skia.darwin-arm64.node`） | 随 #21 自动安装；Barry 于 2026-11-15 决定保留 |
 
+- 2026-11-19（Windows 第二轮补测，`27b51b2`）：把 #21 包里的 `cmaps/`（169 个）、`standard_fonts/`（16 个）、`wasm/`（15 个）、`iccs/`（2 个）复制到 `frontend/public/pdfjs/`（约 3.8 MB，随前端发布），用于中文 PDF 预览。已核对与本机 `frontend/node_modules/pdfjs-dist/` 下对应目录逐文件一致；不是新下载，许可证文件一并复制。
 - `package.json` 的 `dependencies` 里锁定为 `"pdfjs-dist": "6.5.438"`（不带 `^`）。#22、#23 的精确版本只记录在 `package-lock.json`。
 - `package-lock.json` 里还登记了 @napi-rs/canvas 其他 10 个平台的二进制包（Linux、Windows、Android），只在对应平台上安装，本机没有下载。
 - #22、#23 没有安装脚本，安装时没有执行任何代码。npm 提示 fsevents 2.3.3（T10 已装）有安装脚本未被允许，与本次安装无关。

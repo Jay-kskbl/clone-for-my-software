@@ -12,6 +12,10 @@
 >
 > 计数：本机 backend 跳过 212 项，其中 188 项属于上述 11 个文件（Windows 上同一批文件收集到 190 项，差异来自 `test_migrations.py`、`test_auth.py` 各多 1 项），剩下 24 项见第 1 节。
 
+> **2026-11-19 Windows 第二轮补测（`27b51b2`，基于 `50b244b`，即 T24f 之后、T24g 之前的代码）：** 由 Barry 在 Windows 上完成，原始说明是仓库根目录的 `本轮测试失败与未完成.txt`，截图在 `output/playwright/`；本会话没有重跑，只是据此登记。汇总：backend 923 passed、6 failed、0 skipped；shared 103 passed、2 failed；frontend 67 passed，类型检查和生产构建通过；OCR Worker 主环境 66 passed、4 skipped，ocr 环境真实识别 4 passed；CLIP 17 passed。8 项失败全部是符号链接测试的 WinError 1314（见第 7 节）。
+>
+> backend 0 skipped 说明第 3 节中 T24g 之前的 38 项（T22 1 项、`test_experiments_db.py` 中 D34/T24/T24c 的 11 项、`test_embed_db.py` 8 项、`test_vector_index_live.py` 8 项、`test_document_text.py` 的 T24e 10 项）以及 T24c 之后要重跑的 `test_migrations.py`、`test_ocr_worker_db.py` 都在这一轮执行并通过。**但这一轮只有汇总数字，没有逐项的原始结果（JUnit XML）。** 按上次整理的做法，删除前要 Barry 确认，所以这些条目暂时保留，第 1 节汇总表后另有说明。T24g、T24h、T24i 的改动不在这一轮的代码里，它们登记的项目仍未测试。
+
 **复核不等于测试通过。** 本文件中的任何一项，在实际运行通过之前，都不能在论文、测试报告或答辩中写成“已验证”。
 
 维护方式：每完成一个任务，把新增的未测试项加进来；某一项实际运行通过后，从这里删除，并在 DEVPLAN §5 对应任务的备注里写明运行环境和结果。
@@ -33,6 +37,8 @@
 T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器）和 T12（切分）不需要数据库，它们的测试全部在本机执行并通过，没有未测试项。
 
 对照：2026-11-19（T24i）本机实测 `backend/` 709 项通过、229 项跳过；T24g 时为 705 项通过、227 项跳过；T24e 时为 703 项通过、226 项跳过；T24c 时为 692 项通过、216 项跳过，`shared/` 105 项通过；T24 时为 678 项通过、212 项跳过。
+
+**Windows 第二轮（2026-11-19）对上表的影响：** 除 “T24g OCR 模型检查” 1 项和 “T24i 重新 OCR” 2 项外，上表其余 38 项都在 Windows 第二轮里执行并通过（只有汇总数字，待 Barry 确认后删除）。下面这段“需要重跑的已补测文件”同样已在这一轮重跑并通过。
 
 **T24c 之后需要重跑的已补测文件。** T24c 加了迁移 `0002`，并改了 `test_ocr_worker_db.py`（`save()` 多了 `params` 参数，有一项新增断言）。下面这两个文件虽然在 2026-11-16 通过过，但通过的是 T24c 之前的版本，现在要重跑才算数：`test_migrations.py`（14 项，尤其是 `test_migration_matches_models` 和升级—回退—升级）、`test_ocr_worker_db.py`（10 项）。T24e 又改了 `test_document_text.py` 所测接口的排序和跳转 SQL，原有 11 项也要重跑。
 
@@ -94,13 +100,13 @@ T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器�
 | 项目 | 说明 | 记录位置 |
 |---|---|---|
 | Worker 子进程的内存上限 | 用 `RLIMIT_AS` 实现，只在 Linux 上有效；开发机是 macOS，内核基本不执行这个限制 | `decisions.md` D16 |
-| 后端连上真实数据库后的整体运行 | 没有在本机启动过“后端 + PostgreSQL”，注册、上传、下载等接口没有人工点过一遍 | — |
+| 后端连上真实数据库后的整体运行 | **部分验证（2026-11-19 Windows 第二轮）。** Windows 上用真实 PostgreSQL、OpenSearch、OCR Worker、CLIP 服务走通了注册、登录、上传、状态轮询、下载、OCR 检索、删除、共享与取消共享、CLIP 检索与降级。macOS 本机仍没有跑过 | DEVPLAN §5“Windows 第二轮补测” |
 | `deploy/docker-compose.yml` | 只校验过语法，容器从未启动 | DEVPLAN §5 T01 |
 | 前端与真实后端的联调 | **未测试。** 本机没有 PostgreSQL，真实后端的登录、上传等接口跑不起来。T10 的页面是对着一个临时写的模拟接口在浏览器里检查的（模拟接口按 `api.md` 的结构应答，不是项目代码，没有提交）。前端与真实后端之间的不一致——字段名、状态码、multipart 的细节——这种检查发现不了。T16 的检索页、预览页和抽取文本接口同样只对着模拟接口检查过（检索、PDF 跳页、Word 跳到命中段、图片、503 与空结果的区分），从未与真实后端和真实 OpenSearch 联调 | DEVPLAN §5 T10、T16 |
 | 前端页面组件的自动化测试 | 没有写，项目里也没有组件测试工具（加装需要 Barry 同意）。48 项前端单元测试只覆盖接口封装、格式化、摘要清洗和位置格式；登录页、文件列表、共享对话框、检索页、预览页、PDF 查看器只做过人工浏览器检查 | DEVPLAN §5 T10、T16 |
-| PDF 预览在真实文件上的表现 | 只用模拟接口返回的一份 5 页、纯英文、PyMuPDF 现场生成的测试 PDF 验证过跳页、翻页、缩放。没有用中文、扫描件、大文件（接近 50 MB）或加密的 PDF 试过 | `decisions.md` D29 |
+| PDF 预览在真实文件上的表现 | **部分验证。** 2026-11-19 Windows 第二轮发现中文 PDF 预览空白（pdf.js 没有配置 CMap 等资源），修复后用一份真实中文 PDF 在真实后端上看到正常显示（截图 `output/playwright/pdf-preview-e2e-fixed.png`）。修复后的预览在 macOS 浏览器里没有看过；扫描件、加密、接近 50 MB 的 PDF 仍没有试过 | `decisions.md` D29 |
 | 真实后端经开发代理的访问 | **部分验证。** T05–T10 核查时启动了真实后端（数据库地址指向不存在的端口）和真实的前端开发代理，用 curl 验证了不需要数据库的路径：健康检查、数据库不可用返回 503、未登录 401、参数校验 422、未登录上传（multipart 经代理）401、超大上传 413。需要数据库的路径（登录成功之后的一切）仍未验证 | DEVPLAN §5 核查记录 |
-| Windows 上的运行 | 2026-11-16 在 Windows 11 上跑过 backend 完整套件（728 项）；其中 8 项符号链接测试在普通权限下失败（WinError 1314，环境权限问题），以管理员权限重跑后通过。T21 之后的代码没有在 Windows 上跑过 | DEVPLAN §5“T00–T19 补测” |
+| Windows 上的运行 | 2026-11-16 跑过 backend 728 项；2026-11-19 第二轮跑到 T24f（`50b244b`）的代码：backend 923 项中 6 项、shared 2 项因 WinError 1314 失败（普通权限，第 7 节），其余通过。T24g 之后的代码没有在 Windows 上跑过 | DEVPLAN §5“T00–T19 补测”“Windows 第二轮补测” |
 | 管理员视角的前端 | 模拟接口里没有管理员账号，页面上“管理员”标记和“管理员可见”来源没有实际显示过 | — |
 | PDF 解析器在真实文件上的表现 | T09 的测试用 PyMuPDF 现场生成的 PDF；没有用真实的扫描件、多栏排版、带表格或带水印的 PDF 验证过，阈值 20 也没有实验依据 | `decisions.md` D20 |
 | Word、Excel、图片解析器在真实文件上的表现 | T11 的测试文件是用 python-docx、openpyxl、PyMuPDF 现场生成的；没有用 Microsoft Word / Excel / WPS 实际保存的文件、手机或相机拍的照片验证过。尤其是 Excel 公式的缓存值，测试里是手工改 XML 模拟的 | `decisions.md` D24 |
@@ -492,3 +498,35 @@ cd <项目目录> && docker compose --env-file .env -f deploy/docker-compose.yml
 4. A13 选定后修改 `deploy/docker-compose.yml`：改用装了所选插件的镜像。插件版本必须与 OpenSearch 版本完全一致。
 5. 把通过的项从本节删除；失败的项留在这里，写明失败现象，并附上日志。
 6. 在 `docs/downloads.md` 登记测试机器上下载的内容。
+
+## 7. Windows 第二轮补测（2026-11-19）登记的未通过与未测试项
+
+来源：`本轮测试失败与未完成.txt`（`27b51b2`）。本会话没有重跑；在 macOS 上只重跑了这一轮改过的两个单元测试文件（`test_health.py`、`test_worker_main.py`，11 项通过）和前端类型检查（通过）。
+
+### 7.1 未通过：符号链接测试（WinError 1314）
+
+在 Windows 普通权限下，测试准备阶段调用 `os.symlink` / `Path.symlink_to` 失败，尚未进入项目代码。2026-11-16 第一轮以管理员权限重跑时这 8 项通过过，这一轮没有重跑。
+
+| 位置 | 测试 |
+|---|---|
+| backend | `tests/unit/test_consistency.py::test_symlinks_are_never_treated_as_stored_files` |
+| backend | `tests/unit/test_storage.py::test_file_symlink_pointing_outside_rejected` |
+| backend | `tests/unit/test_storage.py::test_directory_symlink_pointing_outside_rejected[year]`、`[document]` |
+| backend | `tests/unit/test_storage.py::test_put_refuses_to_write_through_directory_symlink` |
+| backend | `tests/unit/test_storage.py::test_symlinked_temp_directory_refused_at_startup` |
+| shared | `tests/test_storage_keys.py::test_symlinked_directory_is_rejected`、`test_symlinked_file_is_rejected` |
+
+补测方法：打开 Windows“开发人员模式”，注销重登，`whoami /priv` 确认有 `SeCreateSymbolicLinkPrivilege`，再重跑 backend 和 shared；或用有该权限的管理员终端。不能改成 junction：这些测试验证的就是符号链接逃逸。这 8 项在 macOS 本机一直通过。
+
+### 7.2 仍未测试
+
+| 项目 | 说明 | 记录位置 |
+|---|---|---|
+| Docker 与 compose | Windows 上 Docker Desktop 未安装（需要 UAC，可能还需 WSL2）：`docker compose config`、`deploy/docker-compose.yml` 启动、`deploy/opensearch/Dockerfile` 构建、容器里的完整服务拓扑都没有测（同第 4 节和 OS-7） | 第 4 节、第 6 节 |
+| 正式检索评测 | `experiments/` 仍是 0 个文件、0 条查询、0 条 qrels，B0–B3 没有正式指标。候选数据集 `vidore/docvqa_test_subsampled`（Hugging Face，500 页文档与查询，Parquet 约 292 MB）尚未下载，下载需要 Barry 批准 | 第 4 节“B0–B2 实验”“T24 B3” |
+| `RLIMIT_AS` 内存上限 | 只在 Linux 有效；Windows 上没有 WSL/Linux，仍未验证（同第 4 节两行） | `decisions.md` D16、D30 |
+| 并发、长时间运行、吞吐、峰值内存 | Windows 上只用 5 个样本确认 PostgreSQL、OpenSearch、OCR、CLIP 能同时运行，并做了基础内存检查；没有并发压测和长时间观察（OS-6 只算部分完成） | DEVPLAN T27 |
+| 极端真实文件 | 已用 6 个真实样本（中文 PDF、Word、Excel、相机 JPEG、PaddleOCR 示例图、一个 PDF 模糊测试样本）；接近 50 MB 的 PDF、加密 PDF、多栏/表格/水印/竖排/手写扫描件、Office/WPS 实际保存的复杂文件、超大图片、渐进式 JPEG、超限压缩包都没有测 | 第 4 节解析器、OCR 各行 |
+| T24g、T24h、T24i 的代码 | 这一轮基于 `50b244b`，不含 T24g（`test_preflight_reports_mixed_ocr_models`）、T24h（烟测脚本查 `ocr_results.params`）和 T24i（`experiments reocr`） | 第 3 节、第 4 节 |
+| 修复后的 PDF 预览在 macOS 上 | `PdfViewer.vue` 新增 `cMapUrl`、`standardFontDataUrl`、`wasmUrl`、`iccUrl`，资源在 `frontend/public/pdfjs/`；只在 Windows 上看过，macOS 浏览器里没有看过；生产构建后资源路径（`BASE_URL`）在 macOS 上也没有检查 | DEVPLAN §5“Windows 第二轮补测” |
+| 余弦分数的绝对值 | `test_vector_index_live.py` 原来断言完全相同方向得 2.0，OpenSearch 2.19.1 实际为 1.0；测试改为只断言排序和严格递减。分数只用于通道内排名，不影响 RRF，但 `search_vectors` 文档里原来写的“1 + 余弦相似度”与实测不符，已改为“范围由版本决定” | `decisions.md` D35 |
