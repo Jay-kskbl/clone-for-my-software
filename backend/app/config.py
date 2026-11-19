@@ -98,7 +98,10 @@ class Settings(BaseSettings):
     search_meta_tags_weight: float = Field(default=1.0, gt=0)
     # 命中片段（高亮摘要）的长度，按字符计
     search_snippet_chars: int = Field(default=150, ge=20, le=2000)
-    # 请求里没有指定时各通道是否开启。图像通道在 T22 之前没有实现，默认关闭
+    # 图像通道调用 CLIP 服务编码查询文本的超时（T22）。超时就降级为纯文本检索（附录 A5）。
+    # CLIP 服务一次只算一个请求，embed 任务批量编码时查询要排队，所以不能太短也不能太长
+    search_image_timeout_seconds: float = Field(default=3.0, gt=0, le=60)
+    # 请求里没有指定时各通道是否开启。图像通道默认关闭（T22 Barry 决定：留到 T23/T24 再定）
     search_channel_meta_enabled: bool = True
     search_channel_text_enabled: bool = True
     search_channel_image_enabled: bool = False

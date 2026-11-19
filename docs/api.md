@@ -342,7 +342,12 @@ B2 只开 `text` 且两种来源都查；B3 三个通道全开。
 
 请求体里出现未定义的字段（包括 `channels` 里的未知通道）、`source_types` 含未知来源，都返回 422。
 
-**图像通道（T22 之前）**：尚未实现。请求开启它时，`channels` 中 `image` 的状态为 `unavailable`、`detail` 为“图像检索尚未实现”，其余通道照常执行；只开图像通道时返回 200 和空列表。
+**图像通道（T22，见 `decisions.md` D36）**：后端调用 CLIP 服务（§9.2）把查询文本编码成向量，再在 `image_vectors` 索引里做精确向量检索（只比较同一模型生成的向量，普通用户带可访问文档集合作为前置过滤）。它与文本类通道并行执行。默认关闭（`SEARCH_CHANNEL_IMAGE_ENABLED=false`），请求里 `channels.image=true` 时开启。
+
+- 编码查询的超时为 `SEARCH_IMAGE_TIMEOUT_SECONDS`（默认 3 秒）。
+- **降级**：CLIP 服务超时、连不上、拒绝请求、应答不对，模型向量维度与向量索引不一致，或向量索引查询出错时，仍返回 200，`channels` 中 `image` 为 `unavailable` 并在 `detail` 写明原因（不含服务地址），其余通道的结果照常返回。只开图像通道且它不可用时，返回 200 和空列表。
+- 向量索引还不存在（还没有任何图片编码过）时，先建好索引，`image` 为 `ok`、没有结果。
+- 证据：同一文件既被 `text` 又被 `image` 命中时，`evidence` 用文本片段；只被 `image` 命中时，`evidence` 为图片：`image_id` 非空，`locator` 为 `{"type": "image", "image_id": …}`。
 
 融合方式为 RRF（k 与每通道截断深度来自配置，见 `decisions.md` D28）；`hits[].channels[].rank` 是该通道内的文件级名次。
 
@@ -383,7 +388,7 @@ B2 只开 `text` 且两种来源都查；B3 三个通道全开。
 | `hits[].channels` | 该文件在各通道内的原始排名和原始分数（只列出命中它的通道）。不同通道的分数不能直接比较 |
 | `hits[].evidence` | 命中证据：最佳片段或图片，及其来源定位。`chunk_id` 与 `image_id` 恰有一个非空；只被文件名通道命中时整个字段为 `null` |
 | `channels` | 顶层的通道状态，每个通道一项 |
-| `channels[].status` | `ok` 正常执行；`disabled` 被请求或配置关闭；`unavailable` 本应执行但没有执行成功（T15 中只有尚未实现的图像通道会是这个状态；文本类通道失败时整次检索返回 503） |
+| `channels[].status` | `ok` 正常执行；`disabled` 被请求或配置关闭；`unavailable` 本应执行但没有执行成功。200 响应里只有图像通道会是这个状态（降级，见上文）；文本类通道失败时整次检索返回 503 |
 | `hits[].evidence.snippet` | 高亮摘要。原文已做 HTML 转义，只有命中词外的 `<em>…</em>` 是标签 |
 
 `hits[]` 除 `document` 外的部分就是 `shared/contracts/search.py` 中的 `SearchHit`。
@@ -393,7 +398,8 @@ B2 只开 `text` 且两种来源都查；B3 三个通道全开。
 | 情况 | 响应 |
 |---|---|
 | 检索正常，没有匹配的文件 | 200，`hits` 为空列表 |
-| 图像通道不可用，文本通道正常 | 200，结果来自文本通道，`channels` 中 `image` 为 `unavailable` |
+| 图像通道不可用（CLIP 服务超时、未启动、出错，或向量索引出错），文本通道正常 | 200，结果来自文本通道，`channels` 中 `image` 为 `unavailable`，`detail` 写明原因 |
+| 只开图像通道，且它不可用 | 200，`hits` 为空列表，`image` 为 `unavailable`（据此与“没有匹配”区分） |
 | OpenSearch 不可用，或任何一个文本类通道（`meta`、`text`）出错 | 503 `SEARCH_UNAVAILABLE`，不返回另一路的部分结果 |
 
 **保证**：返回前用数据库校验每一个候选文件，只保留未删除且当前用户有权访问的。

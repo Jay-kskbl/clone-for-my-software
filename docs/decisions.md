@@ -556,7 +556,7 @@ GLOBAL §2 P1 规定“某页文本层有效字符数低于配置阈值时，该
 - 故障时也写一条检索日志，记录两路各自的状态。日志写失败时回滚并记错误日志，但不掩盖原本的检索故障。返回给客户端的错误信息不含服务地址。
 - 索引不存在时（系统刚部署、还没有文档被解析过），查询路径会调用 `ensure_indices` 按项目 mapping 建好索引（这是一次写操作），再查一次；之后得到的空结果才是真实的“没有数据”。不直接把“索引不存在”当成空结果，以免掩盖索引名前缀配错之类的故障。
 
-**图像通道。** T22 之前没有实现。默认关闭（`SEARCH_CHANNEL_IMAGE_ENABLED=false`）。请求里开启它时，它的状态为 `unavailable`、`detail` 为“图像检索尚未实现”，其余通道照常执行；只开图像通道时返回 200 和空列表。
+**图像通道。** T22 之前没有实现。默认关闭（`SEARCH_CHANNEL_IMAGE_ENABLED=false`）。请求里开启它时，它的状态为 `unavailable`、`detail` 为“图像检索尚未实现”，其余通道照常执行；只开图像通道时返回 200 和空列表。（T22 已实现，见 D36。）
 
 **高亮摘要。** `encoder=html`：片段原文先做 HTML 转义，再插入 `<em>`，所以文档里的 `<script>` 之类只会显示成文字。没有可高亮的词时（例如只靠词干匹配），用 `no_match_size` 从片段开头截取；应答里没有 highlight 时，在 Python 端 `html.escape` 后截取。
 
@@ -973,10 +973,43 @@ Barry 要求由 Fable 5.2 重新查看 Opus 5.5 写的 T15–T19 并修正不足
 
 **代价与局限。**
 
-- 向量检索还没有接入检索编排和前端（T22、T23）。
+- 向量检索还没有接入检索编排和前端（T22、T23）。（T22 已接入检索编排，见 D36；前端仍属 T23。）
 - 实验记录的 mapping hash（`experiments/environment.py` 的 `code_versions`）只遍历 `INDEX_NAMES`，不含 `image_vectors.json`，跑 B3 前要补（T22/T24）。
 - embed 持有数据库事务和咨询锁跨越一次 CLIP 调用（最长 `CLIP_ENCODE_TIMEOUT_SECONDS`）。
 - 数据库 `real[]` 存的是 float32，复用的向量与新编码的向量有微小数值差异，不影响排序。
 - 同一内容有多个模型的向量时，一致性修复用最近生成的那条（一致性检查不知道 CLIP 当前加载的是哪个模型）。
 - 没有在真实 CLIP 服务 + 真实 Worker + PostgreSQL + OpenSearch 上端到端跑过；数据库与 OpenSearch 测试未运行（见 `untested.md` T21）。
 - `CLAUDE.md` 一致性检查命令的说明仍写“两个索引”，类别列表没有 `embeddings`，待 Barry 同意后改（DEVPLAN §4）。
+
+### D36 检索 v2：图像通道、并行、降级（T22）
+
+代码：`backend/app/modules/search/`（`channels.py` 的 `search_image`、`service.py`、`params.py`）、`backend/app/modules/clip/client.py`（`encode_text`、`query_clip_client_from_settings`）、`backend/app/api/deps.py`、`backend/app/api/search.py`、`backend/app/main.py`、`backend/app/modules/experiments/__main__.py`。
+
+**批准与开发方式。** T22 带 🔒。计划由 Barry 于 2026-11-19 批准，三处待定事项选“按推荐做”：并行、默认关闭、超时 3 秒。代码由主会话编写，测试复跑、文档和提交由子代理完成。`rrf.py` 在 T15 已完成（D28），本任务没有改。没有修改附录 A，没有改表结构、索引结构和数据契约，没有新下载。
+
+**图像通道流程。**
+
+1. 调 CLIP 服务 `POST /encode/text`，一次只发一条查询。应答自带 `model_name`、`model_version`、`dim`，所以每次查询只调用 CLIP 一次，不再查 `/health`。
+2. `dim` 与向量索引 mapping 的维度（`VECTOR_DIM`，512）不一致 → 不可用（换模型却没有重建向量索引）。
+3. `search_vectors`（D35）：精确检索，只比较同一模型的向量；普通用户带可访问 document_id 集合作为前置过滤，管理员不加；空集合不发请求。
+4. 每个文档一条，证据是图片（`image_id` + `ImageLocator`）。`image_id` 不合法或不属于该文档的残留数据记日志后跳过。
+5. 与 meta、text 一起进入 RRF（只用名次），之后照常做数据库二次校验（附录 A10）。
+
+**证据优先级。** 同一文档也被 text 命中时，证据用文本片段（可读、可定位到页或段落）；只被图像通道命中的文档才用图片作证据。各通道的原始名次和分数都保留在 `channels` 里。
+
+**并行。** 图像通道提交到一个单线程的 `ThreadPoolExecutor`，与 meta、text（仍然串行）同时执行，总耗时取较慢的一路。可访问集合在提交前查好传入，工作线程不碰数据库会话。OpenSearch 与 CLIP 客户端都基于 `httpx.Client`，可以跨线程共用。文本类通道失败（503）时不等图像线程（`shutdown(wait=False)`），它会在超时内自己结束；这时检索日志里 image 记为 `unavailable`，detail 为“文本检索失败，没有等待图像通道的结果”。
+
+**降级（GLOBAL §12、附录 A5）。** 以下情况都只把图像通道标为 `unavailable` 并写明原因，其余通道的结果照常返回（200）：CLIP 超时、连不上、5xx 或 429、拒绝请求（4xx）、应答结构不对，维度不一致，向量索引查询出错（`TextIndexError`），以及其他意外异常（记 `logger.exception`，detail 为“图像检索出错”）。没有配置 CLIP 客户端时 detail 为“没有配置 CLIP 服务”。错误信息不含服务地址。只开图像通道且它不可用时，返回 200 和空列表，靠 `unavailable` 状态与“没有匹配”区分。向量索引不存在时建好索引，本次为 `ok`、空结果（D35）。文本类通道出错仍按 D28 整体返回 503。
+
+**超时与客户端。** 新增配置 `SEARCH_IMAGE_TIMEOUT_SECONDS`（默认 3，范围 (0, 60]），`.env.example` 已同步。查询专用的 `ClipClient` 在 `create_app` 里创建，放在 `app.state.query_clip`，lifespan 结束时关闭；它与 embed 任务用的客户端（`CLIP_ENCODE_TIMEOUT_SECONDS`，默认 60 秒）分开。选 3 秒是因为 CLIP 服务一次只算一个请求，embed 批量编码时查询要排队：太短会经常降级，太长会让用户久等。这个值没有实测依据。
+
+**默认开关。** `SEARCH_CHANNEL_IMAGE_ENABLED` 仍默认 `false`，留到 T23、T24 再定。
+
+**记录。** 检索日志的 `config` 新增 `image_model`（本次编码查询用的 `model_name`、`model_version`、`dim`；没开或没成功时为 `null`），`params` 新增 `image_timeout_seconds`。实验入口（`python -m app.modules.experiments run`）也创建同一种查询客户端传给检索，所以 B3 和 API 走同一套代码、同样的超时；通道开关仍来自实验配置。
+
+**局限。**
+
+- CLIP 服务一次只算一个请求：embed 任务批量编码时，查询编码可能排队超过 3 秒而降级。做实验时要避开批量编码，或者在结果里如实标记（运行器已把含 `unavailable` 通道的运行记为不完整）。
+- 实验记录的 mapping hash 仍不含 `image_vectors.json`（D35），留给 T24。
+- 没有在真实 CLIP 服务 + OpenSearch 上端到端跑过；图像通道的查询体没有发给过真实 OpenSearch（见 `untested.md` T22）。
+- 前端 `frontend/src/views/SearchView.vue` 的注释仍写“图像通道尚未实现”，留给 T23。

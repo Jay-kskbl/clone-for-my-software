@@ -21,6 +21,8 @@ class SearchParams:
     default_top_k: int
     max_top_k: int
     max_query_chars: int
+    # 图像通道编码查询文本的超时（秒）
+    image_timeout_seconds: float
     # 请求里没有指定时，各通道是否开启
     default_channels: dict[Channel, bool]
 
@@ -39,6 +41,7 @@ def params_from_settings(settings: Any) -> SearchParams:
         default_top_k=settings.search_default_top_k,
         max_top_k=settings.search_max_top_k,
         max_query_chars=settings.search_max_query_chars,
+        image_timeout_seconds=settings.search_image_timeout_seconds,
         default_channels={
             "meta": settings.search_channel_meta_enabled,
             "text": settings.search_channel_text_enabled,

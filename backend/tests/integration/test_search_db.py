@@ -1,4 +1,4 @@
-"""T15 🧪：检索接口在真实数据库上的行为。需要 TEST_DATABASE_URL，未设置时全部跳过。
+"""T15、T22 🧪：检索接口在真实数据库上的行为。需要 TEST_DATABASE_URL，未设置时全部跳过。
 
 OpenSearch 用假的网络层代替（替换 app.state.text_index），这样可以精确控制
 “索引里有什么”，专门检验数据库这一侧的保证（附录 A10）：
@@ -260,6 +260,30 @@ def test_search_service_down_is_503_search_unavailable(client, session, alice):
     assert response.status_code == 503
     assert response.json()["error"]["code"] == "SEARCH_UNAVAILABLE"
     assert "127.0.0.1" not in response.json()["error"]["message"]
+
+
+# ---- 🧪 T22：关闭 CLIP 服务后检索仍然正常并带降级标记 ----
+
+
+def test_clip_service_down_degrades_to_text_search(client, session, index, alice):
+    # 不替换 query_clip：conftest 里的 CLIP 地址指向一个没有服务的端口
+    document = add_document(session, alice)
+    index.text = [document.id]
+
+    response = search(client, login(client, "alice"), channels={"image": True})
+
+    assert hit_ids(response) == [str(document.id)]
+    channels = {c["channel"]: c for c in response.json()["channels"]}
+    assert channels["text"]["status"] == "ok"
+    assert channels["image"]["status"] == "unavailable"
+    assert "127.0.0.1" not in channels["image"]["detail"]
+    # 没有向 image_vectors 发查询
+    assert not any(r.url.path.startswith("/image_vectors") for r in index.requests)
+
+    session.expire_all()
+    (log,) = session.scalars(select(SearchLog)).all()
+    assert log.channels["image"]["status"] == "unavailable"
+    assert log.config["image_model"] is None
 
 
 # ---- 检索日志 ----

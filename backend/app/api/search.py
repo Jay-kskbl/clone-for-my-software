@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from app.api.deps import CurrentUser, SessionDep, SettingsDep, TextIndexDep
+from app.api.deps import CurrentUser, QueryClipDep, SessionDep, SettingsDep, TextIndexDep
 from app.modules.documents import service as documents_service
 from app.modules.search import SearchRequestData, params_from_settings, search
 from app.modules.search.schemas import (
@@ -23,6 +23,7 @@ def search_documents(
     session: SessionDep,
     settings: SettingsDep,
     text_index: TextIndexDep,
+    query_clip: QueryClipDep,
 ) -> SearchResponse:
     switches = body.channels.model_dump() if body.channels else {}
     outcome = search(
@@ -36,6 +37,7 @@ def search_documents(
         ),
         client=text_index,
         params=params_from_settings(settings),
+        clip=query_clip,
     )
 
     ordered = [outcome.documents[hit.document_id] for hit in outcome.hits]

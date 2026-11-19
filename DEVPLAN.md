@@ -191,7 +191,7 @@ BARRY zou/
   -   embed 任务：按 sha256 去重 → 调用 CLIP 服务 → 写 ImageEmbedding → 写入向量索引
   -   向量检索：`script_score` 精确计算 + 可访问 document_id 前置过滤
   -   🧪 过滤后只返回有权限的文档；重复图片只编码一次
-- [ ] **T22 M11 检索 v2 + RRF** 🔒⭐（`rrf.py` 已在 T15 提前完成，Barry 批准，见 decisions.md D28）
+- [x] **T22 M11 检索 v2 + RRF** 🔒⭐（`rrf.py` 已在 T15 提前完成，Barry 批准，见 decisions.md D28）
   -   图像通道：调用 CLIP 服务编码查询文本（设超时）→ 向量检索；超时或失败时降级，并在响应中标记该通道不可用
   -   `rrf.py`：输入各通道已聚合到文件级的排名列表，按 k 和截断深度融合；保留各通道原始排名和分数
   -   通道开关来自请求参数或实验配置
@@ -243,16 +243,16 @@ BARRY zou/
 - **打包体积（T16 记录）**
   - Vite 提示主包（约 874 KB）和 pdf.worker（约 1.27 MB）超过 500 KB。worker 本来就是单独加载的；主包可以在 T30 部署前考虑按需引入 Element Plus（D22）。
 - **给 T22（检索 v2）的衔接提醒（T15 补充）**
-  - 直接复用 `backend/app/modules/search/rrf.py`，只需加图像通道、CLIP 调用超时降级和消融配置。现在两路是串行的，加第三路时可以考虑并行执行。
-  - 图像通道目前在请求开启时报 `unavailable`（“图像检索尚未实现”），实现后改为真实状态。
+  - 直接复用 `backend/app/modules/search/rrf.py`，只需加~~图像通道、CLIP 调用超时降级~~和消融配置。~~现在两路是串行的，加第三路时可以考虑并行执行。~~（T22 已处理：图像通道与文本通道并行、超时降级，见 D36；消融配置属于 T24）
+  - ~~图像通道目前在请求开启时报 `unavailable`（“图像检索尚未实现”），实现后改为真实状态。~~（T22 已处理，D36）
 - **评测数据（T19 记录，由 Barry 负责，已滞后）**
   - 收集评测文档（原计划 W2 起，200–500 个文件）和每周标注（原计划 W4 起）都还没有开始。框架已就绪，格式和操作步骤见 `experiments/README.md`。没有数据就达不到 MVP-1，也无法开展阶段五的实验，建议尽快开始。
   - `grade` 0–3 各等级的含义（README 里是建议写法）待 Barry 确认。
 - **给 T22、T26 的补充（T19 记录）**
   - OCR Worker 的参数（`OCR_MIN_CONFIDENCE`、`OCR_PDF_DPI`）还没有记录进实验配置，因为 backend 读不到 OCR Worker 的配置。正式实验前要补上，例如让 OCR Worker 把参数写进 `ocr_results`，或在实验配置里显式填写。
 - **给 T21、T22 的衔接提醒（T20 记录）**
-  - CLIP 服务的接口见 `api.md` §9：`POST /encode/text` 传 `{"texts": [...]}`（T22 用）。~~`POST /encode/image` 写进 `image_embeddings`~~（T21 已实现，D35）。向量已归一化；T21 的精确检索用的是 `knn_score` + `cosinesimil`（与 T00 实测写法一致），对归一化向量排序与点积相同。
-  - 调用方自己设超时（A5）。服务一次只算一个请求，embed 任务批量入库时，查询编码可能要排队，T22 定超时时要考虑。
+  - CLIP 服务的接口见 `api.md` §9：~~`POST /encode/text` 传 `{"texts": [...]}`（T22 用）~~（T22 已处理，D36）。~~`POST /encode/image` 写进 `image_embeddings`~~（T21 已实现，D35）。向量已归一化；T21 的精确检索用的是 `knn_score` + `cosinesimil`（与 T00 实测写法一致），对归一化向量排序与点积相同。
+  - ~~调用方自己设超时（A5）。服务一次只算一个请求，embed 任务批量入库时，查询编码可能要排队，T22 定超时时要考虑。~~（T22 已处理：`SEARCH_IMAGE_TIMEOUT_SECONDS` 默认 3 秒，超时降级，D36）
   - ~~413、422 标为不可重试~~、~~向量维度 512 用于 mapping~~、~~embed 任务在哪个进程领取~~：T21 已处理（ClipRejected 不可重试；mapping 维度 512；通用 Worker 领取），见 D35。换模型仍要重建向量索引。
 - **T15–T19 复核留下的事项（2026-11-17 记录，详见 decisions.md D34）**
   - 已定（Barry，2026-11-17）：库里有数据集以外的文档时保持只提示并记录 `documents_outside_dataset`，不拦截运行。待 Barry 决定：`rebuild-indices` 是否需要一个无条件强制重建的开关（现在只在检查发现索引缺失或结构不一致时才执行）。
@@ -264,9 +264,9 @@ BARRY zou/
 - **（T21 已解决）给 T21 的衔接提醒**
   - ~~parse 任务目前不创建 embed 任务~~：T21 在解析图片成功的同一事务里创建（与 OCR 任务同处），按 payload 去重；同内容只编码一次靠 sha256 咨询锁 + 查 `image_embeddings`，见 D35。
 - **给 T22、T24 的衔接提醒（T21 记录）**
-  - 向量检索：`app.modules.vector_index.search_vectors(client, query_vector, *, document_ids, model_name, model_version, depth) -> list[VectorHit]`（`VectorHit` 含 document_id、image_id、score）。`document_ids` 传 M1 的可访问集合，管理员传 `None`（不过滤），空集合直接返回空、不发请求；`model_name`、`model_version` 取 CLIP `/health` 的当前模型，只比较同一模型的向量；结果已按文档折叠、按分数排好，score 是 1+余弦相似度，只用于排名。索引不存在时先建索引、返回空；其他故障照常抛出，T22 要把它当作通道不可用，而不是空结果。返回前仍需 M11 的数据库二次校验。
-  - 实验记录的 mapping hash（`backend/app/modules/experiments/environment.py` 的 `code_versions`）只遍历 `INDEX_NAMES`，不含 `image_vectors.json`，跑 B3 前要补。
-  - CLIP 服务一次只算一个请求：embed 任务批量编码时，查询编码可能排在后面（单张图片最长等 `CLIP_ENCODE_TIMEOUT_SECONDS`），T22 定查询编码超时时要考虑。
+  - ~~向量检索：`app.modules.vector_index.search_vectors(client, query_vector, *, document_ids, model_name, model_version, depth) -> list[VectorHit]`（`VectorHit` 含 document_id、image_id、score）。`document_ids` 传 M1 的可访问集合，管理员传 `None`（不过滤），空集合直接返回空、不发请求；`model_name`、`model_version` 取 CLIP `/health` 的当前模型，只比较同一模型的向量；结果已按文档折叠、按分数排好，score 是 1+余弦相似度，只用于排名。索引不存在时先建索引、返回空；其他故障照常抛出，T22 要把它当作通道不可用，而不是空结果。返回前仍需 M11 的数据库二次校验。~~（T22 已处理：模型标识取自 `/encode/text` 的应答，故障记为通道不可用，见 D36）
+  - 实验记录的 mapping hash（`backend/app/modules/experiments/environment.py` 的 `code_versions`）只遍历 `INDEX_NAMES`，不含 `image_vectors.json`，跑 B3 前要补（T22 未处理，留给 T24）。
+  - ~~CLIP 服务一次只算一个请求：embed 任务批量编码时，查询编码可能排在后面（单张图片最长等 `CLIP_ENCODE_TIMEOUT_SECONDS`），T22 定查询编码超时时要考虑。~~（T22 已处理：查询超时 3 秒、超时降级；排队导致降级仍是局限，见 D36）
 - **待 Barry 决定（T21 记录）**
   - ~~`CLAUDE.md` 一致性检查命令的说明仍写“对账数据库、磁盘和两个索引”，类别列表里没有新增的 `embeddings`~~（Barry 于 2026-11-19 同意，已补）。
 - **待实验决定（T12 记录）**
@@ -318,3 +318,4 @@ BARRY zou/
 | T20 | 2026-11-17 | 90bb44f | 计划由 Barry 于 2026-11-17 在本会话批准（“批准，开始写”；选“装 FastAPI (Recommended)”“默认 CPU，可配置 (Recommended)”）。开始前按 Barry 要求重读了 DEVPLAN、decisions.md、`T15-T19 opus5.5 develop.md` 和 `change-deepseek-v4/` 的记录，确认 C01–C12 与 T15–T19 的改动不影响 T20。`services/clip_service`：启动时检查权重文件（缺失或 sha256 不符即退出码 1，不下载）→ 加载 Chinese-CLIP ViT-B-16 并自检 → 监听 127.0.0.1:8001；`GET /health`、`POST /encode/text`、`POST /encode/image`（请求体为图片字节），响应都带 model_name、model_version（`cn_clip-1.6.0-5997ef32c50d`）、dim（512）；向量 L2 归一化；图片只收 PNG、JPEG，字节数与像素数双重上限（413），损坏（422）；错误格式与后端一致。规则见 decisions.md D33，接口见 api.md §9。新下载：clip 环境 9 个包约 13 MB（downloads.md #29–#37，比征求同意时说的多 1 个 opentelemetry-api）；权重从 env_check/models 复制到 models/clip（#38，没有下载）。已执行（本机 macOS，CPU）：接口测试 39 项通过（main 环境，假编码器）；🧪 真实模型测试 17 项通过（clip 环境，经真实 HTTP 服务）：健康检查、同一文本和同一图片两次编码向量完全一致、超过像素上限与字节上限 413、九种损坏或不支持的图片 422、出错后服务仍可用、EXIF 方向、文本与图片向量在同一空间；命令行冒烟：权重缺失、sha256 不符、端口非法均以退出码 1 结束，正常启动后 curl 三个接口结果正确；代码检查通过。首轮测试发现并已修复：超过字节上限时服务提前断开，调用方看到连接中断而不是 413。未测试（Not Tested）：MPS、CUDA、Windows、Linux；跨机器的向量一致性；后端 /health 对着真实服务；真实照片；并发（已登记 untested.md）。CLAUDE.md 的命令说明待 Barry 同意后补（§4）。提交时工作区里另有 11 个不属于 T20 的文件被别的会话改动（backend 一致性检查与检索、前端、ocr_worker），没有纳入本次提交。没有修改附录 A，没有动表结构和索引 |
 | T15–T19 复核修正 | 2026-11-17 | 591f482 | Barry 要求由 Fable 5.2 重新查看 Opus 5.5 写的 T15–T19 并修正不足。方法：通读五个任务的全部源码，逐条对照 `docs/T15-T19 opus5.5 develop.md` 的查验要点；重跑全部能在本机运行的测试。结论：主干（处理顺序、数据库二次校验、幂等、降级）正确，没有发现违反附录 A 的地方；修正 11 处，见 decisions.md D34：① 检索服务应答格式不对时由 500 改为 503；② 索引里 document_id 不合法的残留数据不再让检索失败；③ 预览页关键词高亮会拆坏 `&`、`<`、`'` 的转义，且区分大小写；④ PDF 预览连续翻页时误报“这一页无法显示”；⑤ 检索页重复提交；⑥ OCR 识别子进程被 Ctrl-C 打断；⑦ `PgStore.save` 返回类型标注；⑧ `consistency repair` 在检索服务不可用时报“没有问题”并返回 0；⑨ 重建索引丢掉解析失败文档的 doc_meta；⑩ 实验运行前检查不看 OCR 任务失败，`import` 替换文件后旧文档留在库里，库里有数据集以外的文档时没有提示；⑪ qrels 的 grade 校验遇到特殊字符会崩溃。没有动表结构、接口、mapping 和依赖，没有新下载，没有修改附录 A。已执行：backend 554 passed、191 skipped；shared 105 passed；services/ocr_worker 63 passed、4 skipped，ocr 环境真实识别 4 项通过；前端类型检查与构建通过、单元测试 51 项通过；三个目录代码检查通过；浏览器里对着临时模拟接口检查了 PDF 预览和文本高亮。未测试（Not Tested）：新增的 3 项数据库测试（需要 PostgreSQL）；`consistency repair` 的新提示与退出码；Ctrl-C 实际操作；已登记到 untested.md。看过但没有改的事项记在 §4 |
 | T21 | 2026-11-19 | a2facca | 代码由本会话 Opus 5.5 编写（Barry 于 2026-11-19 切换了模型，并要求主会话只写代码、其余交给子代理）；测试、复核、文档和提交由子代理完成。T21 不带 🔒，没有单独的计划批准。新模块 `backend/app/modules/vector_index/`：索引 `image_vectors`（1 分片 0 副本，dynamic strict，`vector` 为 512 维 knn_vector，不开 `index.knn`、不建 HNSW，附录 A12），`_id` = image_id，重复写入即覆盖；`search_vectors` 用 script_score（`knn_score` + `cosinesimil`）精确检索，model_name、model_version 和可访问 document_id 作为前置过滤，按 document_id 折叠。CLIP 客户端 `backend/app/modules/clip/client.py`（连不上、超时、5xx、429 可重试；413、422 等 4xx 不可重试），新增配置 `CLIP_ENCODE_TIMEOUT_SECONDS`（60）。embed 任务由通用 Worker 领取，parse 解析图片成功时在同一事务里创建；按 sha256 加咨询锁后查 `image_embeddings`，同一内容只编码一次（并发时也一样）；文档状态不跟随 embed 任务。cleanup 连带删除向量索引里的数据（`image_embeddings` 不删，D10）。一致性检查覆盖向量：新增 5 种检测项和修复类别 `embeddings`，`index`、`rebuild-indices` 连向量一起重建。规则与局限见 decisions.md D35。复核发现并已修复两处：还没有任何向量记录时误报 `image_vectors` 缺失；删除无用向量时没加锁，与 embed 有竞争。已执行：backend 640 passed、207 skipped（比 T15–T19 复核修正时多 86 项通过、16 项跳过）；shared 105 passed；两个目录代码检查通过。**未测试（Not Tested）**：`test_embed_db.py` 8 项（需要 PostgreSQL，含 🧪“重复图片只编码一次”的数据库版本与并发版本）、`test_vector_index_live.py` 8 项（需要 OpenSearch，含 🧪“过滤后只返回有权限的文档”），两项 🧪 的假对象版本已在单元测试里通过；没有连真实 CLIP 服务与 Worker 端到端跑过；已登记 untested.md。向量检索尚未接入检索编排（T22）。没有新下载，没有改表结构（不需要迁移），没有修改附录 A；新增 mapping 不影响已有两个索引，不需要重建 |
+| T22 | 2026-11-19 |  | 带 🔒：计划由 Barry 于 2026-11-19 在本会话批准（“批准，按推荐做”：图像通道与文本通道并行、`SEARCH_CHANNEL_IMAGE_ENABLED` 仍默认关闭、查询编码超时 3 秒）。代码由主会话编写；复测、复核、文档和提交由子代理完成。图像通道：CLIP `POST /encode/text` 编码查询（应答自带模型标识，每次查询只调用一次）→ 维度核对 → `search_vectors` 精确检索（同模型、权限前置过滤）→ 与 meta、text 一起 RRF → 数据库二次校验；图像通道在单独线程里与文本通道并行执行；CLIP 超时、连不上、拒绝、应答不对、维度不一致、向量索引出错都只把 image 标为 unavailable 并写明原因（200），文本通道出错仍是 503；text 与 image 都命中时证据用文本片段。新增配置 `SEARCH_IMAGE_TIMEOUT_SECONDS`；查询专用 CLIP 客户端放在 `app.state.query_clip`；检索日志记录 `image_model`；实验入口也传入查询客户端。规则见 decisions.md D36，api.md §7.1 已更新。已执行：backend 668 项通过、208 项跳过（T22 新增单元测试 28 项，检索编排与 CLIP 客户端，含三通道 RRF 手算样例和假网络层下“关闭 CLIP 服务后检索正常并带降级标记”），shared 105 项通过，ruff 两个目录通过。未测试（Not Tested）：`test_search_db.py` 新增的 `test_clip_service_down_degrades_to_text_search`（需要 PostgreSQL，是 🧪“关闭 CLIP 服务后检索仍然正常并带降级标记”的真实接口版本）；图像通道查询体从未发给真实 OpenSearch；从未连真实 CLIP 服务编码查询；并行线程在真实负载下的表现、3 秒超时是否合适都没有实测（见 untested.md）。没有修改附录 A，没有新下载 |

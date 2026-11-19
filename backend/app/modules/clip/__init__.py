@@ -10,7 +10,9 @@ from app.modules.clip.client import (
     ClipRejected,
     ClipUnavailable,
     EncodedImage,
+    EncodedText,
     clip_client_from_settings,
+    query_clip_client_from_settings,
 )
 
 __all__ = [
@@ -20,5 +22,7 @@ __all__ = [
     "ClipRejected",
     "ClipUnavailable",
     "EncodedImage",
+    "EncodedText",
     "clip_client_from_settings",
+    "query_clip_client_from_settings",
 ]

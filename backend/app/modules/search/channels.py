@@ -1,9 +1,10 @@
-"""M11：两个文本类通道对 OpenSearch 的查询。
+"""M11：三个检索通道。
 
     meta：doc_meta 索引，文件名与标签（B0）
     text：chunks 索引的 BM25，按 source_type 过滤（B1 只查 body，B2 查 body + ocr）
+    image：CLIP 服务编码查询文本 → image_vectors 索引精确检索（B3，T22）
 
-两个通道的输出都已经聚合到文件级：每个文档最多一条，按 BM25 分数从高到低。
+三个通道的输出都已经聚合到文件级：每个文档最多一条，按各自的原始分数从高到低。
 chunks 索引用 OpenSearch 的 collapse 按 document_id 折叠，每个文档只留得分最高的片段，
 它同时就是这个文档的命中证据（GLOBAL §4.2）。
 
@@ -20,7 +21,8 @@ from dataclasses import dataclass
 from typing import Any
 
 from pydantic import ValidationError
-from shared.contracts import Evidence, SourceType
+from shared.contracts import Evidence, ImageLocator, SourceType
+from shared.ids import parse_image_id
 from shared.text_index import (
     CHUNKS,
     DOC_META,
@@ -29,6 +31,9 @@ from shared.text_index import (
     TextIndexUnavailable,
     ensure_indices,
 )
+
+from app.modules.clip import ClipClient, ClipError, ClipModel
+from app.modules.vector_index import VECTOR_DIM, search_vectors
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +49,21 @@ class ChannelHits:
     ranking: list[tuple[uuid.UUID, float]]
     # text 通道每个文档的最佳片段；meta 通道为空
     evidence: dict[uuid.UUID, Evidence]
+
+
+class ImageChannelUnavailable(Exception):
+    """图像通道这一次没能执行。message 写给用户看，不含服务地址和查询内容。"""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+        self.message = message
+
+
+@dataclass(frozen=True)
+class ImageHits:
+    hits: ChannelHits
+    # 编码查询文本的模型，随检索日志记录（GLOBAL §4.3）
+    model: ClipModel
 
 
 def _id_filter(document_ids: Collection[uuid.UUID] | None) -> list[dict[str, Any]]:
@@ -211,3 +231,55 @@ def search_text(
         ranking.append((document_id, _score(hit)))
         evidence[document_id] = best
     return ChannelHits(ranking=ranking, evidence=evidence)
+
+
+def search_image(
+    clip: ClipClient,
+    client: OpenSearchClient,
+    query: str,
+    *,
+    document_ids: Collection[uuid.UUID] | None,
+    depth: int,
+) -> ImageHits:
+    """文本到图片的检索：查询文本 → CLIP 文本向量 → 精确检索最相似的图片。
+
+    只和同一模型生成的图片向量比较（模型标识取自这次编码的应答）。
+    任何故障都抛 ImageChannelUnavailable：图像通道是增强能力，它失败时由调用方降级为
+    纯文本检索并标记（GLOBAL §12），而不是让整次检索失败，也不是当成“没有结果”。
+    """
+    try:
+        encoded = clip.encode_text(query)
+    except ClipError as exc:
+        raise ImageChannelUnavailable(exc.message) from exc
+    if encoded.model.dim != VECTOR_DIM:
+        # 换了模型却没有改向量索引的 mapping 并重建：两边的向量不能比较
+        raise ImageChannelUnavailable(
+            f"CLIP 模型的向量维度（{encoded.model.dim}）与向量索引（{VECTOR_DIM}）不一致"
+        )
+    try:
+        found = search_vectors(
+            client,
+            encoded.vector,
+            document_ids=document_ids,
+            model_name=encoded.model.model_name,
+            model_version=encoded.model.model_version,
+            depth=depth,
+        )
+    except TextIndexError as exc:
+        raise ImageChannelUnavailable(f"向量索引检索失败：{exc.message}") from exc
+
+    ranking: list[tuple[uuid.UUID, float]] = []
+    evidence: dict[uuid.UUID, Evidence] = {}
+    for hit in found:
+        if hit.document_id in evidence:
+            continue
+        try:
+            if parse_image_id(hit.image_id).document_id != hit.document_id:
+                raise ValueError("image_id 不属于这个文档")
+            best = Evidence(image_id=hit.image_id, locator=ImageLocator(image_id=hit.image_id))
+        except (ValueError, ValidationError):
+            logger.warning("向量检索结果里有不合法的 image_id，已跳过（%r）", hit.image_id)
+            continue
+        ranking.append((hit.document_id, hit.score))
+        evidence[hit.document_id] = best
+    return ImageHits(hits=ChannelHits(ranking=ranking, evidence=evidence), model=encoded.model)

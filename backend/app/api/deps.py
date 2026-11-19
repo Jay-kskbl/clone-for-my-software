@@ -13,6 +13,7 @@ from app.core.errors import ForbiddenError, UnauthenticatedError
 from app.core.security import InvalidTokenError, decode_access_token
 from app.db.models import User
 from app.modules.auth.permissions import ADMIN_ROLE
+from app.modules.clip import ClipClient
 from app.modules.storage import LocalStorage
 
 # auto_error=False：缺少或格式不对的 Authorization 头由下面统一转成 401 和项目的错误结构，
@@ -38,9 +39,15 @@ def get_text_index(request: Request) -> OpenSearchClient:
     return request.app.state.text_index
 
 
+def get_query_clip(request: Request) -> ClipClient:
+    """检索用的 CLIP 客户端（编码查询文本，超时短）。"""
+    return request.app.state.query_clip
+
+
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 StorageDep = Annotated[LocalStorage, Depends(get_storage)]
 TextIndexDep = Annotated[OpenSearchClient, Depends(get_text_index)]
+QueryClipDep = Annotated[ClipClient, Depends(get_query_clip)]
 SessionDep = Annotated[Session, Depends(get_session)]
 
 

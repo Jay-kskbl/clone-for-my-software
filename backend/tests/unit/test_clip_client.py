@@ -1,5 +1,7 @@
 """T21：CLIP 服务客户端。CLIP 服务用假的网络层代替。"""
 
+import json
+
 import httpx
 import pytest
 
@@ -109,3 +111,45 @@ def test_non_finite_vector_is_rejected():
     )
     with pytest.raises(ClipUnavailable):
         client_for(handler).encode_image(b"x")
+
+
+# ---- 查询文本编码（T22）----
+
+
+def test_encode_text_posts_one_text_and_reads_its_vector():
+    handler, seen = replying(200, {**MODEL_BODY, "vectors": [[0.6, 0, 0.8]]})
+    encoded = client_for(handler).encode_text("会议室白板")
+    assert encoded.model == MODEL
+    assert encoded.vector == [0.6, 0.0, 0.8]
+    (request,) = seen
+    assert (request.method, request.url.path) == ("POST", "/encode/text")
+    assert json.loads(request.content) == {"texts": ["会议室白板"]}
+
+
+@pytest.mark.parametrize(
+    "vectors",
+    [None, [], [[1, 0, 0], [0, 1, 0]], [[1, 0]], [["a", 0, 0]], "x"],
+    ids=["缺少", "空", "多于一条", "维度不对", "不是数字", "不是列表"],
+)
+def test_encode_text_rejects_malformed_vectors(vectors):
+    handler, _ = replying(200, {**MODEL_BODY, "vectors": vectors})
+    with pytest.raises(ClipUnavailable):
+        client_for(handler).encode_text("q")
+
+
+def test_encode_text_validation_error_is_a_rejection():
+    handler, _ = replying(422, {"error": {"code": "VALIDATION_ERROR", "message": "x"}})
+    with pytest.raises(ClipRejected):
+        client_for(handler).encode_text("q")
+
+
+def test_query_client_uses_the_search_timeout():
+    from types import SimpleNamespace
+
+    from app.modules.clip import query_clip_client_from_settings
+
+    settings = SimpleNamespace(
+        clip_service_url="http://clip.test:8001", search_image_timeout_seconds=2.5
+    )
+    with query_clip_client_from_settings(settings) as client:
+        assert client._http.timeout.read == 2.5

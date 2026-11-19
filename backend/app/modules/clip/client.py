@@ -53,6 +53,12 @@ class EncodedImage:
     vector: list[float]
 
 
+@dataclass(frozen=True)
+class EncodedText:
+    model: ClipModel
+    vector: list[float]
+
+
 def _error_summary(response: httpx.Response) -> str:
     try:
         error = response.json().get("error")
@@ -151,9 +157,29 @@ class ClipClient:
         model = _model_from(body)
         return EncodedImage(model=model, vector=_vector_from(body.get("vector"), model.dim))
 
+    def encode_text(self, text: str) -> EncodedText:
+        """编码一条查询文本（POST /encode/text，T22 图像检索通道用）。
+
+        服务一次可以编码多条，检索每次只有一条查询，这里只发一条。
+        应答本身带模型标识，所以不必再查 /health。
+        """
+        body = self._call("POST", "/encode/text", json={"texts": [text]})
+        model = _model_from(body)
+        vectors = body.get("vectors")
+        if not isinstance(vectors, list) or len(vectors) != 1:
+            raise ClipUnavailable(_BAD_RESPONSE)
+        return EncodedText(model=model, vector=_vector_from(vectors[0], model.dim))
+
 
 def clip_client_from_settings(settings: Any) -> ClipClient:
-    """按配置创建客户端。settings 是 app.config.Settings。"""
+    """embed 任务用的客户端（编码图片，超时较长）。settings 是 app.config.Settings。"""
     return ClipClient(
         settings.clip_service_url, timeout_seconds=settings.clip_encode_timeout_seconds
+    )
+
+
+def query_clip_client_from_settings(settings: Any) -> ClipClient:
+    """检索用的客户端（编码查询文本）。超时短：超时就降级为纯文本检索（附录 A5）。"""
+    return ClipClient(
+        settings.clip_service_url, timeout_seconds=settings.search_image_timeout_seconds
     )

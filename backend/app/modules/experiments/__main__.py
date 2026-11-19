@@ -37,6 +37,7 @@ from app.db.models import Document, ExperimentRun, OCRResult, ProcessingTask, Us
 from app.db.session import make_engine, make_session_factory
 from app.modules.auth import create_user
 from app.modules.auth.permissions import ADMIN_ROLE
+from app.modules.clip import query_clip_client_from_settings
 from app.modules.experiments.config import load_config
 from app.modules.experiments.dataset import (
     EXPERIMENTS_DIR,
@@ -298,6 +299,8 @@ def cmd_run(args: argparse.Namespace, root: Path, settings: Any, session: Sessio
     )
     run_dir.mkdir(parents=True, exist_ok=False)
     client = client_from_settings(settings)
+    # 与 API 用同一种查询编码客户端和超时：实验测到的就是系统实际的行为
+    query_clip = query_clip_client_from_settings(settings)
     run_row = ExperimentRun(name=config.name, config={})
     try:
 
@@ -314,6 +317,7 @@ def cmd_run(args: argparse.Namespace, root: Path, settings: Any, session: Sessio
                     ),
                     client=client,
                     params=params,
+                    clip=query_clip,
                 )
             except SearchUnavailableError as exc:
                 raise SearchFailed(exc.message) from exc
@@ -351,6 +355,7 @@ def cmd_run(args: argparse.Namespace, root: Path, settings: Any, session: Sessio
         result = run_queries(config, dataset, document_to_file, do_search, repeats=args.repeat)
     finally:
         client.close()
+        query_clip.close()
 
     full_config["complete"] = result.complete and not problems
     (run_dir / "config.json").write_text(

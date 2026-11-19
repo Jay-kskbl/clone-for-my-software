@@ -1,6 +1,6 @@
 # 未测试清单（Not Tested）
 
-更新日期：2026-11-19（T21 完成后）
+更新日期：2026-11-19（T22 完成后）
 
 这里列出**已经写好但从未实际执行过**的测试，以及其他没有经过验证的性质。
 规则来自 GLOBAL.md“测试执行限制与代码验证要求”：跑不了的测试不强行执行、不安装工具，
@@ -22,18 +22,18 @@
 | T08 文档管理 | `backend/tests/integration/test_documents.py` | 41 | 本机没有 PostgreSQL | 已复核，改了 1 处测试断言 |
 | T13 文本索引 | `backend/tests/opensearch/test_text_index_live.py` | 13 | 本机没有 OpenSearch（没有 Docker 和 Java） | 已复核，未发现问题；有两处需要注意的性质，见第 4 节 |
 | T14 解析流水线 | `backend/tests/integration/test_pipeline_db.py` | 23 | 本机没有 PostgreSQL；其中 2 项端到端测试还需要 OpenSearch | 已复核，未发现问题 |
-| T15 检索 v1 | `backend/tests/integration/test_search_db.py` | 20 | 本机没有 PostgreSQL；其中 1 项还需要 OpenSearch | 已复核，未发现阻塞问题；局限见 `decisions.md` D28 |
+| T15 检索 v1（T22 加 1 项） | `backend/tests/integration/test_search_db.py` | 21 | 本机没有 PostgreSQL；其中 1 项还需要 OpenSearch | 已复核，未发现阻塞问题；局限见 `decisions.md` D28、D36 |
 | T16 抽取文本接口 | `backend/tests/integration/test_document_text.py` | 11 | 本机没有 PostgreSQL | 已复核，未发现问题 |
 | T17 OCR Worker 读写数据库 | `backend/tests/integration/test_ocr_worker_db.py` | 10 | 本机没有 PostgreSQL | 已复核，未发现问题 |
 | T18 一致性检查 | `backend/tests/integration/test_consistency_db.py` | 12 | 本机没有 PostgreSQL | 已复核；首轮发现的误删问题已修复，见 `decisions.md` D31 |
 | T19 实验框架 | `backend/tests/integration/test_experiments_db.py` | 8 | 本机没有 PostgreSQL | 已复核；首轮发现的结果目录重名、P@K 口径问题已修复，见 `decisions.md` D32 |
 | T21 图片向量（embed 任务） | `backend/tests/integration/test_embed_db.py` | 8 | 本机没有 PostgreSQL | 已复核；复核发现的两处问题已修复，见 `decisions.md` D35 |
 | T21 向量索引 | `backend/tests/opensearch/test_vector_index_live.py` | 8 | 本机没有 OpenSearch | 已复核；检索写法与 T00 在 2.19.1 上实测通过的一致 |
-| **合计** | | **204** | | 另有第 4 节“T15–T19 复核修正”的 3 项，共 207 项（与本机 backend 的 207 项跳过一致） |
+| **合计** | | **205** | | 另有第 4 节“T15–T19 复核修正”的 3 项，共 208 项（与本机 backend 的 208 项跳过一致） |
 
 T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器）和 T12（切分）不需要数据库，它们的测试全部在本机执行并通过，没有未测试项。
 
-对照：2026-11-19（T21）本机实测 `backend/` 640 项通过、207 项跳过，`shared/` 105 项通过。以下是 T19 时的数字：`backend/` 540 项、`shared/` 105 项、`services/ocr_worker/` 63 项（main 环境；另有 4 项真实识别测试在 ocr 环境里运行并通过）、`frontend/` 48 项，全部通过。
+对照：2026-11-19（T22）本机实测 `backend/` 668 项通过、208 项跳过，`shared/` 105 项通过；T21 时为 640 项通过、207 项跳过。以下是 T19 时的数字：`backend/` 540 项、`shared/` 105 项、`services/ocr_worker/` 63 项（main 环境；另有 4 项真实识别测试在 ocr 环境里运行并通过）、`frontend/` 48 项，全部通过。
 
 ## 2. 影响最大的几项
 
@@ -131,7 +131,7 @@ T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器�
 
 特别说明：`tests/unit/test_pipeline.py` 的 30 项用假的数据库会话和假的检索服务验证了处理函数的步骤顺序和分支，但真实数据库上的约束、级联删除和 SQL 都没有执行过。
 
-### T15 `test_search_db.py`（20）
+### T15 `test_search_db.py`（21）
 
 OpenSearch 用假的网络层代替（替换 `app.state.text_index`），专门检验数据库这一侧的保证。需要 PostgreSQL（19 项）：
 
@@ -141,6 +141,7 @@ OpenSearch 用假的网络层代替（替换 `app.state.text_index`），专门�
 - 🧪 无结果与故障：`test_no_match_is_200_with_an_empty_list`、`test_search_service_down_is_503_search_unavailable`
 - 检索日志：`test_every_search_is_logged_including_failures`、`test_successful_search_log_lists_the_results`、`test_invalid_request_is_not_logged`
 - 请求校验：`test_search_requires_login`、`test_malformed_requests_are_422`（5）
+- 🧪 T22 新增：`test_clip_service_down_degrades_to_text_search`（CLIP 地址指向没有服务的端口：200，文本结果照常，image 为 unavailable 且 detail 不含地址，没有向 `image_vectors` 发查询，检索日志记录降级）。对应 DEVPLAN T22 的 🧪“关闭 CLIP 服务后检索仍然正常并带降级标记”；同样的行为已有单元测试（假网络层）在本机通过
 
 另外需要 OpenSearch（1 项）：
 
@@ -269,7 +270,7 @@ T20 的测试都在本机实际运行过（接口测试 39 项，真实模型测
 | OCR 识别子进程忽略 Ctrl-C | 没有在终端里对着正在识别的 Worker 实际按过 | 已复核；子进程启动与识别的现有测试（含 ocr 环境真实识别 4 项）通过 |
 | PDF 预览的绘制排队 | 只对着临时模拟接口、用一份 5 页的测试 PDF 检查过；没有自动化测试 | 已复核 |
 
-第 1 节的合计因此是 191 项（原 188 项加上面 3 项）；T21 之后为 207 项。
+第 1 节的合计因此是 191 项（原 188 项加上面 3 项）；T21 之后为 207 项，T22 之后为 208 项。
 
 ### T21 图片向量与向量索引（2026-11-19 登记，见 `decisions.md` D35）
 
@@ -278,6 +279,15 @@ T20 的测试都在本机实际运行过（接口测试 39 项，真实模型测
 | 向量检索在真实 OpenSearch 上运行 | `image_vectors` 的 mapping（不开 `index.knn` 的 `knn_vector`）和 `search_vectors` 的查询体（`script_score` + `knn_score` + `cosinesimil`，前置过滤、按 `document_id` 折叠）从未被本项目代码发给真实 OpenSearch。写法与 T00 在 2.19.1 上实测通过的 `env_check/01_check_opensearch.py` 一致，但 collapse 与排序的组合没有实测 | `decisions.md` D35 |
 | embed 端到端 | 从未连真实 CLIP 服务、PostgreSQL、OpenSearch 和真实 Worker 子进程跑过：上传图片 → parse 建 embed 任务 → 编码 → 写 `image_embeddings` → 写索引 | `decisions.md` D35 |
 | 一致性检查的向量部分 | 向量相关的采集、5 种新检测项、`embeddings` 修复和带向量的重建从未在真实数据和真实 OpenSearch 上运行过；只有单元测试（假对象） | `decisions.md` D35 |
+
+### T22 检索 v2：图像通道（2026-11-19 登记，见 `decisions.md` D36）
+
+| 项目 | 说明 | 记录位置 |
+|---|---|---|
+| 图像通道的查询体在真实 OpenSearch 上运行 | 与 T21 相同：`search_vectors` 的查询体从未发给真实 OpenSearch；T22 只是从检索编排调用它 | `decisions.md` D35、D36 |
+| 对着真实 CLIP 服务编码查询 | `encode_text` 只对假网络层测过；从未连真实 CLIP 服务，也没有用真实向量在真实索引里检索过“文本找图片” | `decisions.md` D36 |
+| 并行线程在真实负载下的表现 | 图像通道在单独线程里执行，单元测试只覆盖功能；没有在真实后端、并发请求下观察线程、连接和耗时 | `decisions.md` D36 |
+| 3 秒查询超时是否合适 | 没有实测：CLIP 在 CPU 上编码一条查询的耗时、embed 批量编码时排队多久都没有量过，留给 T27 | `decisions.md` D36 |
 
 ## 5. 补测方法
 
