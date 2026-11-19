@@ -1,6 +1,6 @@
 # 未测试清单（Not Tested）
 
-更新日期：2026-11-19（T24i 完成后；同日按 Barry 批准整理）
+更新日期：2026-11-19（T24i 完成后；同日按 Barry 批准整理，并删除 Windows 第二轮已通过的 38 项）
 
 这里列出**已经写好但从未实际执行过**的测试，以及其他没有经过验证的性质。
 规则来自 GLOBAL.md“测试执行限制与代码验证要求”：跑不了的测试不强行执行、不安装工具，
@@ -14,7 +14,7 @@
 
 > **2026-11-19 Windows 第二轮补测（`27b51b2`，基于 `50b244b`，即 T24f 之后、T24g 之前的代码）：** 由 Barry 在 Windows 上完成，原始说明是仓库根目录的 `本轮测试失败与未完成.txt`，截图在 `output/playwright/`；本会话没有重跑，只是据此登记。汇总：backend 923 passed、6 failed、0 skipped；shared 103 passed、2 failed；frontend 67 passed，类型检查和生产构建通过；OCR Worker 主环境 66 passed、4 skipped，ocr 环境真实识别 4 passed；CLIP 17 passed。8 项失败全部是符号链接测试的 WinError 1314（见第 7 节）。
 >
-> backend 0 skipped 说明第 3 节中 T24g 之前的 38 项（T22 1 项、`test_experiments_db.py` 中 D34/T24/T24c 的 11 项、`test_embed_db.py` 8 项、`test_vector_index_live.py` 8 项、`test_document_text.py` 的 T24e 10 项）以及 T24c 之后要重跑的 `test_migrations.py`、`test_ocr_worker_db.py` 都在这一轮执行并通过。**但这一轮只有汇总数字，没有逐项的原始结果（JUnit XML）。** 按上次整理的做法，删除前要 Barry 确认，所以这些条目暂时保留，第 1 节汇总表后另有说明。T24g、T24h、T24i 的改动不在这一轮的代码里，它们登记的项目仍未测试。
+> **同日删除（Barry 批准）：** backend 0 skipped 说明原第 3 节中 T24g 之前的 38 项（T22 `test_search_db.py` 1 项；`test_experiments_db.py` 中 D34 3 项、T24 4 项、T24c 4 项；`test_embed_db.py` 8 项；`test_vector_index_live.py` 8 项；`test_document_text.py` 的 T24e 10 项）以及 T24c、T24e 之后要重跑的 `test_migrations.py`、`test_ocr_worker_db.py`、`test_document_text.py` 原有 11 项都在这一轮执行并通过，已按 Barry 于 2026-11-19 的批准（“Delete them”）从本文件删除，连同第 2 节的 🧪 三行和第 4 节中只由这些测试覆盖的 12 行。限制：这一轮只有汇总数字，没有逐项的原始结果（JUnit XML）；通过的是 `50b244b` 的代码，之后 T24g、T24i 只改了实验框架（`experiments/__main__.py`），没有改这些测试覆盖的代码。T24g、T24h、T24i 登记的项目仍未测试。
 
 **复核不等于测试通过。** 本文件中的任何一项，在实际运行通过之前，都不能在论文、测试报告或答辩中写成“已验证”。
 
@@ -24,76 +24,28 @@
 
 | 任务 | 测试文件 | 未测试项数 | 原因 | 代码复核 |
 |---|---|---|---|---|
-| T22 检索 v2 | `backend/tests/integration/test_search_db.py` 中 T22 新增的 1 项 | 1 | 本机没有 PostgreSQL（该文件其余 20 项已在 Windows 补测中通过） | 已复核；局限见 `decisions.md` D36 |
-| T15–T19 复核修正、T24 | `backend/tests/integration/test_experiments_db.py` 中 D34 新增的 3 项和 T24 新增的 4 项 | 7 | 本机没有 PostgreSQL（该文件其余 8 项已在 Windows 补测中通过） | 已复核，见 `decisions.md` D34、D38 |
-| T21 图片向量（embed 任务） | `backend/tests/integration/test_embed_db.py` | 8 | 本机没有 PostgreSQL | 已复核；复核发现的两处问题已修复，见 `decisions.md` D35 |
-| T21 向量索引 | `backend/tests/opensearch/test_vector_index_live.py` | 8 | 本机没有 OpenSearch | 已复核；检索写法与 T00 在 2.19.1 上实测通过的一致 |
-| T24c OCR 参数 | `backend/tests/integration/test_experiments_db.py` 中 T24c 新增的 4 项 | 4 | 本机没有 PostgreSQL | 已复核，见 `decisions.md` D42 |
-| T24e 文本预览排序 | `backend/tests/integration/test_document_text.py` 中 T24e 新增的 10 项 | 10 | 本机没有 PostgreSQL | 已复核，见 `decisions.md` D44 |
 | T24g OCR 模型检查 | `backend/tests/integration/test_experiments_db.py` 中 T24g 新增的 1 项 | 1 | 本机没有 PostgreSQL | 已复核，见 `decisions.md` D46 |
 | T24i 重新 OCR | `backend/tests/integration/test_experiments_db.py` 中 T24i 新增的 2 项 | 2 | 本机没有 PostgreSQL | 已复核，见 `decisions.md` D47 |
-| **合计** | | **41** | | 与本机 backend 跳过的 229 项减去已补测的 188 项一致 |
+| **合计** | | **3** | | 与本机 backend 跳过的 229 项减去两轮 Windows 补测已通过的 226 项（188 + 38）一致 |
 
 T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器）和 T12（切分）不需要数据库，它们的测试全部在本机执行并通过，没有未测试项。
 
 对照：2026-11-19（T24i）本机实测 `backend/` 709 项通过、229 项跳过；T24g 时为 705 项通过、227 项跳过；T24e 时为 703 项通过、226 项跳过；T24c 时为 692 项通过、216 项跳过，`shared/` 105 项通过；T24 时为 678 项通过、212 项跳过。
 
-**Windows 第二轮（2026-11-19）对上表的影响：** 除 “T24g OCR 模型检查” 1 项和 “T24i 重新 OCR” 2 项外，上表其余 38 项都在 Windows 第二轮里执行并通过（只有汇总数字，待 Barry 确认后删除）。下面这段“需要重跑的已补测文件”同样已在这一轮重跑并通过。
-
-**T24c 之后需要重跑的已补测文件。** T24c 加了迁移 `0002`，并改了 `test_ocr_worker_db.py`（`save()` 多了 `params` 参数，有一项新增断言）。下面这两个文件虽然在 2026-11-16 通过过，但通过的是 T24c 之前的版本，现在要重跑才算数：`test_migrations.py`（14 项，尤其是 `test_migration_matches_models` 和升级—回退—升级）、`test_ocr_worker_db.py`（10 项）。T24e 又改了 `test_document_text.py` 所测接口的排序和跳转 SQL，原有 11 项也要重跑。
-
 ## 2. 影响最大的几项
 
-原来列在这里的 T06、T07、T08、T13、T14、T15 的 🧪 测试已在 2026-11-16 Windows 补测中通过（见文件开头）。**里程碑“基础系统”要求的 T07 四项测试已满足（在 Windows 验证副本上）。** 仍未运行的 🧪：
-
-| 任务 | DEVPLAN 要求 | 对应测试 | 状态 |
-|---|---|---|---|
-| T21 | 重复图片只编码一次 | `test_embed_db.py::test_duplicate_images_are_encoded_once`、`test_concurrent_tasks_for_the_same_content_encode_once` | 未测试（假对象版本已通过，见 `tests/unit/test_embed.py`） |
-| T21 | 过滤后只返回有权限的文档 | `test_vector_index_live.py::test_filter_returns_only_accessible_documents` 等 3 项 | 未测试（模拟应答版本已通过，见 `tests/unit/test_vector_index.py`） |
-| T22 | 关闭 CLIP 服务后检索仍然正常并带降级标记 | `test_search_db.py::test_clip_service_down_degrades_to_text_search` | 未测试（假网络层版本已通过） |
+原来列在这里的 🧪 测试（T06、T07、T08、T13、T14、T15 在 2026-11-16；T21 两项、T22 一项在 2026-11-19 第二轮）都已在 Windows 补测中通过。**目前没有仍未运行的 🧪 测试。**
 
 ## 3. 逐项清单
 
 括号里的数字是该测试的参数化用例数，未标注的为 1。
 
-### T22 `test_search_db.py`（1）
-
-需要 PostgreSQL：
-
-- 🧪 `test_clip_service_down_degrades_to_text_search`（CLIP 地址指向没有服务的端口：200，文本结果照常，image 为 unavailable 且 detail 不含地址，没有向 `image_vectors` 发查询，检索日志记录降级）
-
-### D34、T24、T24c、T24g、T24i `test_experiments_db.py`（14）
+### T24g、T24i `test_experiments_db.py`（3）
 
 需要 PostgreSQL，检索服务用假的：
 
-- D34 新增：`test_preflight_reports_failed_ocr_tasks_of_the_current_version`、`test_documents_outside_the_dataset_are_counted`、`test_import_replaces_a_changed_file_and_deletes_the_old_document`（复核说明见第 4 节“T15–T19 复核修正”）
-- T24c 新增（见第 4 节“T24c OCR 参数”）：`test_ocr_params_column_defaults_to_empty_and_round_trips`、`test_snapshot_lists_ocr_params_with_counts`、`test_preflight_accepts_pdf_pages_and_images_with_the_same_settings`、`test_preflight_reports_mixed_or_unrecorded_ocr_params`
 - T24g 新增（见第 4 节“T24g OCR 模型检查”）：`test_preflight_reports_mixed_ocr_models`
 - T24i 新增（见第 4 节“T24i 重新 OCR”）：`test_reocr_requeues_finished_ocr_tasks_of_the_current_version`、`test_reocr_refuses_while_parse_or_ocr_tasks_are_unfinished`
-- T24 新增（CLIP 用假的网络层或不可达的端口）：`test_image_preflight_counts_images_without_a_vector_of_the_current_model`、`test_image_preflight_reports_clip_down`、`test_b3_refuses_to_run_when_clip_is_down`、`test_rrf_k_override_is_used_and_recorded`
-
-### T21 `test_embed_db.py`（8）
-
-需要 PostgreSQL。CLIP 服务和检索服务用假的：
-
-- 🧪 重复图片只编码一次：`test_duplicate_images_are_encoded_once`、`test_concurrent_tasks_for_the_same_content_encode_once`（并发版本，验证咨询锁）
-- `test_different_content_gets_separate_vectors`、`test_rerunning_a_task_does_not_add_rows`
-- 失败与删除：`test_rejected_image_leaves_no_row_and_releases_the_lock`、`test_embeddings_survive_document_deletion`、`test_deleted_document_is_skipped`
-- parse 建 embed 任务：`test_parsing_an_image_creates_one_embed_task`
-
-单元测试 `tests/unit/test_embed.py` 用假对象验证了同样的“只编码一次”分支（已通过），但咨询锁、`ON CONFLICT DO NOTHING` 和真实事务都没有执行过。
-
-### T21 `test_vector_index_live.py`（8）
-
-需要 OpenSearch：
-
-- `test_exact_search_ranks_by_similarity`
-- 🧪 过滤后只返回有权限的文档：`test_filter_returns_only_accessible_documents`、`test_empty_accessible_set_returns_nothing`、`test_unknown_document_ids_in_the_filter_are_harmless`
-- `test_vectors_of_another_model_are_not_compared`
-- `test_rewriting_an_image_overwrites_instead_of_adding`、`test_deleted_document_is_no_longer_found`
-- `test_search_before_any_vector_creates_the_index`
-
-单元测试 `tests/unit/test_vector_index.py` 用模拟应答验证了请求体（已通过）。
 
 ## 4. 不是测试、但同样没有验证过的性质
 
@@ -143,24 +95,19 @@ T20 的测试都在本机实际运行过（接口测试 39 项，真实模型测
 | 端口被占用 | 没有测；按 uvicorn 的行为会报错退出 | — |
 | OCR 与 CLIP 同时运行的内存（OS-6） | 现在 CLIP 服务已有，可以补测，尚未做 | 第 6 节 |
 
-### T15–T19 复核修正（2026-11-17 登记，见 `decisions.md` D34；其中 3 项测试也列在第 3 节）
+### T15–T19 复核修正（2026-11-17 登记，见 `decisions.md` D34）
 
 | 项目 | 原因 | 代码复核 |
 |---|---|---|
-| `test_experiments_db.py::test_preflight_reports_failed_ocr_tasks_of_the_current_version` | 需要 PostgreSQL | 已复核：查询只用到 `processing_tasks` 的 `document_id`、`task_type`、`status`、`payload` 四列，版本比较在 Python 里做 |
-| `test_experiments_db.py::test_documents_outside_the_dataset_are_counted` | 需要 PostgreSQL | 已复核 |
-| `test_experiments_db.py::test_import_replaces_a_changed_file_and_deletes_the_old_document` | 需要 PostgreSQL | 已复核：软删除用的是文档接口同一个 `soft_delete_document` |
 | `consistency repair` 在检索服务不可用时的提示与退出码 1 | 命令要连数据库，本机没有 | 已复核；没有自动化测试 |
 | `consistency repair --fix index`、`rebuild-indices` 给解析失败的文档写回 `doc_meta` | 完整路径需要 PostgreSQL；`reindex_document` 本身有单元测试（已通过） | 已复核 |
 | OCR 识别子进程忽略 Ctrl-C | 没有在终端里对着正在识别的 Worker 实际按过 | 已复核；子进程启动与识别的现有测试（含 ocr 环境真实识别 4 项）通过 |
 | PDF 预览的绘制排队 | 只对着临时模拟接口、用一份 5 页的测试 PDF 检查过；没有自动化测试 | 已复核 |
 
-
 ### T21 图片向量与向量索引（2026-11-19 登记，见 `decisions.md` D35）
 
 | 项目 | 说明 | 记录位置 |
 |---|---|---|
-| 向量检索在真实 OpenSearch 上运行 | `image_vectors` 的 mapping（不开 `index.knn` 的 `knn_vector`）和 `search_vectors` 的查询体（`script_score` + `knn_score` + `cosinesimil`，前置过滤、按 `document_id` 折叠）从未被本项目代码发给真实 OpenSearch。写法与 T00 在 2.19.1 上实测通过的 `env_check/01_check_opensearch.py` 一致，但 collapse 与排序的组合没有实测 | `decisions.md` D35 |
 | embed 端到端 | 从未连真实 CLIP 服务、PostgreSQL、OpenSearch 和真实 Worker 子进程跑过：上传图片 → parse 建 embed 任务 → 编码 → 写 `image_embeddings` → 写索引 | `decisions.md` D35 |
 | 一致性检查的向量部分 | 向量相关的采集、5 种新检测项、`embeddings` 修复和带向量的重建从未在真实数据和真实 OpenSearch 上运行过；只有单元测试（假对象） | `decisions.md` D35 |
 
@@ -168,7 +115,6 @@ T20 的测试都在本机实际运行过（接口测试 39 项，真实模型测
 
 | 项目 | 说明 | 记录位置 |
 |---|---|---|
-| 图像通道的查询体在真实 OpenSearch 上运行 | 与 T21 相同：`search_vectors` 的查询体从未发给真实 OpenSearch；T22 只是从检索编排调用它 | `decisions.md` D35、D36 |
 | 对着真实 CLIP 服务编码查询 | `encode_text` 只对假网络层测过；从未连真实 CLIP 服务，也没有用真实向量在真实索引里检索过“文本找图片” | `decisions.md` D36 |
 | 并行线程在真实负载下的表现 | 图像通道在单独线程里执行，单元测试只覆盖功能；没有在真实后端、并发请求下观察线程、连接和耗时 | `decisions.md` D36 |
 | 3 秒查询超时是否合适 | 没有实测：CLIP 在 CPU 上编码一条查询的耗时、embed 批量编码时排队多久都没有量过，留给 T27 | `decisions.md` D36 |
@@ -194,8 +140,6 @@ T20 的测试都在本机实际运行过（接口测试 39 项，真实模型测
 
 | 项目 | 说明 | 代码复核 |
 |---|---|---|
-| `test_document_text.py` 的 T24e 新增 10 项 | `test_ocr_chunks_are_interleaved_by_page_body_first`、`test_pages_follow_the_interleaved_order`、`test_chunk_id_jump_uses_the_same_order`（7 个参数化用例）、`test_source_type_filter_keeps_page_order`，需要 PostgreSQL | 已复核；本机只检查了生成的 SQL（`test_document_text_order.py` 2 项，已通过） |
-| 原有 11 项在新排序下 | 都是 Word 段落定位（没有页码），按设计顺序不变，但改了排序和跳转的 SQL，需要重跑 | 已复核 |
 | 前端效果 | T24f 起 PDF、图片的“抽取文本”标签页会调用这个接口，按页穿插的顺序在浏览器里对着模拟接口看到过；真实后端上没有看过 | — |
 
 ### T24d rebuild-indices --force（2026-11-19 登记，见 `decisions.md` D43）
@@ -221,10 +165,6 @@ T20 的测试都在本机实际运行过（接口测试 39 项，真实模型测
 
 | 项目 | 说明 | 代码复核 |
 |---|---|---|
-| 迁移 `0002` 在真实 PostgreSQL 上执行 | 升级、回退、再升级都没有跑过；本项目的 alembic 不支持离线 `--sql`，没法在本机看生成的 SQL。只确认了 `alembic heads` 为 `0002`，模型编译出的列定义与迁移一致 | 已复核：`add_column` 带 `server_default="{}"` 与 `nullable=False`，已有行由默认值填充；写法与 0001 里 `processing_tasks.payload` 相同 |
-| `PgStore.save` 写入 params | SQL 新增一列、参数用 `Jsonb(dict(params))`，只在 `test_ocr_worker_db.py` 里覆盖 | 已复核：列名、占位符与字典键一一对应 |
-| 快照与运行前检查的分组查询 | `SELECT params, count(*) … GROUP BY params`，jsonb 可以分组，但没在真实库上跑过 | 已复核；判断逻辑是纯函数，单元测试 7 项已通过 |
-| `test_experiments_db.py` 的 T24c 新增 4 项 | `test_ocr_params_column_defaults_to_empty_and_round_trips`、`test_snapshot_lists_ocr_params_with_counts`、`test_preflight_accepts_pdf_pages_and_images_with_the_same_settings`、`test_preflight_reports_mixed_or_unrecorded_ocr_params` | 已复核 |
 | OCR Worker 真实链路写入 params | 上传 → OCR Worker → `ocr_results.params` 有值，没有端到端跑过。T24h 已让 `scripts/smoke/ocr_e2e.py` 检查这一列，跑通烟测即可覆盖 | 见上一节烟测脚本一行 |
 
 ### T24 B3 与消融配置（2026-11-19 登记，见 `decisions.md` D38）
@@ -232,7 +172,6 @@ T20 的测试都在本机实际运行过（接口测试 39 项，真实模型测
 | 项目 | 说明 | 记录位置 |
 |---|---|---|
 | B3 及消融在真实数据上运行 | B3、B3-no-ocr、B3-no-clip、clip-only、B3-k10/k30/k100 从未在真实数据、真实 PostgreSQL + OpenSearch + CLIP 服务上运行过；评测数据集也还没有 | `decisions.md` D38 |
-| 图像通道运行前检查 | 缺向量的统计（`image_assets` 左连接 `image_embeddings`）只写了集成测试，未运行 | `decisions.md` D38 |
 | MVP-2 里程碑 | 未达成，没有打 tag `mvp-2` | `decisions.md` D38 |
 
 ## 5. 补测方法
