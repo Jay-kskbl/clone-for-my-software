@@ -207,7 +207,7 @@ BARRY zou/
 来源：DEVPLAN §4 的待议事项，Barry 于 2026-11-19 统一批准（见 decisions.md D39）。一次做一个，各自一个 commit。
 
 - [x] **T24a 通用 Worker 启动时检查数据库**：启动时先连一次数据库，连不上以退出码 1 结束（与 OCR Worker 一致，GLOBAL §12）；领取循环中途断线仍然重试
-- [ ] **T24b `/health` 不暴露内部信息**：`detail` 只写异常类型，主机、端口、数据库用户名只写日志
+- [x] **T24b `/health` 不暴露内部信息**：`detail` 只写异常类型，主机、端口、数据库用户名只写日志
 - [ ] **T24c OCR 参数进实验配置** 🔒：`OCR_MIN_CONFIDENCE`、`OCR_PDF_DPI` 随 OCR 结果写入数据库，实验运行时读出记进 `config.json`。涉及表结构，先给 Barry 看字段设计和迁移
 - [ ] **T24d `rebuild-indices --force`**：无条件强制重建，仍需 `--yes` 才执行
 - [ ] **T24e 文本预览按页码穿插 OCR 片段**：同一页里正文在前、OCR 在后
@@ -293,7 +293,7 @@ BARRY zou/
 - **安全方面，本科毕设范围内可以不做，但答辩可能被问到**（Barry 于 2026-11-19 决定：`/health` 一项排为 T24b；其余两项不做，写进论文“局限与改进”并准备答辩回答）
   - 登录接口没有限制尝试次数，可以被暴力猜密码。
   - 没有每个用户的存储配额。
-  - `/health` 是公开接口，依赖不可用时返回的 `detail` 里带有内部主机名和端口（数据库认证失败时还会带数据库用户名）。T01 的实现，建议改成只返回异常类型、详情写日志。
+  - ~~`/health` 是公开接口，依赖不可用时返回的 `detail` 里带有内部主机名和端口~~（T24b 已解决：只返回异常类型，详情写日志，见 D41）。
 - **文档**
   - 项目根目录没有 `README.md`。GLOBAL §11.2 要求配置变化时同步更新 README，§14 的验收标准也要求 README；目前相关说明分散在 `CLAUDE.md` 和 `frontend/README.md` 里。T30 之前需要补。
 - **前端**
@@ -340,3 +340,4 @@ BARRY zou/
 | T24 | 2026-11-19 | 34af94e | 代码由主会话（Opus 5.5）编写，测试复核、文档和提交由子代理完成；T24 不带 🔒。新增 7 个实验配置：B3、B3-no-ocr、B3-no-clip、clip-only、B3-k10、B3-k30、B3-k100（k=60 即 B3）；实验配置新增可选 `rrf_k`（只覆盖本次实验的 k，随 search_params 与检索日志记录）；开了图像通道的配置运行前检查 CLIP 服务是否可用、数据集图片是否都有当前模型的向量，模型信息记进 config.json 的 `clip_model`；`mapping_sha256` 补上 `image_vectors`。规则见 decisions.md D38。已执行：backend 678 项通过、212 项跳过，shared 105 项通过，ruff 通过（T24 新增单元测试 10 项，跳过数从 208 增至 212 即新增的 4 项集成测试）。未测试（Not Tested）：test_experiments_db.py 新增 4 项（需要 PostgreSQL）；B3 及消融从未在真实数据和真实 CLIP 上运行。**MVP-2 里程碑未达成，没有打 tag**（原因同 MVP-0）。没有修改附录 A，没有新下载 |
 | 待议事项统一批准 | 2026-11-19 | 8609ef5 | Barry 于 2026-11-19 对 §4 中 14 项待批准事项“按推荐全部批准”（D39）。当场完成 5 项：qrels `grade` 含义确认；A14 定为不启用；删除重复的 CLIP 权重 `env_check/models/clip_cn_vit-b-16.pt`（删前核对 sha256 一致）；整理 `docs/untested.md`（删除 Windows 补测已通过的 190 项及 OS-1/3/4/5/8/9/10，剩 24 项测试）；N01 烟测脚本改写后放进 `scripts/smoke/ocr_e2e.py`，`.gitignore` 加 `storage-smoke/`。另 5 项排为 T24a–T24e；其余暂缓。已执行：烟测脚本 ruff 检查与格式检查通过、能编译，未设 `TEST_DATABASE_URL` 时退出码 2。**未测试（Not Tested）**：烟测脚本改写后没有实际跑过（本机没有 PostgreSQL 和 OpenSearch），已登记到 untested.md。没有改代码、表结构、索引和附录 A；没有新下载 |
 | T24a | 2026-11-19 | e21a174 | D39 第 6 项，Barry 于 2026-11-19 批准；不带 🔒。`shared/task_queue.py` 的 `PgTaskQueue` 新增 `ping()`；`backend/app/worker/__main__.py` 启动时先 `ping`，任何 `psycopg.Error` 都打印“Worker 无法连接数据库（异常类型）”并以退出码 1 结束，不进入领取循环；信号处理改到检查之后登记；领取循环中途断线仍然重试（未改 `loop.py`）。新增 `tests/unit/test_worker_main.py` 4 项。已执行：backend 682 passed、212 skipped（新增 4 项通过）；shared 105 passed；services/ocr_worker（main 环境）63 passed、4 skipped；backend、shared 的 ruff 检查与格式检查通过；实际启动 `python -m app.worker`，`DATABASE_URL` 指向没有服务的端口：退出码 1，输出不含密码和端口。没有改表结构、接口、附录 A，没有新下载，没有未测试项。修改记录见 `docs/changes/T24a.md` |
+| T24b | 2026-11-19 | （待填） | D39 第 7 项，Barry 于 2026-11-19 批准；不带 🔒。`backend/app/api/health.py`：依赖不可用时 `detail` 只给异常类型（HTTP 错误加状态码，如 `HTTPStatusError: HTTP 503`），完整的类型和消息写进 WARNING 日志；返回结构、状态码、`ok`/`degraded` 规则不变；`docs/api.md` §3 同步。`tests/unit/test_health.py` 新增 3 项（真实应用对着空闲端口：响应里没有主机、端口、用户名、密码，日志里有原因；HTTP 503 只留状态码；数据库认证失败不暴露用户名）。已执行：backend 685 passed、212 skipped（新增 3 项通过）；ruff 检查与格式检查通过。前端不读 `/health`，不受影响。没有改表结构、附录 A，没有新下载，没有未测试项。修改记录见 `docs/changes/T24b.md` |

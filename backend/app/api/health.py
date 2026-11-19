@@ -2,6 +2,8 @@
 
 依赖不可用是需要如实报告的状态，不是让接口报错的理由（GLOBAL §12），
 所以每项检查都自己接住异常，接口始终返回 200。
+
+这是公开接口：不可用时 detail 只给异常类型，详细原因只写服务端日志（T24b）。
 """
 
 import logging
@@ -31,11 +33,21 @@ class HealthResponse(BaseModel):
     clip_service: ComponentStatus
 
 
+def _public_detail(exc: Exception) -> str:
+    """响应里只放异常类型（HTTP 错误再加状态码）。
+
+    /health 是公开接口，不登录也能访问。异常消息里会有内部主机名、端口和地址，
+    数据库认证失败时还有数据库用户名，这些只写日志（T24b，D41）。
+    """
+    if isinstance(exc, httpx.HTTPStatusError):
+        return f"{type(exc).__name__}: HTTP {exc.response.status_code}"
+    return type(exc).__name__
+
+
 def _unavailable(component: str, exc: Exception) -> ComponentStatus:
-    # 只记录异常类型和消息；连接串可能带密码，不写进日志和响应
-    detail = f"{type(exc).__name__}: {exc}".strip()
-    logger.warning("健康检查：%s 不可用：%s", component, detail)
-    return ComponentStatus(status="unavailable", detail=detail)
+    # 日志里记完整的异常类型和消息，便于排查；连接串本身（可能带密码）从不写进日志和响应
+    logger.warning("健康检查：%s 不可用：%s: %s", component, type(exc).__name__, exc)
+    return ComponentStatus(status="unavailable", detail=_public_detail(exc))
 
 
 def check_database(settings: Settings) -> ComponentStatus:

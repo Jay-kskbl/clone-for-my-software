@@ -3,6 +3,7 @@
 import socket
 
 import httpx
+import psycopg
 import pytest
 from fastapi.testclient import TestClient
 
@@ -108,3 +109,52 @@ def test_red_cluster_and_http_error_count_as_unavailable(settings, monkeypatch):
 
     assert health.check_opensearch(settings).status == "unavailable"
     assert health.check_clip_service(settings).status == "unavailable"
+
+
+# T24b：/health 是公开接口，响应里不能带内部主机名、端口和数据库用户名
+
+
+def test_unavailable_detail_has_no_host_port_or_user(settings, caplog):
+    client = TestClient(create_app(settings))
+    port = settings.database_url.rsplit(":", 1)[1].split("/")[0]
+
+    with caplog.at_level("WARNING", logger="app.api.health"):
+        resp = client.get("/health")
+
+    body = resp.json()
+    for component in ("database", "opensearch", "clip_service"):
+        detail = body[component]["detail"]
+        # 只有异常类型，例如 OperationalError、ConnectError
+        assert detail.isidentifier(), detail
+    for leaked in ("127.0.0.1", port, "secret-pw", "postgresql://", "u@"):
+        assert leaked not in resp.text
+    # 详细原因仍然写进服务端日志，便于排查；密码不进日志
+    assert "健康检查：database 不可用：OperationalError" in caplog.text
+    assert "健康检查：opensearch 不可用：ConnectError" in caplog.text
+    assert "secret-pw" not in caplog.text
+
+
+def test_http_error_detail_keeps_only_the_status_code(settings, monkeypatch):
+    monkeypatch.setattr(
+        health.httpx, "get", _fake_get({"/health": httpx.Response(503, text="internal-host:8001")})
+    )
+
+    status = health.check_clip_service(settings)
+
+    assert status.status == "unavailable"
+    assert status.detail == "HTTPStatusError: HTTP 503"
+
+
+def test_database_auth_failure_detail_hides_the_user(settings, monkeypatch):
+    def fail_auth(*_args, **_kwargs):
+        raise psycopg.OperationalError(
+            'connection to server at "db.internal" (10.0.0.5), port 5432 failed: '
+            'FATAL:  password authentication failed for user "docmgr"'
+        )
+
+    monkeypatch.setattr(health.psycopg, "connect", fail_auth)
+
+    status = health.check_database(settings)
+
+    assert status.status == "unavailable"
+    assert status.detail == "OperationalError"

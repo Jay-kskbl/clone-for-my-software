@@ -98,11 +98,13 @@
   "status": "degraded",
   "database":     { "status": "ok",          "detail": null },
   "opensearch":   { "status": "ok",          "detail": "集群状态为 yellow" },
-  "clip_service": { "status": "unavailable", "detail": "ConnectError: ..." }
+  "clip_service": { "status": "unavailable", "detail": "ConnectError" }
 }
 ```
 
 `status`：三项全部正常为 `ok`，否则为 `degraded`。每一项为 `ok` 或 `unavailable`。
+
+`detail`（T24b 起）：不可用时只给异常类型，例如 `OperationalError`、`ConnectError`；对方返回 HTTP 错误时为 `HTTPStatusError: HTTP 503` 这种形式。这是公开接口，所以不返回内部主机名、端口和数据库用户名，完整原因只写在后端日志里（`健康检查：<组件> 不可用：<类型>: <消息>`）。OpenSearch 正常时仍返回集群状态（`集群状态为 green/yellow`），red 时为 `集群状态为 red`。
 
 ## 4. 认证
 

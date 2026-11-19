@@ -1086,7 +1086,7 @@ Barry 于 2026-11-19 对 DEVPLAN §4 中整理出的 14 项待批准事项回复
 | 4 | `docs/untested.md` | 删除 Windows 补测已通过的项 | 已整理，剩 24 项测试；限制（Windows 副本、之后的代码改动未复跑）写在该文件开头 |
 | 5 | N01 烟测脚本 | 放进仓库，`scripts/smoke/ocr_e2e.py`，手动运行，不进 pytest | 已放；改动：解释器路径按系统选 `bin/python` 或 `Scripts/python.exe`，连接串改读 `TEST_DATABASE_URL`（必填）和 `TEST_OPENSEARCH_URL`，`ROOT` 改为上两级目录，清理测试索引失败时打印原因而不是静默忽略，超时异常加 `from`。输出目录 `storage-smoke/` 加进 `.gitignore`。改写后未实际运行 |
 | 6 | 两个 Worker 启动时检查数据库不一致 | 通用 Worker 也在启动时检查，连不上以退出码 1 结束 | T24a 已完成（D40） |
-| 7 | `/health` 暴露内部主机名、端口 | `detail` 只写异常类型 | DEVPLAN T24b |
+| 7 | `/health` 暴露内部主机名、端口 | `detail` 只写异常类型 | T24b 已完成（D41） |
 | 8 | OCR 参数没有进实验配置 | 写进数据库，实验读出记录 | DEVPLAN T24c（🔒，先给字段设计） |
 | 9 | `rebuild-indices` 无条件重建 | 加 `--force` | DEVPLAN T24d |
 | 10 | 文本预览 OCR 片段排序 | 按页码穿插 | DEVPLAN T24e |
@@ -1109,3 +1109,14 @@ Barry 于 2026-11-19 对 DEVPLAN §4 中整理出的 14 项待批准事项回复
 
 **局限。** 没有给检查设连接超时，用的是 libpq 的默认值（不设上限，取决于操作系统的 TCP 超时）。主机不可达而不是端口拒绝时，启动可能要等一两分钟才报错。没有改，因为 `PgTaskQueue` 的连接方式两个 Worker 共用，改超时会影响领取，需要单独评估。
 
+### D41 /health 不暴露内部信息（T24b）
+
+代码：`backend/app/api/health.py`；测试：`backend/tests/unit/test_health.py`；接口说明：`docs/api.md` §3。来源：D39 第 7 项。
+
+**问题。** T01 起，依赖不可用时 `detail` 是 `"{异常类型}: {异常消息}"`。`/health` 不需要登录，任何人都能看到。psycopg 的消息里有数据库主机、IP、端口，认证失败时还有数据库用户名；httpx 的消息里有 OpenSearch 和 CLIP 服务的完整地址。
+
+**做法。** 新增 `_public_detail()`：一般只返回异常类型名；`httpx.HTTPStatusError` 时返回 `HTTPStatusError: HTTP <状态码>`，因为状态码有助于判断对方是“没开”还是“开了但报错”，又不带地址。完整的类型和消息照旧写进 WARNING 日志。
+
+**没有改的。** 响应结构（`status`、三个组件、`detail` 字段）、始终 200、`ok`/`degraded` 的规则不变，所以 `api.md` 的契约只是收紧了 `detail` 的内容。OpenSearch 正常时的 `集群状态为 green/yellow` 不含内部信息，保留。连接串（可能带密码）原本就不进日志和响应，这一点没有变：psycopg 的错误消息里没有密码，只有用户名。
+
+**代价。** 只看 `/health` 已经分不清“拒绝连接”“超时”“认证失败”（都是 `OperationalError`），要看后端日志。毕设部署是单机，运维的人能看到日志，可以接受。
