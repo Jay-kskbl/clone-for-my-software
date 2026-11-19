@@ -3,6 +3,7 @@
     python -m app.modules.experiments validate
     python -m app.modules.experiments import
     python -m app.modules.experiments run --config ../experiments/configs/B1.json [--repeat 3]
+    python -m app.modules.experiments reocr [--yes]
 
 validate  只检查 experiments/ 下的清单、查询集和标注的格式，不连数据库。
 import    以实验专用的管理员账号上传清单里的文件（已导入的按内容哈希跳过），
@@ -10,9 +11,13 @@ import    以实验专用的管理员账号上传清单里的文件（已导入�
 run       运行一组实验，结果写到 experiments/runs/<时间>_<名称>/，并写一条 experiment_runs 记录。
           运行前检查数据集里的文档是否都已处理成功、有没有待清理的文档；
           不满足时中止，加 --allow-incomplete 可以强行运行（结果里会记录这一点）。
+reocr     把数据集文档当前解析版本的 OCR 任务放回队列，用 OCR Worker 现在的配置重新识别
+          （例如改了 OCR_PDF_DPI、OCR_MIN_CONFIDENCE 之后）。不加 --yes 只列出要重做的任务。
+          之后要启动 OCR Worker 处理完，run 的运行前检查会等它们完成。
 
 退出码：0 成功；1 出错（配置、数据库、数据集不合法、运行前检查不通过）；
 2 运行完成但不完整（有检索失败或本应执行的通道不可用），这样的结果不能当正式数据。
+reocr：0 已放回队列，或演练成功、没有需要重做的任务；1 出错，或还有未完成的解析、OCR 任务。
 """
 
 import argparse
@@ -26,9 +31,16 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from shared.tasks import STATUS_FAILED, TASK_OCR
+from shared.tasks import (
+    STATUS_FAILED,
+    STATUS_PENDING,
+    STATUS_PROCESSING,
+    STATUS_SUCCEEDED,
+    TASK_OCR,
+    TASK_PARSE,
+)
 from shared.text_index import client_from_settings
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
@@ -258,7 +270,7 @@ def ocr_param_problems(rows: list[tuple[dict[str, Any], int]]) -> list[str]:
     if unrecorded:
         problems.append(
             f"有 {unrecorded} 条 OCR 结果没有记录识别参数（T24c 之前写入），"
-            "无法确认用的是什么配置（在空的实验库上重新 import 并处理数据集）"
+            "无法确认用的是什么配置（运行 reocr 重新识别，或在空的实验库上重新 import 并处理）"
         )
     recorded = [params for params, _ in rows if params]
     for key in OCR_PARAM_KEYS:
@@ -268,7 +280,7 @@ def ocr_param_problems(rows: list[tuple[dict[str, Any], int]]) -> list[str]:
         if len(values) > 1:
             problems.append(
                 f"数据集的 OCR 结果用了不同的 {key}：{sorted(values, key=str)}"
-                "（处理期间改过 OCR Worker 的配置；统一配置后在空的实验库上重新 import 并处理）"
+                "（处理期间改过 OCR Worker 的配置；统一配置后运行 reocr 重新识别）"
             )
     return problems
 
@@ -301,7 +313,7 @@ def ocr_model_problems(models: list[str]) -> list[str]:
         return []
     return [
         f"数据集的 OCR 结果用了不同的模型：{models}"
-        "（处理期间换过 OCR 模型；统一后在空的实验库上重新 import 并处理。"
+        "（处理期间换过 OCR 模型；统一后运行 reocr 重新识别。"
         "也可能是重新解析后残留的旧结果，可先用一致性检查的 ocr-results 类别清理）"
     ]
 
@@ -524,6 +536,128 @@ def cmd_run(args: argparse.Namespace, root: Path, settings: Any, session: Sessio
     return 0
 
 
+# ---- reocr ----
+
+
+def reocr_task_ids(
+    tasks: list[tuple[uuid.UUID, uuid.UUID, dict[str, Any] | None, str]],
+    current_versions: dict[uuid.UUID, str],
+) -> list[uuid.UUID]:
+    """要放回队列的 OCR 任务（T24i）。
+
+    tasks 为（任务 id，文档 id，payload，状态）；current_versions 为未删除文档的当前解析版本。
+    只要当前版本的任务：旧版本的任务即使放回队列，OCR Worker 也会按 stale-version 跳过。
+    只要已结束（成功或失败）的任务：还在排队或处理中的不用动。
+    """
+    return [
+        task_id
+        for task_id, document_id, payload, status in tasks
+        if status in (STATUS_SUCCEEDED, STATUS_FAILED)
+        and document_id in current_versions
+        and (payload or {}).get("parse_version") == current_versions[document_id]
+    ]
+
+
+def cmd_reocr(args: argparse.Namespace, root: Path, session: Session) -> int:
+    """把数据集文档当前版本的 OCR 任务放回队列，用 OCR Worker 现在的配置重新识别（T24i）。
+
+    复用原来的任务，而不是新建：每个页或图片仍然只有一个 OCR 任务，
+    运行前检查（失败的 OCR 任务）、一致性检查（ocr_targets）、重新解析时的去重都不受影响。
+    OCR Worker 重做一个对象时先删掉它的旧识别结果和旧片段（数据库和索引都是），再写新的，
+    所以重做是覆盖，不会叠加（GLOBAL §3.3 幂等）。
+    """
+    try:
+        dataset = load_dataset(root, check_files=False)
+        mapping = load_document_map(root)
+    except DatasetError as exc:
+        print(exc, file=sys.stderr)
+        return 1
+    missing = sorted(set(dataset.files) - set(mapping))
+    if missing:
+        print(f"{len(missing)} 个文件还没有导入（如 {missing[0]}），先运行 import", file=sys.stderr)
+        return 1
+    document_ids = [uuid.UUID(mapping[f][0]) for f in dataset.files]
+    if not document_ids:
+        print("数据集里还没有文件", file=sys.stderr)
+        return 1
+
+    busy = session.scalar(
+        select(func.count())
+        .select_from(ProcessingTask)
+        .where(
+            ProcessingTask.document_id.in_(document_ids),
+            ProcessingTask.task_type.in_((TASK_PARSE, TASK_OCR)),
+            ProcessingTask.status.in_((STATUS_PENDING, STATUS_PROCESSING)),
+        )
+    )
+    if busy:
+        # 正在解析的文档，解析完会建新版本的 OCR 任务；正在 OCR 的任务放回队列会和它抢
+        print(
+            f"数据集文档还有 {busy} 个未完成的解析或 OCR 任务，等它们处理完再重新 OCR",
+            file=sys.stderr,
+        )
+        return 1
+
+    current = {
+        document_id: version
+        for document_id, version in session.execute(
+            select(Document.id, Document.parse_version).where(
+                Document.id.in_(document_ids), Document.deleted_at.is_(None)
+            )
+        )
+        if version
+    }
+    tasks = [
+        (task_id, document_id, payload, status)
+        for task_id, document_id, payload, status in session.execute(
+            select(
+                ProcessingTask.id,
+                ProcessingTask.document_id,
+                ProcessingTask.payload,
+                ProcessingTask.status,
+            ).where(
+                ProcessingTask.document_id.in_(document_ids),
+                ProcessingTask.task_type == TASK_OCR,
+            )
+        )
+    ]
+    task_ids = reocr_task_ids(tasks, current)
+    selected = set(task_ids)
+    documents = len({document_id for task_id, document_id, _, _ in tasks if task_id in selected})
+    if not task_ids:
+        print("数据集文档没有需要重新 OCR 的任务（没有扫描页或图片，或还没解析完）")
+        return 0
+    print(f"将把 {documents} 个文档的 {len(task_ids)} 个 OCR 任务放回队列，重新识别。")
+    if not args.yes:
+        print("这是演练，没有改动任何数据。确认 OCR Worker 的配置后，加 --yes 执行。")
+        return 0
+
+    # 条件更新：执行前状态刚好变了的任务（例如有人同时在界面上点了重试）不动
+    result = session.execute(
+        update(ProcessingTask)
+        .where(
+            ProcessingTask.id.in_(task_ids),
+            ProcessingTask.status.in_((STATUS_SUCCEEDED, STATUS_FAILED)),
+        )
+        .values(
+            status=STATUS_PENDING,
+            attempts=0,
+            error=None,
+            started_at=None,
+            finished_at=None,
+            lease_expires_at=None,
+            claimed_by=None,
+        )
+        .execution_options(synchronize_session=False)
+    )
+    session.commit()
+    print(
+        f"已放回队列 {result.rowcount} 个 OCR 任务。启动 OCR Worker 处理完之后再运行实验；"
+        "处理期间 run 的运行前检查会提示有未完成的任务。"
+    )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.modules.experiments")
     parser.add_argument(
@@ -541,6 +675,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     run.add_argument("--repeat", type=int, default=1, help="重复运行几次，默认 1")
     run.add_argument("--allow-incomplete", action="store_true", help="运行前检查不通过时也继续")
+    reocr = sub.add_parser("reocr", help="把数据集文档的 OCR 任务放回队列，重新识别")
+    reocr.add_argument("--yes", action="store_true", help="真正执行；不加时只列出要重做的任务")
     args = parser.parse_args(argv)
     root: Path = args.root.resolve()
 
@@ -560,6 +696,8 @@ def main(argv: list[str] | None = None) -> int:
             try:
                 if args.command == "import":
                     return cmd_import(root, settings, session)
+                if args.command == "reocr":
+                    return cmd_reocr(args, root, session)
                 return cmd_run(args, root, settings, session)
             except OperationalError as exc:
                 print(f"无法连接数据库（{type(exc).__name__}）", file=sys.stderr)

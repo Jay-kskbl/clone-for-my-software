@@ -6,6 +6,7 @@
   这里得到的数字是合成数据的结果，只证明链路能跑通，不是实验结果。
 """
 
+import argparse
 import json
 import uuid
 from datetime import UTC, datetime
@@ -284,6 +285,76 @@ def test_preflight_reports_mixed_ocr_models(session):
     assert cli._snapshot_versions(session, [d.id for d in documents])["ocr_models"] == [
         f"PP-OCRv5_mobile_det+PP-OCRv5_mobile_rec {v}" for v in sorted([OCR_MODEL_VERSION, other])
     ]
+
+
+def test_reocr_requeues_finished_ocr_tasks_of_the_current_version(session, root, capsys):
+    """T24i：成功和失败的当前版本 OCR 任务回到队列，尝试次数清零；旧版本任务不动。"""
+    user = cli._experiment_user(session, create=True)
+    a, b = make_documents(session, user)
+    save_document_map({"f1": (str(a.id), "x"), "f2": (str(b.id), "y")}, root)
+    page = {"type": "pdf_page", "page": 1}
+    now = datetime.now(UTC)
+    done = ProcessingTask(
+        task_type="ocr",
+        document_id=a.id,
+        status="succeeded",
+        attempts=1,
+        started_at=now,
+        finished_at=now,
+        payload={"parse_version": V1, "locator": page},
+    )
+    failed = ProcessingTask(
+        task_type="ocr",
+        document_id=b.id,
+        status="failed",
+        attempts=3,
+        error="boom",
+        finished_at=now,
+        payload={"parse_version": V1, "locator": page},
+    )
+    old = ProcessingTask(
+        task_type="ocr",
+        document_id=b.id,
+        status="succeeded",
+        payload={"parse_version": "c1-m300-o50-bbbbbbbbbbbb", "locator": page},
+    )
+    session.add_all([done, failed, old])
+    session.commit()
+
+    # 演练：只报告，不改
+    assert cli.cmd_reocr(argparse.Namespace(yes=False), root, session) == 0
+    assert "2 个 OCR 任务" in capsys.readouterr().out
+    session.expire_all()
+    assert session.get(ProcessingTask, done.id).status == "succeeded"
+
+    assert cli.cmd_reocr(argparse.Namespace(yes=True), root, session) == 0
+    session.expire_all()
+    for task_id in (done.id, failed.id):
+        task = session.get(ProcessingTask, task_id)
+        assert task.status == "pending" and task.attempts == 0
+        assert task.error is None and task.started_at is None and task.finished_at is None
+    assert session.get(ProcessingTask, old.id).status == "succeeded"
+    # 文档状态只跟随 parse 任务，不变
+    assert session.get(Document, a.id).status == "succeeded"
+
+
+def test_reocr_refuses_while_parse_or_ocr_tasks_are_unfinished(session, root, capsys):
+    user = cli._experiment_user(session, create=True)
+    a, b = make_documents(session, user)
+    save_document_map({"f1": (str(a.id), "x"), "f2": (str(b.id), "y")}, root)
+    done = ProcessingTask(
+        task_type="ocr",
+        document_id=a.id,
+        status="succeeded",
+        payload={"parse_version": V1, "locator": {"type": "pdf_page", "page": 1}},
+    )
+    session.add_all([done, ProcessingTask(task_type="ocr", document_id=b.id)])  # pending
+    session.commit()
+
+    assert cli.cmd_reocr(argparse.Namespace(yes=True), root, session) == 1
+    assert "未完成的解析或 OCR 任务" in capsys.readouterr().err
+    session.expire_all()
+    assert session.get(ProcessingTask, done.id).status == "succeeded"
 
 
 def test_import_uploads_once_and_records_the_mapping(session, settings, root):

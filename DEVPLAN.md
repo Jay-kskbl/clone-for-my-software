@@ -214,6 +214,7 @@ BARRY zou/
 - [x] **T24f 预览页给 PDF、图片加“抽取文本”标签页**（Barry 于 2026-11-19 批准方案，按推荐做）：抽出公共组件 `ExtractedText.vue`；PDF、图片分“原文件 / 抽取文本”两个标签页，文本按需加载；从检索结果打开图片时默认显示抽取文本并跳到命中片段；标签页状态写进地址栏 `view=`
 - [x] **T24g 运行前检查拦下混用的 OCR 模型**（Barry 于 2026-11-19 批准，来源 T24c 待议第 4 条）：数据集的 OCR 结果出现两个以上（模型名，模型版本）时报问题，默认拒绝运行，`--allow-incomplete` 放行；查询与 `config.json` 的 `ocr_models` 快照共用
 - [x] **T24h 烟测脚本检查 `ocr_results.params`**（Barry 于 2026-11-19 批准，来源 T24c 待议第 2 条）：OCR 完成后直接查数据库，确认图片的识别结果记录了 `pdf_dpi`（图片为 null）、`min_confidence`、`max_pixels` 和模型标识
+- [x] **T24i 重新 OCR 的命令**（Barry 于 2026-11-19 批准，来源 T24c 待议第 1 条）：`python -m app.modules.experiments reocr [--yes]` 把数据集文档当前版本的 OCR 任务放回队列，用 OCR Worker 现在的配置重新识别；不新建任务，不做“只重新切分”
 
 ### 阶段五：实验（W13–W15）
 
@@ -294,7 +295,8 @@ BARRY zou/
   - 启动检查没有连接超时（libpq 默认值），主机不可达时可能等一两分钟才报错。
   - 启动检查不查表结构：空库（没迁移）时要到第一次领取才报错。
 - **待议（T24c 记录，见 `docs/changes/T24c.md` §4）**
-  - 没有“对已解析的文档重新做 OCR”的入口：OCR 参数不一致时只能在空库上重新 import。阶段五若要比较不同 DPI 或置信度阈值，需要这个命令；只改 `min_confidence` 时也可以只重新切分（`lines` 保存了全部行）。需 Barry 决定。
+  - ~~没有“对已解析的文档重新做 OCR”的入口~~（Barry 于 2026-11-19 批准，T24i 已完成：`experiments reocr`，见 D47）。“只改 `min_confidence` 时只重新切分”没有做，T24i 一律重新识别；如果阶段五要扫多个阈值、重新识别太慢，再议。
+  - 待 Barry 决定（T24i 记录）：`CLAUDE.md` 的“实验”命令一行是否补上 `reocr`（用法已写在 `experiments/README.md` §4）。
   - ~~运行前检查没有拦“数据集里用了两个不同的 OCR 模型”（快照里有 `ocr_models`），可以用同样的办法补上。~~（Barry 于 2026-11-19 批准，排为 T24g）
   - ~~`scripts/smoke/ocr_e2e.py` 可以加一项检查 `ocr_results.params` 有值。~~（Barry 于 2026-11-19 批准，T24h 已完成）
 - **待议（T24d 记录，见 `docs/changes/T24d.md` §4）**
@@ -359,3 +361,4 @@ BARRY zou/
 | T24f | 2026-11-19 | ea9e56c | 新功能，方案由 Barry 于 2026-11-19 批准（“批准，按推荐做”；此前同日曾决定先不加，见 `e759bfc`）。只改前端，后端接口不动，没有新依赖。抽出 `ExtractedText.vue`（原 PreviewView 里 Word/Excel 的文本列表原样搬过去）；PDF、图片分“原文件 / 抽取文本”两个懒加载标签页；从检索结果打开图片时默认显示抽取文本并跳到命中片段，PDF 仍默认原文件并跳页；标签页写进地址栏 `view=`；抽取文本页顶部提示 OCR 可能有错字；PDF、图片没有片段时提示 OCR 可能还在处理中。新增 `utils/preview.ts`（`initialPreviewTab`）和 `tests/preview.test.ts` 5 项。已执行：前端类型检查通过、单元测试 67 项通过、生产构建成功；浏览器对着临时模拟接口检查：图片从检索结果打开默认“抽取文本”、命中片段标出并高亮，切到“原文件”图片加载、地址栏变 `view=file`；PDF 从检索结果打开停在原文件第 3 页且没有请求文本，切到“抽取文本”按页穿插（第 1 页正文、第 2 页 OCR、第 3 页正文）；`view=text` 刷新后停在抽取文本，再切回原文件 pdf.js 正常显示（宽 743px、第 3 页）；Word 页面无标签页，提示、分页、命中片段高亮和转义与原来一致。**未测试（Not Tested）**：跳到命中片段后的自动滚动（浏览器面板处于隐藏状态，`requestAnimationFrame` 不触发；改动前的代码在同一环境下同样不滚动，不是本次引入）；与真实后端联调；页面组件没有自动化测试。修改记录见 `docs/changes/T24f.md` |
 | T24g | 2026-11-19 | d2169fe | T24c 待议第 4 条，Barry 于 2026-11-19 批准；不带 🔒。`backend/app/modules/experiments/__main__.py`：查询抽成 `_ocr_models()`，快照与运行前检查共用；新增纯函数 `ocr_model_problems()`，数据集 OCR 结果出现两个以上（模型名，模型版本）时报问题，默认拒绝运行，`--allow-incomplete` 放行；提示重新 import，或先用一致性检查 `ocr-results` 类别清理残留。`config.json` 格式不变。规则见 decisions.md D46。已执行：backend 705 passed、227 skipped（新增单元测试 2 项通过）；ruff 通过。**未测试（Not Tested）**：`test_experiments_db.py` 新增 1 项（需要 PostgreSQL），已登记到 untested.md 并复核。没有改表结构、索引、附录 A，没有新下载。修改记录见 `docs/changes/T24g.md` |
 | T24h | 2026-11-19 | 4c7b6aa | T24c 待议第 2 条，Barry 于 2026-11-19 批准；不带 🔒。`scripts/smoke/ocr_e2e.py` 新增 `check_ocr_params()`：OCR 文字写入后用 psycopg（主环境已有，不是新依赖）查 `ocr_results`，要求该图片恰好 1 行、`params` 的键正好是 `pdf_dpi`、`min_confidence`、`max_pixels`，`pdf_dpi` 为 null（独立图片），数值类型正确，模型名和版本非空；不满足就 FAILED。已执行：ruff 检查与格式检查通过、能编译；未设 `TEST_DATABASE_URL` 时退出码 2；把数据库连接换成假对象，对 7 种情况（正常、没有行、两行、params 为空、pdf_dpi 非空、类型不对、模型名为空）逐一调用 `check_ocr_params`，结果都符合预期（临时脚本，没有入库）。**未测试（Not Tested）**：烟测脚本仍没有对真实 PostgreSQL、OpenSearch 和 OCR Worker 跑过，untested.md 中原有的一行已更新。没有改后端代码、表结构、附录 A，没有新下载。修改记录见 `docs/changes/T24h.md` |
+| T24i | 2026-11-19 | 待填 | T24c 待议第 1 条，Barry 于 2026-11-19 批准（“完成两项未完成事项”）；不带 🔒，没有改表结构、索引、接口、数据契约、附录 A，没有新下载。新增 `python -m app.modules.experiments reocr [--yes]`：数据集文档当前解析版本、状态为成功或失败的 OCR 任务原地放回 pending（尝试次数、错误、时间、租约、领取者清零，条件更新只动仍为成功或失败的行）；不新建任务，所以每个对象仍只有一个 OCR 任务，运行前检查、一致性检查、重新解析的去重都不受影响。数据集文档还有未完成的解析或 OCR 任务时拒绝执行（退出码 1）；不加 `--yes` 只演练。重做是覆盖：OCR Worker 原本就先删这一对象的旧识别结果和旧片段（数据库和索引）。没有做“只重新切分”。D42、D46 三条运行前检查提示里的处理办法改为“运行 reocr 重新识别”。规则见 decisions.md D47，用法写进 `experiments/README.md` §4（顺带补上 T24g 漏写的模型检查一句）。已执行：backend 709 passed、229 skipped（新增单元测试 4 项通过，新增集成测试 2 项跳过）；ruff 通过；`reocr --help` 正常。**未测试（Not Tested）**：`test_experiments_db.py` 新增 2 项（需要 PostgreSQL），以及放回队列后真实 OCR Worker 重新识别的全过程，已登记到 untested.md。`CLAUDE.md` 的命令说明没有改，记到 §4 待 Barry 决定。修改记录见 `docs/changes/T24i.md` |

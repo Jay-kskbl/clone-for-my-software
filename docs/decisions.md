@@ -1206,3 +1206,27 @@ Barry 于 2026-11-19 对 DEVPLAN §4 中整理出的 14 项待批准事项回复
 **为什么出现两个模型就一定是问题。** OCR Worker 写入前会删掉同一文档同一对象（页或图片）的旧结果（`services/ocr_worker/ocr_worker/store.py`），每个对象只留一条。所以出现两个模型，说明确实有一部分对象是用另一个模型识别的。例外是重新解析后旧版本对象残留的结果（DEVPLAN §4 “竞争窗口”），提示里写了可以先用一致性检查的 `ocr-results` 类别清理。
 
 **局限。** 与 D42 一样只检查数据集文档；查询只在集成测试里覆盖，本机没有 PostgreSQL，未运行（`untested.md` T24g）。
+
+
+### D47 重新 OCR 的命令（T24i）
+
+代码：`backend/app/modules/experiments/__main__.py`（`reocr_task_ids`、`cmd_reocr`）；测试：`backend/tests/unit/test_experiment_reocr.py`、`backend/tests/integration/test_experiments_db.py`；用法：`experiments/README.md` §4。来源：T24c 待议第 1 条（`docs/changes/T24c.md` §4），Barry 于 2026-11-19 批准。
+
+**问题。** D42、D46 会拦下 OCR 参数或模型不一致的数据集，但处理办法只有“在空库上重新 import”。阶段五要比较不同 DPI 或置信度阈值时，每换一组参数都要整库重来。重新解析也没用：`parse_version` 不变，`_create_ocr_tasks` 不会为同一版本的同一对象再建任务。
+
+**做法。** `python -m app.modules.experiments reocr [--yes]`，只作用于数据集文档（`document_map.csv`）：
+
+- 选出当前解析版本、状态为成功或失败的 OCR 任务，原地放回 `pending`：尝试次数清零，错误、开始和结束时间、租约、领取者清空。写法与界面上的“重试”（`retry_task`）相同，是条件更新，多了“成功”这一种起始状态。
+- **复用原任务，不新建。** 这样每个页或图片仍然只有一个 OCR 任务，三处依赖这一点的逻辑都不用改：运行前检查统计失败的 OCR 任务（新建的话旧的失败任务还在，会一直报）、一致性检查的 `ocr_targets`、重新解析时按 payload 去重。代价是任务表里看不到上一次识别的记录；上一次的参数原本就会被新的识别结果覆盖。
+- 数据集文档还有 pending 或 processing 的解析、OCR 任务时拒绝执行：正在解析的文档解析完会建新版本的任务，正在识别的任务放回队列会和它抢。
+- 不加 `--yes` 只演练，退出码 0。放回队列后文档状态不变（文档状态只跟随 parse，D27）；`run` 的运行前检查会因为有未完成的任务而拦下，直到 OCR Worker 处理完。
+
+**为什么重做是覆盖。** OCR Worker 处理一个对象时，在同一个事务里先删同一文档同一对象的 `ocr_results` 和这个对象序号区间内的 OCR 片段，再写新的；索引也是先 `delete_chunk_range` 再写。这条路径 T17 起就有（GLOBAL §3.3 幂等），T24i 没有改它。
+
+**没有做的。**
+
+- “只重新切分”：`min_confidence` 只在切分时起作用，`lines` 保存了全部行，理论上可以不重新识别。T24i 一律重新识别，简单但慢。如果阶段五要扫多个阈值、重新识别太慢，再议。
+- 只放回队列，不启动 OCR Worker；也不检查 OCR Worker 当前的配置（backend 读不到，D42）。识别完以后，D42 的运行前检查会核对实际用的参数是否一致。
+- 只管数据集文档。日常使用中的文档没有这个入口。
+
+**顺带修改。** D42、D46 的三条运行前检查提示，处理办法从“在空的实验库上重新 import 并处理”改为“运行 reocr 重新识别”（参数未记录的一条两种办法都写）。

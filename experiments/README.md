@@ -87,7 +87,15 @@ experiments/
 
 运行前检查会拦下两种情况：CLIP 服务连不上；数据集里有图片还没有当前 CLIP 模型的向量（embed 任务失败或未完成）。加 `--allow-incomplete` 可以放行，但这次运行会标为不完整（退出码 2）。
 
-**OCR 参数（T24c）。** OCR Worker 把每条识别结果实际用的参数（`OCR_PDF_DPI`、`OCR_MIN_CONFIDENCE`、`OCR_MAX_PIXELS`）记在数据库里。所有配置的运行前检查都会拦下两种情况：数据集的 OCR 结果里有没记录参数的（T24c 之前写入）；同一个参数出现了不同的值（处理期间改过 OCR Worker 的配置）。独立图片不渲染，`pdf_dpi` 记为 `null`，不算不一致。处理办法：统一 OCR Worker 的配置，在空的实验库上重新 import 并处理。目前没有“对已解析的文档重新做 OCR”的命令：重新解析时 `parse_version` 不变，不会再建 OCR 任务。
+**OCR 参数（T24c）。** OCR Worker 把每条识别结果实际用的参数（`OCR_PDF_DPI`、`OCR_MIN_CONFIDENCE`、`OCR_MAX_PIXELS`）记在数据库里。所有配置的运行前检查都会拦下两种情况：数据集的 OCR 结果里有没记录参数的（T24c 之前写入）；同一个参数出现了不同的值（处理期间改过 OCR Worker 的配置）。独立图片不渲染，`pdf_dpi` 记为 `null`，不算不一致。同样会拦下数据集的 OCR 结果用了不止一个 OCR 模型（含只换了权重的情况，T24g）。
+
+**重新 OCR（T24i）。** 参数或模型不一致时，统一 OCR Worker 的配置，然后：
+
+1. `python -m app.modules.experiments reocr`：演练，列出要放回队列的 OCR 任务数，不改数据；
+2. `python -m app.modules.experiments reocr --yes`：把数据集文档当前解析版本的 OCR 任务（已成功或已失败的）放回队列，尝试次数清零；
+3. 用新配置启动 OCR Worker，等这些任务处理完，再运行实验。
+
+重做是覆盖：OCR Worker 先删掉这一页（这张图片）的旧识别结果和旧片段，数据库和索引都删，再写新的。还有未完成的解析或 OCR 任务时命令会拒绝执行。比较不同 DPI、置信度阈值时，每组参数都要整套重做一遍；只改 `OCR_MIN_CONFIDENCE` 时也是重新识别，没有“只重新切分”的捷径。也可以在空的实验库上重新 import 并处理。
 
 ## 实验配置
 
