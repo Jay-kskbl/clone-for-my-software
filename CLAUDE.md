@@ -48,7 +48,7 @@ python -m venv .venv-main
 - 运行测试（main 环境）：在 `backend/` 和 `shared/` 目录下分别执行 `pytest`
 - 集成测试需要专用的空测试库：先建库 `docmgr_test`，再设置 `TEST_DATABASE_URL`（见 `.env.example`）；不设置时这些测试被跳过，算“未运行”
 - 代码检查（`backend/`、`shared/`、`services/ocr_worker/`、`services/clip_service/` 目录分别执行）：`ruff check . && ruff format --check .`
-- 启动 Worker（`backend/` 目录，main 环境）：`python -m app.worker`；它处理满 `WORKER_MAX_TASKS` 个任务后会退出，长期运行用 `while true; do python -m app.worker || break; done`。通用 Worker 也处理图片的 embed 任务（T21），需要 CLIP 服务已启动；CLIP 服务没开时 embed 任务会重试，最后标为失败，其余处理不受影响
+- 启动 Worker（`backend/` 目录，main 环境）：`python -m app.worker`；它处理满 `WORKER_MAX_TASKS` 个任务后会退出，长期运行用 `while true; do python -m app.worker || break; done`。通用 Worker 也处理图片的 embed 任务（T21），需要 CLIP 服务已启动；CLIP 服务没开时 embed 任务会重试，最后标为失败，其余处理不受影响；启动时连不上数据库即以退出码 1 结束（T24a，见 `docs/decisions.md` D40），运行中数据库短暂中断则会重试
 - 启动 OCR Worker（`services/ocr_worker/` 目录，ocr 环境）：`../../env_check/.venv-ocr/bin/python -m ocr_worker`；它处理满 `OCR_WORKER_MAX_TASKS` 个任务后会退出，长期运行用 `while true; do ../../env_check/.venv-ocr/bin/python -m ocr_worker || break; done`。需要先把模型放到 `models/ocr/`（见 `docs/decisions.md` D30）；配置、模型或数据库有问题时启动即以退出码 1 结束
 - OCR Worker 测试（`services/ocr_worker/` 目录）：main 环境 `../../.venv-main/bin/python -m pytest`；真实识别测试用 ocr 环境 `../../env_check/.venv-ocr/bin/python -m unittest tests.test_real_ocr -v`
 - 启动 CLIP 服务（`services/clip_service/` 目录，clip 环境）：`../../env_check/.venv-clip/bin/python -m clip_service`，然后访问 `http://127.0.0.1:8001/health`。需要先把权重放到 `models/clip/clip_cn_vit-b-16.pt`（见 `docs/decisions.md` D33）；配置、权重或模型有问题时启动即以退出码 1 结束，不会联网下载。接口见 `docs/api.md` §9
