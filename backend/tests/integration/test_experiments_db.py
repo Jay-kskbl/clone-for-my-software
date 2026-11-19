@@ -185,6 +185,82 @@ def test_version_snapshot_lists_parse_versions_and_ocr_models(session):
     ]
 
 
+# ---- T24c：OCR 参数（D42）----
+
+PAGE_PARAMS = {"pdf_dpi": 200, "min_confidence": 0.5, "max_pixels": 100_000_000}
+IMAGE_PARAMS = {"pdf_dpi": None, "min_confidence": 0.5, "max_pixels": 100_000_000}
+
+
+def add_ocr_result(session, document, page: int, params: dict | None) -> None:
+    fields = {} if params is None else {"params": params}
+    session.add(
+        OCRResult(
+            document_id=document.id,
+            locator={"type": "pdf_page", "page": page},
+            lines=[],
+            model_name="PP-OCRv5_mobile_det+PP-OCRv5_mobile_rec",
+            model_version="paddleocr-3.7.0/det-afa1820c/rec-2460da90",
+            **fields,
+        )
+    )
+
+
+def test_ocr_params_column_defaults_to_empty_and_round_trips(session):
+    user = cli._experiment_user(session, create=True)
+    documents = make_documents(session, user)
+    add_ocr_result(session, documents[0], 1, None)  # 不写 params：迁移的默认值 {}
+    add_ocr_result(session, documents[0], 2, PAGE_PARAMS)
+    session.commit()
+    session.expire_all()
+
+    stored = sorted(
+        (r.locator["page"], r.params)
+        for r in session.scalars(select(OCRResult).where(OCRResult.document_id == documents[0].id))
+    )
+    assert stored == [(1, {}), (2, PAGE_PARAMS)]
+
+
+def test_snapshot_lists_ocr_params_with_counts(session):
+    user = cli._experiment_user(session, create=True)
+    documents = make_documents(session, user)
+    add_ocr_result(session, documents[0], 1, PAGE_PARAMS)
+    add_ocr_result(session, documents[0], 2, PAGE_PARAMS)
+    add_ocr_result(session, documents[1], 1, IMAGE_PARAMS)
+    session.commit()
+
+    snapshot = cli._snapshot_versions(session, [d.id for d in documents])
+
+    assert snapshot["ocr_params"] == [
+        {"params": PAGE_PARAMS, "results": 2},
+        {"params": IMAGE_PARAMS, "results": 1},
+    ]
+
+
+def test_preflight_accepts_pdf_pages_and_images_with_the_same_settings(session):
+    user = cli._experiment_user(session, create=True)
+    documents = make_documents(session, user)
+    add_ocr_result(session, documents[0], 1, PAGE_PARAMS)
+    add_ocr_result(session, documents[1], 1, IMAGE_PARAMS)
+    session.commit()
+
+    assert cli._preflight(session, [d.id for d in documents]) == []
+
+
+def test_preflight_reports_mixed_or_unrecorded_ocr_params(session):
+    user = cli._experiment_user(session, create=True)
+    documents = make_documents(session, user)
+    add_ocr_result(session, documents[0], 1, PAGE_PARAMS)
+    add_ocr_result(session, documents[0], 2, {**PAGE_PARAMS, "pdf_dpi": 300})
+    add_ocr_result(session, documents[1], 1, None)
+    session.commit()
+
+    problems = cli._preflight(session, [d.id for d in documents])
+
+    assert len(problems) == 2
+    assert "1 条 OCR 结果没有记录识别参数" in problems[0]
+    assert "pdf_dpi" in problems[1] and "200" in problems[1] and "300" in problems[1]
+
+
 def test_import_uploads_once_and_records_the_mapping(session, settings, root):
     assert cli.cmd_import(root, settings, session) == 0
     mapping = load_document_map(root)

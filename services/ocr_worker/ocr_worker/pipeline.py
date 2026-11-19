@@ -84,6 +84,20 @@ class OcrOptions:
     heartbeat_seconds: float
 
 
+def ocr_params(locator: OcrLocator, options: OcrOptions) -> dict[str, int | float | None]:
+    """识别这个对象时实际起作用的参数，写进 ocr_results.params（T24c，decisions.md D42）。
+
+    实验运行时读出来记进 config.json，并检查数据集里是否混用了不同的参数。
+    pdf_dpi 只对 PDF 页起作用（渲染成图片的分辨率），独立图片不渲染，记为 None。
+    min_confidence 不影响识别本身，只决定哪些行进入 OCR 片段；lines 里仍保存全部行。
+    """
+    return {
+        "pdf_dpi": options.dpi if isinstance(locator, PdfPageLocator) else None,
+        "min_confidence": options.min_confidence,
+        "max_pixels": options.max_pixels,
+    }
+
+
 def seq_range(locator: OcrLocator) -> tuple[int, int]:
     """这个对象的 OCR 片段可以使用的序号区间 [start, end)。"""
     if isinstance(locator, PdfPageLocator):
@@ -223,7 +237,14 @@ def process_task(
     )
     start, end = seq_range(locator)
 
-    if not store.save(result, chunks, parse_version=parse_version, seq_range=(start, end)):
+    saved = store.save(
+        result,
+        chunks,
+        parse_version=parse_version,
+        seq_range=(start, end),
+        params=ocr_params(locator, options),
+    )
+    if not saved:
         # 识别期间文档被删除或重新解析：识别结果作废，什么都不写
         return Outcome(ok=True, note="skipped:changed-during-ocr")
 

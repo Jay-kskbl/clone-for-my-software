@@ -208,7 +208,7 @@ BARRY zou/
 
 - [x] **T24a 通用 Worker 启动时检查数据库**：启动时先连一次数据库，连不上以退出码 1 结束（与 OCR Worker 一致，GLOBAL §12）；领取循环中途断线仍然重试
 - [x] **T24b `/health` 不暴露内部信息**：`detail` 只写异常类型，主机、端口、数据库用户名只写日志
-- [ ] **T24c OCR 参数进实验配置** 🔒：`OCR_MIN_CONFIDENCE`、`OCR_PDF_DPI` 随 OCR 结果写入数据库，实验运行时读出记进 `config.json`。涉及表结构，先给 Barry 看字段设计和迁移
+- [x] **T24c OCR 参数进实验配置** 🔒：`OCR_MIN_CONFIDENCE`、`OCR_PDF_DPI` 随 OCR 结果写入数据库，实验运行时读出记进 `config.json`。涉及表结构，先给 Barry 看字段设计和迁移
 - [ ] **T24d `rebuild-indices --force`**：无条件强制重建，仍需 `--yes` 才执行
 - [ ] **T24e 文本预览按页码穿插 OCR 片段**：同一页里正文在前、OCR 在后
 
@@ -258,7 +258,7 @@ BARRY zou/
 - **评测数据（T19 记录，由 Barry 负责，已滞后）**
   - 收集评测文档（原计划 W2 起，200–500 个文件）和每周标注（原计划 W4 起）都还没有开始。框架已就绪，格式和操作步骤见 `experiments/README.md`。没有数据就达不到 MVP-1，也无法开展阶段五的实验，建议尽快开始。
   - ~~`grade` 0–3 各等级的含义待 Barry 确认~~（Barry 于 2026-11-19 确认 README 中的写法）。
-- **（已批准，排为 T24c）给 T22、T26 的补充（T19 记录）**
+- **（T24c 已解决，D42）给 T22、T26 的补充（T19 记录）**
   - OCR Worker 的参数（`OCR_MIN_CONFIDENCE`、`OCR_PDF_DPI`）还没有记录进实验配置，因为 backend 读不到 OCR Worker 的配置。正式实验前要补上，例如让 OCR Worker 把参数写进 `ocr_results`，或在实验配置里显式填写。
 - **给 T21、T22 的衔接提醒（T20 记录）**
   - CLIP 服务的接口见 `api.md` §9：~~`POST /encode/text` 传 `{"texts": [...]}`（T22 用）~~（T22 已处理，D36）。~~`POST /encode/image` 写进 `image_embeddings`~~（T21 已实现，D35）。向量已归一化；T21 的精确检索用的是 `knn_score` + `cosinesimil`（与 T00 实测写法一致），对归一化向量排序与点积相同。
@@ -290,6 +290,10 @@ BARRY zou/
   - ~~CLAUDE.md 的 Worker 命令说明没有写“启动时连不上数据库以退出码 1 结束”~~（Barry 于 2026-11-19 同意，已补）。
   - 启动检查没有连接超时（libpq 默认值），主机不可达时可能等一两分钟才报错。
   - 启动检查不查表结构：空库（没迁移）时要到第一次领取才报错。
+- **待议（T24c 记录，见 `docs/changes/T24c.md` §4）**
+  - 没有“对已解析的文档重新做 OCR”的入口：OCR 参数不一致时只能在空库上重新 import。阶段五若要比较不同 DPI 或置信度阈值，需要这个命令；只改 `min_confidence` 时也可以只重新切分（`lines` 保存了全部行）。需 Barry 决定。
+  - 运行前检查没有拦“数据集里用了两个不同的 OCR 模型”（快照里有 `ocr_models`），可以用同样的办法补上。
+  - `scripts/smoke/ocr_e2e.py` 可以加一项检查 `ocr_results.params` 有值。
 - **安全方面，本科毕设范围内可以不做，但答辩可能被问到**（Barry 于 2026-11-19 决定：`/health` 一项排为 T24b；其余两项不做，写进论文“局限与改进”并准备答辩回答）
   - 登录接口没有限制尝试次数，可以被暴力猜密码。
   - 没有每个用户的存储配额。
@@ -341,3 +345,4 @@ BARRY zou/
 | 待议事项统一批准 | 2026-11-19 | 8609ef5 | Barry 于 2026-11-19 对 §4 中 14 项待批准事项“按推荐全部批准”（D39）。当场完成 5 项：qrels `grade` 含义确认；A14 定为不启用；删除重复的 CLIP 权重 `env_check/models/clip_cn_vit-b-16.pt`（删前核对 sha256 一致）；整理 `docs/untested.md`（删除 Windows 补测已通过的 190 项及 OS-1/3/4/5/8/9/10，剩 24 项测试）；N01 烟测脚本改写后放进 `scripts/smoke/ocr_e2e.py`，`.gitignore` 加 `storage-smoke/`。另 5 项排为 T24a–T24e；其余暂缓。已执行：烟测脚本 ruff 检查与格式检查通过、能编译，未设 `TEST_DATABASE_URL` 时退出码 2。**未测试（Not Tested）**：烟测脚本改写后没有实际跑过（本机没有 PostgreSQL 和 OpenSearch），已登记到 untested.md。没有改代码、表结构、索引和附录 A；没有新下载 |
 | T24a | 2026-11-19 | e21a174 | D39 第 6 项，Barry 于 2026-11-19 批准；不带 🔒。`shared/task_queue.py` 的 `PgTaskQueue` 新增 `ping()`；`backend/app/worker/__main__.py` 启动时先 `ping`，任何 `psycopg.Error` 都打印“Worker 无法连接数据库（异常类型）”并以退出码 1 结束，不进入领取循环；信号处理改到检查之后登记；领取循环中途断线仍然重试（未改 `loop.py`）。新增 `tests/unit/test_worker_main.py` 4 项。已执行：backend 682 passed、212 skipped（新增 4 项通过）；shared 105 passed；services/ocr_worker（main 环境）63 passed、4 skipped；backend、shared 的 ruff 检查与格式检查通过；实际启动 `python -m app.worker`，`DATABASE_URL` 指向没有服务的端口：退出码 1，输出不含密码和端口。没有改表结构、接口、附录 A，没有新下载，没有未测试项。修改记录见 `docs/changes/T24a.md` |
 | T24b | 2026-11-19 | 509502d | D39 第 7 项，Barry 于 2026-11-19 批准；不带 🔒。`backend/app/api/health.py`：依赖不可用时 `detail` 只给异常类型（HTTP 错误加状态码，如 `HTTPStatusError: HTTP 503`），完整的类型和消息写进 WARNING 日志；返回结构、状态码、`ok`/`degraded` 规则不变；`docs/api.md` §3 同步。`tests/unit/test_health.py` 新增 3 项（真实应用对着空闲端口：响应里没有主机、端口、用户名、密码，日志里有原因；HTTP 503 只留状态码；数据库认证失败不暴露用户名）。已执行：backend 685 passed、212 skipped（新增 3 项通过）；ruff 检查与格式检查通过。前端不读 `/health`，不受影响。没有改表结构、附录 A，没有新下载，没有未测试项。修改记录见 `docs/changes/T24b.md` |
+| T24c | 2026-11-19 | （待填） | 带 🔒：方案由 Barry 于 2026-11-19 批准（“批准，按推荐做”：参数作为 `save()` 的独立参数、不改数据契约；参数不一致或未记录时运行前拦截）。表结构：`ocr_results.params`（jsonb，默认 `{}`），迁移 `0002`，不需要重建索引。OCR Worker 写入 `pdf_dpi`（图片为 null）、`min_confidence`、`max_pixels`；实验 `config.json` 新增 `versions.ocr_params`，运行前检查新增 OCR 参数一项。已执行：backend 692 passed、216 skipped（新增单元测试 7 项通过，新增集成测试 4 项跳过）；shared 105 passed；services/ocr_worker（main 环境）66 passed、4 skipped（新增 3 项），ocr 环境真实识别 4/4；ruff 三个目录通过；`alembic heads` 为 `0002 (head)`；模型编译出的列定义为 `params JSONB DEFAULT '{}' NOT NULL`，与迁移一致。**未测试（Not Tested）**：迁移在真实 PostgreSQL 上升级、回退，`test_migration_matches_models`，`PgStore.save` 写入 params，快照与运行前检查的 SQL（GROUP BY jsonb），共 4 项新集成测试和 3 处改动过的已有集成测试，原因是本机没有 PostgreSQL，已登记到 untested.md 并做代码复核。修改记录见 `docs/changes/T24c.md` |

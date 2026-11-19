@@ -4,7 +4,7 @@
 """
 
 import uuid
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Protocol
@@ -38,6 +38,7 @@ class Store(Protocol):
         *,
         parse_version: str,
         seq_range: tuple[int, int],
+        params: Mapping[str, Any],
     ) -> bool: ...
 
     def ping(self) -> None: ...
@@ -59,8 +60,9 @@ DELETE FROM ocr_results WHERE document_id = %(document_id)s AND locator = %(loca
 """
 
 _INSERT_OCR_RESULT_SQL = """
-INSERT INTO ocr_results (id, document_id, locator, lines, model_name, model_version)
-VALUES (%(id)s, %(document_id)s, %(locator)s, %(lines)s, %(model_name)s, %(model_version)s)
+INSERT INTO ocr_results (id, document_id, locator, lines, model_name, model_version, params)
+VALUES (%(id)s, %(document_id)s, %(locator)s, %(lines)s, %(model_name)s, %(model_version)s,
+        %(params)s)
 """
 
 # 只删这一页（这张图片）预留的序号区间里的 OCR 片段：别的页、正文片段都不动
@@ -114,8 +116,11 @@ class PgStore:
         *,
         parse_version: str,
         seq_range: tuple[int, int],
+        params: Mapping[str, Any],
     ) -> bool:
         """在一个事务里：换掉这个对象的识别结果和 OCR 片段。重复执行结果相同。
+
+        params 是识别这一条实际用的 OCR 参数，原样写进 ocr_results.params（T24c）。
 
         返回 False 表示什么都没写：文档已不存在、已删除，或已被重新解析成别的版本
         （识别期间发生的变化）。
@@ -138,6 +143,7 @@ class PgStore:
                     "lines": Jsonb([line.model_dump(mode="json") for line in result.lines]),
                     "model_name": result.model_name,
                     "model_version": result.model_version,
+                    "params": Jsonb(dict(params)),
                 },
             )
             conn.execute(

@@ -190,6 +190,9 @@ class OCRResult(Base):
     lines: Mapped[list[dict[str, Any]]] = mapped_column(JSONB)
     model_name: Mapped[str] = mapped_column(String(128))
     model_version: Mapped[str] = mapped_column(String(64))
+    # 识别这一条时 OCR Worker 实际用的参数（T24c）：pdf_dpi（图片为 null）、min_confidence、
+    # max_pixels。实验运行时读出来记进 config.json；{} 表示 T24c 之前写入、没有记录
+    params: Mapped[dict[str, Any]] = mapped_column(JSONB, server_default="{}")
     created_at: Mapped[datetime] = _created_at()
 
 

@@ -85,12 +85,17 @@ def page_range(page: int) -> tuple[int, int]:
     return start, start + OCR_SEQ_BLOCK
 
 
+# T24c：OCR Worker 每次保存都带上实际用的参数
+PARAMS = {"pdf_dpi": 200, "min_confidence": 0.5, "max_pixels": 100_000_000}
+
+
 def save(store, document, page, texts):
     store.save(
         ocr_result(document, page, texts),
         chunks_for(document, page, texts),
         parse_version=VERSION,
         seq_range=page_range(page),
+        params=PARAMS,
     )
 
 
@@ -122,6 +127,7 @@ def test_save_writes_result_and_chunks(store, document, session):
     assert [line["text"] for line in result.lines] == ["第一行", "第二行"]
     assert result.lines[0]["bbox"][2] == {"x": 10.0, "y": 5.0}
     assert result.model_version == "paddleocr-3.7.0/det-aaaaaaaa/rec-bbbbbbbb"
+    assert result.params == PARAMS  # T24c
     chunks = rows(session, DocumentChunk, document)
     assert [(c.seq, c.source_type, c.text) for c in chunks] == [
         (OCR_SEQ_BASE + OCR_SEQ_BLOCK, "ocr", "第一行"),
@@ -181,7 +187,11 @@ def test_failure_inside_the_transaction_leaves_the_old_data(store, document, ses
 
     with pytest.raises(psycopg.errors.ForeignKeyViolation):
         store.save(
-            ocr_result(document, 1, ["新"]), bad, parse_version=VERSION, seq_range=page_range(1)
+            ocr_result(document, 1, ["新"]),
+            bad,
+            parse_version=VERSION,
+            seq_range=page_range(1),
+            params=PARAMS,
         )
     store.reset()
 
@@ -208,6 +218,7 @@ def test_save_refuses_when_the_document_was_reparsed(store, document, session):
         chunks_for(document, 1, ["文字"]),
         parse_version=VERSION,
         seq_range=page_range(1),
+        params=PARAMS,
     )
 
     assert written is False
@@ -225,6 +236,7 @@ def test_save_refuses_when_the_document_was_deleted(store, document, session):
             chunks_for(document, 1, ["文字"]),
             parse_version=VERSION,
             seq_range=page_range(1),
+            params=PARAMS,
         )
         is False
     )

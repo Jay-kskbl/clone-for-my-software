@@ -25,6 +25,7 @@ from ocr_worker.pipeline import (
     OcrOptions,
     OcrTaskError,
     build_chunks,
+    ocr_params,
     process_task,
     seq_range,
     to_ocr_result,
@@ -55,15 +56,17 @@ class FakeStore:
         self.documents = [document]
         self.events = events
         self.saved: list[tuple[OCRResult, list, str, tuple[int, int]]] = []
+        self.saved_params: list[dict] = []
         self.save_result = True
 
     def document(self, document_id):
         self.events.append(("db", "read"))
         return self.documents[0] if len(self.documents) == 1 else self.documents.pop(0)
 
-    def save(self, result, chunks, *, parse_version, seq_range):
+    def save(self, result, chunks, *, parse_version, seq_range, params):
         self.events.append(("db", "save"))
         self.saved.append((result, list(chunks), parse_version, seq_range))
+        self.saved_params.append(dict(params))
         return self.save_result
 
 
@@ -237,6 +240,29 @@ def test_image_task_uses_the_image_block(events, storage_root):
     _, chunks, _, saved_range = store.saved[0]
     assert saved_range == (OCR_SEQ_BASE, OCR_SEQ_BASE + OCR_SEQ_BLOCK)
     assert chunks[0].locator == ImageLocator(image_id=str(DOCUMENT_ID))
+
+
+# ---- T24c：识别参数随结果一起保存 ----
+
+
+def test_pdf_page_saves_the_parameters_actually_used(events, storage_root):
+    _, store, _, _ = run(events, storage_root)
+
+    assert store.saved_params == [{"pdf_dpi": 200, "min_confidence": 0.5, "max_pixels": 10**8}]
+
+
+def test_image_saves_no_dpi_because_it_is_not_rendered(events, storage_root):
+    the_task = task({"type": "image", "image_id": str(DOCUMENT_ID)})
+
+    _, store, _, _ = run(events, storage_root, the_task=the_task)
+
+    assert store.saved_params == [{"pdf_dpi": None, "min_confidence": 0.5, "max_pixels": 10**8}]
+
+
+def test_ocr_params_is_json_serializable():
+    # 要原样写进 jsonb 列
+    params = ocr_params(PdfPageLocator(page=1), OPTIONS)
+    assert json.loads(json.dumps(params)) == params
 
 
 # ---- 跳过 ----

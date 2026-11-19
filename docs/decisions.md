@@ -1087,7 +1087,7 @@ Barry 于 2026-11-19 对 DEVPLAN §4 中整理出的 14 项待批准事项回复
 | 5 | N01 烟测脚本 | 放进仓库，`scripts/smoke/ocr_e2e.py`，手动运行，不进 pytest | 已放；改动：解释器路径按系统选 `bin/python` 或 `Scripts/python.exe`，连接串改读 `TEST_DATABASE_URL`（必填）和 `TEST_OPENSEARCH_URL`，`ROOT` 改为上两级目录，清理测试索引失败时打印原因而不是静默忽略，超时异常加 `from`。输出目录 `storage-smoke/` 加进 `.gitignore`。改写后未实际运行 |
 | 6 | 两个 Worker 启动时检查数据库不一致 | 通用 Worker 也在启动时检查，连不上以退出码 1 结束 | T24a 已完成（D40） |
 | 7 | `/health` 暴露内部主机名、端口 | `detail` 只写异常类型 | T24b 已完成（D41） |
-| 8 | OCR 参数没有进实验配置 | 写进数据库，实验读出记录 | DEVPLAN T24c（🔒，先给字段设计） |
+| 8 | OCR 参数没有进实验配置 | 写进数据库，实验读出记录 | T24c 已完成（D42） |
 | 9 | `rebuild-indices` 无条件重建 | 加 `--force` | DEVPLAN T24d |
 | 10 | 文本预览 OCR 片段排序 | 按页码穿插 | DEVPLAN T24e |
 | 11 | Word 片段结束段落 | 暂缓，等实验或演示暴露问题 | — |
@@ -1120,3 +1120,28 @@ Barry 于 2026-11-19 对 DEVPLAN §4 中整理出的 14 项待批准事项回复
 **没有改的。** 响应结构（`status`、三个组件、`detail` 字段）、始终 200、`ok`/`degraded` 的规则不变，所以 `api.md` 的契约只是收紧了 `detail` 的内容。OpenSearch 正常时的 `集群状态为 green/yellow` 不含内部信息，保留。连接串（可能带密码）原本就不进日志和响应，这一点没有变：psycopg 的错误消息里没有密码，只有用户名。
 
 **代价。** 只看 `/health` 已经分不清“拒绝连接”“超时”“认证失败”（都是 `OperationalError`），要看后端日志。毕设部署是单机，运维的人能看到日志，可以接受。
+
+### D42 OCR 参数随识别结果保存，实验时记录并检查（T24c）
+
+代码：`backend/app/db/models.py`、`backend/app/db/migrations/versions/20261119_0002_ocr_result_params.py`、`services/ocr_worker/ocr_worker/{pipeline,store}.py`、`backend/app/modules/experiments/__main__.py`。来源：D39 第 8 项（DEVPLAN §4 T19 记录）。T24c 带 🔒：方案由 Barry 于 2026-11-19 批准（“批准，按推荐做”），两处取舍都按推荐。
+
+**问题。** `OCR_PDF_DPI`（决定识别出什么）和 `OCR_MIN_CONFIDENCE`（决定哪些行能被检索到）只在 OCR Worker 的环境变量里，backend 读不到，实验 `config.json` 没有记录（GLOBAL §8.2）。改了配置之后只影响之后识别的页，库里新旧结果混在一起也发现不了。
+
+**表结构。** `ocr_results.params`，jsonb，非空，默认 `{}`，迁移 `0002`。键：`pdf_dpi`（只对 PDF 页起作用，独立图片为 `null`）、`min_confidence`、`max_pixels`。`{}` 表示 T24c 之前写入。不涉及索引结构，不需要重建索引。
+
+**写入。** `pipeline.ocr_params(locator, options)` 从 `OcrOptions` 组装，`PgStore.save()` 新增关键字参数 `params`，在同一条 INSERT 里写入。**没有改数据契约** `shared.contracts.OCRResult`（取舍 1 按推荐）：参数属于“怎么识别的”，不是识别结果本身，放进契约要连带改 shared 和它的使用方。
+
+**实验。**
+
+- `config.json` 的 `versions.ocr_params`：`[{"params": {...}, "results": 条数}]`，按条数从多到少、条数相同时按内容排，保证每次输出一样。
+- 运行前检查（所有配置，不只是带 OCR 的配置）：有未记录参数的结果，或任一参数出现两个以上的值，就报问题，默认拒绝运行，`--allow-incomplete` 放行但结果不完整（取舍 2 按推荐）。比较是逐个参数做的，不是比较整个组合：`pdf_dpi` 只比较非 `null` 的值，PDF 页 200、图片 `null` 是正常的。判断写成纯函数 `ocr_param_problems()`、`ocr_params_summary()`，本机可以单测；分组查询（`GROUP BY params`）只在集成测试里。
+
+**写给用户的处理办法。** 本来想写“重新解析”，核对后发现不对：重新解析时 `parse_version` 不变，`_create_ocr_tasks` 不会为同一版本的同一对象再建任务，旧的 OCR 结果不会被替换。所以提示改为“统一配置后在空的实验库上重新 import 并处理”。
+
+**局限。**
+
+- 没有“对已解析的文档重新 OCR”的入口。参数不一致时只能整库重来。数据集还没导入，目前影响不到；以后如果需要，可以给一致性检查加一个修复类别。
+- `min_confidence` 是在切分时过滤的，`lines` 里保存全部行，所以理论上可以不重新识别、只按新阈值重新切分，现在没有这个功能。
+- 只检查数据集文档的 OCR 结果，不管库里其他文档（与解析版本的检查一致）。
+- 迁移和全部数据库路径只能在有 PostgreSQL 的机器上验证，见 `untested.md` T24c。
+

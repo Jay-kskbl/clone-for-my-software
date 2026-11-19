@@ -87,6 +87,8 @@ experiments/
 
 运行前检查会拦下两种情况：CLIP 服务连不上；数据集里有图片还没有当前 CLIP 模型的向量（embed 任务失败或未完成）。加 `--allow-incomplete` 可以放行，但这次运行会标为不完整（退出码 2）。
 
+**OCR 参数（T24c）。** OCR Worker 把每条识别结果实际用的参数（`OCR_PDF_DPI`、`OCR_MIN_CONFIDENCE`、`OCR_MAX_PIXELS`）记在数据库里。所有配置的运行前检查都会拦下两种情况：数据集的 OCR 结果里有没记录参数的（T24c 之前写入）；同一个参数出现了不同的值（处理期间改过 OCR Worker 的配置）。独立图片不渲染，`pdf_dpi` 记为 `null`，不算不一致。处理办法：统一 OCR Worker 的配置，在空的实验库上重新 import 并处理。目前没有“对已解析的文档重新做 OCR”的命令：重新解析时 `parse_version` 不变，不会再建 OCR 任务。
+
 ## 实验配置
 
 `configs/` 下每个文件是一组实验。各组之间只通过配置里的开关切换，用的是同一套检索代码（GLOBAL §9.2）。
@@ -122,7 +124,7 @@ experiments/
 
 | 文件 | 内容 |
 |---|---|
-| `config.json` | 这次运行的完整配置：实验配置、检索参数（含生效的 RRF k）、切分参数、数据集统计、代码与模型版本（三个索引 `doc_meta`、`chunks`、`image_vectors` 的结构 hash）、CLIP 模型（`clip_model`：开了图像通道时为模型名、版本、维度，版本里含权重文件 sha256 的前 12 位；没开时为 `null`）、OpenSearch 版本、机器信息、运行前检查发现的问题、是否完整 |
+| `config.json` | 这次运行的完整配置：实验配置、检索参数（含生效的 RRF k）、切分参数、数据集统计、代码与模型版本（三个索引 `doc_meta`、`chunks`、`image_vectors` 的结构 hash；`versions.ocr_params`：数据集里出现过的每种 OCR 参数组合及条数，T24c）、CLIP 模型（`clip_model`：开了图像通道时为模型名、版本、维度，版本里含权重文件 sha256 的前 12 位；没开时为 `null`）、OpenSearch 版本、机器信息、运行前检查发现的问题、是否完整 |
 | `results.jsonl` | 每条查询一行：返回的文件排名（含各通道的名次和分数）、耗时、通道状态、各项指标 |
 | `metrics.json` | 汇总指标：先按查询类型分层，再给总体；重复运行时附带波动；查询延迟 P50、P95 |
 

@@ -218,6 +218,57 @@ def _preflight(session: Session, document_ids: list[uuid.UUID]) -> list[str]:
             f"数据集文件有 {failed_ocr} 个 OCR 任务失败，这些页或图片的文字没有进入索引"
             "（在任务列表里查看原因并重试）"
         )
+    problems += ocr_param_problems(_ocr_param_rows(session, document_ids))
+    return problems
+
+
+# T24c（D42）：OCR Worker 把每条识别结果实际用的参数写在 ocr_results.params 里
+OCR_PARAM_KEYS = ("pdf_dpi", "min_confidence", "max_pixels")
+
+
+def _ocr_param_rows(
+    session: Session, document_ids: list[uuid.UUID]
+) -> list[tuple[dict[str, Any], int]]:
+    """数据集文档的 OCR 结果按参数分组：[(params, 条数)]。"""
+    return [
+        (dict(params or {}), int(count))
+        for params, count in session.execute(
+            select(OCRResult.params, func.count())
+            .where(OCRResult.document_id.in_(document_ids))
+            .group_by(OCRResult.params)
+        )
+    ]
+
+
+def ocr_params_summary(rows: list[tuple[dict[str, Any], int]]) -> list[dict[str, Any]]:
+    """记进 config.json 的形式：每种参数组合一项，按条数从多到少。"""
+    summary = [{"params": params, "results": count} for params, count in rows]
+    return sorted(summary, key=lambda item: (-item["results"], json.dumps(item["params"])))
+
+
+def ocr_param_problems(rows: list[tuple[dict[str, Any], int]]) -> list[str]:
+    """OCR 参数没有记录或前后不一致时报告问题（结果无法复现）。
+
+    逐个参数比较，而不是比较整个组合：独立图片不渲染，pdf_dpi 为 None，
+    和 PDF 页的 dpi 不同是正常的，所以 pdf_dpi 只比较非 None 的值。
+    """
+    problems: list[str] = []
+    unrecorded = sum(count for params, count in rows if not params)
+    if unrecorded:
+        problems.append(
+            f"有 {unrecorded} 条 OCR 结果没有记录识别参数（T24c 之前写入），"
+            "无法确认用的是什么配置（在空的实验库上重新 import 并处理数据集）"
+        )
+    recorded = [params for params, _ in rows if params]
+    for key in OCR_PARAM_KEYS:
+        values = {params.get(key) for params in recorded}
+        if key == "pdf_dpi":
+            values.discard(None)
+        if len(values) > 1:
+            problems.append(
+                f"数据集的 OCR 结果用了不同的 {key}：{sorted(values, key=str)}"
+                "（处理期间改过 OCR Worker 的配置；统一配置后在空的实验库上重新 import 并处理）"
+            )
     return problems
 
 
@@ -297,7 +348,11 @@ def _snapshot_versions(session: Session, document_ids: list[uuid.UUID]) -> dict[
             )
         }
     )
-    return {"parse_versions": parse_versions, "ocr_models": ocr_models}
+    return {
+        "parse_versions": parse_versions,
+        "ocr_models": ocr_models,
+        "ocr_params": ocr_params_summary(_ocr_param_rows(session, document_ids)),
+    }
 
 
 def cmd_run(args: argparse.Namespace, root: Path, settings: Any, session: Session) -> int:

@@ -66,7 +66,8 @@ erDiagram
                   jsonb locator
                   jsonb lines
                   string model_name
-                  string model_version }
+                  string model_version
+                  jsonb params }
     image_embeddings { uuid id PK
                        string sha256
                        string model_name
@@ -197,6 +198,7 @@ erDiagram
 | locator | jsonb | 被识别的对象：PDF 的某一页或一张图片 |
 | lines | jsonb | 每行的文字、四点 bbox、置信度（`shared.contracts.OCRLine`） |
 | model_name / model_version | varchar | OCR 模型名称和版本（T17 起为 `PP-OCRv5_mobile_det+PP-OCRv5_mobile_rec` 和 `paddleocr-<版本>/det-<sha8>/rec-<sha8>`，见 `decisions.md` D30） |
+| params | jsonb，非空，默认 `{}` | 识别这一条时 OCR Worker 实际用的参数（T24c，迁移 `0002`，见 `decisions.md` D42）：`pdf_dpi`（PDF 页渲染分辨率，独立图片为 `null`）、`min_confidence`（低于它的行不进入 OCR 片段，`lines` 里仍保存全部行）、`max_pixels`。`{}` 表示 T24c 之前写入、没有记录。实验运行时读出来记进 `config.json` |
 | created_at | timestamptz | |
 
 表上没有唯一约束。OCR Worker 按“`document_id` + `locator`（jsonb 按值比较）”先删后插，一个识别对象只保留最新的一条，重复执行结果相同（T17）。
@@ -268,3 +270,10 @@ erDiagram
 | 改了 `models.py` 后生成迁移 | `alembic revision --autogenerate -m "说明"`，生成后必须人工检查 |
 
 `downgrade` 会删除表和其中的数据，只能在开发库或测试库上执行。
+
+迁移版本：
+
+| 版本 | 日期 | 内容 |
+|---|---|---|
+| `0001` | 2026-11-13 | 初始表结构（T03） |
+| `0002` | 2026-11-19 | `ocr_results` 新增 `params`（T24c）。已有的行填 `{}`；不涉及索引结构，不需要重建索引。回退会删掉这一列和其中记录的参数 |

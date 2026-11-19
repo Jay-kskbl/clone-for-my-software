@@ -1,6 +1,6 @@
 # 未测试清单（Not Tested）
 
-更新日期：2026-11-19（T24 完成后；同日按 Barry 批准整理）
+更新日期：2026-11-19（T24c 完成后；同日按 Barry 批准整理）
 
 这里列出**已经写好但从未实际执行过**的测试，以及其他没有经过验证的性质。
 规则来自 GLOBAL.md“测试执行限制与代码验证要求”：跑不了的测试不强行执行、不安装工具，
@@ -24,11 +24,14 @@
 | T15–T19 复核修正、T24 | `backend/tests/integration/test_experiments_db.py` 中 D34 新增的 3 项和 T24 新增的 4 项 | 7 | 本机没有 PostgreSQL（该文件其余 8 项已在 Windows 补测中通过） | 已复核，见 `decisions.md` D34、D38 |
 | T21 图片向量（embed 任务） | `backend/tests/integration/test_embed_db.py` | 8 | 本机没有 PostgreSQL | 已复核；复核发现的两处问题已修复，见 `decisions.md` D35 |
 | T21 向量索引 | `backend/tests/opensearch/test_vector_index_live.py` | 8 | 本机没有 OpenSearch | 已复核；检索写法与 T00 在 2.19.1 上实测通过的一致 |
-| **合计** | | **24** | | 与本机 backend 跳过的 212 项减去已补测的 188 项一致 |
+| T24c OCR 参数 | `backend/tests/integration/test_experiments_db.py` 中 T24c 新增的 4 项 | 4 | 本机没有 PostgreSQL | 已复核，见 `decisions.md` D42 |
+| **合计** | | **28** | | 与本机 backend 跳过的 216 项减去已补测的 188 项一致 |
 
 T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器）和 T12（切分）不需要数据库，它们的测试全部在本机执行并通过，没有未测试项。
 
-对照：2026-11-19（T24）本机实测 `backend/` 678 项通过、212 项跳过，`shared/` 105 项通过。
+对照：2026-11-19（T24c）本机实测 `backend/` 692 项通过、216 项跳过，`shared/` 105 项通过；T24 时为 678 项通过、212 项跳过。
+
+**T24c 之后需要重跑的已补测文件。** T24c 加了迁移 `0002`，并改了 `test_ocr_worker_db.py`（`save()` 多了 `params` 参数，有一项新增断言）。下面这两个文件虽然在 2026-11-16 通过过，但通过的是 T24c 之前的版本，现在要重跑才算数：`test_migrations.py`（14 项，尤其是 `test_migration_matches_models` 和升级—回退—升级）、`test_ocr_worker_db.py`（10 项）。
 
 ## 2. 影响最大的几项
 
@@ -50,11 +53,12 @@ T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器�
 
 - 🧪 `test_clip_service_down_degrades_to_text_search`（CLIP 地址指向没有服务的端口：200，文本结果照常，image 为 unavailable 且 detail 不含地址，没有向 `image_vectors` 发查询，检索日志记录降级）
 
-### D34、T24 `test_experiments_db.py`（7）
+### D34、T24、T24c `test_experiments_db.py`（11）
 
 需要 PostgreSQL，检索服务用假的：
 
 - D34 新增：`test_preflight_reports_failed_ocr_tasks_of_the_current_version`、`test_documents_outside_the_dataset_are_counted`、`test_import_replaces_a_changed_file_and_deletes_the_old_document`（复核说明见第 4 节“T15–T19 复核修正”）
+- T24c 新增（见第 4 节“T24c OCR 参数”）：`test_ocr_params_column_defaults_to_empty_and_round_trips`、`test_snapshot_lists_ocr_params_with_counts`、`test_preflight_accepts_pdf_pages_and_images_with_the_same_settings`、`test_preflight_reports_mixed_or_unrecorded_ocr_params`
 - T24 新增（CLIP 用假的网络层或不可达的端口）：`test_image_preflight_counts_images_without_a_vector_of_the_current_model`、`test_image_preflight_reports_clip_down`、`test_b3_refuses_to_run_when_clip_is_down`、`test_rrf_k_override_is_used_and_recorded`
 
 ### T21 `test_embed_db.py`（8）
@@ -166,6 +170,16 @@ T20 的测试都在本机实际运行过（接口测试 39 项，真实模型测
 |---|---|---|
 | 与真实后端、真实 CLIP 服务联调 | 缩略图（真实下载接口、真实图片大小）、图片证据、通道标记和图像通道降级提示，都没有在真实后端 + 真实 CLIP 服务 + OpenSearch 上看过 | `decisions.md` D37 |
 | 检索页组件的自动化测试 | `SearchView.vue` 没有组件测试；开关、地址栏、缩略图显示只靠浏览器手动检查 | `decisions.md` D37 |
+
+### T24c OCR 参数（2026-11-19 登记，见 `decisions.md` D42）
+
+| 项目 | 说明 | 代码复核 |
+|---|---|---|
+| 迁移 `0002` 在真实 PostgreSQL 上执行 | 升级、回退、再升级都没有跑过；本项目的 alembic 不支持离线 `--sql`，没法在本机看生成的 SQL。只确认了 `alembic heads` 为 `0002`，模型编译出的列定义与迁移一致 | 已复核：`add_column` 带 `server_default="{}"` 与 `nullable=False`，已有行由默认值填充；写法与 0001 里 `processing_tasks.payload` 相同 |
+| `PgStore.save` 写入 params | SQL 新增一列、参数用 `Jsonb(dict(params))`，只在 `test_ocr_worker_db.py` 里覆盖 | 已复核：列名、占位符与字典键一一对应 |
+| 快照与运行前检查的分组查询 | `SELECT params, count(*) … GROUP BY params`，jsonb 可以分组，但没在真实库上跑过 | 已复核；判断逻辑是纯函数，单元测试 7 项已通过 |
+| `test_experiments_db.py` 的 T24c 新增 4 项 | `test_ocr_params_column_defaults_to_empty_and_round_trips`、`test_snapshot_lists_ocr_params_with_counts`、`test_preflight_accepts_pdf_pages_and_images_with_the_same_settings`、`test_preflight_reports_mixed_or_unrecorded_ocr_params` | 已复核 |
+| OCR Worker 真实链路写入 params | 上传 → OCR Worker → `ocr_results.params` 有值，没有端到端跑过。`scripts/smoke/ocr_e2e.py` 没有检查这一列 | — |
 
 ### T24 B3 与消融配置（2026-11-19 登记，见 `decisions.md` D38）
 
