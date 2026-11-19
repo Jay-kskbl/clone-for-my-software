@@ -205,7 +205,8 @@ def search_vectors(
     """精确检索与 query_vector 最相似的图片，按文档折叠，按分数从高到低返回至多 depth 个。
 
     document_ids：可访问的文档集合；None 表示不过滤（管理员），空集合直接返回空结果。
-    分数是 knn_score 在 cosinesimil 下的值（1 + 余弦相似度），只用来排名，不跨通道比较。
+    分数是 knn_score 在 cosinesimil 下的值；具体范围由 OpenSearch 版本决定，只用来排名，
+    不跨通道比较。
     检索服务出错时抛 TextIndexUnavailable / TextIndexError，不把故障变成空结果（GLOBAL §12）。
     """
     if depth < 1:

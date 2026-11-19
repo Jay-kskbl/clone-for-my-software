@@ -4,6 +4,7 @@
 连得上的情况用假的队列。领取循环中途断线的重试在 tests/unit/test_worker_loop.py。
 """
 
+import re
 import socket
 from types import SimpleNamespace
 
@@ -61,7 +62,9 @@ def test_unreachable_database_exits_1_without_entering_the_loop(
     assert run_worker_calls == []
     err = capsys.readouterr().err
     assert "无法连接数据库" in err
-    assert "OperationalError" in err
+    # psycopg 可能抛出 OperationalError 的更具体子类；这里真正要固定的是启动失败
+    # 会输出一个安全的异常类名，而不是随驱动版本改变的具体类名。
+    assert re.search(r"Worker 无法连接数据库（[A-Za-z_][A-Za-z0-9_]*）", err)
     # 不把连接串里的密码、端口打到终端
     assert SECRET_PASSWORD not in err
     assert url not in err

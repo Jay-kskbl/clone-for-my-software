@@ -9,6 +9,10 @@ import { onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 // 解析 PDF 的工作在单独的 Web Worker 里进行，不卡住页面。worker 文件由 Vite 一起打包
 GlobalWorkerOptions.workerSrc = workerUrl
 
+// PDF.js 不把 CMap、标准字体、WASM 解码器打进主包；中文 CID 字体需要 CMap，
+// 复杂图片和颜色空间也需要对应的静态资源。资源由 public/pdfjs 随前端一起发布。
+const PDFJS_ASSET_BASE = `${import.meta.env.BASE_URL}pdfjs/`
+
 const props = defineProps<{
   data: ArrayBuffer
   initialPage?: number
@@ -77,7 +81,14 @@ async function open() {
   try {
     // pdf.js 会把传入的数据转交给 worker，原来的 ArrayBuffer 随之失效；传一份副本，
     // 父组件手里的数据之后仍然可以用
-    loadingTask = getDocument({ data: new Uint8Array(props.data.slice(0)) })
+    loadingTask = getDocument({
+      data: new Uint8Array(props.data.slice(0)),
+      cMapUrl: `${PDFJS_ASSET_BASE}cmaps/`,
+      cMapPacked: true,
+      standardFontDataUrl: `${PDFJS_ASSET_BASE}standard_fonts/`,
+      wasmUrl: `${PDFJS_ASSET_BASE}wasm/`,
+      iccUrl: `${PDFJS_ASSET_BASE}iccs/`,
+    })
     pdf.value = await loadingTask.promise
     pageCount.value = pdf.value.numPages
     // 地址里的页码可能超出范围（例如文档被重新上传过）：夹到有效范围内

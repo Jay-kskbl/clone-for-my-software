@@ -29,6 +29,9 @@ dist/
 # 装在项目内的工具（Node.js），见 docs/downloads.md
 /.tools/
 
+# 本地下载位置清单：仅保留在本机，不提交 GitHub
+/下载内容与位置.txt
+
 # 编辑器与系统
 .idea/
 .vscode/
