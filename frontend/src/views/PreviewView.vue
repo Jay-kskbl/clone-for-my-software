@@ -1,22 +1,27 @@
 <script setup lang="ts">
 // 文档预览（附录 A16）：PDF 用 pdf.js 显示并跳到命中的页；图片原样显示；
 // Word、Excel 显示系统抽取出的文本，并跳到命中的段落或单元格范围。
+// PDF、图片另有“抽取文本”标签页，显示正文和 OCR 识别出的文字（T24f，decisions.md D45）。
 import { ElMessage } from 'element-plus'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 import { errorMessage } from '../api/client'
-import { downloadDocument, getDocument, getDocumentText } from '../api/documents'
-import type { DocumentItem, TextChunk } from '../api/types'
+import { downloadDocument, getDocument } from '../api/documents'
+import type { DocumentItem } from '../api/types'
+import ExtractedText from '../components/ExtractedText.vue'
 import PdfViewer from '../components/PdfViewer.vue'
 import { STATUS_LABEL, formatType, isImageType } from '../utils/format'
-import { SOURCE_TYPE_LABEL, formatLocator } from '../utils/locator'
-import { highlightText } from '../utils/snippet'
+import { type PreviewTab, initialPreviewTab } from '../utils/preview'
 
 const PDF = 'application/pdf'
-const TEXT_PAGE_SIZE = 50
+const OFFICE_NOTICE =
+  'Word 和 Excel 只显示系统抽取出的文本，看不到原始格式、图表和公式；需要原样查看请下载原文件。'
+const EXTRACTED_NOTICE =
+  '这里是系统从文件中抽取的文字：PDF 有文字层的页直接取出文字，扫描页和图片是 OCR 识别的结果，可能有错字。'
 
 const route = useRoute()
+const router = useRouter()
 const id = computed(() => String(route.params.id))
 const initialPage = computed(() => {
   const page = Number(route.query.page)
@@ -32,10 +37,8 @@ const loadError = ref<string | null>(null)
 const fileData = ref<ArrayBuffer | null>(null)
 const imageUrl = ref<string | null>(null)
 
-const chunks = ref<TextChunk[]>([])
-const textTotal = ref(0)
-const textPage = ref(1)
-const textLoading = ref(false)
+// PDF、图片当前的标签页；两个标签页都是懒加载，第一次切过去时才加载
+const tab = ref<PreviewTab>('file')
 
 const kind = computed<'pdf' | 'image' | 'text' | null>(() => {
   if (!document.value) return null
@@ -44,32 +47,11 @@ const kind = computed<'pdf' | 'image' | 'text' | null>(() => {
   return 'text'
 })
 
-async function loadText(options: { page?: number; chunkId?: string | null } = {}) {
-  textLoading.value = true
-  try {
-    const result = await getDocumentText(id.value, {
-      page: options.page,
-      page_size: TEXT_PAGE_SIZE,
-      chunk_id: options.chunkId ?? undefined,
-    })
-    chunks.value = result.items
-    textTotal.value = result.total
-    textPage.value = result.page
-  } catch (error) {
-    ElMessage.error(errorMessage(error))
-  } finally {
-    textLoading.value = false
-  }
-}
-
-async function scrollToTarget() {
-  if (!targetChunk.value) return
-  await nextTick()
-  // 等浏览器完成一次布局再滚动。直接打开或刷新页面时，过早的滚动会被随后的布局变化
-  // 和浏览器的滚动恢复冲掉；平滑滚动同样会被打断，所以用瞬时滚动
-  await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
-  window.document.getElementById(`chunk-${targetChunk.value}`)?.scrollIntoView({ block: 'center' })
-}
+const emptyText = computed(() => {
+  if (document.value?.status !== 'succeeded') return '文件还没有处理完成，暂时没有抽取文本'
+  // PDF、图片解析成功后 OCR 仍在后台进行（文档状态只跟随解析，D27）
+  return kind.value === 'text' ? '这个文件里没有抽取到文字' : '没有抽取到文字（扫描页和图片的 OCR 可能还在处理中）'
+})
 
 async function load() {
   try {
@@ -78,23 +60,22 @@ async function load() {
     loadError.value = errorMessage(error)
     return
   }
+  // Word、Excel 的抽取文本由 ExtractedText 自己加载
+  if (kind.value !== 'pdf' && kind.value !== 'image') return
+  tab.value = initialPreviewTab(kind.value, route.query)
   try {
-    if (kind.value === 'text') {
-      await loadText({ chunkId: targetChunk.value })
-      await scrollToTarget()
-    } else {
-      // 下载接口需要登录令牌，不能直接把地址交给 <img> 或 pdf.js，先取成字节
-      const blob = await downloadDocument(id.value)
-      if (kind.value === 'pdf') fileData.value = await blob.arrayBuffer()
-      else imageUrl.value = URL.createObjectURL(blob)
-    }
+    // 下载接口需要登录令牌，不能直接把地址交给 <img> 或 pdf.js，先取成字节
+    const blob = await downloadDocument(id.value)
+    if (kind.value === 'pdf') fileData.value = await blob.arrayBuffer()
+    else imageUrl.value = URL.createObjectURL(blob)
   } catch (error) {
     loadError.value = errorMessage(error)
   }
 }
 
-function onTextPageChange(page: number) {
-  void loadText({ page })
+function onTabChange(name: string | number) {
+  // 写进地址栏：刷新或复制链接时停在同一个标签页；用 replace，不往浏览器历史里加记录
+  void router.replace({ query: { ...route.query, view: String(name) } })
 }
 
 async function onDownload() {
@@ -132,48 +113,35 @@ onBeforeUnmount(() => {
 
     <el-alert v-if="loadError" type="error" :title="loadError" show-icon :closable="false" />
 
-    <PdfViewer v-else-if="kind === 'pdf' && fileData" :data="fileData" :initial-page="initialPage" />
-
-    <div v-else-if="kind === 'image' && imageUrl" class="image-box">
-      <img :src="imageUrl" :alt="document?.filename" class="image" />
-    </div>
-
-    <div v-else-if="kind === 'text'" v-loading="textLoading">
-      <el-alert
-        type="info"
-        title="Word 和 Excel 只显示系统抽取出的文本，看不到原始格式、图表和公式；需要原样查看请下载原文件。"
-        show-icon
-        :closable="false"
-        class="notice"
-      />
-      <el-empty
-        v-if="!textLoading && chunks.length === 0"
-        :description="document?.status === 'succeeded' ? '这个文件里没有抽取到文字' : '文件还没有处理完成，暂时没有抽取文本'"
-      />
-      <div
-        v-for="chunk in chunks"
-        :id="`chunk-${chunk.chunk_id}`"
-        :key="chunk.chunk_id"
-        class="chunk"
-        :class="{ target: chunk.chunk_id === targetChunk }"
-      >
-        <div class="chunk-meta">
-          {{ formatLocator(chunk.locator) }}
-          <template v-if="chunk.source_type !== 'body'">（{{ SOURCE_TYPE_LABEL[chunk.source_type] }}）</template>
+    <!-- 两个标签页都懒加载：PdfViewer 不在隐藏的标签页里先渲染（那时量不到容器宽度），
+         抽取文本也只在第一次切过去时才请求 -->
+    <el-tabs v-else-if="kind === 'pdf' || kind === 'image'" v-model="tab" @tab-change="onTabChange">
+      <el-tab-pane label="原文件" name="file" lazy>
+        <PdfViewer v-if="kind === 'pdf' && fileData" :data="fileData" :initial-page="initialPage" />
+        <div v-else-if="kind === 'image' && imageUrl" class="image-box">
+          <img :src="imageUrl" :alt="document?.filename" class="image" />
         </div>
-        <!-- highlightText 先转义全文，再只插入 <em>（utils/snippet.ts） -->
-        <div class="chunk-text" v-html="highlightText(chunk.text, terms)" />
-      </div>
-      <el-pagination
-        v-if="textTotal > TEXT_PAGE_SIZE"
-        class="pagination"
-        layout="total, prev, pager, next"
-        :total="textTotal"
-        :page-size="TEXT_PAGE_SIZE"
-        :current-page="textPage"
-        @current-change="onTextPageChange"
-      />
-    </div>
+        <div v-else v-loading="true" class="placeholder" />
+      </el-tab-pane>
+      <el-tab-pane label="抽取文本" name="text" lazy>
+        <ExtractedText
+          :document-id="id"
+          :target-chunk="targetChunk"
+          :terms="terms"
+          :notice="EXTRACTED_NOTICE"
+          :empty-text="emptyText"
+        />
+      </el-tab-pane>
+    </el-tabs>
+
+    <ExtractedText
+      v-else-if="kind === 'text'"
+      :document-id="id"
+      :target-chunk="targetChunk"
+      :terms="terms"
+      :notice="OFFICE_NOTICE"
+      :empty-text="emptyText"
+    />
 
     <div v-else-if="!document" v-loading="true" class="placeholder" />
   </el-card>
@@ -202,48 +170,12 @@ onBeforeUnmount(() => {
   margin-left: auto;
 }
 
-.notice {
-  margin-bottom: 12px;
-}
-
 .image-box {
   text-align: center;
 }
 
 .image {
   max-width: 100%;
-}
-
-.chunk {
-  padding: 10px 12px;
-  border-left: 3px solid transparent;
-}
-
-.chunk.target {
-  background: #fdf6ec;
-  border-left-color: #e6a23c;
-}
-
-.chunk-meta {
-  color: #909399;
-  font-size: 12px;
-  margin-bottom: 4px;
-}
-
-.chunk-text {
-  white-space: pre-wrap;
-  word-break: break-all;
-  line-height: 1.7;
-}
-
-.chunk-text :deep(em) {
-  color: #f56c6c;
-  font-style: normal;
-}
-
-.pagination {
-  justify-content: flex-end;
-  margin-top: 16px;
 }
 
 .placeholder {

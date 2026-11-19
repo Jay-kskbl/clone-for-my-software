@@ -211,6 +211,7 @@ BARRY zou/
 - [x] **T24c OCR 参数进实验配置** 🔒：`OCR_MIN_CONFIDENCE`、`OCR_PDF_DPI` 随 OCR 结果写入数据库，实验运行时读出记进 `config.json`。涉及表结构，先给 Barry 看字段设计和迁移
 - [x] **T24d `rebuild-indices --force`**：无条件强制重建，仍需 `--yes` 才执行
 - [x] **T24e 文本预览按页码穿插 OCR 片段**：同一页里正文在前、OCR 在后
+- [x] **T24f 预览页给 PDF、图片加“抽取文本”标签页**（Barry 于 2026-11-19 批准方案，按推荐做）：抽出公共组件 `ExtractedText.vue`；PDF、图片分“原文件 / 抽取文本”两个标签页，文本按需加载；从检索结果打开图片时默认显示抽取文本并跳到命中片段；标签页状态写进地址栏 `view=`
 
 ### 阶段五：实验（W13–W15）
 
@@ -298,7 +299,7 @@ BARRY zou/
   - ~~CLAUDE.md 的一致性检查说明没有提 `--force`~~（Barry 于 2026-11-19 同意，已补）。
   - 结构检查只比较字段类型、分词器类型和 BM25 参数；要不要扩大比较范围（例如 `search_analyzer`），待议。
 - **待议（T24e 记录，见 `docs/changes/T24e.md` §4）**
-  - 前端预览页对 PDF、图片不显示抽取文本，T24e 的排序在界面上看不到。是否给 PDF、图片加一个“抽取文本”标签页（能看到 OCR 识别出了什么，答辩演示 OCR 时有用），属于新功能。**Barry 于 2026-11-19 决定先不加。**
+  - （已批准，排为 T24f）前端预览页对 PDF、图片不显示抽取文本，T24e 的排序在界面上看不到。是否给 PDF、图片加一个“抽取文本”标签页（能看到 OCR 识别出了什么，答辩演示 OCR 时有用），属于新功能。Barry 于 2026-11-19 先决定不加（`e759bfc`），随后要求出方案，看过后于同日批准，排为 T24f。
 - **安全方面，本科毕设范围内可以不做，但答辩可能被问到**（Barry 于 2026-11-19 决定：`/health` 一项排为 T24b；其余两项不做，写进论文“局限与改进”并准备答辩回答）
   - 登录接口没有限制尝试次数，可以被暴力猜密码。
   - 没有每个用户的存储配额。
@@ -353,3 +354,4 @@ BARRY zou/
 | T24c | 2026-11-19 | 491b59b | 带 🔒：方案由 Barry 于 2026-11-19 批准（“批准，按推荐做”：参数作为 `save()` 的独立参数、不改数据契约；参数不一致或未记录时运行前拦截）。表结构：`ocr_results.params`（jsonb，默认 `{}`），迁移 `0002`，不需要重建索引。OCR Worker 写入 `pdf_dpi`（图片为 null）、`min_confidence`、`max_pixels`；实验 `config.json` 新增 `versions.ocr_params`，运行前检查新增 OCR 参数一项。已执行：backend 692 passed、216 skipped（新增单元测试 7 项通过，新增集成测试 4 项跳过）；shared 105 passed；services/ocr_worker（main 环境）66 passed、4 skipped（新增 3 项），ocr 环境真实识别 4/4；ruff 三个目录通过；`alembic heads` 为 `0002 (head)`；模型编译出的列定义为 `params JSONB DEFAULT '{}' NOT NULL`，与迁移一致。**未测试（Not Tested）**：迁移在真实 PostgreSQL 上升级、回退，`test_migration_matches_models`，`PgStore.save` 写入 params，快照与运行前检查的 SQL（GROUP BY jsonb），共 4 项新集成测试和 3 处改动过的已有集成测试，原因是本机没有 PostgreSQL，已登记到 untested.md 并做代码复核。修改记录见 `docs/changes/T24c.md` |
 | T24d | 2026-11-19 | ad827bf | D39 第 9 项，Barry 于 2026-11-19 批准；不带 🔒。`consistency repair` 新增 `--force`：与 `--fix rebuild-indices` 一起用时，检查没发现索引缺失或结构不一致也重建三个索引；仍需 `--yes` 才执行，不加时照常只演练；`--force` 不配 `rebuild-indices` 时在读配置之前就报用法错误（退出码 2）；检索服务不可用时不强制。实现放在 `repair.plan(force_rebuild=…)`：补一条 `forced_rebuild` 计划项，检查已要求重建时不重复。`tests/unit/test_consistency.py` 新增 9 项（计划 4 项、命令行 5 项，命令行测试把数据库和检索服务的采集换成固定快照）。已执行：backend 701 passed、216 skipped；ruff 通过；实际运行 `--fix index --force` 报用法错误、退出码 2，`--fix rebuild-indices --force` 进入数据库步骤（本机没有数据库，退出码 1）。**未测试（Not Tested）**：对真实 OpenSearch 执行强制重建（`rebuild_indices` 本身原来就没在真实 OpenSearch 上跑过，本任务没有改它），已登记到 untested.md。修改记录见 `docs/changes/T24d.md` |
 | T24e | 2026-11-19 | 110d5ac | D39 第 10 项，Barry 于 2026-11-19 批准；不带 🔒。`GET /api/documents/{id}/text` 改为按（页码，正文在前、OCR 在后，seq）排序，页码取 `locator->>'page'`，没有页码的定位按 0 算（Word、Excel、图片的顺序不变）；`chunk_id` 跳转用同一组排序键做行比较，计算所在页。`docs/api.md` §5.6 同步。**做完后核对发现：** 前端只对 Word、Excel 调用这个接口（PDF 用 pdf.js、图片直接显示），而 Word、Excel 没有 OCR 片段，所以当前界面上看不到变化；改动只对接口本身和以后的调用方有效，见 D44。测试：`tests/unit/test_document_text_order.py` 2 项（检查生成的 SQL）已通过；`test_document_text.py` 新增 10 项（含 7 个参数化跳转用例）需要 PostgreSQL，未运行。已执行：backend 703 passed、226 skipped；ruff 通过。**未测试（Not Tested）**：真实 PostgreSQL 上的排序和跳转，已登记到 untested.md。修改记录见 `docs/changes/T24e.md` |
+| T24f | 2026-11-19 | （待填） | 新功能，方案由 Barry 于 2026-11-19 批准（“批准，按推荐做”；此前同日曾决定先不加，见 `e759bfc`）。只改前端，后端接口不动，没有新依赖。抽出 `ExtractedText.vue`（原 PreviewView 里 Word/Excel 的文本列表原样搬过去）；PDF、图片分“原文件 / 抽取文本”两个懒加载标签页；从检索结果打开图片时默认显示抽取文本并跳到命中片段，PDF 仍默认原文件并跳页；标签页写进地址栏 `view=`；抽取文本页顶部提示 OCR 可能有错字；PDF、图片没有片段时提示 OCR 可能还在处理中。新增 `utils/preview.ts`（`initialPreviewTab`）和 `tests/preview.test.ts` 5 项。已执行：前端类型检查通过、单元测试 67 项通过、生产构建成功；浏览器对着临时模拟接口检查：图片从检索结果打开默认“抽取文本”、命中片段标出并高亮，切到“原文件”图片加载、地址栏变 `view=file`；PDF 从检索结果打开停在原文件第 3 页且没有请求文本，切到“抽取文本”按页穿插（第 1 页正文、第 2 页 OCR、第 3 页正文）；`view=text` 刷新后停在抽取文本，再切回原文件 pdf.js 正常显示（宽 743px、第 3 页）；Word 页面无标签页，提示、分页、命中片段高亮和转义与原来一致。**未测试（Not Tested）**：跳到命中片段后的自动滚动（浏览器面板处于隐藏状态，`requestAnimationFrame` 不触发；改动前的代码在同一环境下同样不滚动，不是本次引入）；与真实后端联调；页面组件没有自动化测试。修改记录见 `docs/changes/T24f.md` |

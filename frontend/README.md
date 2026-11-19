@@ -34,7 +34,7 @@ src/
 ├── auth.ts       登录状态（当前用户）
 ├── router.ts     路由与登录跳转
 ├── views/        页面：LoginView（登录/注册）、DocumentsView（文件列表、上传、下载、删除）、
-│                 SearchView（检索：结果、命中通道、图片缩略图、图像检索开关与降级提示）、PreviewView（预览）
+│                 SearchView（检索：结果、命中通道、图片缩略图、图像检索开关与降级提示）、PreviewView（预览；PDF、图片分“原文件 / 抽取文本”两个标签页，T24f）
 ├── components/   ShareDialog（共享）、PdfViewer（PDF 显示）
 └── utils/        格式化、来源定位与通道说明、摘要清洗、缩略图加载（thumbnails.ts）
 tests/            单元测试（接口封装、格式化、来源定位、摘要、缩略图）

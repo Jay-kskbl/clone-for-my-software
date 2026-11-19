@@ -172,13 +172,21 @@ T20 的测试都在本机实际运行过（接口测试 39 项，真实模型测
 | 与真实后端、真实 CLIP 服务联调 | 缩略图（真实下载接口、真实图片大小）、图片证据、通道标记和图像通道降级提示，都没有在真实后端 + 真实 CLIP 服务 + OpenSearch 上看过 | `decisions.md` D37 |
 | 检索页组件的自动化测试 | `SearchView.vue` 没有组件测试；开关、地址栏、缩略图显示只靠浏览器手动检查 | `decisions.md` D37 |
 
+### T24f 预览页“抽取文本”标签页（2026-11-19 登记，见 `decisions.md` D45）
+
+| 项目 | 说明 |
+|---|---|
+| 跳到命中片段后的自动滚动 | 这次检查时浏览器面板处于隐藏状态，`requestAnimationFrame` 不触发，滚动那一步没有执行。用改动前的代码在同一环境下对照，同样不滚动，所以不是 T24f 引入的；但 T24f 之后 Word/Excel 和抽取文本标签页的滚动都没有实际看到过 |
+| 与真实后端联调 | 抽取文本标签页、`view=` 参数、默认标签页只对着临时模拟接口检查过 |
+| 页面组件的自动化测试 | 没有（项目里没有组件测试工具）；只有 `initialPreviewTab` 的 5 项单元测试 |
+
 ### T24e 文本预览排序（2026-11-19 登记，见 `decisions.md` D44）
 
 | 项目 | 说明 | 代码复核 |
 |---|---|---|
 | `test_document_text.py` 的 T24e 新增 10 项 | `test_ocr_chunks_are_interleaved_by_page_body_first`、`test_pages_follow_the_interleaved_order`、`test_chunk_id_jump_uses_the_same_order`（7 个参数化用例）、`test_source_type_filter_keeps_page_order`，需要 PostgreSQL | 已复核；本机只检查了生成的 SQL（`test_document_text_order.py` 2 项，已通过） |
 | 原有 11 项在新排序下 | 都是 Word 段落定位（没有页码），按设计顺序不变，但改了排序和跳转的 SQL，需要重跑 | 已复核 |
-| 前端效果 | 当前前端只对 Word、Excel 调用这个接口，看不到变化（D44） | — |
+| 前端效果 | T24f 起 PDF、图片的“抽取文本”标签页会调用这个接口，按页穿插的顺序在浏览器里对着模拟接口看到过；真实后端上没有看过 | — |
 
 ### T24d rebuild-indices --force（2026-11-19 登记，见 `decisions.md` D43）
 
