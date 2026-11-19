@@ -268,7 +268,7 @@ BARRY zou/
   - 实验记录的 mapping hash（`backend/app/modules/experiments/environment.py` 的 `code_versions`）只遍历 `INDEX_NAMES`，不含 `image_vectors.json`，跑 B3 前要补。
   - CLIP 服务一次只算一个请求：embed 任务批量编码时，查询编码可能排在后面（单张图片最长等 `CLIP_ENCODE_TIMEOUT_SECONDS`），T22 定查询编码超时时要考虑。
 - **待 Barry 决定（T21 记录）**
-  - `CLAUDE.md` 一致性检查命令的说明仍写“对账数据库、磁盘和两个索引”，类别列表里没有新增的 `embeddings`；是否更新待 Barry 同意。
+  - ~~`CLAUDE.md` 一致性检查命令的说明仍写“对账数据库、磁盘和两个索引”，类别列表里没有新增的 `embeddings`~~（Barry 于 2026-11-19 同意，已补）。
 - **待实验决定（T12 记录）**
   - 是否给每个 Excel 片段补上该工作表的表头行：片段里只有数据、没有列名，按“列名 + 值”的方式搜索可能搜不到后面的行。补表头会让表头词在同一文件里重复计分。阶段五用实验比较。
   - Word 片段只定位到起始段落。如果实验或演示发现跳转偏差影响使用，再考虑给 `DocxParaLocator` 增加结束段落字段（数据契约变更，需 Barry 批准）。
