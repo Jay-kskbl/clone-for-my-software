@@ -219,6 +219,7 @@ def _preflight(session: Session, document_ids: list[uuid.UUID]) -> list[str]:
             "（在任务列表里查看原因并重试）"
         )
     problems += ocr_param_problems(_ocr_param_rows(session, document_ids))
+    problems += ocr_model_problems(_ocr_models(session, document_ids))
     return problems
 
 
@@ -270,6 +271,39 @@ def ocr_param_problems(rows: list[tuple[dict[str, Any], int]]) -> list[str]:
                 "（处理期间改过 OCR Worker 的配置；统一配置后在空的实验库上重新 import 并处理）"
             )
     return problems
+
+
+def _ocr_models(session: Session, document_ids: list[uuid.UUID]) -> list[str]:
+    """数据集文档的 OCR 结果用到的模型，每项为“模型名 模型版本”，已排序。
+
+    model_version 带两个权重文件哈希的前 8 位，换了权重也能区分（T17）。
+    """
+    return sorted(
+        {
+            f"{name} {version}"
+            for name, version in session.execute(
+                select(OCRResult.model_name, OCRResult.model_version)
+                .where(OCRResult.document_id.in_(document_ids))
+                .distinct()
+            )
+        }
+    )
+
+
+def ocr_model_problems(models: list[str]) -> list[str]:
+    """数据集的 OCR 结果用了不止一个模型时报告问题（T24g）。
+
+    OCR Worker 写入前会删掉同一文档同一对象的旧结果，每个对象只留一条，
+    所以出现两个模型说明确实有一部分页或图片是用另一个模型识别的，
+    B2、B3 的数字会混进两个模型的识别效果。
+    """
+    if len(models) <= 1:
+        return []
+    return [
+        f"数据集的 OCR 结果用了不同的模型：{models}"
+        "（处理期间换过 OCR 模型；统一后在空的实验库上重新 import 并处理。"
+        "也可能是重新解析后残留的旧结果，可先用一致性检查的 ocr-results 类别清理）"
+    ]
 
 
 def _image_preflight(
@@ -338,19 +372,9 @@ def _snapshot_versions(session: Session, document_ids: list[uuid.UUID]) -> dict[
             if v
         }
     )
-    ocr_models = sorted(
-        {
-            f"{name} {version}"
-            for name, version in session.execute(
-                select(OCRResult.model_name, OCRResult.model_version)
-                .where(OCRResult.document_id.in_(document_ids))
-                .distinct()
-            )
-        }
-    )
     return {
         "parse_versions": parse_versions,
-        "ocr_models": ocr_models,
+        "ocr_models": _ocr_models(session, document_ids),
         "ocr_params": ocr_params_summary(_ocr_param_rows(session, document_ids)),
     }
 

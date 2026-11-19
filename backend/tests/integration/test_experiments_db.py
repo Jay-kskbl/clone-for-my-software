@@ -191,7 +191,12 @@ PAGE_PARAMS = {"pdf_dpi": 200, "min_confidence": 0.5, "max_pixels": 100_000_000}
 IMAGE_PARAMS = {"pdf_dpi": None, "min_confidence": 0.5, "max_pixels": 100_000_000}
 
 
-def add_ocr_result(session, document, page: int, params: dict | None) -> None:
+OCR_MODEL_VERSION = "paddleocr-3.7.0/det-afa1820c/rec-2460da90"
+
+
+def add_ocr_result(
+    session, document, page: int, params: dict | None, model_version: str = OCR_MODEL_VERSION
+) -> None:
     fields = {} if params is None else {"params": params}
     session.add(
         OCRResult(
@@ -199,7 +204,7 @@ def add_ocr_result(session, document, page: int, params: dict | None) -> None:
             locator={"type": "pdf_page", "page": page},
             lines=[],
             model_name="PP-OCRv5_mobile_det+PP-OCRv5_mobile_rec",
-            model_version="paddleocr-3.7.0/det-afa1820c/rec-2460da90",
+            model_version=model_version,
             **fields,
         )
     )
@@ -259,6 +264,26 @@ def test_preflight_reports_mixed_or_unrecorded_ocr_params(session):
     assert len(problems) == 2
     assert "1 条 OCR 结果没有记录识别参数" in problems[0]
     assert "pdf_dpi" in problems[1] and "200" in problems[1] and "300" in problems[1]
+
+
+def test_preflight_reports_mixed_ocr_models(session):
+    # T24g：参数一致，只是一页换了权重（model_version 里的哈希不同）
+    user = cli._experiment_user(session, create=True)
+    documents = make_documents(session, user)
+    other = "paddleocr-3.7.0/det-11111111/rec-2460da90"
+    add_ocr_result(session, documents[0], 1, PAGE_PARAMS)
+    add_ocr_result(session, documents[1], 1, PAGE_PARAMS, model_version=other)
+    session.commit()
+
+    problems = cli._preflight(session, [d.id for d in documents])
+
+    assert len(problems) == 1
+    assert "不同的模型" in problems[0]
+    assert OCR_MODEL_VERSION in problems[0] and other in problems[0]
+    # 快照与检查用同一个查询
+    assert cli._snapshot_versions(session, [d.id for d in documents])["ocr_models"] == [
+        f"PP-OCRv5_mobile_det+PP-OCRv5_mobile_rec {v}" for v in sorted([OCR_MODEL_VERSION, other])
+    ]
 
 
 def test_import_uploads_once_and_records_the_mapping(session, settings, root):

@@ -1190,3 +1190,19 @@ Barry 于 2026-11-19 对 DEVPLAN §4 中整理出的 14 项待批准事项回复
 
 **局限。** 前端只有单元测试，没有组件测试工具；页面行为只对着临时模拟接口在浏览器里检查过。跳到命中片段后的自动滚动在这次检查里没能验证（见 DEVPLAN §5 T24f）。
 
+
+### D46 运行前检查拦下混用的 OCR 模型（T24g）
+
+代码：`backend/app/modules/experiments/__main__.py`；测试：`backend/tests/unit/test_experiment_ocr_params.py`、`backend/tests/integration/test_experiments_db.py`。来源：T24c 待议第 4 条（`docs/changes/T24c.md` §4），Barry 于 2026-11-19 批准。
+
+**问题。** 实验 `config.json` 的 `versions.ocr_models` 记录了数据集 OCR 结果用到的模型，但运行前检查不看它。处理数据集期间换过 OCR 模型（或权重）时，B2、B3 的数字混进了两个模型的识别效果，却没有任何提示。和 D42 的“OCR 参数不一致”是同一类问题。
+
+**做法。**
+
+- 查询抽成 `_ocr_models()`（`ocr_results` 里数据集文档的（模型名，模型版本）去重排序），快照和运行前检查共用，不写两遍。
+- 纯函数 `ocr_model_problems()`：模型多于 1 个时报一条问题，列出全部模型。`_preflight` 里接在 OCR 参数检查之后；与其他问题一样，默认拒绝运行，`--allow-incomplete` 放行并把问题记进 `preflight_problems`。
+- `model_version` 含两个权重文件 sha256 的前 8 位，只换权重、库版本不变也能区分。
+
+**为什么出现两个模型就一定是问题。** OCR Worker 写入前会删掉同一文档同一对象（页或图片）的旧结果（`services/ocr_worker/ocr_worker/store.py`），每个对象只留一条。所以出现两个模型，说明确实有一部分对象是用另一个模型识别的。例外是重新解析后旧版本对象残留的结果（DEVPLAN §4 “竞争窗口”），提示里写了可以先用一致性检查的 `ocr-results` 类别清理。
+
+**局限。** 与 D42 一样只检查数据集文档；查询只在集成测试里覆盖，本机没有 PostgreSQL，未运行（`untested.md` T24g）。
