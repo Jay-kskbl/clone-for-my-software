@@ -206,7 +206,7 @@ BARRY zou/
 
 来源：DEVPLAN §4 的待议事项，Barry 于 2026-11-19 统一批准（见 decisions.md D39）。一次做一个，各自一个 commit。
 
-- [ ] **T24a 通用 Worker 启动时检查数据库**：启动时先连一次数据库，连不上以退出码 1 结束（与 OCR Worker 一致，GLOBAL §12）；领取循环中途断线仍然重试
+- [x] **T24a 通用 Worker 启动时检查数据库**：启动时先连一次数据库，连不上以退出码 1 结束（与 OCR Worker 一致，GLOBAL §12）；领取循环中途断线仍然重试
 - [ ] **T24b `/health` 不暴露内部信息**：`detail` 只写异常类型，主机、端口、数据库用户名只写日志
 - [ ] **T24c OCR 参数进实验配置** 🔒：`OCR_MIN_CONFIDENCE`、`OCR_PDF_DPI` 随 OCR 结果写入数据库，实验运行时读出记进 `config.json`。涉及表结构，先给 Barry 看字段设计和迁移
 - [ ] **T24d `rebuild-indices --force`**：无条件强制重建，仍需 `--yes` 才执行
@@ -235,7 +235,7 @@ BARRY zou/
 - **（T14 已解决）** 之前记给 T14 的提醒都已处理，做法见 `decisions.md` D27：存储新增 `local_path()`；文档状态只跟随 parse 任务的规则已定，并在任务失败、回收、重试时一并更新；parse 处理函数开头检查文档是否已删除；按 `mime_type` 选解析器，图片写 `image_assets`；`parser_options` 只传 PDF 的 `pdf_ocr_min_chars`；索引改为在每个任务开始时 `ensure_indices`（没有放在 API、Worker 启动时）；上传后由 parse 任务写 `doc_meta`，删除由 cleanup 任务调用 `delete_document`，改标签接口提交后尽力同步 `doc_meta`；`TextIndexUnavailable` / `TextIndexError` / `ParseError` / `PipelineError` 都由 Worker 按 `retryable` 处理。
 - **（T21 已解决）给 T21 的补充（T18 记录）**
   - ~~一致性检查（D31）还没有覆盖 `image_embeddings`~~：T21 已补上无用向量（`embedding_orphan`，修复类别 `embeddings`）和向量索引与数据库不一致（`vector_*`，修复类别 `index`、`rebuild-indices`）的检测与修复，见 `decisions.md` D35。
-- **（已批准，排为 T24a）待定（T18 记录）**
+- **（T24a 已解决，D40）待定（T18 记录）**
   - backend 通用 Worker 启动时不检查数据库，连不上时在领取循环里无限重试；OCR Worker 启动时连不上数据库就以退出码 1 结束（D30）。两者不一致，是否统一由 Barry 决定。
 - **（T20、T21 已处理）给 T20、T21（CLIP）的参考（T17 记录）**
   - ~~CLIP 服务和 embed 任务可以复用~~（两者都没有采用：CLIP 服务不领任务（D33）；embed 任务由通用 Worker 领取，只发 HTTP 请求，见 D35） `shared.task_queue.PgTaskQueue`，以及 OCR Worker“常驻子进程加载模型、超时或崩溃时杀掉重开”的写法（`services/ocr_worker/ocr_worker/engine_process.py`）。
@@ -286,6 +286,10 @@ BARRY zou/
   - Word 片段只定位到起始段落（Barry 于 2026-11-19 决定暂缓）。如果实验或演示发现跳转偏差影响使用，再考虑给 `DocxParaLocator` 增加结束段落字段（数据契约变更，需 Barry 批准）。
 - **评测数据收集时顺带做**
   - 用几份真实的 Word、Excel（由 Office 或 WPS 保存）和手机照片过一遍 T11 的解析器，结果记到 `docs/untested.md` §4 对应的行。
+- **待议（T24a 记录，见 `docs/changes/T24a.md` §4）**
+  - CLAUDE.md 的 Worker 命令说明没有写“启动时连不上数据库以退出码 1 结束”，需 Barry 同意后补。
+  - 启动检查没有连接超时（libpq 默认值），主机不可达时可能等一两分钟才报错。
+  - 启动检查不查表结构：空库（没迁移）时要到第一次领取才报错。
 - **安全方面，本科毕设范围内可以不做，但答辩可能被问到**（Barry 于 2026-11-19 决定：`/health` 一项排为 T24b；其余两项不做，写进论文“局限与改进”并准备答辩回答）
   - 登录接口没有限制尝试次数，可以被暴力猜密码。
   - 没有每个用户的存储配额。
@@ -335,3 +339,4 @@ BARRY zou/
 | T23 | 2026-11-19 | 38d2c06 | 代码由主会话编写（Barry 要求主会话只写代码），复测、浏览器检查、文档和提交由子代理完成。T23 不带 🔒，没有单独的计划批准。检索页：图片结果左侧显示缩略图（原图取成 Blob 显示，只取 PNG/JPEG，>5 MB 显示占位，并发 4，新检索或离开页面时释放地址）；命中通道标签按通道着色；图片证据写“图像语义匹配（CLIP）”，与 OCR 命中分开；新增“图像语义检索（CLIP）”开关（默认关，`img=1` 进地址栏，请求显式发送 `channels.image`）；不可用通道用黄色提示，图像通道写明“本次结果只来自文字检索”。规则见 decisions.md D37。已执行：前端类型检查、构建通过，单元测试 62 项通过（T23 前为 51 项，新增 11 项：缩略图加载 5、命中依据与降级提示 5、`isImageType` 1）；构建的“chunk 大于 500 kB”警告在 T23 之前就有（在 HEAD 的副本上构建同样出现，主包约 874 kB）。浏览器检查对着临时模拟后端做（模拟后端不是项目代码，没有提交）：不勾选时请求 `image=false`；勾选后请求 `image=true`、地址栏有 `img=1`，刷新和从预览页返回后保持；图片结果显示缩略图，点击进入预览；>5 MB 显示“图片较大”占位；下载失败显示“无法显示”；图片证据显示“图像语义匹配（CLIP）”；通道标签三种颜色；image 不可用时出现黄色提示。未测试（Not Tested）：与真实后端、真实 CLIP 服务的联调；页面组件没有自动化测试。没有修改附录 A，没有新下载 |
 | T24 | 2026-11-19 | 34af94e | 代码由主会话（Opus 5.5）编写，测试复核、文档和提交由子代理完成；T24 不带 🔒。新增 7 个实验配置：B3、B3-no-ocr、B3-no-clip、clip-only、B3-k10、B3-k30、B3-k100（k=60 即 B3）；实验配置新增可选 `rrf_k`（只覆盖本次实验的 k，随 search_params 与检索日志记录）；开了图像通道的配置运行前检查 CLIP 服务是否可用、数据集图片是否都有当前模型的向量，模型信息记进 config.json 的 `clip_model`；`mapping_sha256` 补上 `image_vectors`。规则见 decisions.md D38。已执行：backend 678 项通过、212 项跳过，shared 105 项通过，ruff 通过（T24 新增单元测试 10 项，跳过数从 208 增至 212 即新增的 4 项集成测试）。未测试（Not Tested）：test_experiments_db.py 新增 4 项（需要 PostgreSQL）；B3 及消融从未在真实数据和真实 CLIP 上运行。**MVP-2 里程碑未达成，没有打 tag**（原因同 MVP-0）。没有修改附录 A，没有新下载 |
 | 待议事项统一批准 | 2026-11-19 | 8609ef5 | Barry 于 2026-11-19 对 §4 中 14 项待批准事项“按推荐全部批准”（D39）。当场完成 5 项：qrels `grade` 含义确认；A14 定为不启用；删除重复的 CLIP 权重 `env_check/models/clip_cn_vit-b-16.pt`（删前核对 sha256 一致）；整理 `docs/untested.md`（删除 Windows 补测已通过的 190 项及 OS-1/3/4/5/8/9/10，剩 24 项测试）；N01 烟测脚本改写后放进 `scripts/smoke/ocr_e2e.py`，`.gitignore` 加 `storage-smoke/`。另 5 项排为 T24a–T24e；其余暂缓。已执行：烟测脚本 ruff 检查与格式检查通过、能编译，未设 `TEST_DATABASE_URL` 时退出码 2。**未测试（Not Tested）**：烟测脚本改写后没有实际跑过（本机没有 PostgreSQL 和 OpenSearch），已登记到 untested.md。没有改代码、表结构、索引和附录 A；没有新下载 |
+| T24a | 2026-11-19 | （待填） | D39 第 6 项，Barry 于 2026-11-19 批准；不带 🔒。`shared/task_queue.py` 的 `PgTaskQueue` 新增 `ping()`；`backend/app/worker/__main__.py` 启动时先 `ping`，任何 `psycopg.Error` 都打印“Worker 无法连接数据库（异常类型）”并以退出码 1 结束，不进入领取循环；信号处理改到检查之后登记；领取循环中途断线仍然重试（未改 `loop.py`）。新增 `tests/unit/test_worker_main.py` 4 项。已执行：backend 682 passed、212 skipped（新增 4 项通过）；shared 105 passed；services/ocr_worker（main 环境）63 passed、4 skipped；backend、shared 的 ruff 检查与格式检查通过；实际启动 `python -m app.worker`，`DATABASE_URL` 指向没有服务的端口：退出码 1，输出不含密码和端口。没有改表结构、接口、附录 A，没有新下载，没有未测试项。修改记录见 `docs/changes/T24a.md` |

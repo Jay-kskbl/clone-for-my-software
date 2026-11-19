@@ -29,6 +29,13 @@ class PgTaskQueue:
             self._conn = psycopg.connect(self._database_url, autocommit=True)
         return self._conn
 
+    def ping(self) -> None:
+        """确认数据库连得上，连不上时抛出 psycopg.Error。Worker 启动时调用（GLOBAL §12）。
+
+        成功后连接留着给后面的领取用。
+        """
+        self._connection().execute("SELECT 1")
+
     def reclaim_expired(self) -> int:
         return tasks.reclaim_expired(self._connection())
 

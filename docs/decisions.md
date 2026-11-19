@@ -1085,7 +1085,7 @@ Barry 于 2026-11-19 对 DEVPLAN §4 中整理出的 14 项待批准事项回复
 | 3 | `env_check/models/` 里重复的 CLIP 权重 | 删除，保留 `models/clip/` | 已删（删前两份 sha256 一致），登记 downloads.md |
 | 4 | `docs/untested.md` | 删除 Windows 补测已通过的项 | 已整理，剩 24 项测试；限制（Windows 副本、之后的代码改动未复跑）写在该文件开头 |
 | 5 | N01 烟测脚本 | 放进仓库，`scripts/smoke/ocr_e2e.py`，手动运行，不进 pytest | 已放；改动：解释器路径按系统选 `bin/python` 或 `Scripts/python.exe`，连接串改读 `TEST_DATABASE_URL`（必填）和 `TEST_OPENSEARCH_URL`，`ROOT` 改为上两级目录，清理测试索引失败时打印原因而不是静默忽略，超时异常加 `from`。输出目录 `storage-smoke/` 加进 `.gitignore`。改写后未实际运行 |
-| 6 | 两个 Worker 启动时检查数据库不一致 | 通用 Worker 也在启动时检查，连不上以退出码 1 结束 | DEVPLAN T24a |
+| 6 | 两个 Worker 启动时检查数据库不一致 | 通用 Worker 也在启动时检查，连不上以退出码 1 结束 | T24a 已完成（D40） |
 | 7 | `/health` 暴露内部主机名、端口 | `detail` 只写异常类型 | DEVPLAN T24b |
 | 8 | OCR 参数没有进实验配置 | 写进数据库，实验读出记录 | DEVPLAN T24c（🔒，先给字段设计） |
 | 9 | `rebuild-indices` 无条件重建 | 加 `--force` | DEVPLAN T24d |
@@ -1094,4 +1094,18 @@ Barry 于 2026-11-19 对 DEVPLAN §4 中整理出的 14 项待批准事项回复
 | 12 | 重新解析与旧 OCR 的竞争窗口 | 暂不做，论文写进局限 | — |
 | 13 | 后端缩略图接口 | 暂不做，归入 P4 | — |
 | 14 | 登录无次数限制、无存储配额、前端不预检文件大小 | 不做，写进论文“局限与改进”，准备答辩回答 | — |
+
+### D40 通用 Worker 启动时检查数据库（T24a）
+
+代码：`shared/task_queue.py`（`PgTaskQueue.ping`）、`backend/app/worker/__main__.py`；测试：`backend/tests/unit/test_worker_main.py`。来源：D39 第 6 项。
+
+**做法。** 读完配置、建好队列后先执行一次 `SELECT 1`。任何 `psycopg.Error`（连不上、密码错、库不存在）都打印一行错误并以退出码 1 结束，与 OCR Worker（D30）一致；外层的 `while true; do python -m app.worker || break; done` 随之停下。检查通过后连接保留给领取用。领取循环里的断线重试（`loop.py`）没有改：启动后数据库短暂中断不应让 Worker 退出。
+
+**为什么把 `ping` 放在 shared。** 两个 Worker 都用 `shared.task_queue.PgTaskQueue`。OCR Worker 现在用自己的 `PgStore.ping()` 检查，没有改它；以后如果要统一，可以改用这个方法。
+
+**错误信息只写异常类型。** psycopg 的异常文本会带主机、端口，认证失败时还带用户名，和 `/health` 的问题（T24b）一样，所以不打印异常文本。代价是排查时看不到具体原因，只能对照 `DATABASE_URL` 自己检查。
+
+**信号登记挪到检查之后。** 检查期间按 Ctrl-C 按 Python 默认行为直接中断，不会被“完成当前任务后退出”的处理拦下。
+
+**局限。** 没有给检查设连接超时，用的是 libpq 的默认值（不设上限，取决于操作系统的 TCP 超时）。主机不可达而不是端口拒绝时，启动可能要等一两分钟才报错。没有改，因为 `PgTaskQueue` 的连接方式两个 Worker 共用，改超时会影响领取，需要单独评估。
 

@@ -1,0 +1,119 @@
+"""T24a：通用 Worker 启动时检查数据库——连不上就以退出码 1 结束，不进入领取循环。
+
+不需要数据库：连不上的情况直接用真实的 PgTaskQueue 去连一个没有服务的本机端口；
+连得上的情况用假的队列。领取循环中途断线的重试在 tests/unit/test_worker_loop.py。
+"""
+
+import socket
+from types import SimpleNamespace
+
+import psycopg
+import pytest
+from shared.task_queue import PgTaskQueue
+
+from app.worker import __main__ as worker_main
+
+SECRET_PASSWORD = "do-not-print-this-password"
+
+
+def free_port() -> int:
+    """取一个此刻没有服务在监听的本机端口。"""
+    with socket.socket() as sock:
+        sock.bind(("127.0.0.1", 0))
+        return sock.getsockname()[1]
+
+
+def fake_settings(database_url: str) -> SimpleNamespace:
+    return SimpleNamespace(
+        database_url=database_url,
+        worker_lease_seconds=60.0,
+        worker_max_tasks=5,
+        worker_poll_seconds=0.01,
+        worker_heartbeat_seconds=15.0,
+        worker_task_timeout_seconds=600.0,
+        worker_memory_limit_mb=None,
+    )
+
+
+@pytest.fixture
+def run_worker_calls(monkeypatch: pytest.MonkeyPatch) -> list[object]:
+    """替换领取循环和信号登记：记录是否进入了循环，且不改动 pytest 自己的信号处理。"""
+    calls: list[object] = []
+
+    def fake_run_worker(queue, handlers, options, *, should_stop):
+        calls.append(queue)
+        return 0
+
+    monkeypatch.setattr(worker_main, "run_worker", fake_run_worker)
+    monkeypatch.setattr(worker_main.signal, "signal", lambda *_args: None)
+    return calls
+
+
+def test_unreachable_database_exits_1_without_entering_the_loop(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    run_worker_calls: list[object],
+) -> None:
+    url = f"postgresql://docmgr:{SECRET_PASSWORD}@127.0.0.1:{free_port()}/docmgr"
+    monkeypatch.setattr(worker_main, "load_settings", lambda: fake_settings(url))
+
+    assert worker_main.main() == 1
+    assert run_worker_calls == []
+    err = capsys.readouterr().err
+    assert "无法连接数据库" in err
+    assert "OperationalError" in err
+    # 不把连接串里的密码、端口打到终端
+    assert SECRET_PASSWORD not in err
+    assert url not in err
+
+
+class FakeQueue:
+    def __init__(self, *, ping_error: Exception | None = None) -> None:
+        self.ping_error = ping_error
+        self.pinged = 0
+        self.resets = 0
+
+    def ping(self) -> None:
+        self.pinged += 1
+        if self.ping_error is not None:
+            raise self.ping_error
+
+    def reset(self) -> None:
+        self.resets += 1
+
+
+def test_reachable_database_enters_the_loop_with_the_same_queue(
+    monkeypatch: pytest.MonkeyPatch, run_worker_calls: list[object]
+) -> None:
+    queue = FakeQueue()
+    monkeypatch.setattr(worker_main, "load_settings", lambda: fake_settings("postgresql://x"))
+    monkeypatch.setattr(worker_main, "PgTaskQueue", lambda *_args, **_kwargs: queue)
+
+    assert worker_main.main() == 0
+    assert queue.pinged == 1
+    assert run_worker_calls == [queue]
+    assert queue.resets == 1  # 退出时释放连接
+
+
+def test_any_database_error_at_startup_exits_1(
+    monkeypatch: pytest.MonkeyPatch, run_worker_calls: list[object]
+) -> None:
+    # 例如密码错误、库不存在：psycopg 都抛 psycopg.Error 的子类
+    queue = FakeQueue(ping_error=psycopg.errors.InvalidPassword("bad password"))
+    monkeypatch.setattr(worker_main, "load_settings", lambda: fake_settings("postgresql://x"))
+    monkeypatch.setattr(worker_main, "PgTaskQueue", lambda *_args, **_kwargs: queue)
+
+    assert worker_main.main() == 1
+    assert run_worker_calls == []
+    assert queue.resets == 1
+
+
+def test_ping_on_the_real_queue_raises_when_nothing_listens() -> None:
+    queue = PgTaskQueue(
+        f"postgresql://docmgr:x@127.0.0.1:{free_port()}/docmgr",
+        worker_id="t",
+        lease_seconds=60,
+    )
+    with pytest.raises(psycopg.OperationalError):
+        queue.ping()
+    queue.reset()
