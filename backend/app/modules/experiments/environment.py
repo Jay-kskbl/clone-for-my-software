@@ -11,11 +11,21 @@ from pathlib import Path
 from typing import Any
 
 from shared.chunking import CHUNKER_VERSION
-from shared.text_index import INDEX_NAMES, OpenSearchClient, TextIndexError
+from shared.text_index import IMAGE_VECTORS, INDEX_NAMES, OpenSearchClient, TextIndexError
 
 from app.modules.experiments.dataset import PROJECT_ROOT
 
 _MAPPINGS_DIR = PROJECT_ROOT / "shared" / "text_index" / "mappings"
+# 图片向量索引的 mapping 在 M10 里（D35），不在 INDEX_NAMES 中
+_VECTOR_MAPPING = (
+    PROJECT_ROOT
+    / "backend"
+    / "app"
+    / "modules"
+    / "vector_index"
+    / "mappings"
+    / f"{IMAGE_VECTORS}.json"
+)
 
 
 def _git(*args: str) -> str | None:
@@ -68,7 +78,10 @@ def machine_info() -> dict[str, Any]:
 def code_versions() -> dict[str, Any]:
     return {
         "chunker_version": CHUNKER_VERSION,
-        "mapping_sha256": {name: _sha256(_MAPPINGS_DIR / f"{name}.json") for name in INDEX_NAMES},
+        "mapping_sha256": {
+            **{name: _sha256(_MAPPINGS_DIR / f"{name}.json") for name in INDEX_NAMES},
+            IMAGE_VECTORS: _sha256(_VECTOR_MAPPING),
+        },
     }
 
 

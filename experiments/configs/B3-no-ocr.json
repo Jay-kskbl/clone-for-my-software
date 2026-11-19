@@ -1,0 +1,8 @@
+{
+  "name": "B3-no-ocr",
+  "description": "消融：去掉 OCR。三个通道全开，text 通道只查正文",
+  "channels": {"meta": true, "text": true, "image": true},
+  "source_types": ["body"],
+  "top_k": 20,
+  "ks": [5, 10, 20]
+}

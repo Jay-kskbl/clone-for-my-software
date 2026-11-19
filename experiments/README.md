@@ -1,13 +1,13 @@
 # 实验数据与运行说明（M12）
 
-本目录存放评测数据集、相关性标注和实验配置。代码在 `backend/app/modules/experiments/`，规则见 `docs/decisions.md` D32。
+本目录存放评测数据集、相关性标注和实验配置。代码在 `backend/app/modules/experiments/`，规则见 `docs/decisions.md` D32；B3 与消融配置见 D38。
 
 ## 1. 目录结构
 
 ```
 experiments/
 ├── README.md                 本文件
-├── configs/                  实验配置：B0.json、B1.json、B2.json
+├── configs/                  实验配置：B0–B3 与消融，共 10 个（见第 5 节前的“实验配置”）
 ├── datasets/
 │   ├── manifest.csv          文件清单（进 Git）
 │   ├── files/                原文件（不进 Git）
@@ -80,13 +80,49 @@ experiments/
 4. **运行**：`python -m app.modules.experiments run --config ../experiments/configs/B1.json`
    可加 `--repeat 3` 重复运行，用来看结果的波动。
 
+开了图像通道的配置（B3、B3-no-ocr、clip-only、B3-k10/k30/k100）还要先：
+
+- 启动 CLIP 服务（命令见 `CLAUDE.md`）；
+- 让通用 Worker 处理完全部 embed 任务（图片向量）。
+
+运行前检查会拦下两种情况：CLIP 服务连不上；数据集里有图片还没有当前 CLIP 模型的向量（embed 任务失败或未完成）。加 `--allow-incomplete` 可以放行，但这次运行会标为不完整（退出码 2）。
+
+## 实验配置
+
+`configs/` 下每个文件是一组实验。各组之间只通过配置里的开关切换，用的是同一套检索代码（GLOBAL §9.2）。
+
+| 配置 | 通道（meta / text / image） | text 查哪些来源 | RRF k | 用途 |
+|---|---|---|---|---|
+| `B0` | 开 / 关 / 关 | — | — | 文件名/标签检索，基础基线 |
+| `B1` | 关 / 开 / 关 | 正文 | — | 正文 BM25 |
+| `B2` | 关 / 开 / 关 | 正文 + OCR | — | 正文 + OCR 文字 BM25 |
+| `B3` | 开 / 开 / 开 | 正文 + OCR | 后端配置（默认 60） | 文本检索 + CLIP 图像检索 + RRF |
+| `B3-no-ocr` | 开 / 开 / 开 | 正文 | 后端配置 | 消融：去掉 OCR |
+| `B3-no-clip` | 开 / 开 / 关 | 正文 + OCR | 后端配置 | 消融：去掉 CLIP |
+| `clip-only` | 关 / 关 / 开 | — | — | 消融：只用 CLIP |
+| `B3-k10`、`B3-k30`、`B3-k100` | 同 B3 | 同 B3 | 10、30、100 | RRF k 值消融；k=60 就是 B3 |
+
+- `B3-no-clip` 与 `B2` 不同：它保留了 meta 通道，和 B3 只差图像这一个通道，用来单独看 CLIP 的作用。`B2` 只开 text 通道，是 OCR 的基线。
+- 只开一个通道时，RRF 不改变该通道内的顺序，k 没有影响。
+
+配置文件的字段：
+
+| 字段 | 必填 | 含义 |
+|---|---|---|
+| `name` | 是 | 实验名，只能有字母、数字、`_`、`.`、`-`，会出现在结果目录名里 |
+| `description` | 否 | 说明 |
+| `channels` | 是 | `meta`、`text`、`image` 三项都要写明 `true` 或 `false` |
+| `source_types` | 否 | text 通道查哪些来源，默认 `["body", "ocr"]` |
+| `top_k`、`ks` | 否 | 每条查询取多少个文件；计算哪些 K 的指标 |
+| `rrf_k` | 否 | 覆盖后端的 `SEARCH_RRF_K`，只影响这次实验，不影响 API。不写时用后端配置。生效的值记进 `config.json` 的 `search_params` 和检索日志 |
+
 ## 5. 结果
 
 每次运行的结果在 `runs/<时间>_<实验名>_<随机串>/` 下：
 
 | 文件 | 内容 |
 |---|---|
-| `config.json` | 这次运行的完整配置：实验配置、检索参数、切分参数、数据集统计、代码与模型版本、OpenSearch 版本、机器信息、运行前检查发现的问题、是否完整 |
+| `config.json` | 这次运行的完整配置：实验配置、检索参数（含生效的 RRF k）、切分参数、数据集统计、代码与模型版本（三个索引 `doc_meta`、`chunks`、`image_vectors` 的结构 hash）、CLIP 模型（`clip_model`：开了图像通道时为模型名、版本、维度，版本里含权重文件 sha256 的前 12 位；没开时为 `null`）、OpenSearch 版本、机器信息、运行前检查发现的问题、是否完整 |
 | `results.jsonl` | 每条查询一行：返回的文件排名（含各通道的名次和分数）、耗时、通道状态、各项指标 |
 | `metrics.json` | 汇总指标：先按查询类型分层，再给总体；重复运行时附带波动；查询延迟 P50、P95 |
 

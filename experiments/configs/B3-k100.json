@@ -1,0 +1,9 @@
+{
+  "name": "B3-k100",
+  "description": "RRF k 值消融：与 B3 相同，k=100",
+  "channels": {"meta": true, "text": true, "image": true},
+  "source_types": ["body", "ocr"],
+  "top_k": 20,
+  "ks": [5, 10, 20],
+  "rrf_k": 100
+}

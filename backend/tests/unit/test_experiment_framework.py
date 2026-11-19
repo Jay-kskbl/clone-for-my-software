@@ -153,7 +153,26 @@ def test_templates_in_the_repository_have_the_right_headers():
 # ---- 实验配置 ----
 
 
-@pytest.mark.parametrize("name", ["B0", "B1", "B2"])
+ALL_CONFIGS = [
+    "B0",
+    "B1",
+    "B2",
+    "B3",
+    "B3-no-ocr",
+    "B3-no-clip",
+    "clip-only",
+    "B3-k10",
+    "B3-k30",
+    "B3-k100",
+]
+
+
+def test_repository_has_exactly_the_planned_configs():
+    names = sorted(p.stem for p in (EXPERIMENTS_DIR / "configs").glob("*.json"))
+    assert names == sorted(ALL_CONFIGS)
+
+
+@pytest.mark.parametrize("name", ALL_CONFIGS)
 def test_repository_configs_load_and_differ_only_by_switches(name):
     config = load_config(EXPERIMENTS_DIR / "configs" / f"{name}.json")
 
@@ -170,6 +189,46 @@ def test_b0_b1_b2_are_the_globally_defined_baselines():
         ["body"],
     )
     assert (b2.channels, sorted(b2.source_types)) == (b1.channels, ["body", "ocr"])
+
+
+def load_named(name: str):
+    return load_config(EXPERIMENTS_DIR / "configs" / f"{name}.json")
+
+
+def test_b3_and_ablations_differ_from_b3_only_in_the_ablated_switch():
+    b3 = load_named("B3")
+    assert b3.channels == {"meta": True, "text": True, "image": True}
+    assert sorted(b3.source_types) == ["body", "ocr"]
+    # B3 的 k 来自后端配置（默认 60），k 值消融只覆盖 k
+    assert b3.rrf_k is None
+
+    def same_except(other, **changed):
+        fields = {"channels", "source_types", "top_k", "ks", "rrf_k"}
+        for field in fields - set(changed):
+            got, want = getattr(other, field), getattr(b3, field)
+            if field == "source_types":
+                got, want = sorted(got), sorted(want)
+            assert got == want, (other.name, field)
+        for field, value in changed.items():
+            assert getattr(other, field) == value, (other.name, field)
+
+    same_except(load_named("B3-no-ocr"), source_types=["body"])
+    same_except(load_named("B3-no-clip"), channels={"meta": True, "text": True, "image": False})
+    same_except(load_named("clip-only"), channels={"meta": False, "text": False, "image": True})
+    for k in (10, 30, 100):
+        same_except(load_named(f"B3-k{k}"), rrf_k=k)
+
+
+def test_rrf_k_override_must_be_positive(tmp_path):
+    path = tmp_path / "c.json"
+    path.write_text(
+        json.dumps(
+            {"name": "X", "channels": {"meta": True, "text": True, "image": False}, "rrf_k": 0}
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="rrf_k"):
+        load_config(path)
 
 
 @pytest.mark.parametrize(
@@ -323,3 +382,5 @@ def test_machine_info_is_collected_without_extra_packages():
     versions = code_versions()
     assert versions["chunker_version"] >= 1
     assert all(len(h) == 64 for h in versions["mapping_sha256"].values())
+    # 三个索引的结构都记录（T24 补上图片向量索引）
+    assert set(versions["mapping_sha256"]) == {"doc_meta", "chunks", "image_vectors"}

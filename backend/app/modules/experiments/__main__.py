@@ -16,6 +16,7 @@ run       运行一组实验，结果写到 experiments/runs/<时间>_<名称>/�
 """
 
 import argparse
+import dataclasses
 import hashlib
 import json
 import secrets
@@ -33,11 +34,19 @@ from sqlalchemy.orm import Session
 
 from app.config import load_settings
 from app.core.errors import ConfigError, SearchUnavailableError
-from app.db.models import Document, ExperimentRun, OCRResult, ProcessingTask, User
+from app.db.models import (
+    Document,
+    ExperimentRun,
+    ImageAsset,
+    ImageEmbedding,
+    OCRResult,
+    ProcessingTask,
+    User,
+)
 from app.db.session import make_engine, make_session_factory
 from app.modules.auth import create_user
 from app.modules.auth.permissions import ADMIN_ROLE
-from app.modules.clip import query_clip_client_from_settings
+from app.modules.clip import ClipClient, ClipError, query_clip_client_from_settings
 from app.modules.experiments.config import load_config
 from app.modules.experiments.dataset import (
     EXPERIMENTS_DIR,
@@ -212,6 +221,45 @@ def _preflight(session: Session, document_ids: list[uuid.UUID]) -> list[str]:
     return problems
 
 
+def _image_preflight(
+    session: Session, document_ids: list[uuid.UUID], clip: ClipClient
+) -> tuple[list[str], dict[str, Any]]:
+    """开了图像通道的实验（B3 等）的运行前检查。返回（问题列表，CLIP 模型信息）。
+
+    - CLIP 服务要能连上：否则每条查询的图像通道都会降级，结果只是文本检索；
+    - 数据集里的每张图片都要有当前模型的向量：embed 任务失败或还没跑完的图片
+      不在向量索引里，图像通道永远检索不到它们（文档状态不跟随 embed 任务，D27、D35）。
+    模型信息（model_version 含权重文件 sha256 的前 12 位）记进 config.json（GLOBAL §3.4）。
+    """
+    try:
+        model = clip.model()
+    except ClipError as exc:
+        return [f"CLIP 服务不可用（{exc.message}），图像通道无法参与检索"], {"error": exc.message}
+    info = {
+        "model_name": model.model_name,
+        "model_version": model.model_version,
+        "dim": model.dim,
+    }
+    missing = session.scalar(
+        select(func.count())
+        .select_from(ImageAsset)
+        .outerjoin(
+            ImageEmbedding,
+            (ImageEmbedding.sha256 == ImageAsset.sha256)
+            & (ImageEmbedding.model_name == model.model_name)
+            & (ImageEmbedding.model_version == model.model_version),
+        )
+        .where(ImageAsset.document_id.in_(document_ids), ImageEmbedding.id.is_(None))
+    )
+    problems = []
+    if missing:
+        problems.append(
+            f"数据集里有 {missing} 张图片还没有当前 CLIP 模型的向量"
+            "（embed 任务失败或未完成；在任务列表里查看原因并重试）"
+        )
+    return problems, info
+
+
 def _outside_dataset(session: Session, document_ids: list[uuid.UUID]) -> int:
     """库里不属于数据集的未删除文档数。
 
@@ -256,6 +304,9 @@ def cmd_run(args: argparse.Namespace, root: Path, settings: Any, session: Sessio
     try:
         config = load_config(Path(args.config))
         params = params_from_settings(settings)
+        if config.rrf_k is not None:
+            # k 值消融：只改这次实验的 k，其余参数仍来自后端配置；生效的值随结果记录
+            params = dataclasses.replace(params, rrf_k=config.rrf_k)
         config.check_against(params.max_top_k)
         dataset = load_dataset(root, check_files=False)
     except (ValueError, DatasetError) as exc:
@@ -276,6 +327,11 @@ def cmd_run(args: argparse.Namespace, root: Path, settings: Any, session: Sessio
         return 1
     document_ids = [uuid.UUID(mapping[f][0]) for f in dataset.files]
     problems = _preflight(session, document_ids)
+    clip_model: dict[str, Any] | None = None
+    if config.channels["image"]:
+        with query_clip_client_from_settings(settings) as clip:
+            image_problems, clip_model = _image_preflight(session, document_ids, clip)
+        problems += image_problems
     if problems:
         print("运行前检查没有通过：", *problems, sep="\n  - ", file=sys.stderr)
         if not args.allow_incomplete:
@@ -346,6 +402,8 @@ def cmd_run(args: argparse.Namespace, root: Path, settings: Any, session: Sessio
             "documents_outside_dataset": outside,
             "versions": {**code_versions(), **_snapshot_versions(session, document_ids)},
             "opensearch": opensearch_info(client),
+            # 开了图像通道时为查询编码所用的 CLIP 模型，没开时为 None
+            "clip_model": clip_model,
             "machine": machine_info(),
             "preflight_problems": problems,
             "repeats": args.repeat,

@@ -974,7 +974,7 @@ Barry 要求由 Fable 5.2 重新查看 Opus 5.5 写的 T15–T19 并修正不足
 **代价与局限。**
 
 - 向量检索还没有接入检索编排和前端（T22、T23）。（T22 已接入检索编排，见 D36；前端仍属 T23。）
-- 实验记录的 mapping hash（`experiments/environment.py` 的 `code_versions`）只遍历 `INDEX_NAMES`，不含 `image_vectors.json`，跑 B3 前要补（T22/T24）。
+- 实验记录的 mapping hash（`experiments/environment.py` 的 `code_versions`）只遍历 `INDEX_NAMES`，不含 `image_vectors.json`，跑 B3 前要补（T22/T24）。T24 已补上，见 D38。
 - embed 持有数据库事务和咨询锁跨越一次 CLIP 调用（最长 `CLIP_ENCODE_TIMEOUT_SECONDS`）。
 - 数据库 `real[]` 存的是 float32，复用的向量与新编码的向量有微小数值差异，不影响排序。
 - 同一内容有多个模型的向量时，一致性修复用最近生成的那条（一致性检查不知道 CLIP 当前加载的是哪个模型）。
@@ -1010,7 +1010,7 @@ Barry 要求由 Fable 5.2 重新查看 Opus 5.5 写的 T15–T19 并修正不足
 **局限。**
 
 - CLIP 服务一次只算一个请求：embed 任务批量编码时，查询编码可能排队超过 3 秒而降级。做实验时要避开批量编码，或者在结果里如实标记（运行器已把含 `unavailable` 通道的运行记为不完整）。
-- 实验记录的 mapping hash 仍不含 `image_vectors.json`（D35），留给 T24。
+- 实验记录的 mapping hash 仍不含 `image_vectors.json`（D35），留给 T24。T24 已补上，见 D38。
 - 没有在真实 CLIP 服务 + OpenSearch 上端到端跑过；图像通道的查询体没有发给过真实 OpenSearch（见 `untested.md` T22）。
 - ~~前端 `frontend/src/views/SearchView.vue` 的注释仍写“图像通道尚未实现”，留给 T23。~~（T23 已改，见 D37。）
 
@@ -1047,3 +1047,29 @@ Barry 要求由 Fable 5.2 重新查看 Opus 5.5 写的 T15–T19 并修正不足
 - 取的是原图，结果里图片多、图片大时比较费流量和内存；5 MB 上限与并发 4 都没有实验依据。专门的后端缩略图接口记在 DEVPLAN §4（需要 Pillow 之类的图像库，属于新依赖，须 Barry 批准）。
 - 只在临时模拟后端上做过浏览器检查，没有与真实后端和真实 CLIP 服务联调；页面组件没有自动化测试（见 `untested.md` T23）。
 - `npm run build` 的“chunk 大于 500 kB”警告在 T23 之前就有（主包约 874 kB，来自 Element Plus 等），不是 T23 引入的。
+
+### D38 B3 与消融配置（T24）
+
+代码：`backend/app/modules/experiments/`（`config.py`、`__main__.py`、`environment.py`）；配置：`experiments/configs/`。T24 不带 🔒，代码由主会话编写，测试复核、文档和提交由子代理完成。没有修改附录 A，没有新下载。
+
+**新增 7 个配置。** `B3`（三个通道全开，正文 + OCR，k 取后端配置，默认 60）；消融 `B3-no-ocr`（text 只查正文）、`B3-no-clip`（关图像通道）、`clip-only`（只开图像通道）；RRF k 值消融 `B3-k10`、`B3-k30`、`B3-k100`（k=60 即 B3）。每个消融配置与 B3 只差一项，单元测试逐项核对。
+
+**`B3-no-clip` 保留 meta。** 它和 B2 不同：B2 只开 text，是 OCR 的基线；`B3-no-clip` 和 B3 只差图像通道，用来单独衡量 CLIP 的作用。两者都保留，论文里分别说明。
+
+**`rrf_k` 覆盖。** 实验配置新增可选字段 `rrf_k`（≥1）。设置时用 `dataclasses.replace` 只替换这次运行的 `SearchParams.rrf_k`，其余参数仍来自后端配置；API 不受影响。生效的值随 `config.json` 的 `search_params` 和每条检索日志记录。这仍是“只通过配置切换”（GLOBAL §9.2）：换的是一个参数，走的是同一套检索代码。`check_against` 只核对 `top_k` 与 `SEARCH_MAX_TOP_K`，不受 k 的影响。
+
+**图像通道的运行前检查。** 配置开了 image 通道时，`run` 在运行前额外检查：
+
+1. 调 CLIP `/health`：连不上 → 问题“CLIP 服务不可用”；否则得到当前模型（名称、版本、维度）。
+2. 数据集文档的 `image_assets` 左连接 `image_embeddings`（同 sha256、同模型名、同模型版本），没连上的图片数 > 0 → 问题“N 张图片还没有当前 CLIP 模型的向量”。按 `image_assets.document_id` 统计，以后文档内嵌图片（P4）也同样适用。
+
+问题与其他运行前检查一样处理：默认拒绝运行（退出码 1），`--allow-incomplete` 放行但结果标为不完整。模型信息记进 `config.json` 的 `clip_model`（`model_version` 含权重文件 sha256 的前 12 位，GLOBAL §3.4）；没开图像通道时为 `null`；CLIP 不可用时记错误信息。
+
+**记录向量索引结构。** `code_versions` 的 `mapping_sha256` 加上 `image_vectors`（`backend/app/modules/vector_index/mappings/image_vectors.json`），补上 D35、D36 留下的缺口。
+
+**局限。**
+
+- 没有在真实数据上运行任何一组实验：评测数据集和标注还没有开始收集（DEVPLAN §4），也没有 PostgreSQL、OpenSearch 和 CLIP 的联调环境。新增的 4 项集成测试未运行（见 `untested.md` T24）。
+- **MVP-2 里程碑未达成，没有打 tag `mvp-2`**。原因与 MVP-0 相同：数据库、OpenSearch、CLIP 的端到端联调都没做，“完整演示流程”和“关闭 CLIP 后基础检索不受影响”只在单元测试和模拟后端上验证过。
+- B3 的 k 跟随后端配置。若改动 `.env` 的 `SEARCH_RRF_K`，B3 就不再是 k=60，要以 `config.json` 里记录的值为准。
+- CLIP 服务不可用时，即使数据集里没有图片，开了图像通道的配置也会被拦下。

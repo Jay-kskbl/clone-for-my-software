@@ -1,0 +1,8 @@
+{
+  "name": "B3",
+  "description": "文本检索 + Chinese-CLIP 图像检索 + RRF：三个通道全开，正文和 OCR 都查；k 用后端配置（默认 60）",
+  "channels": {"meta": true, "text": true, "image": true},
+  "source_types": ["body", "ocr"],
+  "top_k": 20,
+  "ks": [5, 10, 20]
+}

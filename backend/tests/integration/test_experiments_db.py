@@ -1,4 +1,4 @@
-"""T19：实验框架与数据库相关的部分。需要 TEST_DATABASE_URL，未设置时全部跳过。
+"""T19、T24：实验框架与数据库相关的部分。需要 TEST_DATABASE_URL，未设置时全部跳过。
 
 - 实验账号、运行前检查、版本快照；
 - 导入命令（真实上传到临时存储目录）；
@@ -16,7 +16,16 @@ from shared.text_index import OpenSearchClient
 from sqlalchemy import select
 
 from app.config import Settings
-from app.db.models import Document, ExperimentRun, OCRResult, ProcessingTask, SearchLog
+from app.db.models import (
+    Document,
+    ExperimentRun,
+    ImageAsset,
+    ImageEmbedding,
+    OCRResult,
+    ProcessingTask,
+    SearchLog,
+)
+from app.modules.clip import ClipClient
 from app.modules.experiments import __main__ as cli
 from app.modules.experiments.dataset import load_document_map, save_document_map
 from app.modules.storage import LocalStorage
@@ -335,3 +344,123 @@ def test_run_with_search_service_down_is_incomplete(session, settings, root):
     ]
     assert all(r["ok"] is False for r in records)
     assert json.loads((run_dir / "config.json").read_text(encoding="utf-8"))["complete"] is False
+
+
+# ---- T24：B3 与消融配置 ----
+
+CLIP_MODEL = {"model_name": "ViT-B-16", "model_version": "cn_clip-1.6.0-5997ef32c50d", "dim": 512}
+
+
+def fake_clip(*, down: bool = False) -> ClipClient:
+    def handle(request: httpx.Request) -> httpx.Response:
+        if down:
+            raise httpx.ConnectError("refused")
+        return httpx.Response(200, json={"status": "ok", "device": "cpu", **CLIP_MODEL})
+
+    return ClipClient(
+        "http://clip.test", timeout_seconds=1.0, transport=httpx.MockTransport(handle)
+    )
+
+
+def add_image(session, owner, sha256: str, *, embedded: bool) -> Document:
+    document_id = uuid.uuid4()
+    document = Document(
+        id=document_id,
+        owner_id=owner.id,
+        filename="photo.png",
+        mime_type="image/png",
+        size_bytes=1,
+        sha256=sha256,
+        storage_key=f"2026/{document_id}/{sha256}.png",
+        status="succeeded",
+        parse_version=V1,
+    )
+    session.add(document)
+    session.flush()
+    session.add(ImageAsset(image_id=str(document_id), document_id=document_id, sha256=sha256))
+    if embedded:
+        session.add(
+            ImageEmbedding(
+                sha256=sha256,
+                model_name=CLIP_MODEL["model_name"],
+                model_version=CLIP_MODEL["model_version"],
+                dim=512,
+                vector=[0.0] * 512,
+            )
+        )
+    session.commit()
+    return document
+
+
+def test_image_preflight_counts_images_without_a_vector_of_the_current_model(session):
+    user = cli._experiment_user(session, create=True)
+    done = add_image(session, user, "1" * 64, embedded=True)
+    missing = add_image(session, user, "2" * 64, embedded=False)
+
+    with fake_clip() as clip:
+        problems, info = cli._image_preflight(session, [done.id, missing.id], clip)
+
+    assert info == CLIP_MODEL
+    (problem,) = problems
+    assert "1 张图片还没有当前 CLIP 模型的向量" in problem
+    with fake_clip() as clip:
+        assert cli._image_preflight(session, [done.id], clip)[0] == []
+
+
+def test_image_preflight_reports_clip_down(session):
+    with fake_clip(down=True) as clip:
+        problems, info = cli._image_preflight(session, [], clip)
+
+    (problem,) = problems
+    assert "CLIP 服务不可用" in problem
+    assert "error" in info
+
+
+def test_b3_refuses_to_run_when_clip_is_down(session, settings, root):
+    # settings 里的 CLIP 地址指向一个没有服务的端口
+    user = cli._experiment_user(session, create=True)
+    a, b = make_documents(session, user)
+    save_document_map({"f1": (str(a.id), "x"), "f2": (str(b.id), "y")}, root)
+    args = cli.argparse.Namespace(
+        config=str(cli.EXPERIMENTS_DIR / "configs" / "B3.json"), repeat=1, allow_incomplete=False
+    )
+
+    assert cli.cmd_run(args, root, settings, session) == 1
+    assert not (root / "runs").exists()
+
+
+def test_rrf_k_override_is_used_and_recorded(session, settings, root, monkeypatch, tmp_path):
+    user = cli._experiment_user(session, create=True)
+    a, b = make_documents(session, user)
+    save_document_map({"f1": (str(a.id), "x"), "f2": (str(b.id), "y")}, root)
+    config = tmp_path / "k10.json"
+    config.write_text(
+        json.dumps(
+            {
+                "name": "k10",
+                "channels": {"meta": True, "text": True, "image": False},
+                "top_k": 10,
+                "ks": [1],
+                "rrf_k": 10,
+            }
+        ),
+        encoding="utf-8",
+    )
+    fake = FakeIndex({"报销": [str(a.id)], "会议": [str(b.id)]})
+    monkeypatch.setattr(cli, "client_from_settings", lambda _settings: fake.client())
+    args = cli.argparse.Namespace(config=str(config), repeat=1, allow_incomplete=False)
+
+    assert cli.cmd_run(args, root, settings, session) == 0
+
+    (run_dir,) = (root / "runs").iterdir()
+    saved = json.loads((run_dir / "config.json").read_text(encoding="utf-8"))
+    assert saved["search_params"]["rrf_k"] == 10
+    assert saved["experiment"]["rrf_k"] == 10
+    assert saved["clip_model"] is None
+    assert "image_vectors" in saved["versions"]["mapping_sha256"]
+    # 检索日志里记录的也是覆盖后的 k
+    logs = session.scalars(select(SearchLog)).all()
+    assert {log.config["params"]["rrf_k"] for log in logs} == {10}
+    # meta 与 text 都把 a 排第 1 → 1/(10+1) × 2
+    record = json.loads((run_dir / "results.jsonl").read_text(encoding="utf-8").splitlines()[0])
+    assert record["ranking"][0]["score"] == pytest.approx(2 / 11)

@@ -1,0 +1,8 @@
+{
+  "name": "B3-no-clip",
+  "description": "消融：去掉 CLIP。只开 meta、text 两个文本类通道，正文和 OCR 都查",
+  "channels": {"meta": true, "text": true, "image": false},
+  "source_types": ["body", "ocr"],
+  "top_k": 20,
+  "ks": [5, 10, 20]
+}

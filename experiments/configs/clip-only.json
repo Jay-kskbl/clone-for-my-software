@@ -1,0 +1,8 @@
+{
+  "name": "clip-only",
+  "description": "消融：只用 CLIP 图像检索，关闭两个文本类通道",
+  "channels": {"meta": false, "text": false, "image": true},
+  "source_types": ["body", "ocr"],
+  "top_k": 20,
+  "ks": [5, 10, 20]
+}

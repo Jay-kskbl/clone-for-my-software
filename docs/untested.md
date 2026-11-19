@@ -1,6 +1,6 @@
 # 未测试清单（Not Tested）
 
-更新日期：2026-11-19（T23 完成后）
+更新日期：2026-11-19（T24 完成后）
 
 这里列出**已经写好但从未实际执行过**的测试，以及其他没有经过验证的性质。
 规则来自 GLOBAL.md“测试执行限制与代码验证要求”：跑不了的测试不强行执行、不安装工具，
@@ -26,14 +26,14 @@
 | T16 抽取文本接口 | `backend/tests/integration/test_document_text.py` | 11 | 本机没有 PostgreSQL | 已复核，未发现问题 |
 | T17 OCR Worker 读写数据库 | `backend/tests/integration/test_ocr_worker_db.py` | 10 | 本机没有 PostgreSQL | 已复核，未发现问题 |
 | T18 一致性检查 | `backend/tests/integration/test_consistency_db.py` | 12 | 本机没有 PostgreSQL | 已复核；首轮发现的误删问题已修复，见 `decisions.md` D31 |
-| T19 实验框架 | `backend/tests/integration/test_experiments_db.py` | 8 | 本机没有 PostgreSQL | 已复核；首轮发现的结果目录重名、P@K 口径问题已修复，见 `decisions.md` D32 |
+| T19 实验框架 | `backend/tests/integration/test_experiments_db.py` | 12 | 本机没有 PostgreSQL | 已复核（T24 新增 4 项）；首轮发现的结果目录重名、P@K 口径问题已修复，见 `decisions.md` D32 |
 | T21 图片向量（embed 任务） | `backend/tests/integration/test_embed_db.py` | 8 | 本机没有 PostgreSQL | 已复核；复核发现的两处问题已修复，见 `decisions.md` D35 |
 | T21 向量索引 | `backend/tests/opensearch/test_vector_index_live.py` | 8 | 本机没有 OpenSearch | 已复核；检索写法与 T00 在 2.19.1 上实测通过的一致 |
-| **合计** | | **205** | | 另有第 4 节“T15–T19 复核修正”的 3 项，共 208 项（与本机 backend 的 208 项跳过一致） |
+| **合计** | | **209** | | 另有第 4 节“T15–T19 复核修正”的 3 项，共 212 项（与本机 backend 的 212 项跳过一致） |
 
 T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器）和 T12（切分）不需要数据库，它们的测试全部在本机执行并通过，没有未测试项。
 
-对照：2026-11-19（T22）本机实测 `backend/` 668 项通过、208 项跳过，`shared/` 105 项通过；T21 时为 640 项通过、207 项跳过。以下是 T19 时的数字：`backend/` 540 项、`shared/` 105 项、`services/ocr_worker/` 63 项（main 环境；另有 4 项真实识别测试在 ocr 环境里运行并通过）、`frontend/` 48 项，全部通过。
+对照：2026-11-19（T24）本机实测 `backend/` 678 项通过、212 项跳过，`shared/` 105 项通过；T22 时为 668 项通过、208 项跳过；T21 时为 640 项通过、207 项跳过。以下是 T19 时的数字：`backend/` 540 项、`shared/` 105 项、`services/ocr_worker/` 63 项（main 环境；另有 4 项真实识别测试在 ocr 环境里运行并通过）、`frontend/` 48 项，全部通过。
 
 ## 2. 影响最大的几项
 
@@ -172,7 +172,7 @@ OpenSearch 用假的网络层代替（替换 `app.state.text_index`），专门�
 - 修复：`test_stale_ocr_results_are_removed`、`test_deleted_document_without_cleanup_gets_a_cleanup_task`、`test_orphan_file_is_deleted_but_a_referenced_file_never_is`、`test_reindex_rebuilds_a_document_from_the_database`、`test_rebuild_indices_recreates_both_and_reindexes_live_documents`、`test_index_repairs_are_skipped_when_the_search_service_is_down`
 - 误删防护：`test_chunks_of_a_document_being_parsed_are_never_deleted`
 
-### T19 `test_experiments_db.py`（8）
+### T19、T24 `test_experiments_db.py`（12）
 
 需要 PostgreSQL，检索服务用假的：
 
@@ -181,6 +181,7 @@ OpenSearch 用假的网络层代替（替换 `app.state.text_index`），专门�
 - `test_version_snapshot_lists_parse_versions_and_ocr_models`
 - `test_import_uploads_once_and_records_the_mapping`
 - `test_full_run_writes_results_metrics_and_an_experiment_row`、`test_run_refuses_when_preflight_fails`、`test_run_with_search_service_down_is_incomplete`
+- T24 新增（CLIP 用假的网络层或不可达的端口）：`test_image_preflight_counts_images_without_a_vector_of_the_current_model`、`test_image_preflight_reports_clip_down`、`test_b3_refuses_to_run_when_clip_is_down`、`test_rrf_k_override_is_used_and_recorded`
 
 ### T21 `test_embed_db.py`（8）
 
@@ -297,6 +298,14 @@ T20 的测试都在本机实际运行过（接口测试 39 项，真实模型测
 |---|---|---|
 | 与真实后端、真实 CLIP 服务联调 | 缩略图（真实下载接口、真实图片大小）、图片证据、通道标记和图像通道降级提示，都没有在真实后端 + 真实 CLIP 服务 + OpenSearch 上看过 | `decisions.md` D37 |
 | 检索页组件的自动化测试 | `SearchView.vue` 没有组件测试；开关、地址栏、缩略图显示只靠浏览器手动检查 | `decisions.md` D37 |
+
+### T24 B3 与消融配置（2026-11-19 登记，见 `decisions.md` D38）
+
+| 项目 | 说明 | 记录位置 |
+|---|---|---|
+| B3 及消融在真实数据上运行 | B3、B3-no-ocr、B3-no-clip、clip-only、B3-k10/k30/k100 从未在真实数据、真实 PostgreSQL + OpenSearch + CLIP 服务上运行过；评测数据集也还没有 | `decisions.md` D38 |
+| 图像通道运行前检查 | 缺向量的统计（`image_assets` 左连接 `image_embeddings`）只写了集成测试，未运行 | `decisions.md` D38 |
+| MVP-2 里程碑 | 未达成，没有打 tag `mvp-2` | `decisions.md` D38 |
 
 ## 5. 补测方法
 

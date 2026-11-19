@@ -1,7 +1,8 @@
 """M12：实验配置（experiments/configs/*.json）。
 
 对照组之间只能通过这几项切换（GLOBAL §9.2：不得为某组实验单独写一套检索代码）。
-RRF k、截断深度、字段权重等检索参数仍来自后端配置（.env），每次运行时原样记录下来。
+截断深度、字段权重等检索参数仍来自后端配置（.env），每次运行时原样记录下来。
+RRF 的 k 可以由实验配置覆盖（T24 的 k 值消融），不写时用后端配置。
 """
 
 import json
@@ -26,6 +27,8 @@ class ExperimentConfig(BaseModel):
     # 每条查询取多少个文件。必须不小于最大的 K，且不超过后端的 SEARCH_MAX_TOP_K
     top_k: int = Field(default=20, ge=1)
     ks: list[int] = Field(default=[5, 10, 20], min_length=1)
+    # 覆盖后端的 SEARCH_RRF_K（只影响这次实验，不影响 API）。None 表示用后端配置
+    rrf_k: int | None = Field(default=None, ge=1)
 
     @field_validator("name")
     @classmethod
