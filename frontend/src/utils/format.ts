@@ -54,3 +54,10 @@ export function formatType(mimeType: string): string {
 export function isInProgress(status: Status): boolean {
   return status === 'pending' || status === 'processing'
 }
+
+// 浏览器能原样显示、后端也接受的图片类型（PNG、JPEG）
+const IMAGE_TYPES = ['image/png', 'image/jpeg']
+
+export function isImageType(mimeType: string): boolean {
+  return IMAGE_TYPES.includes(mimeType)
+}

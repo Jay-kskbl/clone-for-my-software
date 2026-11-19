@@ -33,10 +33,11 @@ src/
 ├── api/          接口封装：client.ts（令牌、错误转换）、auth.ts、documents.ts、types.ts（与 api.md 对应的类型）
 ├── auth.ts       登录状态（当前用户）
 ├── router.ts     路由与登录跳转
-├── views/        页面：LoginView（登录/注册）、DocumentsView（文件列表、上传、下载、删除）
-├── components/   ShareDialog（共享）
-└── utils/        格式化函数
-tests/            单元测试（接口封装、格式化）
+├── views/        页面：LoginView（登录/注册）、DocumentsView（文件列表、上传、下载、删除）、
+│                 SearchView（检索：结果、命中通道、图片缩略图、图像检索开关与降级提示）、PreviewView（预览）
+├── components/   ShareDialog（共享）、PdfViewer（PDF 显示）
+└── utils/        格式化、来源定位与通道说明、摘要清洗、缩略图加载（thumbnails.ts）
+tests/            单元测试（接口封装、格式化、来源定位、摘要、缩略图）
 ```
 
 ## 说明

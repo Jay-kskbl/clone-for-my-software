@@ -9,12 +9,11 @@ import { errorMessage } from '../api/client'
 import { downloadDocument, getDocument, getDocumentText } from '../api/documents'
 import type { DocumentItem, TextChunk } from '../api/types'
 import PdfViewer from '../components/PdfViewer.vue'
-import { STATUS_LABEL, formatType } from '../utils/format'
+import { STATUS_LABEL, formatType, isImageType } from '../utils/format'
 import { SOURCE_TYPE_LABEL, formatLocator } from '../utils/locator'
 import { highlightText } from '../utils/snippet'
 
 const PDF = 'application/pdf'
-const IMAGE_TYPES = ['image/png', 'image/jpeg']
 const TEXT_PAGE_SIZE = 50
 
 const route = useRoute()
@@ -41,7 +40,7 @@ const textLoading = ref(false)
 const kind = computed<'pdf' | 'image' | 'text' | null>(() => {
   if (!document.value) return null
   if (document.value.mime_type === PDF) return 'pdf'
-  if (IMAGE_TYPES.includes(document.value.mime_type)) return 'image'
+  if (isImageType(document.value.mime_type)) return 'image'
   return 'text'
 })
 

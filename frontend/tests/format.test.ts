@@ -6,6 +6,7 @@ import {
   formatSize,
   formatTime,
   formatType,
+  isImageType,
   isInProgress,
 } from '../src/utils/format'
 
@@ -59,5 +60,14 @@ describe('状态与类型', () => {
     expect(formatType('application/pdf')).toBe('PDF')
     expect(formatType('image/jpeg')).toBe('图片（JPEG）')
     expect(formatType('application/x-unknown')).toBe('application/x-unknown')
+  })
+})
+
+describe('isImageType', () => {
+  it('只有 PNG 和 JPEG 算图片', () => {
+    expect(isImageType('image/png')).toBe(true)
+    expect(isImageType('image/jpeg')).toBe(true)
+    expect(isImageType('image/gif')).toBe(false)
+    expect(isImageType('application/pdf')).toBe(false)
   })
 })

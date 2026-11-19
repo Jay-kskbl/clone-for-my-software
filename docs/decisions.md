@@ -609,7 +609,7 @@ GLOBAL §2 P1 规定“某页文本层有效字符数低于配置阈值时，该
 
 - 检索词写进地址栏（`?q=`），刷新页面或从预览页返回后检索词和结果仍在（返回时会重新检索一次）。
 - “检索服务不可用”（503 `SEARCH_UNAVAILABLE`）和“没有找到匹配的文件”分开显示，前者明确写“这不是‘没有搜到’”（GLOBAL §12）。
-- 本应执行却失败的通道（`status=unavailable`）逐个提示，例如图像通道尚未实现。
+- 本应执行却失败的通道（`status=unavailable`）逐个提示，例如图像通道尚未实现。（T23 起图像通道已实现，提示文字与颜色见 D37。）
 - 正文范围可选正文（body）和 OCR 文字（ocr）。
 - 每条结果显示文件名、类型、标签、高亮摘要、位置和命中的通道与名次；点击进入预览页，带上命中的页码或片段。
 
@@ -1012,4 +1012,38 @@ Barry 要求由 Fable 5.2 重新查看 Opus 5.5 写的 T15–T19 并修正不足
 - CLIP 服务一次只算一个请求：embed 任务批量编码时，查询编码可能排队超过 3 秒而降级。做实验时要避开批量编码，或者在结果里如实标记（运行器已把含 `unavailable` 通道的运行记为不完整）。
 - 实验记录的 mapping hash 仍不含 `image_vectors.json`（D35），留给 T24。
 - 没有在真实 CLIP 服务 + OpenSearch 上端到端跑过；图像通道的查询体没有发给过真实 OpenSearch（见 `untested.md` T22）。
-- 前端 `frontend/src/views/SearchView.vue` 的注释仍写“图像通道尚未实现”，留给 T23。
+- ~~前端 `frontend/src/views/SearchView.vue` 的注释仍写“图像通道尚未实现”，留给 T23。~~（T23 已改，见 D37。）
+
+### D37 前端 v2：缩略图、通道标记、降级提示（T23）
+
+代码：`frontend/src/views/SearchView.vue`、`frontend/src/utils/thumbnails.ts`（新）、`frontend/src/utils/locator.ts`（`CHANNEL_TAG_TYPE`、`evidenceLabel`、`degradedNotice`）、`frontend/src/utils/format.ts`（`isImageType`，`PreviewView.vue` 也改用它）。测试：`frontend/tests/thumbnails.test.ts`（新）、`locator.test.ts`、`format.test.ts`。
+
+**开发方式。** 代码由主会话编写，复测、浏览器检查、文档和提交由子代理完成。T23 不带 🔒，没有单独的计划批准。没有改后端、接口和数据契约，没有修改附录 A，没有新下载。
+
+**缩略图。**
+
+- 后端没有缩略图接口，下载接口又要带登录令牌，`<img>` 不能直接用接口地址。所以前端把原图取成 Blob，生成 `blob:` 地址给 `<img>`，由浏览器按比例缩小到 96×96 的框里。
+- 只给 PNG、JPEG 类型的结果取图（`isImageType`），与结果是哪个通道命中的无关。
+- 超过 5 MB（`THUMBNAIL_MAX_BYTES`）的图片不取，显示“图片较大，点击查看”占位；下载失败显示“无法显示”。缩略图只是辅助显示，失败不影响检索结果。
+- 按结果名次排队，同时最多 4 个下载（`THUMBNAIL_CONCURRENCY`）。
+- 新的一次检索开始、检索失败或离开页面时，释放已生成的全部 `blob:` 地址，并让上一批作废：迟到的下载不再生成地址。
+- 点击缩略图与点击文件名一样进入预览页。
+
+**通道标记与命中依据。**
+
+- 命中通道的标签按通道着色：文件名/标签为灰（info），正文为蓝（primary），图像为绿（success）。名次文字不变。
+- 只被图像通道命中、证据是图片时，命中依据写“图像语义匹配（CLIP）”，不写“位置：图片”，与 OCR 文字命中（“位置：图片（OCR 文字）”）分开（GLOBAL §4.1、§13）。
+
+**图像通道开关。**
+
+- 检索页新增“图像语义检索（CLIP）”勾选框，默认不勾（与后端默认关闭一致，D36）。
+- 勾选状态写进地址栏（`img=1`），刷新或从预览页返回后保持。
+- 请求里总是显式发送 `channels.image`（true 或 false），不依赖后端默认值。
+
+**降级提示。** `status=unavailable` 的通道用黄色（warning）提示。图像通道的提示为“图像检索暂时不可用，本次结果只来自文字检索（原因：…）”，其余通道沿用“××通道未参与本次检索：…”。
+
+**代价与局限。**
+
+- 取的是原图，结果里图片多、图片大时比较费流量和内存；5 MB 上限与并发 4 都没有实验依据。专门的后端缩略图接口记在 DEVPLAN §4（需要 Pillow 之类的图像库，属于新依赖，须 Barry 批准）。
+- 只在临时模拟后端上做过浏览器检查，没有与真实后端和真实 CLIP 服务联调；页面组件没有自动化测试（见 `untested.md` T23）。
+- `npm run build` 的“chunk 大于 500 kB”警告在 T23 之前就有（主包约 874 kB，来自 Element Plus 等），不是 T23 引入的。
