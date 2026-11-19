@@ -268,7 +268,7 @@ BARRY zou/
   - ~~实验记录的 mapping hash（`backend/app/modules/experiments/environment.py` 的 `code_versions`）只遍历 `INDEX_NAMES`，不含 `image_vectors.json`，跑 B3 前要补~~（T24 已处理，D38）。
   - ~~CLIP 服务一次只算一个请求：embed 任务批量编码时，查询编码可能排在后面（单张图片最长等 `CLIP_ENCODE_TIMEOUT_SECONDS`），T22 定查询编码超时时要考虑。~~（T22 已处理：查询超时 3 秒、超时降级；排队导致降级仍是局限，见 D36）
 - **待 Barry 决定（T24 记录）**
-  - `CLAUDE.md` 的“实验”命令一行是否补一句：B3 类配置（开了图像通道的）需先启动 CLIP 服务，并让通用 Worker 处理完 embed 任务。`experiments/README.md` 已写明；改 `CLAUDE.md` 需 Barry 同意。
+  - ~~`CLAUDE.md` 的“实验”命令一行是否补一句：B3 类配置（开了图像通道的）需先启动 CLIP 服务，并让通用 Worker 处理完 embed 任务~~（Barry 于 2026-11-19 同意，已补）。
 - **待 Barry 决定（T21 记录）**
   - ~~`CLAUDE.md` 一致性检查命令的说明仍写“对账数据库、磁盘和两个索引”，类别列表里没有新增的 `embeddings`~~（Barry 于 2026-11-19 同意，已补）。
 - **待实验决定（T12 记录）**
