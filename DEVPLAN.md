@@ -296,7 +296,7 @@ BARRY zou/
   - 启动检查不查表结构：空库（没迁移）时要到第一次领取才报错。
 - **待议（T24c 记录，见 `docs/changes/T24c.md` §4）**
   - ~~没有“对已解析的文档重新做 OCR”的入口~~（Barry 于 2026-11-19 批准，T24i 已完成：`experiments reocr`，见 D47）。“只改 `min_confidence` 时只重新切分”没有做，T24i 一律重新识别；如果阶段五要扫多个阈值、重新识别太慢，再议。
-  - 待 Barry 决定（T24i 记录）：`CLAUDE.md` 的“实验”命令一行是否补上 `reocr`（用法已写在 `experiments/README.md` §4）。
+  - ~~待 Barry 决定（T24i 记录）：`CLAUDE.md` 的“实验”命令一行是否补上 `reocr`~~（Barry 于 2026-11-19 同意，已补）。
   - ~~运行前检查没有拦“数据集里用了两个不同的 OCR 模型”（快照里有 `ocr_models`），可以用同样的办法补上。~~（Barry 于 2026-11-19 批准，排为 T24g）
   - ~~`scripts/smoke/ocr_e2e.py` 可以加一项检查 `ocr_results.params` 有值。~~（Barry 于 2026-11-19 批准，T24h 已完成）
 - **待议（T24d 记录，见 `docs/changes/T24d.md` §4）**
