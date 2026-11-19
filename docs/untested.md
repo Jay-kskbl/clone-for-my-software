@@ -117,7 +117,7 @@ T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器�
 | 切分参数对检索效果的影响 | 默认 500 字、重叠 50 字是经验值。“片段长度、重叠、是否给 Excel 片段补表头”对 B1、B2 的影响要到阶段五才有数据 | `decisions.md` D25 |
 | zip 与像素上限的默认值 | 200 MB、5000 个条目、1 亿像素都是经验值；没有用接近上限的真实大文件测过解析时的内存和耗时 | `decisions.md` D24 |
 | smartcn 下的高亮效果 | 摘要是否落在命中词附近、长度是否接近 `SEARCH_SNIPPET_CHARS`，没有实际看过 | `decisions.md` D28 |
-| `scripts/smoke/ocr_e2e.py`（N01 烟测，2026-11-19 放进仓库） | 原版在 2026-11-16 Windows 补测中 PASS；放进仓库时改了解释器路径、连接串来源和清理逻辑（D39），改写后没有实际运行（本机没有 PostgreSQL 和 OpenSearch）。只验证了 ruff 检查、能编译、缺 `TEST_DATABASE_URL` 时退出码 2 | `decisions.md` D39 |
+| `scripts/smoke/ocr_e2e.py`（N01 烟测，2026-11-19 放进仓库） | 原版在 2026-11-16 Windows 补测中 PASS；放进仓库时改了解释器路径、连接串来源和清理逻辑（D39），改写后没有实际运行（本机没有 PostgreSQL 和 OpenSearch）。只验证了 ruff 检查、能编译、缺 `TEST_DATABASE_URL` 时退出码 2。T24h 加了 `ocr_results.params` 检查，`check_ocr_params` 只对假的数据库连接试过 7 种情况 | `decisions.md` D39 |
 | IK 分词、并发内存 | T00 环境实测中仍未完成的部分：IK（没有匹配 OpenSearch 2.19.1 的版本）和 OS-6。OpenSearch 启动、smartcn 分词、BM25 与精确向量检索已在 2026-11-16 Windows 补测中完成 | 第 6 节 |
 
 ### T20 CLIP 服务（2026-11-17 登记）
@@ -210,7 +210,7 @@ T20 的测试都在本机实际运行过（接口测试 39 项，真实模型测
 | `PgStore.save` 写入 params | SQL 新增一列、参数用 `Jsonb(dict(params))`，只在 `test_ocr_worker_db.py` 里覆盖 | 已复核：列名、占位符与字典键一一对应 |
 | 快照与运行前检查的分组查询 | `SELECT params, count(*) … GROUP BY params`，jsonb 可以分组，但没在真实库上跑过 | 已复核；判断逻辑是纯函数，单元测试 7 项已通过 |
 | `test_experiments_db.py` 的 T24c 新增 4 项 | `test_ocr_params_column_defaults_to_empty_and_round_trips`、`test_snapshot_lists_ocr_params_with_counts`、`test_preflight_accepts_pdf_pages_and_images_with_the_same_settings`、`test_preflight_reports_mixed_or_unrecorded_ocr_params` | 已复核 |
-| OCR Worker 真实链路写入 params | 上传 → OCR Worker → `ocr_results.params` 有值，没有端到端跑过。`scripts/smoke/ocr_e2e.py` 没有检查这一列 | — |
+| OCR Worker 真实链路写入 params | 上传 → OCR Worker → `ocr_results.params` 有值，没有端到端跑过。T24h 已让 `scripts/smoke/ocr_e2e.py` 检查这一列，跑通烟测即可覆盖 | 见上一节烟测脚本一行 |
 
 ### T24 B3 与消融配置（2026-11-19 登记，见 `decisions.md` D38）
 

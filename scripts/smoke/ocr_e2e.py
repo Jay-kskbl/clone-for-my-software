@@ -3,7 +3,8 @@
 Starts the API, the backend worker, and one OCR worker with plain Python
 subprocess calls, then verifies:
 
-    upload image -> parse -> OCR worker -> chunks in index -> search hit
+    upload image -> parse -> OCR worker -> ocr_results.params recorded
+    -> chunks in index -> search hit
 
 All paths and settings are explicit; nothing is downloaded and no shell
 string is built dynamically.
@@ -45,6 +46,7 @@ from pathlib import Path
 from typing import TypeVar
 
 import httpx
+import psycopg
 import pymupdf
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -91,6 +93,37 @@ def log_tail(path: Path, lines: int = 40) -> str:
     except OSError:
         return "(log not available)"
     return "\n".join(content[-lines:])
+
+
+# T24c (decisions.md D42): the OCR worker records the settings it used
+OCR_PARAM_KEYS = {"pdf_dpi", "min_confidence", "max_pixels"}
+
+
+def check_ocr_params(document_id: str) -> dict:
+    """Read ocr_results for the uploaded image and check that params were recorded.
+
+    Returns the params. Raises RuntimeError if there is no row, the keys are
+    wrong, or the values do not fit a standalone image (pdf_dpi must be None).
+    """
+    with psycopg.connect(DATABASE_URL, connect_timeout=10) as conn:
+        rows = conn.execute(
+            "SELECT params, model_name, model_version FROM ocr_results WHERE document_id = %s",
+            (document_id,),
+        ).fetchall()
+    if len(rows) != 1:
+        raise RuntimeError(f"expected 1 ocr_results row for the image, found {len(rows)}")
+    params, model_name, model_version = rows[0]
+    if not isinstance(params, dict) or set(params) != OCR_PARAM_KEYS:
+        raise RuntimeError(f"ocr_results.params not recorded as expected: {params!r}")
+    if params["pdf_dpi"] is not None:
+        raise RuntimeError(f"pdf_dpi should be null for a standalone image: {params!r}")
+    if not isinstance(params["min_confidence"], (int, float)) or not isinstance(
+        params["max_pixels"], int
+    ):
+        raise RuntimeError(f"ocr_results.params has unexpected value types: {params!r}")
+    if not model_name or not model_version:
+        raise RuntimeError("ocr_results.model_name / model_version is empty")
+    return params
 
 
 def make_image(path: Path) -> None:
@@ -303,6 +336,9 @@ def main() -> int:
 
             recognized = wait_for("OCR text in database", ocr_text, 30)
             say(f"OCR text stored: {recognized!r}")
+
+            params = check_ocr_params(document_id)
+            say(f"ocr_results.params recorded: {params}")
 
             search_body = {
                 "query": "智能文档管理系统",
