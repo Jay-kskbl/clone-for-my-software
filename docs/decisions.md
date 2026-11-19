@@ -1089,7 +1089,7 @@ Barry 于 2026-11-19 对 DEVPLAN §4 中整理出的 14 项待批准事项回复
 | 7 | `/health` 暴露内部主机名、端口 | `detail` 只写异常类型 | T24b 已完成（D41） |
 | 8 | OCR 参数没有进实验配置 | 写进数据库，实验读出记录 | T24c 已完成（D42） |
 | 9 | `rebuild-indices` 无条件重建 | 加 `--force` | T24d 已完成（D43） |
-| 10 | 文本预览 OCR 片段排序 | 按页码穿插 | DEVPLAN T24e |
+| 10 | 文本预览 OCR 片段排序 | 按页码穿插 | T24e 已完成（D44）；当前前端看不到效果 |
 | 11 | Word 片段结束段落 | 暂缓，等实验或演示暴露问题 | — |
 | 12 | 重新解析与旧 OCR 的竞争窗口 | 暂不做，论文写进局限 | — |
 | 13 | 后端缩略图接口 | 暂不做，归入 P4 | — |
@@ -1161,4 +1161,16 @@ Barry 于 2026-11-19 对 DEVPLAN §4 中整理出的 14 项待批准事项回复
 - “执行前先停掉两个 Worker”的提示照旧打印。
 
 **没有改的。** 结构检查的比较范围没有扩大（那会改检查结果，影响面更大）；CLAUDE.md 的一致性检查说明没有提 `--force`，需 Barry 同意后再补。
+
+### D44 文本预览按页码穿插 OCR 片段（T24e）
+
+代码：`backend/app/api/document_text.py`；测试：`backend/tests/unit/test_document_text_order.py`、`backend/tests/integration/test_document_text.py`；接口说明：`docs/api.md` §5.6。来源：D39 第 10 项（DEVPLAN §4 T17 记录）。
+
+**做法。** 排序键改为三个：`coalesce((locator->>'page')::int, 0)`、`CASE source_type WHEN 'body' THEN 0 ELSE 1 END`、`seq`。只有 `pdf_page` 定位有 `page`，其余定位按 0 算，所以 Word、Excel、图片的顺序与原来完全相同。`chunk_id` 跳转原来数 `seq < 目标 seq` 的行，现在先取出目标行的三个键，再用行比较 `(k1, k2, k3) < (目标)` 计数；两处共用同一组表达式 `_PREVIEW_ORDER`，不会出现“跳到的页里没有目标片段”。
+
+**为什么正文在前。** 同一页既有正文又有 OCR 时（例如有文字层的页里嵌着扫描图片，P4 之后才会出现），正文是页面的主体。
+
+**做完后发现的情况（如实记录）。** 前端 `PreviewView.vue` 只在文档既不是 PDF 也不是图片时（即 Word、Excel）调用这个接口；PDF 用 pdf.js 显示原文件，图片直接显示。Word、Excel 没有 OCR 片段，所以**在现在的界面上看不到这次改动的效果**。T17 的记录说的是接口的排序，立项时没有核对前端是否用到 PDF 的抽取文本。改动本身是正确的，接口契约也更合理，保留；但不能在论文或演示中说成“预览页的 OCR 文字按页穿插”。
+
+**性能。** 排序表达式不能用索引，但每次只排一个文档的片段，毕设规模下可以忽略。没有实测。
 

@@ -1,6 +1,6 @@
 # 未测试清单（Not Tested）
 
-更新日期：2026-11-19（T24c 完成后；同日按 Barry 批准整理）
+更新日期：2026-11-19（T24e 完成后；同日按 Barry 批准整理）
 
 这里列出**已经写好但从未实际执行过**的测试，以及其他没有经过验证的性质。
 规则来自 GLOBAL.md“测试执行限制与代码验证要求”：跑不了的测试不强行执行、不安装工具，
@@ -25,13 +25,14 @@
 | T21 图片向量（embed 任务） | `backend/tests/integration/test_embed_db.py` | 8 | 本机没有 PostgreSQL | 已复核；复核发现的两处问题已修复，见 `decisions.md` D35 |
 | T21 向量索引 | `backend/tests/opensearch/test_vector_index_live.py` | 8 | 本机没有 OpenSearch | 已复核；检索写法与 T00 在 2.19.1 上实测通过的一致 |
 | T24c OCR 参数 | `backend/tests/integration/test_experiments_db.py` 中 T24c 新增的 4 项 | 4 | 本机没有 PostgreSQL | 已复核，见 `decisions.md` D42 |
-| **合计** | | **28** | | 与本机 backend 跳过的 216 项减去已补测的 188 项一致 |
+| T24e 文本预览排序 | `backend/tests/integration/test_document_text.py` 中 T24e 新增的 10 项 | 10 | 本机没有 PostgreSQL | 已复核，见 `decisions.md` D44 |
+| **合计** | | **38** | | 与本机 backend 跳过的 226 项减去已补测的 188 项一致 |
 
 T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器）和 T12（切分）不需要数据库，它们的测试全部在本机执行并通过，没有未测试项。
 
-对照：2026-11-19（T24c）本机实测 `backend/` 692 项通过、216 项跳过，`shared/` 105 项通过；T24 时为 678 项通过、212 项跳过。
+对照：2026-11-19（T24e）本机实测 `backend/` 703 项通过、226 项跳过；T24c 时为 692 项通过、216 项跳过，`shared/` 105 项通过；T24 时为 678 项通过、212 项跳过。
 
-**T24c 之后需要重跑的已补测文件。** T24c 加了迁移 `0002`，并改了 `test_ocr_worker_db.py`（`save()` 多了 `params` 参数，有一项新增断言）。下面这两个文件虽然在 2026-11-16 通过过，但通过的是 T24c 之前的版本，现在要重跑才算数：`test_migrations.py`（14 项，尤其是 `test_migration_matches_models` 和升级—回退—升级）、`test_ocr_worker_db.py`（10 项）。
+**T24c 之后需要重跑的已补测文件。** T24c 加了迁移 `0002`，并改了 `test_ocr_worker_db.py`（`save()` 多了 `params` 参数，有一项新增断言）。下面这两个文件虽然在 2026-11-16 通过过，但通过的是 T24c 之前的版本，现在要重跑才算数：`test_migrations.py`（14 项，尤其是 `test_migration_matches_models` 和升级—回退—升级）、`test_ocr_worker_db.py`（10 项）。T24e 又改了 `test_document_text.py` 所测接口的排序和跳转 SQL，原有 11 项也要重跑。
 
 ## 2. 影响最大的几项
 
@@ -170,6 +171,14 @@ T20 的测试都在本机实际运行过（接口测试 39 项，真实模型测
 |---|---|---|
 | 与真实后端、真实 CLIP 服务联调 | 缩略图（真实下载接口、真实图片大小）、图片证据、通道标记和图像通道降级提示，都没有在真实后端 + 真实 CLIP 服务 + OpenSearch 上看过 | `decisions.md` D37 |
 | 检索页组件的自动化测试 | `SearchView.vue` 没有组件测试；开关、地址栏、缩略图显示只靠浏览器手动检查 | `decisions.md` D37 |
+
+### T24e 文本预览排序（2026-11-19 登记，见 `decisions.md` D44）
+
+| 项目 | 说明 | 代码复核 |
+|---|---|---|
+| `test_document_text.py` 的 T24e 新增 10 项 | `test_ocr_chunks_are_interleaved_by_page_body_first`、`test_pages_follow_the_interleaved_order`、`test_chunk_id_jump_uses_the_same_order`（7 个参数化用例）、`test_source_type_filter_keeps_page_order`，需要 PostgreSQL | 已复核；本机只检查了生成的 SQL（`test_document_text_order.py` 2 项，已通过） |
+| 原有 11 项在新排序下 | 都是 Word 段落定位（没有页码），按设计顺序不变，但改了排序和跳转的 SQL，需要重跑 | 已复核 |
+| 前端效果 | 当前前端只对 Word、Excel 调用这个接口，看不到变化（D44） | — |
 
 ### T24d rebuild-indices --force（2026-11-19 登记，见 `decisions.md` D43）
 

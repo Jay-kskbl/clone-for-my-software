@@ -200,3 +200,97 @@ def test_invalid_source_type_is_422(client, session, alice):
     )
 
     assert response.status_code == 422
+
+
+# ---- T24e：按页码穿插 OCR 片段（D44）----
+
+OCR_BASE = 1_000_000_000  # 与 OCR Worker 的 OCR_SEQ_BASE 相同（D30）
+OCR_BLOCK = 1000
+
+
+def add_pdf_chunk(session, document: Document, seq: int, page: int, source_type: str) -> str:
+    chunk_id = f"{document.id}:{V1}:{seq}"
+    session.add(
+        DocumentChunk(
+            chunk_id=chunk_id,
+            document_id=document.id,
+            parse_version=V1,
+            seq=seq,
+            source_type=source_type,
+            text=f"{source_type}-p{page}-{seq}",
+            locator={"type": "pdf_page", "page": page},
+        )
+    )
+    return chunk_id
+
+
+def mixed_pdf(session, owner: User) -> tuple[Document, dict[str, str]]:
+    """第 1、3 页有文字层，第 2、4 页是扫描件；第 3 页另有一段 OCR（页内的图片）。"""
+    document = add_document(session, owner)
+    document.filename = "混合.pdf"
+    document.mime_type = "application/pdf"
+    ids = {
+        "body-p1a": add_pdf_chunk(session, document, 0, 1, "body"),
+        "body-p1b": add_pdf_chunk(session, document, 1, 1, "body"),
+        "body-p3": add_pdf_chunk(session, document, 2, 3, "body"),
+        "ocr-p2": add_pdf_chunk(session, document, OCR_BASE + 1 * OCR_BLOCK, 2, "ocr"),
+        "ocr-p3": add_pdf_chunk(session, document, OCR_BASE + 2 * OCR_BLOCK, 3, "ocr"),
+        "ocr-p4a": add_pdf_chunk(session, document, OCR_BASE + 3 * OCR_BLOCK, 4, "ocr"),
+        "ocr-p4b": add_pdf_chunk(session, document, OCR_BASE + 3 * OCR_BLOCK + 1, 4, "ocr"),
+    }
+    session.commit()
+    return document, ids
+
+
+PREVIEW_ORDER = ["body-p1a", "body-p1b", "ocr-p2", "body-p3", "ocr-p3", "ocr-p4a", "ocr-p4b"]
+
+
+def test_ocr_chunks_are_interleaved_by_page_body_first(client, session, alice):
+    document, ids = mixed_pdf(session, alice)
+
+    body = client.get(
+        url(document), params={"page_size": 100}, headers=login(client, "alice")
+    ).json()
+
+    assert [item["chunk_id"] for item in body["items"]] == [ids[k] for k in PREVIEW_ORDER]
+
+
+def test_pages_follow_the_interleaved_order(client, session, alice):
+    document, ids = mixed_pdf(session, alice)
+    headers = login(client, "alice")
+
+    seen = []
+    for page in (1, 2, 3, 4):
+        body = client.get(
+            url(document), params={"page": page, "page_size": 2}, headers=headers
+        ).json()
+        seen += [item["chunk_id"] for item in body["items"]]
+
+    assert seen == [ids[k] for k in PREVIEW_ORDER]
+
+
+@pytest.mark.parametrize("key", PREVIEW_ORDER)
+def test_chunk_id_jump_uses_the_same_order(client, session, alice, key):
+    document, ids = mixed_pdf(session, alice)
+
+    body = client.get(
+        url(document),
+        params={"chunk_id": ids[key], "page_size": 2},
+        headers=login(client, "alice"),
+    ).json()
+
+    position = PREVIEW_ORDER.index(key)
+    assert body["page"] == position // 2 + 1
+    assert ids[key] in [item["chunk_id"] for item in body["items"]]
+
+
+def test_source_type_filter_keeps_page_order(client, session, alice):
+    document, ids = mixed_pdf(session, alice)
+
+    body = client.get(
+        url(document), params={"source_type": "ocr"}, headers=login(client, "alice")
+    ).json()
+
+    assert [item["chunk_id"] for item in body["items"]] == [
+        ids[k] for k in ("ocr-p2", "ocr-p3", "ocr-p4a", "ocr-p4b")
+    ]
