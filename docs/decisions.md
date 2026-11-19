@@ -247,7 +247,7 @@ T13 起，`deploy/docker-compose.yml` 改为在官方 2.19.1 镜像上安装 ana
 - 决策：`image_embeddings` 表保存向量本体，以“图片内容哈希 + 模型名称 + 模型版本”为唯一键，不关联具体文档。
 - 理由：向量索引丢失时可以直接从数据库重建，不必重新运行 CLIP；内容相同的图片即使被多次上传，也只编码一次。
   唯一键中包含模型版本，更换模型后新旧向量可以并存，不会混用。
-- 代价与局限：删除文档时不会删除对应的向量，因为其他文档可能共用它。不再被任何图片引用的向量需要由一致性检查清理；T18 的检查（D31）还没有覆盖向量，留到 T21 有数据后补上。
+- 代价与局限：删除文档时不会删除对应的向量，因为其他文档可能共用它。不再被任何图片引用的向量需要由一致性检查清理；T18 的检查（D31）还没有覆盖向量，留到 T21 有数据后补上（T21 已补上，见 D35）。
 
 ### D11 子表对文档的外键使用级联删除（T03）
 
@@ -502,7 +502,7 @@ GLOBAL §2 P1 规定“某页文本层有效字符数低于配置阈值时，该
 
 - `succeeded` 最后写，所以“成功”一定意味着数据库和索引里都已经有正文片段。
 - OCR 任务一页（或一张图片）一个，`payload = {parse_version, locator}`，按“同版本同对象”去重。一页失败只重试这一页；上百页的扫描件也不会因为总耗时超过任务超时而整体失败。
-- embed 任务（T21）还没有在这里创建。
+- embed 任务（T21）也在第 8 步的同一事务里创建（仅图片），见 D35。
 
 **cleanup 任务**（`handlers/cleanup.py`）：
 
@@ -766,7 +766,7 @@ GLOBAL §2 P1 规定“某页文本层有效字符数低于配置阈值时，该
 
 - 检查与修复之间不加锁，靠执行前的复查和 busy 判断避开正在进行的任务；仍有极小的窗口。
 - 全量扫描会把两个索引的条目和全部片段读进内存，只适合毕设规模的数据量。
-- `image_embeddings` 的对账和清理留给 T21（D10）。
+- `image_embeddings` 的对账和清理留给 T21（D10）；T21 已补上，并覆盖向量索引，见 D35。
 - `missing_file` 不能自动修复：文件内容只在磁盘上，只能由人决定删除记录还是找回文件。
 - `unknown_file` 只报告，不删除。
 - 命令需要完整的后端配置（包括 `JWT_SECRET`），因为它和后端共用同一套配置读取；`__main__` 的说明里写明了这一点。
@@ -927,3 +927,56 @@ Barry 要求由 Fable 5.2 重新查看 Opus 5.5 写的 T15–T19 并修正不足
 - D28、D30、D31、D32 已记录的其余局限没有变化。
 
 **验证。** 本机实际运行：backend 554 passed、191 skipped（新增 14 项通过，新增 3 项因需要 PostgreSQL 跳过）；shared 105 passed；services/ocr_worker 63 passed、4 skipped，ocr 环境真实识别 4 项通过；前端类型检查、构建通过，单元测试 51 项通过（新增 3 项）；三个目录代码检查通过。浏览器里对着临时模拟接口检查了 PDF 预览（带页码打开、连续翻页加缩放后停在正确的页、没有误报）和文本预览的高亮。未测试项见 `untested.md`“T15–T19 复核修正”。
+
+### D35 图片向量与向量索引（T21）
+
+代码：`backend/app/modules/vector_index/`（`index.py`、`mappings/image_vectors.json`）、`backend/app/modules/clip/client.py`、`backend/app/worker/handlers/embed.py`；cleanup 与一致性检查的改动在原模块里。
+
+**开发方式。** 代码由主会话（Opus 5.5）编写，测试、复核、文档和提交由子代理完成。T21 不带 🔒，没有单独的计划批准。没有修改附录 A，没有改表结构（`task_type = 'embed'` 早已合法，不需要迁移），没有新下载。
+
+**embed 任务在哪个进程。** 由通用 Worker（main 环境）领取，登记在 `registry.HANDLERS`。编码在 CLIP 服务进程里做（附录 A4），Worker 只读文件、发 HTTP、写数据库和索引，不需要深度学习框架。
+
+**创建。** parse 任务解析图片成功时，在同一事务里创建（与 OCR 任务同处），`payload = {"image_id": ...}`，按 payload 去重。不按 parse_version 区分：图片内容不变（附录 A15），重新解析不需要重新编码。
+
+**流程。**
+
+1. 读文档，已删除则什么也不做。
+2. 取 `ImageAsset`；找不到或不属于该文档 → `PipelineError`（不可重试）。
+3. 调 CLIP `/health` 取当前模型（model_name、model_version、dim）；维度不是 512 → `PipelineError`（换模型要重建向量索引）。
+4. 在事务里对 sha256 加 `pg_advisory_xact_lock`，再查 `image_embeddings`（sha256 + model_name + model_version）：有就复用；没有才读文件、调 `/encode/image`。编码应答里的模型与 `/health` 不一致 → `ClipUnavailable`（可重试）。
+5. `INSERT … ON CONFLICT DO NOTHING`，提交（同时释放锁）。
+6. 复查文档未删除 → `ensure_vector_index` → 写索引 → 再复查，若已删除就撤掉刚写的向量。
+
+效果：同一内容只编码一次，并发时也一样（后到的在锁上等待，醒来后查到先到的结果）。文档状态不跟随 embed 任务（D27）：编码失败时文档仍是 `succeeded`，文件名、正文、OCR 照样可搜，失败原因记在任务上。
+
+**CLIP 客户端的失败分类。** 连不上、超时、5xx、429、应答结构不对 → `ClipUnavailable`（可重试）；413、422 及其他 4xx → `ClipRejected`（不可重试）。错误信息不含服务地址。新增配置 `CLIP_ENCODE_TIMEOUT_SECONDS`（默认 60；服务一次只算一个请求，排队的要等前面的算完，所以比单张编码时间宽得多）。
+
+**向量索引结构。** 逻辑名 `image_vectors`，登记在 `shared/text_index/client.py` 的 `IMAGE_VECTORS`，与另两个索引共用 `OPENSEARCH_INDEX_PREFIX`；不在 `INDEX_NAMES` 里，因为它不是文本索引。mapping：1 分片 0 副本，`dynamic: strict`；`image_id`、`document_id`、`sha256`、`model_name`、`model_version` 为 keyword，`vector` 为 `knn_vector`、`dimension` 512。不开 `index.knn`、不配 `method`，不建 HNSW 图（附录 A12）。`_id` = image_id（独立图片就是 document_id），重复写入是覆盖。写入用 `refresh=true`。mapping 文件在 `backend/pyproject.toml` 里声明为 package-data。新增索引不影响已有两个索引，不需要重建它们。
+
+**精确检索 `search_vectors`。** `script_score` + `lang: knn`、`source: knn_score`、`space_type: cosinesimil`，与 `env_check/01_check_opensearch.py` 在 OpenSearch 2.19.1 上实测通过的写法一致。过滤放在 `script_score.query` 里（前置过滤）：model_name、model_version 两个 term，加可访问 document_id 的 terms（管理员传 `None` 不加；空集合直接返回空、不发请求）。排序 `["_score", {"document_id": "asc"}]`，按 document_id 折叠（P4 内嵌图片出现后每个文档只留最相似的一张）。分数取 `hit.sort[0]`，是 1 + 余弦相似度，只用于排名。索引不存在时先建索引、返回空；其他故障照常抛出，不把故障变成空结果；不合法的命中记日志后跳过。返回前的数据库二次校验仍由 M11 负责（附录 A10）。**尚未接入 M11**：图像通道的调用和超时降级属于 T22。
+
+**cleanup。** 删两个文本索引之后，再删 `image_vectors` 里该文档的数据（索引不存在时 404 视为 0 条）。`image_embeddings` 不删：按内容共用（D10），由一致性检查清理。
+
+**一致性检查（D31 的补充）。** 采集 `image_assets`（image_id、document_id、sha256）、`image_embeddings`、embed 任务是否进行中、向量索引的全部条目与结构（字段类型和 dimension）。新增检测项：
+
+| 检测项 | 含义 | 修复类别 |
+|---|---|---|
+| `embedding_orphan` | 向量记录已没有任何图片使用（尚未清理的已删除文档的图片仍算引用） | `embeddings`（新增） |
+| `vector_orphan` | 索引里的向量属于已删除或不存在的文档 | `index` |
+| `vector_without_image` | 索引里的向量没有对应的图片记录 | `index` |
+| `vector_outdated` | 索引里的 sha256 或模型与数据库的向量记录对不上 | `index` |
+| `vector_missing_in_index` | 已有向量记录，但不在索引里 | `index` |
+
+`image_vectors` 缺失或结构不对 → `index_missing` / `index_structure_mismatch` → `rebuild-indices`；还没有任何向量记录时它不存在不报告（它在第一张图片编码时才建）。有进行中 embed、parse、ocr 任务的文档跳过。修复：`index` 按数据库重建单个文档时连向量一起（取该 sha256 最近生成、维度 512 的那条，不调用 CLIP）；`rebuild-indices` 删除并重建三个索引；`embeddings` 删除前先拿与 embed 相同的咨询锁并复查引用。修复类别由 7 个变为 8 个。
+
+复核时发现并已修复两处：还没有任何向量记录时误报 `image_vectors` 缺失；删除无用向量时没加锁，与 embed 有竞争（可能删掉 embed 刚要复用的记录）。
+
+**代价与局限。**
+
+- 向量检索还没有接入检索编排和前端（T22、T23）。
+- 实验记录的 mapping hash（`experiments/environment.py` 的 `code_versions`）只遍历 `INDEX_NAMES`，不含 `image_vectors.json`，跑 B3 前要补（T22/T24）。
+- embed 持有数据库事务和咨询锁跨越一次 CLIP 调用（最长 `CLIP_ENCODE_TIMEOUT_SECONDS`）。
+- 数据库 `real[]` 存的是 float32，复用的向量与新编码的向量有微小数值差异，不影响排序。
+- 同一内容有多个模型的向量时，一致性修复用最近生成的那条（一致性检查不知道 CLIP 当前加载的是哪个模型）。
+- 没有在真实 CLIP 服务 + 真实 Worker + PostgreSQL + OpenSearch 上端到端跑过；数据库与 OpenSearch 测试未运行（见 `untested.md` T21）。
+- `CLAUDE.md` 一致性检查命令的说明仍写“两个索引”，类别列表没有 `embeddings`，待 Barry 同意后改（DEVPLAN §4）。

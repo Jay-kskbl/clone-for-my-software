@@ -32,6 +32,8 @@ class DbDocument:
     busy: bool = False
     status: str = "succeeded"
     mime_type: str = "application/pdf"
+    # 有尚未完成的 embed 任务：图片向量正在生成（T21），向量类的检查跳过它
+    embed_busy: bool = False
 
 
 @dataclass(frozen=True)
@@ -50,6 +52,21 @@ class DbOcrResult:
     locator: dict[str, Any]
 
 
+@dataclass(frozen=True)
+class DbImage:
+    image_id: str
+    document_id: str
+    sha256: str
+
+
+@dataclass(frozen=True)
+class DbEmbedding:
+    id: str
+    sha256: str
+    model_name: str
+    model_version: str
+
+
 @dataclass
 class DbState:
     documents: dict[str, DbDocument] = field(default_factory=dict)
@@ -59,6 +76,9 @@ class DbState:
     ocr_targets: dict[str, set[str]] = field(default_factory=dict)
     # 有 image_assets 记录的文档 → 记录里的 sha256
     image_assets: dict[str, str] = field(default_factory=dict)
+    # image_id → 图片（T21：与向量索引对账用）
+    images: dict[str, DbImage] = field(default_factory=dict)
+    embeddings: list[DbEmbedding] = field(default_factory=list)
 
 
 # ---- 磁盘 ----
@@ -92,6 +112,15 @@ class IndexChunk:
     parse_version: str
 
 
+@dataclass(frozen=True)
+class IndexVector:
+    image_id: str
+    document_id: str
+    sha256: str
+    model_name: str
+    model_version: str
+
+
 @dataclass
 class IndexState:
     available: bool = True
@@ -100,6 +129,8 @@ class IndexState:
     # document_id → (文件名, 标签)
     meta: dict[str, tuple[str, tuple[str, ...]]] = field(default_factory=dict)
     chunks: dict[str, IndexChunk] = field(default_factory=dict)
+    # image_id → 图片向量索引里的一条（T21）
+    vectors: dict[str, IndexVector] = field(default_factory=dict)
     missing_indices: list[str] = field(default_factory=list)
     # 索引名 → 与版本库里的 mapping 不一致的地方
     structure_mismatch: dict[str, list[str]] = field(default_factory=dict)
@@ -115,13 +146,14 @@ class Snapshot:
 # ---- 问题 ----
 
 # 修复类别：repair 命令必须显式列出要修的类别（DEVPLAN T18）
-REPAIR_INDEX = "index"  # 按数据库重建单个文档在两个索引里的数据，或撤掉残留
+REPAIR_INDEX = "index"  # 按数据库重建单个文档在三个索引里的数据，或撤掉残留
 REPAIR_DB_CHUNKS = "db-chunks"  # 删掉数据库里不属于文档当前版本的片段
 REPAIR_OCR_RESULTS = "ocr-results"  # 删掉不属于当前版本任何 OCR 对象的识别结果
 REPAIR_CLEANUP_TASKS = "cleanup-tasks"  # 为没有清理任务的已删除文档补建 cleanup 任务
 REPAIR_TEMP_FILES = "temp-files"  # 删掉过期的上传临时文件
 REPAIR_ORPHAN_FILES = "orphan-files"  # 删掉数据库里没有记录的已存储文件
-REPAIR_REBUILD_INDICES = "rebuild-indices"  # 删掉两个索引，按版本库的 mapping 重建并全量重新索引
+REPAIR_REBUILD_INDICES = "rebuild-indices"  # 删掉三个索引，按版本库的 mapping 重建并全量重新索引
+REPAIR_EMBEDDINGS = "embeddings"  # 删掉不再被任何图片引用的向量记录（D10）
 
 REPAIR_KINDS = (
     REPAIR_INDEX,
@@ -131,6 +163,7 @@ REPAIR_KINDS = (
     REPAIR_TEMP_FILES,
     REPAIR_ORPHAN_FILES,
     REPAIR_REBUILD_INDICES,
+    REPAIR_EMBEDDINGS,
 )
 
 

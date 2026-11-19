@@ -1,0 +1,19 @@
+{
+  "settings": {
+    "index": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    }
+  },
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "image_id": { "type": "keyword" },
+      "document_id": { "type": "keyword" },
+      "sha256": { "type": "keyword" },
+      "model_name": { "type": "keyword" },
+      "model_version": { "type": "keyword" },
+      "vector": { "type": "knn_vector", "dimension": 512 }
+    }
+  }
+}

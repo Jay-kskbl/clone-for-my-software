@@ -12,9 +12,12 @@
 
 from collections import defaultdict
 
+from shared.text_index import IMAGE_VECTORS
+
 from app.modules.consistency.model import (
     REPAIR_CLEANUP_TASKS,
     REPAIR_DB_CHUNKS,
+    REPAIR_EMBEDDINGS,
     REPAIR_INDEX,
     REPAIR_OCR_RESULTS,
     REPAIR_ORPHAN_FILES,
@@ -169,6 +172,9 @@ def _index_issues(snapshot: Snapshot) -> list[Issue]:
     issues: list[Issue] = []
 
     for name in index.missing_indices:
+        if name == IMAGE_VECTORS and not snapshot.db.embeddings:
+            # 图片向量索引在第一张图片编码成功时才建（T21）：还没有任何向量时它不存在是正常的
+            continue
         issues.append(
             Issue(
                 kind="index_missing",
@@ -313,6 +319,95 @@ def _status_issues(snapshot: Snapshot) -> list[Issue]:
     return issues
 
 
+def _embedding_issues(snapshot: Snapshot) -> list[Issue]:
+    """数据库里不再被任何图片引用的向量（D10）。
+
+    向量按内容共用，删除文档时不删；内容相同的图片全都删掉之后，它就成了垃圾。
+    已软删除、尚未清理的文档的图片记录仍算引用：清理之前它随时可能被检查到。
+    """
+    referenced = {image.sha256 for image in snapshot.db.images.values()}
+    return [
+        Issue(
+            kind="embedding_orphan",
+            detail=(
+                f"向量记录（{embedding.model_name} {embedding.model_version}）已经没有任何图片使用"
+            ),
+            repair=REPAIR_EMBEDDINGS,
+            target=embedding.id,
+        )
+        for embedding in sorted(snapshot.db.embeddings, key=lambda e: e.id)
+        if embedding.sha256 not in referenced
+    ]
+
+
+def _vector_index_issues(snapshot: Snapshot) -> list[Issue]:
+    """图片向量索引与数据库对账（T21）。索引缺失、结构不对已由 _index_issues 报告。"""
+    index = snapshot.index
+    if not index.available:
+        return []
+    documents = snapshot.db.documents
+    issues: list[Issue] = []
+    # 一张图片在索引里的向量，应当是数据库里同内容的某一条向量（同 sha256、同模型）
+    models_by_sha: dict[str, set[tuple[str, str]]] = defaultdict(set)
+    for embedding in snapshot.db.embeddings:
+        models_by_sha[embedding.sha256].add((embedding.model_name, embedding.model_version))
+
+    reported: set[str] = set()
+    for vector in sorted(index.vectors.values(), key=lambda v: v.image_id):
+        document = documents.get(vector.document_id)
+        image = snapshot.db.images.get(vector.image_id)
+        if document is None or (document.deleted and not document.cleanup_pending):
+            if vector.document_id not in reported:
+                reported.add(vector.document_id)
+                issues.append(
+                    Issue(
+                        kind="vector_orphan",
+                        document_id=vector.document_id,
+                        detail="向量索引里有这个文档的图片，但它已被删除或数据库里没有它的记录",
+                        repair=REPAIR_INDEX,
+                    )
+                )
+            continue
+        if document.deleted or document.embed_busy or document.busy:
+            continue
+        if image is None or image.document_id != vector.document_id:
+            issues.append(
+                Issue(
+                    kind="vector_without_image",
+                    document_id=vector.document_id,
+                    detail=f"向量索引里的图片 {vector.image_id} 在数据库里没有图片记录",
+                    repair=REPAIR_INDEX,
+                )
+            )
+        elif vector.sha256 != image.sha256 or (
+            (vector.model_name, vector.model_version) not in models_by_sha[image.sha256]
+        ):
+            issues.append(
+                Issue(
+                    kind="vector_outdated",
+                    document_id=vector.document_id,
+                    detail=f"向量索引里图片 {vector.image_id} 的向量与数据库里的向量记录对不上",
+                    repair=REPAIR_INDEX,
+                )
+            )
+
+    for image in sorted(snapshot.db.images.values(), key=lambda i: i.image_id):
+        document = documents.get(image.document_id)
+        if document is None or document.deleted or document.embed_busy or document.busy:
+            continue
+        # 还没有向量的图片（embed 任务失败或还没跑）不要求在索引里：失败原因看任务列表
+        if image.image_id not in index.vectors and models_by_sha[image.sha256]:
+            issues.append(
+                Issue(
+                    kind="vector_missing_in_index",
+                    document_id=image.document_id,
+                    detail=f"图片 {image.image_id} 已有向量，但不在向量索引里，图像检索搜不到它",
+                    repair=REPAIR_INDEX,
+                )
+            )
+    return issues
+
+
 def analyze(snapshot: Snapshot, *, min_age_seconds: float = DEFAULT_MIN_AGE_SECONDS) -> list[Issue]:
     """找出全部不一致。结果顺序固定，便于比较两次检查的输出。"""
     return [
@@ -322,4 +417,6 @@ def analyze(snapshot: Snapshot, *, min_age_seconds: float = DEFAULT_MIN_AGE_SECO
         *_db_chunk_issues(snapshot),
         *_ocr_issues(snapshot),
         *_index_issues(snapshot),
+        *_vector_index_issues(snapshot),
+        *_embedding_issues(snapshot),
     ]

@@ -20,6 +20,7 @@ from shared.tasks import STATUS_PENDING, STATUS_PROCESSING, TASK_CLEANUP, TASK_O
 from shared.text_index import (
     CHUNKS,
     DOC_META,
+    IMAGE_VECTORS,
     INDEX_NAMES,
     OpenSearchClient,
     delete_document,
@@ -30,11 +31,19 @@ from shared.text_index import (
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
-from app.db.models import Document, DocumentChunk, OCRResult, ProcessingTask
+from app.db.models import (
+    Document,
+    DocumentChunk,
+    ImageAsset,
+    ImageEmbedding,
+    OCRResult,
+    ProcessingTask,
+)
 from app.modules.consistency.collect import TMP_DIR_NAME, parse_uuid
 from app.modules.consistency.model import (
     REPAIR_CLEANUP_TASKS,
     REPAIR_DB_CHUNKS,
+    REPAIR_EMBEDDINGS,
     REPAIR_INDEX,
     REPAIR_KINDS,
     REPAIR_OCR_RESULTS,
@@ -45,6 +54,13 @@ from app.modules.consistency.model import (
 )
 from app.modules.documents.tags import tags_by_document
 from app.modules.storage import LocalStorage
+from app.modules.vector_index import (
+    VECTOR_DIM,
+    delete_document_vectors,
+    ensure_vector_index,
+    index_image_vector,
+)
+from app.worker.handlers.embed import lock_content
 
 logger = logging.getLogger(__name__)
 _LOCATOR = TypeAdapter(SourceLocator)
@@ -56,6 +72,8 @@ _ORDER = (
     REPAIR_CLEANUP_TASKS,
     REPAIR_REBUILD_INDICES,
     REPAIR_INDEX,
+    # 在索引修复之后：重建向量索引时还要用到这些向量记录（被引用的不会被删，这里只是更稳妥）
+    REPAIR_EMBEDDINGS,
     REPAIR_TEMP_FILES,
     REPAIR_ORPHAN_FILES,
 )
@@ -136,10 +154,42 @@ def reindex_document(session: Session, client: OpenSearchClient, document: Docum
     return len(chunks)
 
 
+def reindex_document_vectors(session: Session, client: OpenSearchClient, document: Document) -> int:
+    """按数据库重建一个文档在图片向量索引里的数据（T21），返回写入的向量数。
+
+    向量直接取自 image_embeddings，不重新调用 CLIP（D10）。同一内容有多个模型的向量时，
+    用最近生成的那条（一致性检查不知道 CLIP 服务当前加载的是哪个模型）；
+    还没有向量的图片跳过，由 embed 任务负责。
+    """
+    delete_document_vectors(client, document.id)
+    written = 0
+    for image in session.scalars(select(ImageAsset).where(ImageAsset.document_id == document.id)):
+        embedding = session.scalars(
+            select(ImageEmbedding)
+            .where(ImageEmbedding.sha256 == image.sha256, ImageEmbedding.dim == VECTOR_DIM)
+            .order_by(ImageEmbedding.created_at.desc(), ImageEmbedding.id)
+            .limit(1)
+        ).first()
+        if embedding is None:
+            continue
+        index_image_vector(
+            client,
+            image_id=image.image_id,
+            document_id=document.id,
+            sha256=image.sha256,
+            model_name=embedding.model_name,
+            model_version=embedding.model_version,
+            vector=list(embedding.vector),
+        )
+        written += 1
+    return written
+
+
 def _repair_index(
     session: Session, client: OpenSearchClient, document_ids: Iterable[str], report: RepairReport
 ) -> None:
     ensure_indices(client)
+    ensure_vector_index(client)
     for raw_id in sorted(set(document_ids)):
         document_id = parse_uuid(raw_id)
         if document_id is None:
@@ -156,37 +206,53 @@ def _repair_index(
                 params={"refresh": "true"},
                 also_accept={404},
             )
+            client.request(
+                "POST",
+                f"/{client.index_name(IMAGE_VECTORS)}/_delete_by_query",
+                params={"refresh": "true", "conflicts": "proceed"},
+                json={"query": {"term": {"document_id": raw_id}}},
+            )
             report.done.append(f"索引：删除了 document_id 为 {raw_id!r} 的残留")
             continue
         document = session.get(Document, document_id, populate_existing=True)
         if document is None or document.deleted_at is not None:
             delete_document(client, document_id)
+            delete_document_vectors(client, document_id)
             report.done.append(f"索引：撤掉了文档 {document_id} 的残留数据")
         elif _busy(session, document.id):
             report.skipped.append(f"文档 {document_id} 正在解析或识别，没有重建它的索引")
         else:
             count = reindex_document(session, client, document)
-            report.done.append(f"索引：按数据库重建了文档 {document_id}（{count} 个片段）")
+            vectors = reindex_document_vectors(session, client, document)
+            report.done.append(
+                f"索引：按数据库重建了文档 {document_id}（{count} 个片段，{vectors} 个图片向量）"
+            )
 
 
 def rebuild_indices(session: Session, client: OpenSearchClient, report: RepairReport) -> None:
-    """删掉两个索引，按版本库里的 mapping 重新创建，再把全部未删除的文档重新索引。
+    """删掉三个索引（两个文本索引和图片向量索引），按版本库里的 mapping 重新创建，
+    再把全部未删除的文档重新索引。
 
     mapping 或分词器改动后的重建入口（D26）。数据全部来自数据库，不重新解析、不重新 OCR（D9）。
     重建期间检索结果不完整。必须先停掉通用 Worker 和 OCR Worker：重建时索引会被删掉一会儿，
     而 OpenSearch 关闭了自动建索引（deploy/docker-compose.yml），这时 Worker 写索引会失败。
     """
-    for name in INDEX_NAMES:
+    for name in (*INDEX_NAMES, IMAGE_VECTORS):
         client.request("DELETE", f"/{client.index_name(name)}", also_accept={404})
     ensure_indices(client)
+    ensure_vector_index(client)
     documents = session.scalars(
         select(Document).where(Document.deleted_at.is_(None)).order_by(Document.created_at)
     )
-    total_documents = total_chunks = 0
+    total_documents = total_chunks = total_vectors = 0
     for document in documents:
         total_chunks += reindex_document(session, client, document)
+        total_vectors += reindex_document_vectors(session, client, document)
         total_documents += 1
-    report.done.append(f"重建了两个索引：{total_documents} 个文档，{total_chunks} 个片段")
+    report.done.append(
+        f"重建了三个索引：{total_documents} 个文档，{total_chunks} 个片段，"
+        f"{total_vectors} 个图片向量"
+    )
 
 
 # ---- 数据库 ----
@@ -277,6 +343,31 @@ def _repair_orphan_files(
         report.done.append(f"磁盘：删除了没有记录的文件 {key}")
 
 
+def _repair_embeddings(
+    session: Session, embedding_ids: Iterable[str], report: RepairReport
+) -> None:
+    for raw_id in sorted(set(embedding_ids)):
+        embedding_id = parse_uuid(raw_id)
+        embedding = None if embedding_id is None else session.get(ImageEmbedding, embedding_id)
+        if embedding is None:
+            continue
+        # 与 embed 任务用同一把锁：删除期间同内容的 embed 任务排队，删完后它会重新编码，
+        # 而不是读到一条马上被删掉的向量、写进索引后留下对不上的数据
+        lock_content(session, embedding.sha256)
+        # 检查之后可能又上传了内容相同的图片：再查一次，还有引用就不删
+        if session.scalar(
+            select(func.count())
+            .select_from(ImageAsset)
+            .where(ImageAsset.sha256 == embedding.sha256)
+        ):
+            session.rollback()
+            report.skipped.append(f"向量记录 {raw_id} 又被图片使用了，没有删除")
+            continue
+        session.delete(embedding)
+        session.commit()
+        report.done.append(f"数据库：删除了不再被使用的向量记录 {raw_id}")
+
+
 # ---- 入口 ----
 
 
@@ -314,6 +405,7 @@ def apply(
         else:
             _repair_index(session, client, documents(REPAIR_INDEX), report)
 
+    _repair_embeddings(session, targets(REPAIR_EMBEDDINGS), report)
     _repair_temp_files(storage_root, targets(REPAIR_TEMP_FILES), report)
     _repair_orphan_files(session, storage, targets(REPAIR_ORPHAN_FILES), report)
     return report

@@ -20,21 +20,26 @@ from shared.text_index import OpenSearchClient, load_index_definition
 
 from app.modules.consistency import analyze, collect_disk, collect_index, plan
 from app.modules.consistency.model import (
+    REPAIR_EMBEDDINGS,
     REPAIR_INDEX,
     REPAIR_KINDS,
     DbChunk,
     DbDocument,
+    DbEmbedding,
+    DbImage,
     DbOcrResult,
     DbState,
     DiskFile,
     DiskState,
     IndexChunk,
     IndexState,
+    IndexVector,
     Snapshot,
     locator_key,
 )
 from app.modules.consistency.repair import RepairReport, _repair_temp_files
 from app.modules.storage import LocalStorage
+from app.modules.vector_index import load_vector_index_definition
 
 V1 = "c1-m500-o50-aaaaaaaaaaaa"
 V2 = "c1-m300-o50-bbbbbbbbbbbb"
@@ -411,9 +416,11 @@ def test_temp_file_repair_deletes_only_part_files_in_the_temp_dir(tmp_path):
 
 class FakeOpenSearch:
     def __init__(self) -> None:
-        self.docs = {"doc_meta": [], "chunks": []}
+        self.docs = {"doc_meta": [], "chunks": [], "image_vectors": []}
         self.missing: set[str] = set()
         self.mappings = {n: load_index_definition(n) for n in ("doc_meta", "chunks")}
+        # T21：图片向量索引
+        self.mappings["image_vectors"] = load_vector_index_definition()
         self.down = False
         self.searches = 0
 
@@ -493,7 +500,7 @@ def test_index_scan_pages_through_large_indices(monkeypatch):
     state = collect_index(server.client())
 
     assert len(state.chunks) == 10
-    assert server.searches == 1 + 4  # doc_meta 一页；chunks 3+3+3+1
+    assert server.searches == 1 + 4 + 1  # doc_meta 一页；chunks 3+3+3+1；image_vectors 一页
 
 
 def test_missing_index_is_reported_not_treated_as_empty():
@@ -618,3 +625,232 @@ def test_reindex_keeps_doc_meta_of_a_document_without_parse_version(monkeypatch)
         "filename": "扫描件.pdf",
         "tags": ["合同"],
     }
+
+
+# ---- 图片向量（T21）----
+
+SHA = "a" * 64
+MODEL_NAME, MODEL_VERSION = "ViT-B-16", "cn_clip-1.6.0-5997ef32c50d"
+
+
+def with_image(snapshot: Snapshot, n: int, *, sha: str = SHA, indexed: bool = True) -> Snapshot:
+    """把第 n 个文档变成一张已编码的图片：图片记录、向量记录、向量索引三方一致。"""
+    snapshot.db.documents[doc_id(n)] = document(n, mime_type="image/png")
+    snapshot.db.image_assets[doc_id(n)] = sha
+    snapshot.db.images[doc_id(n)] = DbImage(image_id=doc_id(n), document_id=doc_id(n), sha256=sha)
+    if not any(e.sha256 == sha for e in snapshot.db.embeddings):
+        snapshot.db.embeddings.append(
+            DbEmbedding(
+                id=str(uuid.UUID(int=900 + n)),
+                sha256=sha,
+                model_name=MODEL_NAME,
+                model_version=MODEL_VERSION,
+            )
+        )
+    if indexed:
+        snapshot.index.vectors[doc_id(n)] = IndexVector(
+            image_id=doc_id(n),
+            document_id=doc_id(n),
+            sha256=sha,
+            model_name=MODEL_NAME,
+            model_version=MODEL_VERSION,
+        )
+    return snapshot
+
+
+def test_consistent_images_have_no_issues():
+    snapshot = with_image(with_image(consistent_snapshot(), 1), 2)
+    # 两张内容相同的图片共用一条向量记录（D10）
+    assert len(snapshot.db.embeddings) == 1
+    assert analyze(snapshot) == []
+
+
+def test_orphan_embedding_is_detected_with_its_own_repair_kind():
+    snapshot = with_image(consistent_snapshot(), 1)
+    snapshot.db.embeddings.append(
+        DbEmbedding(
+            id=str(uuid.UUID(int=999)),
+            sha256="b" * 64,
+            model_name=MODEL_NAME,
+            model_version=MODEL_VERSION,
+        )
+    )
+    (issue,) = analyze(snapshot)
+    assert issue.kind == "embedding_orphan"
+    assert issue.repair == REPAIR_EMBEDDINGS
+    assert issue.target == str(uuid.UUID(int=999))
+
+
+def test_embedding_of_a_deleted_but_not_yet_cleaned_image_is_still_referenced():
+    snapshot = with_image(consistent_snapshot(), 1, indexed=False)
+    snapshot.db.documents[doc_id(1)] = document(
+        1, mime_type="image/png", deleted=True, cleanup_pending=True
+    )
+    assert analyze(snapshot) == []
+
+
+def test_vector_of_a_deleted_or_unknown_document_is_detected():
+    snapshot = with_image(consistent_snapshot(), 1)
+    snapshot.db.documents[doc_id(1)] = document(
+        1, mime_type="image/png", deleted=True, cleanup_pending=False
+    )
+    snapshot.index.meta.pop(doc_id(1))
+    snapshot.index.chunks = {
+        k: v for k, v in snapshot.index.chunks.items() if v.document_id != doc_id(1)
+    }
+    snapshot.index.vectors[doc_id(9)] = IndexVector(
+        doc_id(9), doc_id(9), SHA, MODEL_NAME, MODEL_VERSION
+    )
+    issues = [i for i in analyze(snapshot) if i.kind.startswith("vector")]
+    assert [(i.kind, i.document_id, i.repair) for i in issues] == [
+        ("vector_orphan", doc_id(1), REPAIR_INDEX),
+        ("vector_orphan", doc_id(9), REPAIR_INDEX),
+    ]
+
+
+def test_vector_missing_from_the_index_is_detected():
+    snapshot = with_image(consistent_snapshot(), 1, indexed=False)
+    (issue,) = analyze(snapshot)
+    assert (issue.kind, issue.document_id, issue.repair) == (
+        "vector_missing_in_index",
+        doc_id(1),
+        REPAIR_INDEX,
+    )
+
+
+def test_image_without_any_embedding_is_not_required_in_the_index():
+    # embed 任务失败或还没跑：失败原因看任务列表，不算索引不一致
+    snapshot = with_image(consistent_snapshot(), 1, indexed=False)
+    snapshot.db.embeddings.clear()
+    assert analyze(snapshot) == []
+
+
+def test_vector_of_another_model_or_content_is_outdated():
+    snapshot = with_image(consistent_snapshot(), 1)
+    snapshot.index.vectors[doc_id(1)] = IndexVector(doc_id(1), doc_id(1), SHA, MODEL_NAME, "old")
+    assert kinds(analyze(snapshot)) == ["vector_outdated"]
+    snapshot.index.vectors[doc_id(1)] = IndexVector(
+        doc_id(1), doc_id(1), "c" * 64, MODEL_NAME, MODEL_VERSION
+    )
+    assert kinds(analyze(snapshot)) == ["vector_outdated"]
+
+
+def test_vector_without_an_image_record_is_detected():
+    snapshot = with_image(consistent_snapshot(), 1)
+    snapshot.index.vectors["x:img:1:0"] = IndexVector(
+        "x:img:1:0", doc_id(1), SHA, MODEL_NAME, MODEL_VERSION
+    )
+    assert kinds(analyze(snapshot)) == ["vector_without_image"]
+
+
+def test_image_with_a_running_embed_task_is_skipped():
+    snapshot = with_image(consistent_snapshot(), 1, indexed=False)
+    snapshot.db.documents[doc_id(1)] = document(1, mime_type="image/png", embed_busy=True)
+    assert analyze(snapshot) == []
+
+
+def test_vector_checks_are_skipped_when_the_index_is_unavailable():
+    snapshot = with_image(consistent_snapshot(), 1, indexed=False)
+    snapshot.index = IndexState(available=False, error="x")
+    assert all(not i.kind.startswith("vector") for i in analyze(snapshot))
+
+
+def test_embeddings_is_a_repair_kind_run_after_index_repairs():
+    assert REPAIR_EMBEDDINGS in REPAIR_KINDS
+    snapshot = with_image(consistent_snapshot(), 1, indexed=False)
+    snapshot.db.embeddings.append(
+        DbEmbedding(str(uuid.UUID(int=999)), "b" * 64, MODEL_NAME, MODEL_VERSION)
+    )
+    selected = plan(analyze(snapshot), [REPAIR_EMBEDDINGS, REPAIR_INDEX])
+    assert [i.repair for i in selected] == [REPAIR_INDEX, REPAIR_EMBEDDINGS]
+
+
+def test_index_scan_reads_the_vector_index():
+    server = FakeOpenSearch()
+    server.docs["image_vectors"] = [
+        {
+            "image_id": doc_id(1),
+            "document_id": doc_id(1),
+            "sha256": SHA,
+            "model_name": MODEL_NAME,
+            "model_version": MODEL_VERSION,
+        }
+    ]
+    state = collect_index(server.client())
+    assert state.structure_mismatch == {}
+    assert state.vectors == {
+        doc_id(1): IndexVector(doc_id(1), doc_id(1), SHA, MODEL_NAME, MODEL_VERSION)
+    }
+
+
+def test_missing_vector_index_calls_for_a_rebuild():
+    server = FakeOpenSearch()
+    server.missing = {"image_vectors"}
+    state = collect_index(server.client())
+    assert state.missing_indices == ["image_vectors"]
+    # 已经有向量记录：索引缺失要报告，图片自然也不在索引里
+    snapshot = with_image(consistent_snapshot(), 1, indexed=False)
+    snapshot.index = state
+    snapshot.index.meta = consistent_snapshot().index.meta
+    snapshot.index.chunks = consistent_snapshot().index.chunks
+    assert kinds(analyze(snapshot)) == ["index_missing", "vector_missing_in_index"]
+
+
+def test_vector_index_structure_differences_are_reported():
+    server = FakeOpenSearch()
+    server.mappings["image_vectors"]["mappings"]["properties"]["vector"]["dimension"] = 768
+    server.mappings["image_vectors"]["mappings"]["properties"]["owner_id"] = {"type": "keyword"}
+    state = collect_index(server.client())
+    assert state.structure_mismatch["image_vectors"] == [
+        "多出字段 owner_id",
+        "字段 vector 的定义不同",
+    ]
+
+
+def test_reindex_document_vectors_writes_the_latest_embedding(monkeypatch):
+    from types import SimpleNamespace
+
+    from app.modules.consistency import repair
+
+    requests: list[httpx.Request] = []
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, json={"deleted": 0})
+
+    client = OpenSearchClient(
+        "http://search.test:9200", timeout_seconds=1.0, transport=httpx.MockTransport(handle)
+    )
+    image = SimpleNamespace(image_id=doc_id(1), sha256=SHA)
+    embedding = SimpleNamespace(
+        model_name=MODEL_NAME, model_version=MODEL_VERSION, vector=[1.0] + [0.0] * 511
+    )
+
+    class Session:
+        def __init__(self):
+            self.calls = 0
+
+        def scalars(self, _statement):
+            self.calls += 1
+            return [image] if self.calls == 1 else SimpleNamespace(first=lambda: embedding)
+
+    written = repair.reindex_document_vectors(
+        Session(), client, SimpleNamespace(id=uuid.UUID(int=1))
+    )
+
+    assert written == 1
+    assert [f"{r.method} {r.url.path}" for r in requests] == [
+        "POST /image_vectors/_delete_by_query",
+        f"PUT /image_vectors/_doc/{doc_id(1)}",
+    ]
+    assert json.loads(requests[1].content)["model_version"] == MODEL_VERSION
+
+
+def test_missing_vector_index_is_normal_before_any_image_is_encoded():
+    snapshot = consistent_snapshot()
+    snapshot.index.missing_indices = ["image_vectors"]
+    assert analyze(snapshot) == []
+    # 有了向量记录之后，缺失就要报告
+    snapshot = with_image(consistent_snapshot(), 1, indexed=False)
+    snapshot.index.missing_indices = ["image_vectors"]
+    assert "index_missing" in kinds(analyze(snapshot))

@@ -35,6 +35,10 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 include = ["app*"]
 
+[tool.setuptools.package-data]
+# 向量索引的 mapping 是随代码一起发布的数据文件；不声明的话，非 editable 安装时不会被带上
+"app.modules.vector_index" = ["mappings/*.json"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]

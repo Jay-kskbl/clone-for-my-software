@@ -215,6 +215,19 @@ erDiagram
 `(sha256, model_name, model_version)` 唯一：相同内容的图片在同一模型下只编码一次。
 这张表不挂 `document_id`，多个文档可以共用一条向量；`image_assets.sha256` 与它是逻辑关联，没有外键。
 
+写入方是 embed 任务（T21，`decisions.md` D35）：`processing_tasks.payload = {"image_id": ...}`，由 parse 任务在解析图片成功的同一事务里创建。编码前按 sha256 取事务级咨询锁，再按 `(sha256, model_name, model_version)` 查这张表，有就复用；新向量用 `INSERT … ON CONFLICT DO NOTHING` 写入。删除文档时不删这张表的记录，不再被任何图片使用的由一致性检查（修复类别 `embeddings`）清理。
+
+向量同时写进 OpenSearch 的 `image_vectors` 索引（T21，mapping 在 `backend/app/modules/vector_index/mappings/image_vectors.json`），索引以本表为准，丢失时可从本表重建：
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `_id` | — | image_id（独立图片就是 document_id），重复写入覆盖 |
+| image_id、document_id、sha256 | keyword | 来自 `image_assets` |
+| model_name、model_version | keyword | 与本表一致；检索时只比较同一模型的向量 |
+| vector | knn_vector，dimension 512 | 不开 `index.knn`、不建 HNSW，检索时用 `script_score` 精确计算（附录 A12） |
+
+索引为 1 分片 0 副本、`dynamic: strict`，不含权限字段（附录 A10）。
+
 ### search_logs —— 检索日志（必选）
 
 | 字段 | 类型 | 说明 |

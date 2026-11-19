@@ -10,12 +10,14 @@ from shared.tasks import (
     STATUS_PENDING,
     STATUS_PROCESSING,
     TASK_CLEANUP,
+    TASK_EMBED,
     TASK_OCR,
     TASK_PARSE,
 )
 from shared.text_index import (
     CHUNKS,
     DOC_META,
+    IMAGE_VECTORS,
     INDEX_NAMES,
     OpenSearchClient,
     TextIndexError,
@@ -25,19 +27,30 @@ from shared.text_index import (
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db.models import Document, DocumentChunk, ImageAsset, OCRResult, ProcessingTask
+from app.db.models import (
+    Document,
+    DocumentChunk,
+    ImageAsset,
+    ImageEmbedding,
+    OCRResult,
+    ProcessingTask,
+)
 from app.modules.consistency.model import (
     DbChunk,
     DbDocument,
+    DbEmbedding,
+    DbImage,
     DbOcrResult,
     DbState,
     DiskFile,
     DiskState,
     IndexChunk,
     IndexState,
+    IndexVector,
     locator_key,
 )
 from app.modules.documents.tags import tags_by_document
+from app.modules.vector_index import load_vector_index_definition
 
 # 与 app/modules/storage/local.py 一致：上传临时文件放在这里，名字是 32 位十六进制 + .part
 TMP_DIR_NAME = ".tmp"
@@ -68,6 +81,14 @@ def collect_db(session: Session) -> DbState:
             )
         )
     )
+    embed_busy = set(
+        session.scalars(
+            select(ProcessingTask.document_id).where(
+                ProcessingTask.task_type == TASK_EMBED,
+                ProcessingTask.status.in_((STATUS_PENDING, STATUS_PROCESSING)),
+            )
+        )
+    )
     for document in documents:
         state.documents[str(document.id)] = DbDocument(
             id=str(document.id),
@@ -80,6 +101,7 @@ def collect_db(session: Session) -> DbState:
             busy=document.id in busy,
             status=document.status,
             mime_type=document.mime_type,
+            embed_busy=document.id in embed_busy,
         )
 
     for row in session.execute(
@@ -106,8 +128,30 @@ def collect_db(session: Session) -> DbState:
             DbOcrResult(id=str(row.id), document_id=str(row.document_id), locator=row.locator)
         )
 
-    for row in session.execute(select(ImageAsset.document_id, ImageAsset.sha256)):
+    for row in session.execute(
+        select(ImageAsset.image_id, ImageAsset.document_id, ImageAsset.sha256)
+    ):
         state.image_assets[str(row.document_id)] = row.sha256
+        state.images[row.image_id] = DbImage(
+            image_id=row.image_id, document_id=str(row.document_id), sha256=row.sha256
+        )
+
+    for row in session.execute(
+        select(
+            ImageEmbedding.id,
+            ImageEmbedding.sha256,
+            ImageEmbedding.model_name,
+            ImageEmbedding.model_version,
+        )
+    ):
+        state.embeddings.append(
+            DbEmbedding(
+                id=str(row.id),
+                sha256=row.sha256,
+                model_name=row.model_name,
+                model_version=row.model_version,
+            )
+        )
 
     versions = {d.id: d.parse_version for d in state.documents.values()}
     for row in session.execute(
@@ -221,6 +265,52 @@ def check_structure(client: OpenSearchClient, logical_name: str) -> list[str]:
     return problems
 
 
+def check_vector_structure(client: OpenSearchClient) -> list[str]:
+    """图片向量索引与版本库里的 mapping 比较（字段类型和向量维度），返回不一致的地方。"""
+    expected = load_vector_index_definition()["mappings"]
+    index = client.index_name(IMAGE_VECTORS)
+    mapping = client.request("GET", f"/{index}/_mapping").json()
+    actual = next(iter(mapping.values()))["mappings"]
+    problems: list[str] = []
+    if str(actual.get("dynamic")) != str(expected["dynamic"]):
+        problems.append(f"dynamic 为 {actual.get('dynamic')}，应为 strict")
+    expected_props = expected["properties"]
+    actual_props = actual.get("properties", {})
+    for name in sorted(set(expected_props) | set(actual_props)):
+        if name not in actual_props:
+            problems.append(f"缺少字段 {name}")
+        elif name not in expected_props:
+            problems.append(f"多出字段 {name}")
+        else:
+            keys = ("type", "dimension")
+            want = {k: expected_props[name].get(k) for k in keys}
+            got = {k: actual_props[name].get(k) for k in keys}
+            if want != got:
+                problems.append(f"字段 {name} 的定义不同")
+    return problems
+
+
+def _collect_vectors(client: OpenSearchClient, state: IndexState) -> None:
+    index = client.index_name(IMAGE_VECTORS)
+    if client.request("HEAD", f"/{index}", also_accept={404}).status_code == 404:
+        state.missing_indices.append(IMAGE_VECTORS)
+        return
+    problems = check_vector_structure(client)
+    if problems:
+        state.structure_mismatch[IMAGE_VECTORS] = problems
+    fields = ["image_id", "document_id", "sha256", "model_name", "model_version"]
+    for hit in _scan(client, IMAGE_VECTORS, fields, "image_id"):
+        source = hit["_source"]
+        image_id = str(source.get("image_id", hit["_id"]))
+        state.vectors[image_id] = IndexVector(
+            image_id=image_id,
+            document_id=str(source.get("document_id", "")),
+            sha256=str(source.get("sha256", "")),
+            model_name=str(source.get("model_name", "")),
+            model_version=str(source.get("model_version", "")),
+        )
+
+
 def collect_index(client: OpenSearchClient) -> IndexState:
     state = IndexState()
     try:
@@ -251,10 +341,13 @@ def collect_index(client: OpenSearchClient) -> IndexState:
                     document_id=str(source.get("document_id", "")),
                     parse_version=str(source.get("parse_version", "")),
                 )
+        _collect_vectors(client, state)
     except (TextIndexUnavailable, TextIndexError) as exc:
         if isinstance(exc, TextIndexError) and _INDEX_NOT_FOUND in exc.message:
             # 检查过程中索引被删掉了：如实记为缺失，而不是当成服务故障
-            state.missing_indices = sorted(set(state.missing_indices) | set(INDEX_NAMES))
+            state.missing_indices = sorted(
+                set(state.missing_indices) | {*INDEX_NAMES, IMAGE_VECTORS}
+            )
             return state
         return IndexState(available=False, error=exc.message)
     return state

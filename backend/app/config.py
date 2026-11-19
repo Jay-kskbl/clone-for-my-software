@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     health_check_timeout_seconds: float = Field(default=2.0, gt=0)
     # 调用 OpenSearch 的超时（建索引、批量写入、删除、查询）
     opensearch_timeout_seconds: float = Field(default=10.0, gt=0)
+    # embed 任务调用 CLIP 服务编码一张图片的超时（T21）。服务一次只算一个请求，
+    # 排在后面的要等前面的算完，所以比单张图片的编码时间宽得多
+    clip_encode_timeout_seconds: float = Field(default=60.0, gt=0)
     # 加在两个索引名前面。默认为空；测试用它得到独立的索引，不碰正式数据。
     # OpenSearch 的索引名只能是小写，且不能以 _ 或 - 开头
     opensearch_index_prefix: str = Field(default="", pattern=r"^([a-z0-9][a-z0-9_-]*)?$")

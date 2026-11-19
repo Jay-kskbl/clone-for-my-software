@@ -79,13 +79,13 @@ flowchart TB
 | M1 | 认证与权限 | user → 可访问的 document_id 集合；`can_access(user, doc)` | `backend/app/modules/auth` | — | T06 | 已完成（数据库集成测试未测试） |
 | M2 | 文档管理 | API 请求 → Document 记录；软删除；创建任务 | `backend/app/modules/documents` | — | T08 | 已完成（数据库集成测试未测试） |
 | M3 | 存储抽象 | 字节流 → `storage_key`；按 key 读取、删除 | `backend/app/modules/storage` | 是 | T05 | 已完成 |
-| M4 | 任务框架 | 任务 → 状态流转（领取、租约、重试、幂等） | `shared/tasks.py`、`backend/app/worker` | — | T07、T14 | 已完成（数据库集成测试未测试）；T14 登记了 parse、cleanup 两个处理函数 |
+| M4 | 任务框架 | 任务 → 状态流转（领取、租约、重试、幂等） | `shared/tasks.py`、`backend/app/worker` | — | T07、T14 | 已完成（数据库集成测试未测试）；T14 登记了 parse、cleanup 两个处理函数，T21 登记了 embed（`decisions.md` D35） |
 | M5 | 文档解析 | 文件路径 → `ParsedDocument`（纯函数） | `backend/app/modules/parsing` | 是 | T09、T11 | 已完成：PDF（T09），Word、Excel、图片（T11）；已接入 Worker 的 parse 任务（T14） |
 | M6 | OCR | 图片 → `OCRResult` | `services/ocr_worker` | 是 | T17 | 已完成（T17，`decisions.md` D30）：PP-OCRv5 mobile，ocr 环境；真实识别已在本机测试图上通过，未连真实数据库和 OpenSearch 运行 |
 | M7 | 切分 | `ParsedDocument` → `Chunk[]`（纯函数） | `shared/chunking`（T17 前在 `backend/app/modules/chunking`） | 是 | T12 | 已完成（T12）；parse 任务（T14）和 OCR Worker（T17）都使用 |
 | M8 | 文本索引与 BM25 | `Chunk[]` / 查询 → 排序列表 | `shared/text_index`（T17 前在 `backend/app/modules/text_index`）；查询在 `backend/app/modules/search` | — | T13、T15 | 索引的创建、写入、删除已完成（T13），由 parse、cleanup 任务和改标签接口调用（T14），都未在真实 OpenSearch 上运行；BM25 查询在 M11 里实现（T15） |
-| M9 | CLIP 模型服务 | 图片 / 文本 → 向量 | `services/clip_service` | 是 | T20 | 已完成（T20，`decisions.md` D33）：`/health`、`/encode/text`、`/encode/image`；还没有调用方（T21、T22） |
-| M10 | 向量索引 | 向量 → 排序列表 | `backend/app/modules/vector_index` | — | T21 | 未开始 |
+| M9 | CLIP 模型服务 | 图片 / 文本 → 向量 | `services/clip_service` | 是 | T20 | 已完成（T20，`decisions.md` D33）：`/health`、`/encode/text`、`/encode/image`；embed 任务调用 `/health`、`/encode/image`（T21）；查询编码的调用方待 T22 |
+| M10 | 向量索引 | 向量 → 排序列表 | `backend/app/modules/vector_index` | — | T21 | 已完成（T21，`decisions.md` D35）：`image_vectors` 索引的创建、写入、删除，`script_score` 精确检索 + 可访问 document_id 前置过滤；由 embed、cleanup 任务和一致性检查调用，未在真实 OpenSearch 上运行；尚未接入检索编排（T22） |
 | M11 | 检索编排与 RRF | 查询 → `SearchHit[]` | `backend/app/modules/search` | — | T15、T22 | v1 已完成（T15）：meta、text 两路、RRF、数据库二次校验、检索日志；图像通道待 T22（`decisions.md` D28） |
 | M12 | 实验评测 | 实验配置 → 指标 + 原始结果 | 代码 `backend/app/modules/experiments`，数据 `experiments/` | — | T19 | 框架已完成（T19，`decisions.md` D32）：B0–B2 配置、P/R/nDCG、分层报告；还没有评测数据 |
 | M13 | 一致性检查 | — → 数据库 / 磁盘 / 索引的差异报告 | `backend/app/modules/consistency` | — | T18 | 已完成（T18，`decisions.md` D31）：19 种检测项、7 类修复；未在真实数据库和 OpenSearch 上运行 |
@@ -102,7 +102,7 @@ flowchart LR
     Browser["浏览器"] -->|HTTP| API
     subgraph main["main 环境"]
         API["API 服务<br/>FastAPI"]
-        W["通用 Worker<br/>解析、切分、索引、清理"]
+        W["通用 Worker<br/>解析、切分、索引、清理、图片编码请求"]
     end
     subgraph ocr["ocr 环境"]
         OW["OCR Worker<br/>PaddleOCR"]
@@ -128,7 +128,7 @@ flowchart LR
 | 进程 | 虚拟环境 | 职责 | 挂掉时的影响 |
 |---|---|---|---|
 | API 服务 | main | HTTP 接口、鉴权、检索编排 | 系统不可用 |
-| 通用 Worker | main | 解析、切分、BM25 索引、清理任务 | 新上传的文件停留在“等待处理”，已有文件照常检索 |
+| 通用 Worker | main | 解析、切分、BM25 索引、清理任务；embed 任务（T21：请求 CLIP 服务编码图片，写 ImageEmbedding 和向量索引） | 新上传的文件停留在“等待处理”，已有文件照常检索 |
 | OCR Worker | ocr | 只处理 OCR 任务；`services/ocr_worker` 目录下 `../../env_check/.venv-ocr/bin/python -m ocr_worker` 启动，识别子进程常驻加载模型 | 扫描件和图片暂时没有 OCR 文字，其余不受影响 |
 | CLIP 模型服务 | clip | 常驻加载模型，编码图片和查询文本 | 图像通道降级，检索结果只来自文本通道，并在响应中标记 |
 
@@ -166,7 +166,7 @@ Worker 领取任务（SELECT … FOR UPDATE SKIP LOCKED，写入租约）
   └─ 回写任务和文档状态：succeeded，或 failed + 失败原因
 ```
 
-T14 的实现（`decisions.md` D27）：parse 任务先写 `doc_meta`，再解析、切分、写 DocumentChunk、写 `chunks` 索引，最后把文档标为 succeeded 并按页（或整张图片）创建 ocr 任务；embed 任务尚未创建（T21）。文档状态只跟随 parse 任务。
+T14 的实现（`decisions.md` D27）：parse 任务先写 `doc_meta`，再解析、切分、写 DocumentChunk、写 `chunks` 索引，最后把文档标为 succeeded 并按页（或整张图片）创建 ocr 任务；图片同时创建 embed 任务（T21，`decisions.md` D35）。文档状态只跟随 parse 任务。
 
 T17 的实现（`decisions.md` D30）：OCR Worker 在 ocr 环境运行，只领取 ocr 任务，切分和写索引用 shared 里的同一份代码（`shared.chunking`、`shared.text_index`）。OCR 片段的序号从 10 亿开始、每页预留 1000 个，与正文片段不重叠；保存时加锁复查版本，写索引只写不删，避免与重新解析、删除竞争。
 

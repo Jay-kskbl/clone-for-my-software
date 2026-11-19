@@ -1,5 +1,7 @@
 """T14：解析流水线（parse、cleanup 两个任务处理函数）。本文件不需要数据库和 OpenSearch。
 
+embed 任务（T21）的测试在 test_embed.py；这里只测 parse 为图片建 embed 任务、cleanup 删向量。
+
 文件存储是真的（临时目录），解析和切分是真的；数据库会话和检索服务是假的，
 它们把收到的操作按先后记在同一个事件列表里，用来检查步骤的顺序。
 
@@ -21,7 +23,7 @@ import openpyxl
 import pymupdf
 import pytest
 from shared.chunking import ChunkingParams, make_parse_version
-from shared.tasks import TASK_CLEANUP, TASK_OCR, TASK_PARSE, Task
+from shared.tasks import TASK_CLEANUP, TASK_EMBED, TASK_OCR, TASK_PARSE, Task
 from shared.text_index import OpenSearchClient, TextIndexUnavailable
 
 from app.db.models import Document, DocumentChunk, ImageAsset, ProcessingTask
@@ -32,6 +34,7 @@ from app.worker import registry
 from app.worker.handlers import (
     PipelineError,
     handle_cleanup,
+    handle_embed,
     handle_parse,
     run_cleanup,
     run_parse,
@@ -401,8 +404,12 @@ def test_image_is_recorded_and_handed_to_ocr(events, index, storage):
     assert isinstance(asset, ImageAsset)
     assert (asset.image_id, asset.document_id) == (str(document.id), document.id)
     assert (asset.width, asset.height, asset.sha256) == (320, 200, document.sha256)
-    (ocr,) = session.of_type(ProcessingTask)
+    ocr, embed = session.of_type(ProcessingTask)
+    assert ocr.task_type == TASK_OCR
     assert ocr.payload["locator"] == {"type": "image", "image_id": str(document.id)}
+    # T21：同一事务里建 embed 任务，交给通用 Worker 调 CLIP 服务
+    assert embed.task_type == TASK_EMBED
+    assert embed.payload == {"image_id": str(document.id)}
     assert session.of_type(DocumentChunk) == []
     assert document.status == "succeeded"
 
@@ -607,6 +614,8 @@ def test_cleanup_removes_index_data_then_file_then_record(events, index, storage
         ("index", "HEAD /chunks"),
         ("index", "POST /chunks/_delete_by_query"),
         ("index", f"DELETE /doc_meta/_doc/{document.id}"),
+        # T21：图片向量索引里的数据也删（不是图片的文档删 0 条）
+        ("index", "POST /image_vectors/_delete_by_query"),
         # 数据库记录最后删
         ("db", "delete:documents"),
         ("db", "commit:"),
@@ -665,12 +674,37 @@ def test_cleanup_keeps_file_and_record_when_the_index_cannot_be_cleaned(events, 
 # ---- 登记 ----
 
 
-def test_handlers_are_registered_for_parse_and_cleanup_only():
-    # ocr、embed 不在这里：通用 Worker 不会领取它们
-    assert registry.HANDLERS == {TASK_PARSE: handle_parse, TASK_CLEANUP: handle_cleanup}
+def test_handlers_are_registered_for_parse_cleanup_and_embed():
+    # ocr 不在这里：通用 Worker 不会领取它（由 OCR Worker 负责）。
+    # embed 在这里（T21）：编码在 CLIP 服务进程里做，通用 Worker 只发 HTTP 请求
+    assert registry.HANDLERS == {
+        TASK_PARSE: handle_parse,
+        TASK_CLEANUP: handle_cleanup,
+        TASK_EMBED: handle_embed,
+    }
 
 
-@pytest.mark.parametrize("handler", [handle_parse, handle_cleanup])
+def test_embed_task_is_not_created_twice_for_the_same_image(events, index, storage):
+    document = stored_document(storage, png_image(), PNG.mime_type, "照片.png")
+    session = FakeSession(events, document)
+    # FakeSession.scalars 不看查询条件：把已有的 embed 任务 payload 放进去即可
+    session.existing_ocr_payloads = [{"image_id": str(document.id)}]
+
+    parse(document, session, storage, index)
+
+    assert [t.task_type for t in session.of_type(ProcessingTask)] == [TASK_OCR]
+
+
+def test_non_image_documents_get_no_embed_task(events, index, storage):
+    document = stored_document(storage, scanned_pdf(1), PDF.mime_type, "扫描.pdf")
+    session = FakeSession(events, document)
+
+    parse(document, session, storage, index)
+
+    assert TASK_EMBED not in {t.task_type for t in session.of_type(ProcessingTask)}
+
+
+@pytest.mark.parametrize("handler", [handle_parse, handle_cleanup, handle_embed])
 def test_handlers_can_be_sent_to_a_spawned_subprocess(handler):
     # 子进程按“模块名 + 函数名”重新导入处理函数，所以它必须能被 pickle
     assert pickle.loads(pickle.dumps(handler)) is handler

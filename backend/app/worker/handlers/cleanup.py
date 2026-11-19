@@ -1,5 +1,7 @@
 """cleanup 任务：删索引 → 删文件 → 硬删除数据库记录（GLOBAL §3.2 的删除流程）。
 
+索引包括两个文本索引和图片向量索引（T21）。
+
 软删除时文档已经对所有查询不可见（附录 A10），这里做的是真正释放空间。
 
 顺序是有意的：数据库记录最后删。前两步任何一步失败，记录还在，任务重试时
@@ -17,6 +19,7 @@ from sqlalchemy.orm import Session
 
 from app.db.models import Document
 from app.modules.storage import LocalStorage
+from app.modules.vector_index import delete_document_vectors
 from app.worker.context import task_context
 from app.worker.handlers.errors import PipelineError
 
@@ -36,6 +39,9 @@ def run_cleanup(
     # 索引不存在时“按条件删除”会报错；先保证索引在
     ensure_indices(index)
     delete_document(index, document.id)
+    # 向量索引不存在时 delete_document_vectors 什么也不做，不必先建。
+    # image_embeddings 里的向量不删：可能被内容相同的其他图片共用（D10），由一致性检查清理
+    delete_document_vectors(index, document.id)
 
     # 文件已经不在时 delete 什么也不做（上一次执行可能已经删过）
     storage.delete(document.storage_key)

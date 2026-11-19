@@ -187,7 +187,7 @@ BARRY zou/
   -   `services/clip_service`：启动时加载模型（路径缺失则报错）；`/health`、`/encode/text`、`/encode/image`
   -   接口返回模型名称、版本、向量维度
   -   🧪 健康检查；同一输入向量稳定；超大图片和损坏图片的处理
-- [ ] **T21 图片向量与 M10 向量索引**
+- [x] **T21 图片向量与 M10 向量索引**
   -   embed 任务：按 sha256 去重 → 调用 CLIP 服务 → 写 ImageEmbedding → 写入向量索引
   -   向量检索：`script_score` 精确计算 + 可访问 document_id 前置过滤
   -   🧪 过滤后只返回有权限的文档；重复图片只编码一次
@@ -223,12 +223,12 @@ BARRY zou/
 以下是 2026-11-14 核查 T05–T10 时发现、但不属于已完成任务范围的事项，留给后续任务或由 Barry 决定：
 
 - **（T14 已解决）** 之前记给 T14 的提醒都已处理，做法见 `decisions.md` D27：存储新增 `local_path()`；文档状态只跟随 parse 任务的规则已定，并在任务失败、回收、重试时一并更新；parse 处理函数开头检查文档是否已删除；按 `mime_type` 选解析器，图片写 `image_assets`；`parser_options` 只传 PDF 的 `pdf_ocr_min_chars`；索引改为在每个任务开始时 `ensure_indices`（没有放在 API、Worker 启动时）；上传后由 parse 任务写 `doc_meta`，删除由 cleanup 任务调用 `delete_document`，改标签接口提交后尽力同步 `doc_meta`；`TextIndexUnavailable` / `TextIndexError` / `ParseError` / `PipelineError` 都由 Worker 按 `retryable` 处理。
-- **给 T21 的补充（T18 记录）**
-  - 一致性检查（D31）还没有覆盖 `image_embeddings`：T21 写入向量后，补上“不再被任何图片引用的向量”和“向量索引与数据库不一致”的检测与修复（D10）。
+- **（T21 已解决）给 T21 的补充（T18 记录）**
+  - ~~一致性检查（D31）还没有覆盖 `image_embeddings`~~：T21 已补上无用向量（`embedding_orphan`，修复类别 `embeddings`）和向量索引与数据库不一致（`vector_*`，修复类别 `index`、`rebuild-indices`）的检测与修复，见 `decisions.md` D35。
 - **待定（T18 记录）**
   - backend 通用 Worker 启动时不检查数据库，连不上时在领取循环里无限重试；OCR Worker 启动时连不上数据库就以退出码 1 结束（D30）。两者不一致，是否统一由 Barry 决定。
-- **给 T20、T21（CLIP）的参考（T17 记录）**
-  - CLIP 服务和 embed 任务可以复用 `shared.task_queue.PgTaskQueue`，以及 OCR Worker“常驻子进程加载模型、超时或崩溃时杀掉重开”的写法（`services/ocr_worker/ocr_worker/engine_process.py`）。
+- **（T20、T21 已处理）给 T20、T21（CLIP）的参考（T17 记录）**
+  - ~~CLIP 服务和 embed 任务可以复用~~（两者都没有采用：CLIP 服务不领任务（D33）；embed 任务由通用 Worker 领取，只发 HTTP 请求，见 D35） `shared.task_queue.PgTaskQueue`，以及 OCR Worker“常驻子进程加载模型、超时或崩溃时杀掉重开”的写法（`services/ocr_worker/ocr_worker/engine_process.py`）。
 - **待改进（T17 记录）**
   - 文本预览接口按 `seq` 排序，扫描页的 OCR 片段排在全部正文片段之后。如果要按页码穿插，需要改预览接口的排序规则。
 - **2026-11-16 补测的后续（来源：`change-deepseek-v4/`，见 §5“T00–T19 补测”）**
@@ -251,11 +251,9 @@ BARRY zou/
 - **给 T22、T26 的补充（T19 记录）**
   - OCR Worker 的参数（`OCR_MIN_CONFIDENCE`、`OCR_PDF_DPI`）还没有记录进实验配置，因为 backend 读不到 OCR Worker 的配置。正式实验前要补上，例如让 OCR Worker 把参数写进 `ocr_results`，或在实验配置里显式填写。
 - **给 T21、T22 的衔接提醒（T20 记录）**
-  - CLIP 服务的接口见 `api.md` §9：`POST /encode/image` 的请求体直接是图片字节，一次一张；`POST /encode/text` 传 `{"texts": [...]}`。响应里的 `model_name`、`model_version`、`dim` 直接写进 `image_embeddings`。向量已归一化，`script_score` 用点积即可。
+  - CLIP 服务的接口见 `api.md` §9：`POST /encode/text` 传 `{"texts": [...]}`（T22 用）。~~`POST /encode/image` 写进 `image_embeddings`~~（T21 已实现，D35）。向量已归一化；T21 的精确检索用的是 `knn_score` + `cosinesimil`（与 T00 实测写法一致），对归一化向量排序与点积相同。
   - 调用方自己设超时（A5）。服务一次只算一个请求，embed 任务批量入库时，查询编码可能要排队，T22 定超时时要考虑。
-  - 服务只收 PNG、JPEG，超过 1 亿像素或 50 MB 返回 413，损坏返回 422：embed 任务遇到这两种应当标为不可重试的失败。
-  - 向量维度 512，T21 建向量索引的 mapping 时用；换模型要重建向量索引。
-  - T20 没有用到 `shared.task_queue` 和常驻子进程的写法（上面 T17 的建议）：CLIP 服务不领任务，进程本身就是隔离边界。embed 任务在哪个进程里领取由 T21 决定。
+  - ~~413、422 标为不可重试~~、~~向量维度 512 用于 mapping~~、~~embed 任务在哪个进程领取~~：T21 已处理（ClipRejected 不可重试；mapping 维度 512；通用 Worker 领取），见 D35。换模型仍要重建向量索引。
 - **T15–T19 复核留下的事项（2026-11-17 记录，详见 decisions.md D34）**
   - 已定（Barry，2026-11-17）：库里有数据集以外的文档时保持只提示并记录 `documents_outside_dataset`，不拦截运行。待 Barry 决定：`rebuild-indices` 是否需要一个无条件强制重建的开关（现在只在检查发现索引缺失或结构不一致时才执行）。
   - 待改进：重新解析与旧版本 OCR 的竞争窗口（旧版本 OCR 片段可能残留，一致性检查能清掉）。修它要改 T14 的 parse 流水线，需要在有 PostgreSQL 的机器上验证后再做。
@@ -263,8 +261,14 @@ BARRY zou/
 - **待 Barry 决定（T20 记录）**
   - ~~`CLAUDE.md` 的“常用命令”还没有加 CLIP 服务的启动和测试命令~~（Barry 于 2026-11-17 同意，已补）。
   - `env_check/models/clip_cn_vit-b-16.pt`（约 718 MB）已复制到 `models/clip/`，原文件是否删除。
-- **给 T21 的衔接提醒**
-  - parse 任务目前不创建 embed 任务。T21 要决定在哪里创建（建议与 OCR 任务一样，在 parse 成功的同一事务里），并按图片内容的 sha256 去重。
+- **（T21 已解决）给 T21 的衔接提醒**
+  - ~~parse 任务目前不创建 embed 任务~~：T21 在解析图片成功的同一事务里创建（与 OCR 任务同处），按 payload 去重；同内容只编码一次靠 sha256 咨询锁 + 查 `image_embeddings`，见 D35。
+- **给 T22、T24 的衔接提醒（T21 记录）**
+  - 向量检索：`app.modules.vector_index.search_vectors(client, query_vector, *, document_ids, model_name, model_version, depth) -> list[VectorHit]`（`VectorHit` 含 document_id、image_id、score）。`document_ids` 传 M1 的可访问集合，管理员传 `None`（不过滤），空集合直接返回空、不发请求；`model_name`、`model_version` 取 CLIP `/health` 的当前模型，只比较同一模型的向量；结果已按文档折叠、按分数排好，score 是 1+余弦相似度，只用于排名。索引不存在时先建索引、返回空；其他故障照常抛出，T22 要把它当作通道不可用，而不是空结果。返回前仍需 M11 的数据库二次校验。
+  - 实验记录的 mapping hash（`backend/app/modules/experiments/environment.py` 的 `code_versions`）只遍历 `INDEX_NAMES`，不含 `image_vectors.json`，跑 B3 前要补。
+  - CLIP 服务一次只算一个请求：embed 任务批量编码时，查询编码可能排在后面（单张图片最长等 `CLIP_ENCODE_TIMEOUT_SECONDS`），T22 定查询编码超时时要考虑。
+- **待 Barry 决定（T21 记录）**
+  - `CLAUDE.md` 一致性检查命令的说明仍写“对账数据库、磁盘和两个索引”，类别列表里没有新增的 `embeddings`；是否更新待 Barry 同意。
 - **待实验决定（T12 记录）**
   - 是否给每个 Excel 片段补上该工作表的表头行：片段里只有数据、没有列名，按“列名 + 值”的方式搜索可能搜不到后面的行。补表头会让表头词在同一文件里重复计分。阶段五用实验比较。
   - Word 片段只定位到起始段落。如果实验或演示发现跳转偏差影响使用，再考虑给 `DocxParaLocator` 增加结束段落字段（数据契约变更，需 Barry 批准）。
@@ -313,3 +317,4 @@ BARRY zou/
 | 修复合入 | 2026-11-17 | 2b4d0f7 | 按 Barry 指示把 C01–C12（9 个文件，+30/−9）合入本仓库，不含 N01。本机（macOS）重跑：ruff 三个目录通过；backend 540 passed、188 skipped、0 failed（跳过的是 11 个连调文件，本机没有 PostgreSQL 和 OpenSearch）；shared 105 passed；services/ocr_worker main 环境 63 passed、4 skipped，ocr 环境真实识别 4/4（覆盖改过的 engine.py、engine_process.py）；`env_check/_common.py` 在 macOS 上 `peak_rss_mb()` 正常返回。**未测试（Not Tested）**：改过的 4 个连调测试文件和 alembic.ini、实验结果路径的数据库路径，在本机都没跑，依据是 2026-11-16 Windows 补测（代码逐行一致） |
 | T20 | 2026-11-17 | 90bb44f | 计划由 Barry 于 2026-11-17 在本会话批准（“批准，开始写”；选“装 FastAPI (Recommended)”“默认 CPU，可配置 (Recommended)”）。开始前按 Barry 要求重读了 DEVPLAN、decisions.md、`T15-T19 opus5.5 develop.md` 和 `change-deepseek-v4/` 的记录，确认 C01–C12 与 T15–T19 的改动不影响 T20。`services/clip_service`：启动时检查权重文件（缺失或 sha256 不符即退出码 1，不下载）→ 加载 Chinese-CLIP ViT-B-16 并自检 → 监听 127.0.0.1:8001；`GET /health`、`POST /encode/text`、`POST /encode/image`（请求体为图片字节），响应都带 model_name、model_version（`cn_clip-1.6.0-5997ef32c50d`）、dim（512）；向量 L2 归一化；图片只收 PNG、JPEG，字节数与像素数双重上限（413），损坏（422）；错误格式与后端一致。规则见 decisions.md D33，接口见 api.md §9。新下载：clip 环境 9 个包约 13 MB（downloads.md #29–#37，比征求同意时说的多 1 个 opentelemetry-api）；权重从 env_check/models 复制到 models/clip（#38，没有下载）。已执行（本机 macOS，CPU）：接口测试 39 项通过（main 环境，假编码器）；🧪 真实模型测试 17 项通过（clip 环境，经真实 HTTP 服务）：健康检查、同一文本和同一图片两次编码向量完全一致、超过像素上限与字节上限 413、九种损坏或不支持的图片 422、出错后服务仍可用、EXIF 方向、文本与图片向量在同一空间；命令行冒烟：权重缺失、sha256 不符、端口非法均以退出码 1 结束，正常启动后 curl 三个接口结果正确；代码检查通过。首轮测试发现并已修复：超过字节上限时服务提前断开，调用方看到连接中断而不是 413。未测试（Not Tested）：MPS、CUDA、Windows、Linux；跨机器的向量一致性；后端 /health 对着真实服务；真实照片；并发（已登记 untested.md）。CLAUDE.md 的命令说明待 Barry 同意后补（§4）。提交时工作区里另有 11 个不属于 T20 的文件被别的会话改动（backend 一致性检查与检索、前端、ocr_worker），没有纳入本次提交。没有修改附录 A，没有动表结构和索引 |
 | T15–T19 复核修正 | 2026-11-17 | 591f482 | Barry 要求由 Fable 5.2 重新查看 Opus 5.5 写的 T15–T19 并修正不足。方法：通读五个任务的全部源码，逐条对照 `docs/T15-T19 opus5.5 develop.md` 的查验要点；重跑全部能在本机运行的测试。结论：主干（处理顺序、数据库二次校验、幂等、降级）正确，没有发现违反附录 A 的地方；修正 11 处，见 decisions.md D34：① 检索服务应答格式不对时由 500 改为 503；② 索引里 document_id 不合法的残留数据不再让检索失败；③ 预览页关键词高亮会拆坏 `&`、`<`、`'` 的转义，且区分大小写；④ PDF 预览连续翻页时误报“这一页无法显示”；⑤ 检索页重复提交；⑥ OCR 识别子进程被 Ctrl-C 打断；⑦ `PgStore.save` 返回类型标注；⑧ `consistency repair` 在检索服务不可用时报“没有问题”并返回 0；⑨ 重建索引丢掉解析失败文档的 doc_meta；⑩ 实验运行前检查不看 OCR 任务失败，`import` 替换文件后旧文档留在库里，库里有数据集以外的文档时没有提示；⑪ qrels 的 grade 校验遇到特殊字符会崩溃。没有动表结构、接口、mapping 和依赖，没有新下载，没有修改附录 A。已执行：backend 554 passed、191 skipped；shared 105 passed；services/ocr_worker 63 passed、4 skipped，ocr 环境真实识别 4 项通过；前端类型检查与构建通过、单元测试 51 项通过；三个目录代码检查通过；浏览器里对着临时模拟接口检查了 PDF 预览和文本高亮。未测试（Not Tested）：新增的 3 项数据库测试（需要 PostgreSQL）；`consistency repair` 的新提示与退出码；Ctrl-C 实际操作；已登记到 untested.md。看过但没有改的事项记在 §4 |
+| T21 | 2026-11-19 | （待填） | 代码由本会话 Opus 5.5 编写（Barry 于 2026-11-19 切换了模型，并要求主会话只写代码、其余交给子代理）；测试、复核、文档和提交由子代理完成。T21 不带 🔒，没有单独的计划批准。新模块 `backend/app/modules/vector_index/`：索引 `image_vectors`（1 分片 0 副本，dynamic strict，`vector` 为 512 维 knn_vector，不开 `index.knn`、不建 HNSW，附录 A12），`_id` = image_id，重复写入即覆盖；`search_vectors` 用 script_score（`knn_score` + `cosinesimil`）精确检索，model_name、model_version 和可访问 document_id 作为前置过滤，按 document_id 折叠。CLIP 客户端 `backend/app/modules/clip/client.py`（连不上、超时、5xx、429 可重试；413、422 等 4xx 不可重试），新增配置 `CLIP_ENCODE_TIMEOUT_SECONDS`（60）。embed 任务由通用 Worker 领取，parse 解析图片成功时在同一事务里创建；按 sha256 加咨询锁后查 `image_embeddings`，同一内容只编码一次（并发时也一样）；文档状态不跟随 embed 任务。cleanup 连带删除向量索引里的数据（`image_embeddings` 不删，D10）。一致性检查覆盖向量：新增 5 种检测项和修复类别 `embeddings`，`index`、`rebuild-indices` 连向量一起重建。规则与局限见 decisions.md D35。复核发现并已修复两处：还没有任何向量记录时误报 `image_vectors` 缺失；删除无用向量时没加锁，与 embed 有竞争。已执行：backend 640 passed、207 skipped（比 T15–T19 复核修正时多 86 项通过、16 项跳过）；shared 105 passed；两个目录代码检查通过。**未测试（Not Tested）**：`test_embed_db.py` 8 项（需要 PostgreSQL，含 🧪“重复图片只编码一次”的数据库版本与并发版本）、`test_vector_index_live.py` 8 项（需要 OpenSearch，含 🧪“过滤后只返回有权限的文档”），两项 🧪 的假对象版本已在单元测试里通过；没有连真实 CLIP 服务与 Worker 端到端跑过；已登记 untested.md。向量检索尚未接入检索编排（T22）。没有新下载，没有改表结构（不需要迁移），没有修改附录 A；新增 mapping 不影响已有两个索引，不需要重建 |

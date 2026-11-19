@@ -1,6 +1,6 @@
 # 未测试清单（Not Tested）
 
-更新日期：2026-11-15（T19 完成后）
+更新日期：2026-11-19（T21 完成后）
 
 这里列出**已经写好但从未实际执行过**的测试，以及其他没有经过验证的性质。
 规则来自 GLOBAL.md“测试执行限制与代码验证要求”：跑不了的测试不强行执行、不安装工具，
@@ -27,11 +27,13 @@
 | T17 OCR Worker 读写数据库 | `backend/tests/integration/test_ocr_worker_db.py` | 10 | 本机没有 PostgreSQL | 已复核，未发现问题 |
 | T18 一致性检查 | `backend/tests/integration/test_consistency_db.py` | 12 | 本机没有 PostgreSQL | 已复核；首轮发现的误删问题已修复，见 `decisions.md` D31 |
 | T19 实验框架 | `backend/tests/integration/test_experiments_db.py` | 8 | 本机没有 PostgreSQL | 已复核；首轮发现的结果目录重名、P@K 口径问题已修复，见 `decisions.md` D32 |
-| **合计** | | **188** | | |
+| T21 图片向量（embed 任务） | `backend/tests/integration/test_embed_db.py` | 8 | 本机没有 PostgreSQL | 已复核；复核发现的两处问题已修复，见 `decisions.md` D35 |
+| T21 向量索引 | `backend/tests/opensearch/test_vector_index_live.py` | 8 | 本机没有 OpenSearch | 已复核；检索写法与 T00 在 2.19.1 上实测通过的一致 |
+| **合计** | | **204** | | 另有第 4 节“T15–T19 复核修正”的 3 项，共 207 项（与本机 backend 的 207 项跳过一致） |
 
 T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器）和 T12（切分）不需要数据库，它们的测试全部在本机执行并通过，没有未测试项。
 
-对照：当前能在本机执行的测试，`backend/` 540 项、`shared/` 105 项、`services/ocr_worker/` 63 项（main 环境；另有 4 项真实识别测试在 ocr 环境里运行并通过）、`frontend/` 48 项，全部通过。
+对照：2026-11-19（T21）本机实测 `backend/` 640 项通过、207 项跳过，`shared/` 105 项通过。以下是 T19 时的数字：`backend/` 540 项、`shared/` 105 项、`services/ocr_worker/` 63 项（main 环境；另有 4 项真实识别测试在 ocr 环境里运行并通过）、`frontend/` 48 项，全部通过。
 
 ## 2. 影响最大的几项
 
@@ -179,6 +181,29 @@ OpenSearch 用假的网络层代替（替换 `app.state.text_index`），专门�
 - `test_import_uploads_once_and_records_the_mapping`
 - `test_full_run_writes_results_metrics_and_an_experiment_row`、`test_run_refuses_when_preflight_fails`、`test_run_with_search_service_down_is_incomplete`
 
+### T21 `test_embed_db.py`（8）
+
+需要 PostgreSQL。CLIP 服务和检索服务用假的：
+
+- 🧪 重复图片只编码一次：`test_duplicate_images_are_encoded_once`、`test_concurrent_tasks_for_the_same_content_encode_once`（并发版本，验证咨询锁）
+- `test_different_content_gets_separate_vectors`、`test_rerunning_a_task_does_not_add_rows`
+- 失败与删除：`test_rejected_image_leaves_no_row_and_releases_the_lock`、`test_embeddings_survive_document_deletion`、`test_deleted_document_is_skipped`
+- parse 建 embed 任务：`test_parsing_an_image_creates_one_embed_task`
+
+单元测试 `tests/unit/test_embed.py` 用假对象验证了同样的“只编码一次”分支（已通过），但咨询锁、`ON CONFLICT DO NOTHING` 和真实事务都没有执行过。
+
+### T21 `test_vector_index_live.py`（8）
+
+需要 OpenSearch：
+
+- `test_exact_search_ranks_by_similarity`
+- 🧪 过滤后只返回有权限的文档：`test_filter_returns_only_accessible_documents`、`test_empty_accessible_set_returns_nothing`、`test_unknown_document_ids_in_the_filter_are_harmless`
+- `test_vectors_of_another_model_are_not_compared`
+- `test_rewriting_an_image_overwrites_instead_of_adding`、`test_deleted_document_is_no_longer_found`
+- `test_search_before_any_vector_creates_the_index`
+
+单元测试 `tests/unit/test_vector_index.py` 用模拟应答验证了请求体（已通过）。
+
 ## 4. 不是测试、但同样没有验证过的性质
 
 | 项目 | 说明 | 记录位置 |
@@ -244,7 +269,15 @@ T20 的测试都在本机实际运行过（接口测试 39 项，真实模型测
 | OCR 识别子进程忽略 Ctrl-C | 没有在终端里对着正在识别的 Worker 实际按过 | 已复核；子进程启动与识别的现有测试（含 ocr 环境真实识别 4 项）通过 |
 | PDF 预览的绘制排队 | 只对着临时模拟接口、用一份 5 页的测试 PDF 检查过；没有自动化测试 | 已复核 |
 
-第 1 节的合计因此是 191 项（原 188 项加上面 3 项）。
+第 1 节的合计因此是 191 项（原 188 项加上面 3 项）；T21 之后为 207 项。
+
+### T21 图片向量与向量索引（2026-11-19 登记，见 `decisions.md` D35）
+
+| 项目 | 说明 | 记录位置 |
+|---|---|---|
+| 向量检索在真实 OpenSearch 上运行 | `image_vectors` 的 mapping（不开 `index.knn` 的 `knn_vector`）和 `search_vectors` 的查询体（`script_score` + `knn_score` + `cosinesimil`，前置过滤、按 `document_id` 折叠）从未被本项目代码发给真实 OpenSearch。写法与 T00 在 2.19.1 上实测通过的 `env_check/01_check_opensearch.py` 一致，但 collapse 与排序的组合没有实测 | `decisions.md` D35 |
+| embed 端到端 | 从未连真实 CLIP 服务、PostgreSQL、OpenSearch 和真实 Worker 子进程跑过：上传图片 → parse 建 embed 任务 → 编码 → 写 `image_embeddings` → 写索引 | `decisions.md` D35 |
+| 一致性检查的向量部分 | 向量相关的采集、5 种新检测项、`embeddings` 修复和带向量的重建从未在真实数据和真实 OpenSearch 上运行过；只有单元测试（假对象） | `decisions.md` D35 |
 
 ## 5. 补测方法
 

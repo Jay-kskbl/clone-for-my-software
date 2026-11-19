@@ -35,7 +35,7 @@ from typing import Any
 from shared.chunking import ChunkingParams, chunk_document, make_parse_version
 from shared.contracts import Chunk, OcrLocator, ParsedDocument
 from shared.ids import make_image_id
-from shared.tasks import STATUS_PROCESSING, STATUS_SUCCEEDED, TASK_OCR, Task
+from shared.tasks import STATUS_PROCESSING, STATUS_SUCCEEDED, TASK_EMBED, TASK_OCR, Task
 from shared.text_index import (
     OpenSearchClient,
     delete_document,
@@ -211,6 +211,28 @@ def _create_ocr_tasks(
     return created
 
 
+def _create_embed_task(session: Session, document_id: uuid.UUID, image_id: str) -> bool:
+    """给一张图片建 embed 任务（T21）。这张图片已经有过 embed 任务的不再建。
+
+    不按 parse_version 区分：图片的内容不会变（不做版本管理，附录 A15），
+    向量只取决于内容和模型，重新解析不需要重新编码。
+    """
+    payload = {"image_id": image_id}
+    existing = {
+        _payload_key(existing_payload)
+        for existing_payload in session.scalars(
+            select(ProcessingTask.payload).where(
+                ProcessingTask.document_id == document_id,
+                ProcessingTask.task_type == TASK_EMBED,
+            )
+        )
+    }
+    if _payload_key(payload) in existing:
+        return False
+    session.add(ProcessingTask(task_type=TASK_EMBED, document_id=document_id, payload=payload))
+    return True
+
+
 def run_parse(
     task: Task,
     *,
@@ -268,6 +290,8 @@ def run_parse(
     document.status = STATUS_SUCCEEDED
     document.parse_version = parse_version
     _create_ocr_tasks(session, document.id, parse_version, parsed.ocr_targets, params)
+    if document.mime_type in _IMAGE_MIME_TYPES:
+        _create_embed_task(session, document.id, make_image_id(document.id))
     session.commit()
 
 

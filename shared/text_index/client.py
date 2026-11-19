@@ -19,6 +19,10 @@ from shared.text_index.errors import TextIndexError, TextIndexUnavailable
 DOC_META = "doc_meta"
 CHUNKS = "chunks"
 INDEX_NAMES = (DOC_META, CHUNKS)
+# 图片向量索引（M10，T21）。结构、写入和查询都在 backend 的 vector_index 模块里，
+# 不属于文本索引，所以不放进 INDEX_NAMES；这里只登记名字，让它和另外两个索引用同一个前缀
+IMAGE_VECTORS = "image_vectors"
+_KNOWN_INDEX_NAMES = (*INDEX_NAMES, IMAGE_VECTORS)
 
 # OpenSearch 的索引名只能是小写，且不能以 _ 或 - 开头
 INDEX_PREFIX_PATTERN = r"^([a-z0-9][a-z0-9_-]*)?$"
@@ -69,7 +73,7 @@ class OpenSearchClient:
         self._http.close()
 
     def index_name(self, logical_name: str) -> str:
-        if logical_name not in INDEX_NAMES:
+        if logical_name not in _KNOWN_INDEX_NAMES:
             raise ValueError(f"未知的索引：{logical_name!r}")
         return f"{self._prefix}{logical_name}"
 

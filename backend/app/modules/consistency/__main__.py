@@ -7,13 +7,15 @@ check 只读，不修改任何东西。repair 必须用 --fix 显式列出要修
 不加 --yes 时只打印将要做什么（演练），加上才真正执行。
 
 修复类别：
-    index            按数据库重建单个文档在两个索引里的数据，或撤掉已删除文档的残留
+    index            按数据库重建单个文档在三个索引（doc_meta、chunks、image_vectors）里的数据，
+                     或撤掉已删除文档的残留
     db-chunks        删掉数据库里不属于文档当前解析版本的片段
     ocr-results      删掉不属于当前版本任何 OCR 对象的识别结果
     cleanup-tasks    为已删除但没有清理任务的文档补建 cleanup 任务
     temp-files       删掉过期的上传临时文件
     orphan-files     删掉数据库里没有记录的已存储文件
-    rebuild-indices  删掉两个索引，按版本库的 mapping 重建，并从数据库全量重新索引
+    embeddings       删掉不再被任何图片使用的向量记录（image_embeddings）
+    rebuild-indices  删掉三个索引，按版本库的 mapping 重建，并从数据库全量重新索引
                      （执行前先停掉通用 Worker 和 OCR Worker）
 
 正在解析或识别（有 pending / processing 的 parse、ocr 任务）的文档，片段与索引类的检查和修复
@@ -62,7 +64,7 @@ def _print_issues(issues: list[Issue]) -> None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.modules.consistency")
     sub = parser.add_subparsers(dest="command", required=True)
-    check = sub.add_parser("check", help="对账数据库、磁盘和两个索引，只读")
+    check = sub.add_parser("check", help="对账数据库、磁盘和三个索引，只读")
     check.add_argument("--json", action="store_true", help="以 JSON 输出，便于脚本处理")
     repair = sub.add_parser("repair", help="修复指定类别的不一致")
     repair.add_argument("--fix", action="append", choices=REPAIR_KINDS, required=True)
