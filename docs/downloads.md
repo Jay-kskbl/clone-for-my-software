@@ -143,7 +143,7 @@ T17 不再从网络下载模型。下面两个目录是 2026-11-13 T00 环境实
 |---|---|---|---|---|---|---|
 | 38 | Chinese-CLIP ViT-B-16 权重 `clip_cn_vit-b-16.pt` | 2026-11-13 T00 环境实测时由 cn_clip 自动下载到 `env_check/models/`（当时没有在本文件登记，这里补记）；2026-11-17 复制到项目的 `models/clip/` | `models/clip/clip_cn_vit-b-16.pt` | 约 718 MB | `5997ef32c50de18f3ac06eb5d746c324a639053c3bed8f2986f97ebb22b2ecde` | CLIP 服务（T20） |
 
-- `env_check/models/` 里的原文件没有删，两份各占约 718 MB。是否删掉原文件由 Barry 决定。两个目录都在 `.gitignore` 中。
+- `env_check/models/` 里的原文件已于 2026-11-19 删除（Barry 批准；删除前核对两份 sha256 一致），只保留 `models/clip/` 这一份。注意：重跑 `env_check/03_check_clip.py` 会让 cn_clip 重新联网下载权重，需先征得 Barry 同意。
 
 ### 2.7 合计
 

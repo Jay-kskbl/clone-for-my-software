@@ -41,3 +41,6 @@ dist/
 /experiments/datasets/files/
 /experiments/datasets/document_map.csv
 /experiments/runs/
+
+# scripts/smoke/ocr_e2e.py 的运行输出（日志、生成的图片、存储目录）
+storage-smoke/

@@ -47,7 +47,7 @@ experiments/
 | `file_id` | 必须在 `manifest.csv` 里 |
 | `grade` | 相关等级，0 到 3 的整数 |
 
-等级的含义（**建议，待 Barry 最终确认**）：
+等级的含义（Barry 于 2026-11-19 确认）：
 
 | grade | 含义 |
 |---|---|

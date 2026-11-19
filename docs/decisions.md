@@ -104,7 +104,7 @@
 - 决策：如果环境实测证明本机资源无法稳定运行 OpenSearch，备选方案是在 Python 端实现 BM25 并用 faiss 做向量检索，
   替换范围限定在检索层（M8、M10）内部。该预案只作为文档记录，不与 OpenSearch 同时实现。
 - 理由：给硬件资源不足的情况留一条退路，同时避免同时维护两套检索实现。
-- 状态：是否启用**待定**，见第 2 节。启用前须经 Barry 确认。
+- 状态：**不启用**（Barry 于 2026-11-19 确定，见第 2 节）。以后要启用仍须经 Barry 确认。
 
 ### 1.5 来源定位、删除与权限
 
@@ -169,7 +169,7 @@
 | 硬件与操作系统（CPU、内存、磁盘、系统版本） | Apple M4，10 核，24 GB 内存，可用磁盘 341 GB，macOS 26.6.2（arm64），Python 3.11.18 | `results/00_sysinfo.json` |
 | OpenSearch 能否在本机稳定运行、占用多少内存 | 未测试 | — |
 | 中文分词方案（A13）：analysis-smartcn 还是 IK | Barry 于 2026-11-14 选定 analysis-smartcn（未测试：没有实测数据，阶段五可换） | D26 |
-| 是否启用 OpenSearch 降级预案（A14） | 待定（未测试） | — |
+| 是否启用 OpenSearch 降级预案（A14） | 不启用（Barry 于 2026-11-19 确定） | 2026-11-16 在 Windows 机器上 OpenSearch 2.19.1 + smartcn 跑通 190 项集成测试（DEVPLAN §5“T00–T19 补测”）；本机内存占用仍未测试 |
 | PaddleOCR 模型规格、单张图片耗时、内存占用 | 已实测；Barry 于 2026-11-15 选定 PP-OCRv5 mobile（D30）。paddlepaddle 3.3.1、paddleocr 3.7.0，CPU。PP-OCRv5 mobile：平均 0.44 s/图，峰值内存约 1.0 GB；默认模型 PP-OCRv6 medium：平均 0.62 s/图，峰值内存约 1.1 GB。三张合成测试图上两者 CER 均为 0，无法据此区分识别质量 | `results/02_ocr_mobile.json`、`results/02_ocr.json` |
 | Chinese-CLIP 模型规格、编码耗时、内存占用、向量维度 | 已实测；Barry 于 2026-11-17 选定 ViT-B-16、默认 CPU（D33）。cn_clip 1.6.0、torch 2.15.0，模型 ViT-B-16（文本塔 RoBERTa-wwm-ext-base），向量维度 512。MPS：查询编码 P50 9.1 ms / P95 11.7 ms，图片 37.8 张/秒，峰值内存约 2.2 GB；CPU：P50 20.2 ms / P95 20.5 ms，图片 30.9 张/秒，峰值内存约 2.0 GB。链路合理性检查 5 条中对 4 条（仅验证链路，不是检索效果数据） | `results/03_clip_mps.json`、`results/03_clip.json` |
 | 全部组件同时运行时的总内存 | 未测试（依赖 OpenSearch） | — |
@@ -184,11 +184,11 @@
 | 待定项 | 受影响的任务 | 最迟确定时间 |
 |---|---|---|
 | 分词方案 | T13 文本索引的 mapping；`deploy/docker-compose.yml` 中 OpenSearch 的镜像 | T13 开始前 |
-| 是否启用降级预案 | T13、T21 的全部实现方式 | T13 开始前 |
+| 是否启用降级预案 | T13、T21 的全部实现方式 | 已定：不启用（2026-11-19） |
 | OCR 模型规格 | T17 OCR Worker | 已定：PP-OCRv5 mobile（2026-11-15，D30） |
 | CLIP 模型规格与向量维度 | T20 CLIP 服务、T21 向量索引 | 已定：ViT-B-16，512 维，默认 CPU（2026-11-17，D33） |
 
-T13 起，`deploy/docker-compose.yml` 改为在官方 2.19.1 镜像上安装 analysis-smartcn 的自定义镜像（`deploy/opensearch/Dockerfile`），该镜像从未构建过。是否启用降级预案（A14）仍未确定，T13 按“不启用”实现。
+T13 起，`deploy/docker-compose.yml` 改为在官方 2.19.1 镜像上安装 analysis-smartcn 的自定义镜像（`deploy/opensearch/Dockerfile`），该镜像从未构建过。降级预案（A14）T13 起按“不启用”实现，Barry 于 2026-11-19 正式确定不启用。
 
 ## 3. 实现过程中的决策
 
@@ -1073,3 +1073,25 @@ Barry 要求由 Fable 5.2 重新查看 Opus 5.5 写的 T15–T19 并修正不足
 - **MVP-2 里程碑未达成，没有打 tag `mvp-2`**。原因与 MVP-0 相同：数据库、OpenSearch、CLIP 的端到端联调都没做，“完整演示流程”和“关闭 CLIP 后基础检索不受影响”只在单元测试和模拟后端上验证过。
 - B3 的 k 跟随后端配置。若改动 `.env` 的 `SEARCH_RRF_K`，B3 就不再是 k=60，要以 `config.json` 里记录的值为准。
 - CLIP 服务不可用时，即使数据集里没有图片，开了图像通道的配置也会被拦下。
+
+### D39 待议事项统一批准（2026-11-19）
+
+Barry 于 2026-11-19 对 DEVPLAN §4 中整理出的 14 项待批准事项回复“按推荐全部批准”。逐项结论：
+
+| # | 事项 | 结论 | 落实 |
+|---|---|---|---|
+| 1 | qrels `grade` 0–3 的含义 | 采用 `experiments/README.md` 的写法 | 已改 README |
+| 2 | A14 OpenSearch 降级预案 | 不启用。依据：2026-11-16 Windows 补测 OpenSearch 2.19.1 + smartcn 跑通全部集成测试 | 已改本文件 §1、§2。附录 A14 本身是“只记录不实现”，内容不变 |
+| 3 | `env_check/models/` 里重复的 CLIP 权重 | 删除，保留 `models/clip/` | 已删（删前两份 sha256 一致），登记 downloads.md |
+| 4 | `docs/untested.md` | 删除 Windows 补测已通过的项 | 已整理，剩 24 项测试；限制（Windows 副本、之后的代码改动未复跑）写在该文件开头 |
+| 5 | N01 烟测脚本 | 放进仓库，`scripts/smoke/ocr_e2e.py`，手动运行，不进 pytest | 已放；改动：解释器路径按系统选 `bin/python` 或 `Scripts/python.exe`，连接串改读 `TEST_DATABASE_URL`（必填）和 `TEST_OPENSEARCH_URL`，`ROOT` 改为上两级目录，清理测试索引失败时打印原因而不是静默忽略，超时异常加 `from`。输出目录 `storage-smoke/` 加进 `.gitignore`。改写后未实际运行 |
+| 6 | 两个 Worker 启动时检查数据库不一致 | 通用 Worker 也在启动时检查，连不上以退出码 1 结束 | DEVPLAN T24a |
+| 7 | `/health` 暴露内部主机名、端口 | `detail` 只写异常类型 | DEVPLAN T24b |
+| 8 | OCR 参数没有进实验配置 | 写进数据库，实验读出记录 | DEVPLAN T24c（🔒，先给字段设计） |
+| 9 | `rebuild-indices` 无条件重建 | 加 `--force` | DEVPLAN T24d |
+| 10 | 文本预览 OCR 片段排序 | 按页码穿插 | DEVPLAN T24e |
+| 11 | Word 片段结束段落 | 暂缓，等实验或演示暴露问题 | — |
+| 12 | 重新解析与旧 OCR 的竞争窗口 | 暂不做，论文写进局限 | — |
+| 13 | 后端缩略图接口 | 暂不做，归入 P4 | — |
+| 14 | 登录无次数限制、无存储配额、前端不预检文件大小 | 不做，写进论文“局限与改进”，准备答辩回答 | — |
+

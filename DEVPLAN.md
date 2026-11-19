@@ -202,6 +202,16 @@ BARRY zou/
   -   B3、去掉 OCR、去掉 CLIP、只用 CLIP、RRF 不同 k 值
   -   **里程碑 MVP-2（打 tag `mvp-2`）：** 完整演示流程；关闭 CLIP 后基础检索不受影响——**未达成，没有打 tag**：数据库、OpenSearch、CLIP 的端到端联调都没做，评测数据集也还没有（与 MVP-0 相同，见 decisions.md D38）
 
+### 插入任务（2026-11-19 Barry 批准，T25 之前做）
+
+来源：DEVPLAN §4 的待议事项，Barry 于 2026-11-19 统一批准（见 decisions.md D39）。一次做一个，各自一个 commit。
+
+- [ ] **T24a 通用 Worker 启动时检查数据库**：启动时先连一次数据库，连不上以退出码 1 结束（与 OCR Worker 一致，GLOBAL §12）；领取循环中途断线仍然重试
+- [ ] **T24b `/health` 不暴露内部信息**：`detail` 只写异常类型，主机、端口、数据库用户名只写日志
+- [ ] **T24c OCR 参数进实验配置** 🔒：`OCR_MIN_CONFIDENCE`、`OCR_PDF_DPI` 随 OCR 结果写入数据库，实验运行时读出记进 `config.json`。涉及表结构，先给 Barry 看字段设计和迁移
+- [ ] **T24d `rebuild-indices --force`**：无条件强制重建，仍需 `--yes` 才执行
+- [ ] **T24e 文本预览按页码穿插 OCR 片段**：同一页里正文在前、OCR 在后
+
 ### 阶段五：实验（W13–W15）
 
 - [ ] **T25 冻结数据集与标注**：查询总数、各类型数量、qrels 数量写进 `experiments/README.md`；冻结后不再修改
@@ -225,16 +235,16 @@ BARRY zou/
 - **（T14 已解决）** 之前记给 T14 的提醒都已处理，做法见 `decisions.md` D27：存储新增 `local_path()`；文档状态只跟随 parse 任务的规则已定，并在任务失败、回收、重试时一并更新；parse 处理函数开头检查文档是否已删除；按 `mime_type` 选解析器，图片写 `image_assets`；`parser_options` 只传 PDF 的 `pdf_ocr_min_chars`；索引改为在每个任务开始时 `ensure_indices`（没有放在 API、Worker 启动时）；上传后由 parse 任务写 `doc_meta`，删除由 cleanup 任务调用 `delete_document`，改标签接口提交后尽力同步 `doc_meta`；`TextIndexUnavailable` / `TextIndexError` / `ParseError` / `PipelineError` 都由 Worker 按 `retryable` 处理。
 - **（T21 已解决）给 T21 的补充（T18 记录）**
   - ~~一致性检查（D31）还没有覆盖 `image_embeddings`~~：T21 已补上无用向量（`embedding_orphan`，修复类别 `embeddings`）和向量索引与数据库不一致（`vector_*`，修复类别 `index`、`rebuild-indices`）的检测与修复，见 `decisions.md` D35。
-- **待定（T18 记录）**
+- **（已批准，排为 T24a）待定（T18 记录）**
   - backend 通用 Worker 启动时不检查数据库，连不上时在领取循环里无限重试；OCR Worker 启动时连不上数据库就以退出码 1 结束（D30）。两者不一致，是否统一由 Barry 决定。
 - **（T20、T21 已处理）给 T20、T21（CLIP）的参考（T17 记录）**
   - ~~CLIP 服务和 embed 任务可以复用~~（两者都没有采用：CLIP 服务不领任务（D33）；embed 任务由通用 Worker 领取，只发 HTTP 请求，见 D35） `shared.task_queue.PgTaskQueue`，以及 OCR Worker“常驻子进程加载模型、超时或崩溃时杀掉重开”的写法（`services/ocr_worker/ocr_worker/engine_process.py`）。
-- **待改进（T17 记录）**
+- **（已批准，排为 T24e）待改进（T17 记录）**
   - 文本预览接口按 `seq` 排序，扫描页的 OCR 片段排在全部正文片段之后。如果要按页码穿插，需要改预览接口的排序规则。
 - **2026-11-16 补测的后续（来源：`change-deepseek-v4/`，见 §5“T00–T19 补测”）**
-  - **修复已合入（2026-11-17）：** C01–C12 的 9 个文件已按 `change-deepseek-v4/modified-files/` 合入本仓库（只去掉了 Windows 换行符，逐行核对与报告一致，没有夹带其他改动）。N01 烟测脚本 `storage-smoke/ocr_e2e.py` 没有合入，是否进仓库待 Barry 决定。合入后本机（macOS）重跑结果见 §5“修复合入”。
+  - **修复已合入（2026-11-17）：** C01–C12 的 9 个文件已按 `change-deepseek-v4/modified-files/` 合入本仓库（只去掉了 Windows 换行符，逐行核对与报告一致，没有夹带其他改动）。N01 烟测脚本已于 2026-11-19 经 Barry 批准放进 `scripts/smoke/ocr_e2e.py`（去掉了 Windows 专用路径和写死的连接串，见 D39）。合入后本机（macOS）重跑结果见 §5“修复合入”。
   - **C12 的取舍：** OCR 引擎在 Windows 上关闭 oneDNN（`enable_mkldnn=os.name != "nt"`），macOS/Linux 不变。若阶段五在 Windows 上测 OCR 耗时，需要在论文里注明这一点。
-  - **`docs/untested.md` 待整理：** 2026-11-17 只在文件开头加了补测说明，逐项清单和补测步骤没有删。是否按 CLAUDE.md 规定删除已在 Windows 上通过的项（本机无法复跑），待 Barry 决定。
+  - ~~**`docs/untested.md` 待整理**~~（Barry 于 2026-11-19 批准，已整理：删除 Windows 补测已通过的项，剩 24 项测试，见该文件开头）。
   - **仍未验证：** 8 项符号链接测试在普通权限的 Windows 上失败（WinError 1314，环境权限问题），以管理员权限重跑后通过；前端与真实后端的浏览器联调（T10、T16）；OCR 与 CLIP 同时运行的内存（OS-6，CLIP 尚未实现）；IK 分词器（没有匹配 OpenSearch 2.19.1 的版本）；真实扫描件、手机照片、Office 实际保存的文件；Dockerfile 构建。
   - **测试项数变化：** untested.md 记的是 188 项，实际收集到 190 项（`test_migrations.py` 13→14，`test_auth.py` 19→20），更新 untested.md 时一并核对。
 - **MVP-0 验收前必须做（T16 记录）**
@@ -247,20 +257,20 @@ BARRY zou/
   - ~~图像通道目前在请求开启时报 `unavailable`（“图像检索尚未实现”），实现后改为真实状态。~~（T22 已处理，D36）
 - **评测数据（T19 记录，由 Barry 负责，已滞后）**
   - 收集评测文档（原计划 W2 起，200–500 个文件）和每周标注（原计划 W4 起）都还没有开始。框架已就绪，格式和操作步骤见 `experiments/README.md`。没有数据就达不到 MVP-1，也无法开展阶段五的实验，建议尽快开始。
-  - `grade` 0–3 各等级的含义（README 里是建议写法）待 Barry 确认。
-- **给 T22、T26 的补充（T19 记录）**
+  - ~~`grade` 0–3 各等级的含义待 Barry 确认~~（Barry 于 2026-11-19 确认 README 中的写法）。
+- **（已批准，排为 T24c）给 T22、T26 的补充（T19 记录）**
   - OCR Worker 的参数（`OCR_MIN_CONFIDENCE`、`OCR_PDF_DPI`）还没有记录进实验配置，因为 backend 读不到 OCR Worker 的配置。正式实验前要补上，例如让 OCR Worker 把参数写进 `ocr_results`，或在实验配置里显式填写。
 - **给 T21、T22 的衔接提醒（T20 记录）**
   - CLIP 服务的接口见 `api.md` §9：~~`POST /encode/text` 传 `{"texts": [...]}`（T22 用）~~（T22 已处理，D36）。~~`POST /encode/image` 写进 `image_embeddings`~~（T21 已实现，D35）。向量已归一化；T21 的精确检索用的是 `knn_score` + `cosinesimil`（与 T00 实测写法一致），对归一化向量排序与点积相同。
   - ~~调用方自己设超时（A5）。服务一次只算一个请求，embed 任务批量入库时，查询编码可能要排队，T22 定超时时要考虑。~~（T22 已处理：`SEARCH_IMAGE_TIMEOUT_SECONDS` 默认 3 秒，超时降级，D36）
   - ~~413、422 标为不可重试~~、~~向量维度 512 用于 mapping~~、~~embed 任务在哪个进程领取~~：T21 已处理（ClipRejected 不可重试；mapping 维度 512；通用 Worker 领取），见 D35。换模型仍要重建向量索引。
 - **T15–T19 复核留下的事项（2026-11-17 记录，详见 decisions.md D34）**
-  - 已定（Barry，2026-11-17）：库里有数据集以外的文档时保持只提示并记录 `documents_outside_dataset`，不拦截运行。待 Barry 决定：`rebuild-indices` 是否需要一个无条件强制重建的开关（现在只在检查发现索引缺失或结构不一致时才执行）。
-  - 待改进：重新解析与旧版本 OCR 的竞争窗口（旧版本 OCR 片段可能残留，一致性检查能清掉）。修它要改 T14 的 parse 流水线，需要在有 PostgreSQL 的机器上验证后再做。
+  - 已定（Barry，2026-11-17）：库里有数据集以外的文档时保持只提示并记录 `documents_outside_dataset`，不拦截运行。~~待 Barry 决定：`rebuild-indices` 是否需要一个无条件强制重建的开关~~（Barry 于 2026-11-19 批准，排为 T24d）。
+  - 待改进（Barry 于 2026-11-19 决定暂不做，写进论文局限）：重新解析与旧版本 OCR 的竞争窗口（旧版本 OCR 片段可能残留，一致性检查能清掉）。修它要改 T14 的 parse 流水线，需要在有 PostgreSQL 的机器上验证后再做。
   - 部署到 Linux 前要实测：OCR 识别子进程的内存上限用的是 `RLIMIT_AS`（默认 3072 MB），PaddlePaddle 可能因此加载失败。
 - **待 Barry 决定（T20 记录）**
   - ~~`CLAUDE.md` 的“常用命令”还没有加 CLIP 服务的启动和测试命令~~（Barry 于 2026-11-17 同意，已补）。
-  - `env_check/models/clip_cn_vit-b-16.pt`（约 718 MB）已复制到 `models/clip/`，原文件是否删除。
+  - ~~`env_check/models/clip_cn_vit-b-16.pt` 原文件是否删除~~（Barry 于 2026-11-19 批准，核对 sha256 一致后已删除，见 downloads.md）。
 - **（T21 已解决）给 T21 的衔接提醒**
   - ~~parse 任务目前不创建 embed 任务~~：T21 在解析图片成功的同一事务里创建（与 OCR 任务同处），按 payload 去重；同内容只编码一次靠 sha256 咨询锁 + 查 `image_embeddings`，见 D35。
 - **给 T22、T24 的衔接提醒（T21 记录）**
@@ -273,18 +283,18 @@ BARRY zou/
   - ~~`CLAUDE.md` 一致性检查命令的说明仍写“对账数据库、磁盘和两个索引”，类别列表里没有新增的 `embeddings`~~（Barry 于 2026-11-19 同意，已补）。
 - **待实验决定（T12 记录）**
   - 是否给每个 Excel 片段补上该工作表的表头行：片段里只有数据、没有列名，按“列名 + 值”的方式搜索可能搜不到后面的行。补表头会让表头词在同一文件里重复计分。阶段五用实验比较。
-  - Word 片段只定位到起始段落。如果实验或演示发现跳转偏差影响使用，再考虑给 `DocxParaLocator` 增加结束段落字段（数据契约变更，需 Barry 批准）。
+  - Word 片段只定位到起始段落（Barry 于 2026-11-19 决定暂缓）。如果实验或演示发现跳转偏差影响使用，再考虑给 `DocxParaLocator` 增加结束段落字段（数据契约变更，需 Barry 批准）。
 - **评测数据收集时顺带做**
   - 用几份真实的 Word、Excel（由 Office 或 WPS 保存）和手机照片过一遍 T11 的解析器，结果记到 `docs/untested.md` §4 对应的行。
-- **安全方面，本科毕设范围内可以不做，但答辩可能被问到**
+- **安全方面，本科毕设范围内可以不做，但答辩可能被问到**（Barry 于 2026-11-19 决定：`/health` 一项排为 T24b；其余两项不做，写进论文“局限与改进”并准备答辩回答）
   - 登录接口没有限制尝试次数，可以被暴力猜密码。
   - 没有每个用户的存储配额。
   - `/health` 是公开接口，依赖不可用时返回的 `detail` 里带有内部主机名和端口（数据库认证失败时还会带数据库用户名）。T01 的实现，建议改成只返回异常类型、详情写日志。
 - **文档**
   - 项目根目录没有 `README.md`。GLOBAL §11.2 要求配置变化时同步更新 README，§14 的验收标准也要求 README；目前相关说明分散在 `CLAUDE.md` 和 `frontend/README.md` 里。T30 之前需要补。
 - **前端**
-  - 新想法（T23 记录）：后端缩略图接口。现在检索页的缩略图取的是原图（D37），图片多、图片大时费流量。可以在后端加一个按需生成并缓存小图的接口，但需要 Pillow 之类的图像库（主环境新依赖），须 Barry 批准；不属于核心验收条件。
-  - 上传前没有在浏览器里检查文件大小（上限在后端配置里，前端不知道）。超限的文件要传完才被拒绝。
+  - 新想法（T23 记录，Barry 于 2026-11-19 决定暂不做，归入 P4）：后端缩略图接口。现在检索页的缩略图取的是原图（D37），图片多、图片大时费流量。可以在后端加一个按需生成并缓存小图的接口，但需要 Pillow 之类的图像库（主环境新依赖），须 Barry 批准；不属于核心验收条件。
+  - （Barry 于 2026-11-19 决定暂不做，写进局限）上传前没有在浏览器里检查文件大小（上限在后端配置里，前端不知道）。超限的文件要传完才被拒绝。
   - 文件名一栏较窄时，标签会被省略号截断。
 
 ------------------------------------------------------------------------
@@ -324,3 +334,4 @@ BARRY zou/
 | T22 | 2026-11-19 | 889a48b | 带 🔒：计划由 Barry 于 2026-11-19 在本会话批准（“批准，按推荐做”：图像通道与文本通道并行、`SEARCH_CHANNEL_IMAGE_ENABLED` 仍默认关闭、查询编码超时 3 秒）。代码由主会话编写；复测、复核、文档和提交由子代理完成。图像通道：CLIP `POST /encode/text` 编码查询（应答自带模型标识，每次查询只调用一次）→ 维度核对 → `search_vectors` 精确检索（同模型、权限前置过滤）→ 与 meta、text 一起 RRF → 数据库二次校验；图像通道在单独线程里与文本通道并行执行；CLIP 超时、连不上、拒绝、应答不对、维度不一致、向量索引出错都只把 image 标为 unavailable 并写明原因（200），文本通道出错仍是 503；text 与 image 都命中时证据用文本片段。新增配置 `SEARCH_IMAGE_TIMEOUT_SECONDS`；查询专用 CLIP 客户端放在 `app.state.query_clip`；检索日志记录 `image_model`；实验入口也传入查询客户端。规则见 decisions.md D36，api.md §7.1 已更新。已执行：backend 668 项通过、208 项跳过（T22 新增单元测试 28 项，检索编排与 CLIP 客户端，含三通道 RRF 手算样例和假网络层下“关闭 CLIP 服务后检索正常并带降级标记”），shared 105 项通过，ruff 两个目录通过。未测试（Not Tested）：`test_search_db.py` 新增的 `test_clip_service_down_degrades_to_text_search`（需要 PostgreSQL，是 🧪“关闭 CLIP 服务后检索仍然正常并带降级标记”的真实接口版本）；图像通道查询体从未发给真实 OpenSearch；从未连真实 CLIP 服务编码查询；并行线程在真实负载下的表现、3 秒超时是否合适都没有实测（见 untested.md）。没有修改附录 A，没有新下载 |
 | T23 | 2026-11-19 | 38d2c06 | 代码由主会话编写（Barry 要求主会话只写代码），复测、浏览器检查、文档和提交由子代理完成。T23 不带 🔒，没有单独的计划批准。检索页：图片结果左侧显示缩略图（原图取成 Blob 显示，只取 PNG/JPEG，>5 MB 显示占位，并发 4，新检索或离开页面时释放地址）；命中通道标签按通道着色；图片证据写“图像语义匹配（CLIP）”，与 OCR 命中分开；新增“图像语义检索（CLIP）”开关（默认关，`img=1` 进地址栏，请求显式发送 `channels.image`）；不可用通道用黄色提示，图像通道写明“本次结果只来自文字检索”。规则见 decisions.md D37。已执行：前端类型检查、构建通过，单元测试 62 项通过（T23 前为 51 项，新增 11 项：缩略图加载 5、命中依据与降级提示 5、`isImageType` 1）；构建的“chunk 大于 500 kB”警告在 T23 之前就有（在 HEAD 的副本上构建同样出现，主包约 874 kB）。浏览器检查对着临时模拟后端做（模拟后端不是项目代码，没有提交）：不勾选时请求 `image=false`；勾选后请求 `image=true`、地址栏有 `img=1`，刷新和从预览页返回后保持；图片结果显示缩略图，点击进入预览；>5 MB 显示“图片较大”占位；下载失败显示“无法显示”；图片证据显示“图像语义匹配（CLIP）”；通道标签三种颜色；image 不可用时出现黄色提示。未测试（Not Tested）：与真实后端、真实 CLIP 服务的联调；页面组件没有自动化测试。没有修改附录 A，没有新下载 |
 | T24 | 2026-11-19 | 34af94e | 代码由主会话（Opus 5.5）编写，测试复核、文档和提交由子代理完成；T24 不带 🔒。新增 7 个实验配置：B3、B3-no-ocr、B3-no-clip、clip-only、B3-k10、B3-k30、B3-k100（k=60 即 B3）；实验配置新增可选 `rrf_k`（只覆盖本次实验的 k，随 search_params 与检索日志记录）；开了图像通道的配置运行前检查 CLIP 服务是否可用、数据集图片是否都有当前模型的向量，模型信息记进 config.json 的 `clip_model`；`mapping_sha256` 补上 `image_vectors`。规则见 decisions.md D38。已执行：backend 678 项通过、212 项跳过，shared 105 项通过，ruff 通过（T24 新增单元测试 10 项，跳过数从 208 增至 212 即新增的 4 项集成测试）。未测试（Not Tested）：test_experiments_db.py 新增 4 项（需要 PostgreSQL）；B3 及消融从未在真实数据和真实 CLIP 上运行。**MVP-2 里程碑未达成，没有打 tag**（原因同 MVP-0）。没有修改附录 A，没有新下载 |
+| 待议事项统一批准 | 2026-11-19 | （待填） | Barry 于 2026-11-19 对 §4 中 14 项待批准事项“按推荐全部批准”（D39）。当场完成 5 项：qrels `grade` 含义确认；A14 定为不启用；删除重复的 CLIP 权重 `env_check/models/clip_cn_vit-b-16.pt`（删前核对 sha256 一致）；整理 `docs/untested.md`（删除 Windows 补测已通过的 190 项及 OS-1/3/4/5/8/9/10，剩 24 项测试）；N01 烟测脚本改写后放进 `scripts/smoke/ocr_e2e.py`，`.gitignore` 加 `storage-smoke/`。另 5 项排为 T24a–T24e；其余暂缓。已执行：烟测脚本 ruff 检查与格式检查通过、能编译，未设 `TEST_DATABASE_URL` 时退出码 2。**未测试（Not Tested）**：烟测脚本改写后没有实际跑过（本机没有 PostgreSQL 和 OpenSearch），已登记到 untested.md。没有改代码、表结构、索引和附录 A；没有新下载 |
