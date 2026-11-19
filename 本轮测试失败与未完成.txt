@@ -1,0 +1,137 @@
+本轮测试失败与未完成项
+======================
+
+更新日期：2026-11-19
+说明：遵守 Barry 的要求，本文件不是 .md，本轮没有修改任何 .md 文件。
+
+
+一、最终自动化结果
+------------------
+
+backend：
+  923 passed, 6 failed, 0 skipped
+
+shared：
+  103 passed, 2 failed
+
+frontend：
+  67 passed
+  类型检查通过
+  生产构建通过
+
+OCR Worker 主环境：
+  66 passed, 4 skipped
+
+OCR Worker 真实识别环境：
+  4 passed
+
+CLIP：
+  17 passed
+
+结论：
+  当前 8 个失败全部是因 Windows 符号链接权限导致的测试环境失败。
+  没有其他自动化测试失败。
+
+
+二、8 个 WinError 1314 失败
+---------------------------
+
+backend（6 项）：
+  tests/unit/test_consistency.py::test_symlinks_are_never_treated_as_stored_files
+  tests/unit/test_storage.py::test_file_symlink_pointing_outside_rejected
+  tests/unit/test_storage.py::test_directory_symlink_pointing_outside_rejected[year]
+  tests/unit/test_storage.py::test_directory_symlink_pointing_outside_rejected[document]
+  tests/unit/test_storage.py::test_put_refuses_to_write_through_directory_symlink
+  tests/unit/test_storage.py::test_symlinked_temp_directory_refused_at_startup
+
+shared（2 项）：
+  tests/test_storage_keys.py::test_symlinked_directory_is_rejected
+  tests/test_storage_keys.py::test_symlinked_file_is_rejected
+
+失败位置：
+  测试准备阶段调用 os.symlink 或 Path.symlink_to，尚未进入项目业务代码。
+
+错误：
+  OSError: [WinError 1314] 客户端没有所需的特权。
+
+解决方法：
+  1. 打开 Windows“设置 → 系统 → 开发者选项 → 开发人员模式”。
+  2. 注销并重新登录或重启。
+  3. 在 Barry 的普通用户终端（不是 CodexSandboxOffline）运行 whoami /priv。
+  4. 确认出现 SeCreateSymbolicLinkPrivilege。
+  5. 重跑 backend 和 shared 测试。
+
+也可以在具有 SeCreateSymbolicLinkPrivilege 的管理员终端中运行。
+不能把测试改成 junction：这些测试专门验证符号链接逃逸，junction 不能替代。
+
+
+三、已修复并复测通过
+--------------------
+
+1. 中文 PDF 原文件预览空白
+   原因：PDF.js 没有配置 CMap、标准字体、WASM 和 ICC 静态资源。
+   修复：PdfViewer 配置对应的资源地址，资源放入 frontend/public/pdfjs。
+   复测：真实中文 PDF 正常显示；前端 67 项、类型检查和生产构建通过。
+
+2. psycopg 异常类名断言
+   原失败：测试写死 OperationalError，实际为更具体子类 ConnectionTimeout。
+   修复：断言只要求安全的异常类名，并继续检查不得泄漏连接信息。
+   复测：相关 backend 单元测试通过。
+
+3. OpenSearch 余弦分数断言
+   原失败：测试写死完全相同向量必须得 2.0，OpenSearch 2.19.1 实际为 1.0。
+   修复：保留真正重要且跨版本稳定的断言：排序正确、严格递减。
+   复测：真实 OpenSearch 向量测试 8 项全部通过。
+
+
+四、仍未测试或未完成
+--------------------
+
+1. Docker Desktop 与 compose
+   Docker Desktop 安装包已下载，但未安装（需要 UAC，可能还需要 WSL2 和重启）。
+   因此以下项目仍未测试：
+  - docker compose config
+  - deploy/docker-compose.yml 容器启动
+  - deploy/opensearch/Dockerfile 构建
+  - 真实容器环境下的完整服务拓扑
+
+2. 正式检索评测
+   当前 experiments 数据仍为空：0 个文件、0 条查询、0 条 qrels。
+   小型 GitHub 文件只能验证格式和链路，不能提供正式指标。
+
+   已找到候选真实数据集：
+   https://huggingface.co/datasets/vidore/docvqa_test_subsampled
+
+   500 条真实文档页和查询，Parquet 约 292 MB；本轮下载请求未获批准，
+   所以没有生成 B0–B3 正式指标。
+
+3. Linux 专属资源限制
+   Worker/OCR 的 RLIMIT_AS 内存上限只在 Linux 有效。
+   当前没有可用的 WSL/Linux 环境，未验证该限制是否真正生效。
+
+4. 高负载与长时间运行
+   已用 5 个样本验证 PostgreSQL、OpenSearch、OCR、CLIP 可以同时运行；
+   没有做并发压测、长时间稳定性、吞吐量和峰值内存测试。
+
+5. 极端真实文件
+   已验证 6 个真实 GitHub 样本，包括中文 PDF、Word、Excel、相机 JPEG、
+   PaddleOCR 示例图和一个 PDF 模糊测试样本。
+
+   尚未验证：
+   - 接近 50 MB 的 PDF
+   - 加密 PDF
+   - 多栏、表格、水印、竖排和手写扫描件
+   - Office/WPS 实际保存的复杂文件
+   - 超大图片、渐进式 JPEG 和超限压缩包
+
+
+五、真实产品测试中已通过的内容
+------------------------------
+
+1. 注册、登录、上传、状态轮询和下载。
+2. Word、Excel、中文 PDF、JPEG、OCR 图片的真实上传和处理。
+3. OCR 文本入库、检索命中、删除和检索清理。
+4. CLIP 图像语义检索、混合检索和 CLIP 关闭后的文字降级。
+5. 共享、第二账号访问、禁止删除、取消共享后立即不可见。
+6. 中文 PDF 原文件预览。
+7. PostgreSQL、OpenSearch、OCR、CLIP 共存时的基础内存检查。

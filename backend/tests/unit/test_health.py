@@ -124,13 +124,17 @@ def test_unavailable_detail_has_no_host_port_or_user(settings, caplog):
     body = resp.json()
     for component in ("database", "opensearch", "clip_service"):
         detail = body[component]["detail"]
-        # 只有异常类型，例如 OperationalError、ConnectError
+        # 只有异常类型，例如 OperationalError、ConnectionTimeout、ConnectError
         assert detail.isidentifier(), detail
     for leaked in ("127.0.0.1", port, "secret-pw", "postgresql://", "u@"):
         assert leaked not in resp.text
     # 详细原因仍然写进服务端日志，便于排查；密码不进日志
-    assert "健康检查：database 不可用：OperationalError" in caplog.text
-    assert "健康检查：opensearch 不可用：ConnectError" in caplog.text
+    # psycopg 在不同网络场景可能抛出 OperationalError 的更具体子类，例如
+    # ConnectionTimeout；类名不能写死，但服务端日志必须明确是 database 失败。
+    assert "健康检查：database 不可用：" in caplog.text
+    # httpx 对“立即拒绝”和“连接超时”会分别抛 ConnectError / ConnectTimeout。
+    assert "健康检查：opensearch 不可用：" in caplog.text
+    assert "健康检查：clip_service 不可用：" in caplog.text
     assert "secret-pw" not in caplog.text
 
 

@@ -75,8 +75,9 @@ def test_exact_search_ranks_by_similarity(client, images):
     assert [h.document_id for h in hits] == images
     scores = [h.score for h in hits]
     assert scores == sorted(scores, reverse=True)
-    # cosinesimil 的打分是 1 + 余弦相似度：完全相同的方向得 2
-    assert scores[0] == pytest.approx(2.0, abs=1e-4)
+    # 不同 OpenSearch 版本对 cosinesimil 的绝对分数范围并不完全一致；
+    # 这里验证真正依赖的性质：完全相同方向排第一，且分数严格递减。
+    assert scores[0] > scores[1] > scores[2] > scores[3] > scores[4]
 
 
 def test_filter_returns_only_accessible_documents(client, images):
