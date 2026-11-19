@@ -171,6 +171,12 @@ T20 的测试都在本机实际运行过（接口测试 39 项，真实模型测
 | 与真实后端、真实 CLIP 服务联调 | 缩略图（真实下载接口、真实图片大小）、图片证据、通道标记和图像通道降级提示，都没有在真实后端 + 真实 CLIP 服务 + OpenSearch 上看过 | `decisions.md` D37 |
 | 检索页组件的自动化测试 | `SearchView.vue` 没有组件测试；开关、地址栏、缩略图显示只靠浏览器手动检查 | `decisions.md` D37 |
 
+### T24d rebuild-indices --force（2026-11-19 登记，见 `decisions.md` D43）
+
+| 项目 | 说明 | 代码复核 |
+|---|---|---|
+| 对真实 OpenSearch 执行 `--fix rebuild-indices --force --yes` | 计划、演练、参数校验和命令行流程都有单元测试（假的采集和 apply，已通过）；真正删除并重建三个索引的 `rebuild_indices()` 原来就没在真实 OpenSearch 上跑过（第 4 节“一致性检查对真实 OpenSearch 的操作”），本任务没有改它 | 已复核：强制项与检查发现的重建项走同一个 `apply()` 分支 |
+
 ### T24c OCR 参数（2026-11-19 登记，见 `decisions.md` D42）
 
 | 项目 | 说明 | 代码复核 |

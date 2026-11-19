@@ -1,7 +1,7 @@
 """一致性检查的命令行入口（M13，DEVPLAN T18）。在 backend/ 目录、main 环境下运行：
 
     python -m app.modules.consistency check [--json] [--min-age 秒]
-    python -m app.modules.consistency repair --fix 类别 [--fix 类别 ...] [--yes]
+    python -m app.modules.consistency repair --fix 类别 [--fix 类别 ...] [--force] [--yes]
 
 check 只读，不修改任何东西。repair 必须用 --fix 显式列出要修的类别；
 不加 --yes 时只打印将要做什么（演练），加上才真正执行。
@@ -16,7 +16,9 @@ check 只读，不修改任何东西。repair 必须用 --fix 显式列出要修
     orphan-files     删掉数据库里没有记录的已存储文件
     embeddings       删掉不再被任何图片使用的向量记录（image_embeddings）
     rebuild-indices  删掉三个索引，按版本库的 mapping 重建，并从数据库全量重新索引
-                     （执行前先停掉通用 Worker 和 OCR Worker）
+                     （执行前先停掉通用 Worker 和 OCR Worker）。默认只在检查发现索引缺失
+                     或结构不一致时执行；加 --force 无条件执行（T24d），例如改了检查比较不到的
+                     设置（search_analyzer 等）之后。--force 同样要加 --yes 才真正执行
 
 正在解析或识别（有 pending / processing 的 parse、ocr 任务）的文档，片段与索引类的检查和修复
 都跳过它：处理过程中的中间状态不是不一致。
@@ -69,6 +71,11 @@ def main(argv: list[str] | None = None) -> int:
     repair = sub.add_parser("repair", help="修复指定类别的不一致")
     repair.add_argument("--fix", action="append", choices=REPAIR_KINDS, required=True)
     repair.add_argument("--yes", action="store_true", help="真正执行；不加时只演练")
+    repair.add_argument(
+        "--force",
+        action="store_true",
+        help="与 --fix rebuild-indices 一起用：检查没发现问题也重建三个索引；仍需 --yes 才执行",
+    )
     for p in (check, repair):
         p.add_argument(
             "--min-age",
@@ -77,6 +84,9 @@ def main(argv: list[str] | None = None) -> int:
             help="文件至少存在多少秒才算残留（避开正在进行的上传），默认 3600",
         )
     args = parser.parse_args(argv)
+    if args.command == "repair" and args.force and "rebuild-indices" not in args.fix:
+        # 退出码 2（argparse 的惯例），在读配置、连数据库之前就拦下
+        parser.error("--force 只能和 --fix rebuild-indices 一起使用")
 
     try:
         settings = load_settings()
@@ -131,7 +141,8 @@ def main(argv: list[str] | None = None) -> int:
                     "index、rebuild-indices 两类这次不会修复；检索服务恢复后请重新运行。",
                     file=sys.stderr,
                 )
-            selected = plan(issues, args.fix)
+            # 检索服务不可用时不强制：重建需要检索服务，上面已经说明这次不修索引
+            selected = plan(issues, args.fix, force_rebuild=args.force and index.available)
             if not selected:
                 print("所选类别下没有需要修复的问题。")
                 return 1 if index_skipped else 0

@@ -209,7 +209,7 @@ BARRY zou/
 - [x] **T24a 通用 Worker 启动时检查数据库**：启动时先连一次数据库，连不上以退出码 1 结束（与 OCR Worker 一致，GLOBAL §12）；领取循环中途断线仍然重试
 - [x] **T24b `/health` 不暴露内部信息**：`detail` 只写异常类型，主机、端口、数据库用户名只写日志
 - [x] **T24c OCR 参数进实验配置** 🔒：`OCR_MIN_CONFIDENCE`、`OCR_PDF_DPI` 随 OCR 结果写入数据库，实验运行时读出记进 `config.json`。涉及表结构，先给 Barry 看字段设计和迁移
-- [ ] **T24d `rebuild-indices --force`**：无条件强制重建，仍需 `--yes` 才执行
+- [x] **T24d `rebuild-indices --force`**：无条件强制重建，仍需 `--yes` 才执行
 - [ ] **T24e 文本预览按页码穿插 OCR 片段**：同一页里正文在前、OCR 在后
 
 ### 阶段五：实验（W13–W15）
@@ -265,7 +265,7 @@ BARRY zou/
   - ~~调用方自己设超时（A5）。服务一次只算一个请求，embed 任务批量入库时，查询编码可能要排队，T22 定超时时要考虑。~~（T22 已处理：`SEARCH_IMAGE_TIMEOUT_SECONDS` 默认 3 秒，超时降级，D36）
   - ~~413、422 标为不可重试~~、~~向量维度 512 用于 mapping~~、~~embed 任务在哪个进程领取~~：T21 已处理（ClipRejected 不可重试；mapping 维度 512；通用 Worker 领取），见 D35。换模型仍要重建向量索引。
 - **T15–T19 复核留下的事项（2026-11-17 记录，详见 decisions.md D34）**
-  - 已定（Barry，2026-11-17）：库里有数据集以外的文档时保持只提示并记录 `documents_outside_dataset`，不拦截运行。~~待 Barry 决定：`rebuild-indices` 是否需要一个无条件强制重建的开关~~（Barry 于 2026-11-19 批准，排为 T24d）。
+  - 已定（Barry，2026-11-17）：库里有数据集以外的文档时保持只提示并记录 `documents_outside_dataset`，不拦截运行。~~待 Barry 决定：`rebuild-indices` 是否需要一个无条件强制重建的开关~~（Barry 于 2026-11-19 批准，T24d 已完成，D43）。
   - 待改进（Barry 于 2026-11-19 决定暂不做，写进论文局限）：重新解析与旧版本 OCR 的竞争窗口（旧版本 OCR 片段可能残留，一致性检查能清掉）。修它要改 T14 的 parse 流水线，需要在有 PostgreSQL 的机器上验证后再做。
   - 部署到 Linux 前要实测：OCR 识别子进程的内存上限用的是 `RLIMIT_AS`（默认 3072 MB），PaddlePaddle 可能因此加载失败。
 - **待 Barry 决定（T20 记录）**
@@ -294,6 +294,9 @@ BARRY zou/
   - 没有“对已解析的文档重新做 OCR”的入口：OCR 参数不一致时只能在空库上重新 import。阶段五若要比较不同 DPI 或置信度阈值，需要这个命令；只改 `min_confidence` 时也可以只重新切分（`lines` 保存了全部行）。需 Barry 决定。
   - 运行前检查没有拦“数据集里用了两个不同的 OCR 模型”（快照里有 `ocr_models`），可以用同样的办法补上。
   - `scripts/smoke/ocr_e2e.py` 可以加一项检查 `ocr_results.params` 有值。
+- **待议（T24d 记录，见 `docs/changes/T24d.md` §4）**
+  - CLAUDE.md 的一致性检查说明没有提 `--force`，需 Barry 同意后补。
+  - 结构检查只比较字段类型、分词器类型和 BM25 参数；要不要扩大比较范围（例如 `search_analyzer`），待议。
 - **安全方面，本科毕设范围内可以不做，但答辩可能被问到**（Barry 于 2026-11-19 决定：`/health` 一项排为 T24b；其余两项不做，写进论文“局限与改进”并准备答辩回答）
   - 登录接口没有限制尝试次数，可以被暴力猜密码。
   - 没有每个用户的存储配额。
@@ -346,3 +349,4 @@ BARRY zou/
 | T24a | 2026-11-19 | e21a174 | D39 第 6 项，Barry 于 2026-11-19 批准；不带 🔒。`shared/task_queue.py` 的 `PgTaskQueue` 新增 `ping()`；`backend/app/worker/__main__.py` 启动时先 `ping`，任何 `psycopg.Error` 都打印“Worker 无法连接数据库（异常类型）”并以退出码 1 结束，不进入领取循环；信号处理改到检查之后登记；领取循环中途断线仍然重试（未改 `loop.py`）。新增 `tests/unit/test_worker_main.py` 4 项。已执行：backend 682 passed、212 skipped（新增 4 项通过）；shared 105 passed；services/ocr_worker（main 环境）63 passed、4 skipped；backend、shared 的 ruff 检查与格式检查通过；实际启动 `python -m app.worker`，`DATABASE_URL` 指向没有服务的端口：退出码 1，输出不含密码和端口。没有改表结构、接口、附录 A，没有新下载，没有未测试项。修改记录见 `docs/changes/T24a.md` |
 | T24b | 2026-11-19 | 509502d | D39 第 7 项，Barry 于 2026-11-19 批准；不带 🔒。`backend/app/api/health.py`：依赖不可用时 `detail` 只给异常类型（HTTP 错误加状态码，如 `HTTPStatusError: HTTP 503`），完整的类型和消息写进 WARNING 日志；返回结构、状态码、`ok`/`degraded` 规则不变；`docs/api.md` §3 同步。`tests/unit/test_health.py` 新增 3 项（真实应用对着空闲端口：响应里没有主机、端口、用户名、密码，日志里有原因；HTTP 503 只留状态码；数据库认证失败不暴露用户名）。已执行：backend 685 passed、212 skipped（新增 3 项通过）；ruff 检查与格式检查通过。前端不读 `/health`，不受影响。没有改表结构、附录 A，没有新下载，没有未测试项。修改记录见 `docs/changes/T24b.md` |
 | T24c | 2026-11-19 | 491b59b | 带 🔒：方案由 Barry 于 2026-11-19 批准（“批准，按推荐做”：参数作为 `save()` 的独立参数、不改数据契约；参数不一致或未记录时运行前拦截）。表结构：`ocr_results.params`（jsonb，默认 `{}`），迁移 `0002`，不需要重建索引。OCR Worker 写入 `pdf_dpi`（图片为 null）、`min_confidence`、`max_pixels`；实验 `config.json` 新增 `versions.ocr_params`，运行前检查新增 OCR 参数一项。已执行：backend 692 passed、216 skipped（新增单元测试 7 项通过，新增集成测试 4 项跳过）；shared 105 passed；services/ocr_worker（main 环境）66 passed、4 skipped（新增 3 项），ocr 环境真实识别 4/4；ruff 三个目录通过；`alembic heads` 为 `0002 (head)`；模型编译出的列定义为 `params JSONB DEFAULT '{}' NOT NULL`，与迁移一致。**未测试（Not Tested）**：迁移在真实 PostgreSQL 上升级、回退，`test_migration_matches_models`，`PgStore.save` 写入 params，快照与运行前检查的 SQL（GROUP BY jsonb），共 4 项新集成测试和 3 处改动过的已有集成测试，原因是本机没有 PostgreSQL，已登记到 untested.md 并做代码复核。修改记录见 `docs/changes/T24c.md` |
+| T24d | 2026-11-19 | （待填） | D39 第 9 项，Barry 于 2026-11-19 批准；不带 🔒。`consistency repair` 新增 `--force`：与 `--fix rebuild-indices` 一起用时，检查没发现索引缺失或结构不一致也重建三个索引；仍需 `--yes` 才执行，不加时照常只演练；`--force` 不配 `rebuild-indices` 时在读配置之前就报用法错误（退出码 2）；检索服务不可用时不强制。实现放在 `repair.plan(force_rebuild=…)`：补一条 `forced_rebuild` 计划项，检查已要求重建时不重复。`tests/unit/test_consistency.py` 新增 9 项（计划 4 项、命令行 5 项，命令行测试把数据库和检索服务的采集换成固定快照）。已执行：backend 701 passed、216 skipped；ruff 通过；实际运行 `--fix index --force` 报用法错误、退出码 2，`--fix rebuild-indices --force` 进入数据库步骤（本机没有数据库，退出码 1）。**未测试（Not Tested）**：对真实 OpenSearch 执行强制重建（`rebuild_indices` 本身原来就没在真实 OpenSearch 上跑过，本任务没有改它），已登记到 untested.md。修改记录见 `docs/changes/T24d.md` |

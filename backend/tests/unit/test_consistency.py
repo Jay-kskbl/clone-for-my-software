@@ -37,7 +37,7 @@ from app.modules.consistency.model import (
     Snapshot,
     locator_key,
 )
-from app.modules.consistency.repair import RepairReport, _repair_temp_files
+from app.modules.consistency.repair import FORCED_REBUILD_KIND, RepairReport, _repair_temp_files
 from app.modules.storage import LocalStorage
 from app.modules.vector_index import load_vector_index_definition
 
@@ -854,3 +854,130 @@ def test_missing_vector_index_is_normal_before_any_image_is_encoded():
     snapshot = with_image(consistent_snapshot(), 1, indexed=False)
     snapshot.index.missing_indices = ["image_vectors"]
     assert "index_missing" in kinds(analyze(snapshot))
+
+
+# ---- T24d：rebuild-indices --force（D43）----
+
+
+def test_force_adds_a_rebuild_when_the_check_found_nothing():
+    issues = analyze(consistent_snapshot())
+    assert issues == []
+
+    (forced,) = plan(issues, ["rebuild-indices"], force_rebuild=True)
+
+    assert forced.repair == "rebuild-indices"
+    assert forced.kind == FORCED_REBUILD_KIND
+    # 不加 --force 时行为不变：没有问题就不重建
+    assert plan(issues, ["rebuild-indices"]) == []
+
+
+def test_force_does_not_duplicate_a_rebuild_the_check_already_asked_for():
+    snapshot = consistent_snapshot()
+    snapshot.index.missing_indices.append("chunks")
+    issues = analyze(snapshot)
+
+    selected = plan(issues, ["rebuild-indices"], force_rebuild=True)
+
+    assert [i.kind for i in selected] == ["index_missing"]
+
+
+def test_forced_rebuild_keeps_the_execution_order():
+    snapshot = consistent_snapshot()
+    snapshot.db.chunks.append(chunk(2, 5, version=V2))
+    issues = analyze(snapshot)
+
+    selected = plan(issues, ["rebuild-indices", "db-chunks"], force_rebuild=True)
+
+    # 先改数据库，再按数据库重建索引
+    assert [i.repair for i in selected] == ["db-chunks", "rebuild-indices"]
+
+
+def test_force_without_rebuild_indices_is_rejected():
+    with pytest.raises(ValueError, match="rebuild-indices"):
+        plan([], ["index"], force_rebuild=True)
+
+
+class _FakeSessionFactory:
+    def __call__(self):
+        return self
+
+    def __enter__(self):
+        return object()
+
+    def __exit__(self, *exc):
+        return False
+
+
+@pytest.fixture
+def cli(monkeypatch, tmp_path):
+    """命令行入口，数据库和检索服务的采集换成固定的一致快照；记录 apply 收到的计划。"""
+    from types import SimpleNamespace
+
+    from app.modules.consistency import __main__ as cli_main
+
+    snapshot = consistent_snapshot()
+    applied: list[list] = []
+
+    class FakeClient:
+        def close(self):
+            pass
+
+    def fake_apply(selected, **kwargs):
+        applied.append((list(selected), kwargs["client"]))
+        return RepairReport(done=["已重建"])
+
+    settings = SimpleNamespace(database_url="postgresql://x", storage_root=tmp_path)
+    monkeypatch.setattr(cli_main, "load_settings", lambda: settings)
+    monkeypatch.setattr(cli_main, "make_engine", lambda url: SimpleNamespace(dispose=lambda: None))
+    monkeypatch.setattr(cli_main, "make_session_factory", lambda engine: _FakeSessionFactory())
+    monkeypatch.setattr(cli_main, "client_from_settings", lambda s: FakeClient())
+    monkeypatch.setattr(cli_main, "collect_db", lambda session: snapshot.db)
+    monkeypatch.setattr(cli_main, "collect_disk", lambda root: snapshot.disk)
+    monkeypatch.setattr(cli_main, "collect_index", lambda client: snapshot.index)
+    monkeypatch.setattr(cli_main, "apply", fake_apply)
+    return SimpleNamespace(main=cli_main.main, snapshot=snapshot, applied=applied)
+
+
+def test_cli_force_dry_run_lists_the_rebuild_but_changes_nothing(cli, capsys):
+    code = cli.main(["repair", "--fix", "rebuild-indices", "--force"])
+
+    out = capsys.readouterr().out
+    assert code == 2
+    assert FORCED_REBUILD_KIND in out and "这是演练" in out
+    assert cli.applied == []
+
+
+def test_cli_force_with_yes_rebuilds(cli):
+    code = cli.main(["repair", "--fix", "rebuild-indices", "--force", "--yes"])
+
+    assert code == 0
+    ((selected, client),) = cli.applied
+    assert [i.kind for i in selected] == [FORCED_REBUILD_KIND]
+    assert client is not None
+
+
+def test_cli_without_force_still_skips_a_rebuild_when_nothing_is_wrong(cli, capsys):
+    code = cli.main(["repair", "--fix", "rebuild-indices", "--yes"])
+
+    assert code == 0
+    assert "没有需要修复的问题" in capsys.readouterr().out
+    assert cli.applied == []
+
+
+def test_cli_force_is_not_applied_when_the_search_service_is_down(cli, capsys):
+    cli.snapshot.index.available = False
+    cli.snapshot.index.error = "ConnectError"
+
+    code = cli.main(["repair", "--fix", "rebuild-indices", "--force", "--yes"])
+
+    assert code == 1
+    assert "检索服务不可用" in capsys.readouterr().err
+    assert cli.applied == []
+
+
+def test_cli_force_without_rebuild_indices_is_a_usage_error(cli, capsys):
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["repair", "--fix", "index", "--force"])
+
+    assert exc.value.code == 2
+    assert "--force 只能和 --fix rebuild-indices 一起使用" in capsys.readouterr().err

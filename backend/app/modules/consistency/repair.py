@@ -100,13 +100,34 @@ class RepairReport:
     skipped: list[str] = field(default_factory=list)
 
 
-def plan(issues: Sequence[Issue], kinds: Iterable[str]) -> list[Issue]:
-    """从检查结果里挑出要修的那些，按执行顺序排好。"""
+# T24d（D43）：--force 无条件重建时补进计划的那一项
+FORCED_REBUILD_KIND = "forced_rebuild"
+
+
+def plan(
+    issues: Sequence[Issue], kinds: Iterable[str], *, force_rebuild: bool = False
+) -> list[Issue]:
+    """从检查结果里挑出要修的那些，按执行顺序排好。
+
+    force_rebuild：检查没有发现索引缺失或结构不一致时也重建三个索引（T24d）。
+    结构检查只比较字段类型、分词器类型和 BM25 参数，改了别的设置（例如 search_analyzer）
+    发现不了，这时用它。只能和 rebuild-indices 一起用。
+    """
     wanted = set(kinds)
     unknown = wanted - set(REPAIR_KINDS)
     if unknown:
         raise ValueError(f"未知的修复类别：{'、'.join(sorted(unknown))}")
+    if force_rebuild and REPAIR_REBUILD_INDICES not in wanted:
+        raise ValueError(f"强制重建只能和 {REPAIR_REBUILD_INDICES} 一起使用")
     selected = [i for i in issues if i.repair in wanted]
+    if force_rebuild and not any(i.repair == REPAIR_REBUILD_INDICES for i in selected):
+        selected.append(
+            Issue(
+                kind=FORCED_REBUILD_KIND,
+                detail="按 --force 无条件重建三个索引（检查没有发现索引缺失或结构不一致）",
+                repair=REPAIR_REBUILD_INDICES,
+            )
+        )
     return sorted(selected, key=lambda i: _ORDER.index(i.repair))  # type: ignore[arg-type]
 
 

@@ -1088,7 +1088,7 @@ Barry 于 2026-11-19 对 DEVPLAN §4 中整理出的 14 项待批准事项回复
 | 6 | 两个 Worker 启动时检查数据库不一致 | 通用 Worker 也在启动时检查，连不上以退出码 1 结束 | T24a 已完成（D40） |
 | 7 | `/health` 暴露内部主机名、端口 | `detail` 只写异常类型 | T24b 已完成（D41） |
 | 8 | OCR 参数没有进实验配置 | 写进数据库，实验读出记录 | T24c 已完成（D42） |
-| 9 | `rebuild-indices` 无条件重建 | 加 `--force` | DEVPLAN T24d |
+| 9 | `rebuild-indices` 无条件重建 | 加 `--force` | T24d 已完成（D43） |
 | 10 | 文本预览 OCR 片段排序 | 按页码穿插 | DEVPLAN T24e |
 | 11 | Word 片段结束段落 | 暂缓，等实验或演示暴露问题 | — |
 | 12 | 重新解析与旧 OCR 的竞争窗口 | 暂不做，论文写进局限 | — |
@@ -1144,4 +1144,21 @@ Barry 于 2026-11-19 对 DEVPLAN §4 中整理出的 14 项待批准事项回复
 - `min_confidence` 是在切分时过滤的，`lines` 里保存全部行，所以理论上可以不重新识别、只按新阈值重新切分，现在没有这个功能。
 - 只检查数据集文档的 OCR 结果，不管库里其他文档（与解析版本的检查一致）。
 - 迁移和全部数据库路径只能在有 PostgreSQL 的机器上验证，见 `untested.md` T24c。
+
+### D43 rebuild-indices --force（T24d）
+
+代码：`backend/app/modules/consistency/repair.py`（`plan()`、`FORCED_REBUILD_KIND`）、`backend/app/modules/consistency/__main__.py`；测试：`backend/tests/unit/test_consistency.py`。来源：D39 第 9 项（D34 记录）。
+
+**问题。** `rebuild-indices` 只修检查发现的 `index_missing`、`index_structure_mismatch`。结构检查只比较字段类型、分词器类型和 BM25 参数，改了别的设置（例如 `search_analyzer`、分析器内部参数）检查不出来，`--fix rebuild-indices` 会说“没有需要修复的问题”，只能手动删索引。阶段五如果要换分词设置做对比，就会遇到。
+
+**做法。** `repair` 新增 `--force`。`plan(issues, kinds, force_rebuild=True)` 在检查结果里没有重建项时，补一条 `kind=forced_rebuild` 的计划项，之后走原来的打印计划、演练、`--yes`、`apply()` 流程，`rebuild_indices()` 本身没有改。检查已经要求重建时不再补，避免重复。
+
+**保护。**
+
+- 仍需 `--yes` 才执行；不加时打印计划里的 `forced_rebuild` 并以退出码 2 结束（与其他演练相同）。
+- `--force` 只能和 `--fix rebuild-indices` 一起用：命令行在读配置、连数据库之前就报用法错误（argparse，退出码 2）；`plan()` 也抛 `ValueError`，防止别的调用方误用。
+- 检索服务不可用时不补强制项，沿用原来的“索引类别这次不修复”提示和退出码 1。
+- “执行前先停掉两个 Worker”的提示照旧打印。
+
+**没有改的。** 结构检查的比较范围没有扩大（那会改检查结果，影响面更大）；CLAUDE.md 的一致性检查说明没有提 `--force`，需 Barry 同意后再补。
 
