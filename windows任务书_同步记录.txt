@@ -1,0 +1,31 @@
+Windows 任务书同步记录
+======================
+
+核对时间：2026-11-21（Asia/Shanghai）
+制作：Codex
+
+远端仓库：
+  https://github.com/Jay-kskbl/my-software
+
+核对命令：
+  git fetch --prune origin
+  git ls-remote origin HEAD refs/heads/main
+  git ls-remote --heads --tags origin
+
+远端结果：
+  HEAD：8fb5830f1644041d6a4efd53b0387ff560cc8d24
+  refs/heads/main：8fb5830f1644041d6a4efd53b0387ff560cc8d24
+  没有其它远端分支或 tag。
+
+本地 windows任务书.md：
+  SHA-256：F817477C3EBF0E48619ED42D5BDBE6BFB92A957BEE2F672440FB93BBBAF5AC3B
+
+结论：
+  2026-11-21 当前从 GitHub 可获取的 main 仍与本仓库基线 8fb5830 相同，
+  没有发现 Barry 所说新一轮任务书对应的新提交。
+  本次已执行 fetch 和远端引用核对，但没有可下载的新任务书内容；
+  因此没有手工改动任何 .md。
+
+补充：
+  Barry 更新后若生成了新提交，请再次拉取；本记录不代表否定更新，
+  只表示执行本次核对时 GitHub 端尚未显示新版本。

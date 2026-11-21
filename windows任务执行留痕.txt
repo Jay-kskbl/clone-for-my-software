@@ -1,0 +1,210 @@
+Windows 任务执行留痕
+====================
+
+最终更新：2026-11-21 17:47（Asia/Shanghai）
+执行者：Codex
+仓库：C:\Users\lenovo\Desktop\my-software-main\_gh_upload
+约束：Barry 明确要求不能新建或修改任何 .md 文件。本文件及 docs/*.txt 是本任务留痕；
+未修改仓库原有 .md。
+
+
+一、工作区初始状态与未触碰内容
+------------------------------
+
+开始前 origin/main 基线为 8fb5830。
+工作区已有下列未跟踪文件，均不是本任务创建，未修改、未删除：
+
+- deepseek-v4-test.md
+- 代码修改全部明细.txt
+- 修改记录.txt
+- 失败的.md
+- 测试结果逐文件汇总.txt
+- 错误与失败清单.txt
+
+
+二、Git 提交与代码改动
+----------------------
+
+W1 提交 ef6d943：
+- 新增 output/windows-w1/backend.xml
+- 新增 output/windows-w1/shared.xml
+- 新增 output/windows-w1/ocr_worker.xml
+- 新增 output/windows-w1/clip_service.xml
+- 新增 windows任务报告.txt
+
+W2 提交 bba3a1b：
+- 修改 .gitignore
+- 新增 scripts/__init__.py
+- 新增 scripts/datasets/__init__.py
+- 新增 scripts/datasets/docvqa_import.py
+- 新增 scripts/datasets/tests/test_docvqa_import.py
+- 新增 experiments/docvqa/datasets/manifest.csv
+- 新增 experiments/docvqa/datasets/source_rows.jsonl
+- 新增 experiments/docvqa/queries.tsv
+- 新增 experiments/docvqa/qrels/docvqa.tsv
+- 新增 docs/changes/T24j.txt
+- 新增 docs/downloads_DocVQA.txt
+
+W3 尚未提交时的生成物：
+- experiments/docvqa/datasets/document_map.csv（被 .gitignore 忽略）
+- experiments/docvqa/runs/（被 .gitignore 忽略）
+- storage/w3-docvqa/（被 .gitignore 忽略）
+- storage-smoke/w3-logs/ 与服务日志（storage-smoke/ 被忽略）
+- output/ 中的 W1 JUnit XML 已提交
+
+
+三、下载记录
+------------
+
+1. W2 试跑下载
+   - 来源：Hugging Face datasets-server rows / cached-assets
+   - 数据集：vidore/docvqa_test_subsampled
+   - 修订：49bf8f13e13c41dd8cdb0cae5314e31c1da1e0d6
+   - 位置：storage-smoke/docvqa-limit2/datasets/files/docvqa/
+   - 规模：2 个 JPEG，949089 字节
+   - 用途：脚本试跑；该目录被 storage-smoke/ 忽略
+
+2. W2 正式下载
+   - 来源：同上
+   - 位置：experiments/docvqa/datasets/files/docvqa/
+   - 规模：500 个 JPEG，169224953 字节
+   - manifest 500、query 500、qrel 500
+   - 用途：W3 流程验证与性能记录
+   - 登记文件：docs/downloads_DocVQA.txt
+
+除上述 DocVQA 外，没有下载依赖、模型、工具、Docker 镜像或其它数据集。
+
+
+四、创建的环境连接（不是仓库内容）
+----------------------------------
+
+为复用 Barry 已有的本机环境和模型，创建了下列 .gitignore 范围内的目录 junction：
+
+- .venv-main -> my-software-main/.venv-main
+- env_check/.venv-ocr -> my-software-main/env_check/.venv-ocr
+- env_check/.venv-clip -> my-software-main/env_check/.venv-clip
+- models -> my-software-main/models
+- frontend/node_modules -> my-software-main/frontend/node_modules
+
+这些 junction 仅用于运行，不进入 Git；未改变依赖版本和模型文件。
+
+
+五、删除与数据库副作用
+----------------------
+
+1. 删除 .symlink-probe/
+   - 本任务为验证 Windows 符号链接权限临时创建，测试后立即删除。
+   - 该目录只含 probe 文件，不属于用户数据。
+
+2. symlink 测试失败后，没有改用 junction 绕过测试。
+
+3. backend 集成测试使用专用 docmgr_test：
+   - 测试 fixture 按设计在每个用例结束后执行
+     DROP SCHEMA public CASCADE; CREATE SCHEMA public。
+   - 这是既有测试框架行为，只影响专用测试库，不影响主库。
+
+4. W3 使用独立库 docmgr_docvqa、storage/w3-docvqa 和 opensearch 前缀 docvqa_；
+   不删除主库、主存储或主索引的数据。
+
+
+六、之前未完成项与本次处理
+--------------------------
+
+1. W1 backend 6 项、shared 2 项符号链接测试
+   状态：仍被阻塞。
+   原因：执行账号是 Windows 沙箱账号 codexsandboxoffline，没有
+   SeCreateSymbolicLinkPrivilege；Start-Process -Verb RunAs 返回退出码 4。
+   已完成的替代证据：其余 backend 932 项和 shared 103 项通过；
+   没有修改或跳过这 8 项测试。
+
+2. 原任务书要求新增/更新 .md
+   状态：按 Barry 的最新全局要求不修改 .md。
+   处理：
+   - windows任务报告.md -> windows任务报告.txt
+   - docs/changes/T24j.md -> docs/changes/T24j.txt
+   - docs/downloads.md 新增项 -> docs/downloads_DocVQA.txt
+   内容与任务书要求对应；仓库原有 .md 保持原样。
+
+3. W3 OCR 失败
+   最终处理：
+   - mjbw0217.jpg 和 mkvw0217.jpg 的识别子进程以
+     3221225477（0xC0000005）退出，自动重试 3/3 后标 failed。
+   - 停止多余 OCR Worker 后，用既有任务重试接口在单 Worker 下重试。
+   - 两项最终 succeeded；最终 parse/embed/OCR 均为 500 succeeded、0 failed。
+
+4. W3 reocr 复核
+   - 演练：500 个 OCR 任务，只读。
+   - 执行：reocr --yes 后 500 个 OCR 任务重新成功。
+   - OCR 片段数重做前后均为 1589，没有叠加。
+   - B2 在 reocr 后复跑退出码 0，指标与重做前一致。
+
+5. W3 最终验收
+   - 10 个实验配置全部退出码 0，均 complete=true，failed_searches=0。
+   - 一致性检查退出码 0。
+   - 主库 documents=0；W3 库 documents=500，隔离有效。
+   - docvqa-runs.zip 已生成，含 11 个运行目录，8071418 字节。
+
+
+七、临时日志位置
+----------------
+
+- W1 JUnit：output/windows-w1/
+- W1 烟测：storage-smoke/ocr-e2e/20261121-130539/
+- W2 单元测试临时目录：storage-smoke/pytest-w2*/
+- W3 运行日志：storage-smoke/w3-logs/
+- W3 内存峰值：storage-smoke/w3-logs/memory-peaks.json
+
+以上工作留痕会随 W3 完成继续补齐。
+
+
+八、最终生成文件和结果
+----------------------
+
+会进入 Git 的最终留痕：
+- windows任务报告.txt
+- windows任务执行留痕.txt
+- windows任务书_同步记录.txt
+- 文件制作人与来源清单.csv
+
+不会进入 Git、由 .gitignore 排除：
+- experiments/docvqa/datasets/files/（500 张 DocVQA 图片）
+- experiments/docvqa/datasets/document_map.csv
+- experiments/docvqa/runs/（11 个运行目录）
+- storage/w3-docvqa/（W3 上传文件）
+- storage-smoke/（日志、临时测试目录、运行脚本）
+- .venv-main、env_check/.venv-*、models、frontend/node_modules 的 junction
+- docvqa-runs.zip（任务书要求直接交给 Barry，不提交 Git）
+
+2026-11-21 追加：Barry 随后明确要求将目前完成的部分上传到 GitHub，
+因此 docvqa-runs.zip 也纳入本次上传；原始 DocVQA 图片仍按任务书不进入 Git。
+
+压缩包：
+- 路径：docvqa-runs.zip
+- 大小：8071418 字节
+- SHA-256：
+  287E939A34566DD7EEF1AEC194F3CAC6097CEE9B1EF5B8921D8A89A715452504
+
+
+九、本轮所有提交
+----------------
+
+- ef6d943：W1 报告初稿和 4 份 JUnit XML
+- bba3a1b：W2 脚本、测试、500 行数据、.gitignore 和 .txt 留痕
+- W3 提交：本报告补全和本留痕文件（提交号见 git log；为避免提交哈希自引用，不写入提交内容）
+
+
+十、运行结束后清理
+------------------
+
+本任务启动的以下进程均已在完成后停止：
+
+- PostgreSQL 16.15（pg_ctl fast 正常关闭）
+- OpenSearch 2.19.1 及其 Java 进程树
+- 后端 API
+- CLIP 服务
+- 通用 Worker
+- 全部 OCR Worker 进程树
+- 内存监控进程
+
+停止进程不等于删除数据；databases、models、DocVQA 图片、日志和 experiment runs
+均已保留，便于 Barry 复核。
