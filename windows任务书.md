@@ -42,10 +42,10 @@
 
 ### 0.2 基线同步（Barry 做，Claude 不 push）
 
-GitHub `main`（`bb3883c`）上有第一轮的 4 个提交，但**没有** Mac 上之后的提交（截至本次修订前共 26 个：T24k–T24s、W4、W5、开发报告；加上本次修订是 27 个）。W4–W7 都要用新代码，所以开始之前：
+**状态（2026-11-21 21:30 更新）：** 第一轮结果已合并进 Mac 的 `main`（`1178e1c`），Barry 已把 `main` 推到 GitHub（推送时到 `c4e7561`，含 T24k–T24u、W4–W7 和本节）。Windows 的工作区还停在第一轮的 `bb3883c`，W4–W7 要用新代码，所以开始之前：
 
-1. Barry 在 Mac 上把 `origin/main` 合进本地 `main`（Claude 可以代做合并，但要 Barry 说“合并”），再由 Barry 推到 GitHub。（2026-11-21 21:10：合并已完成，`1178e1c`；还差 Barry 推送。）
-2. Windows 上 `git pull`，确认是快进（fast-forward），`git log -1 --format=%H` 的提交里包含本任务书第 0 节（`git show HEAD:windows任务书.md` 能找到“0. 当前状态与测试计划”）。
+1. ~~Barry 在 Mac 上合并并推送~~（已完成，见上）。
+2. Windows 上 `git pull`，确认是快进（fast-forward），而且拉到的提交不早于 `c4e7561`：`git merge-base --is-ancestor c4e7561 HEAD; echo $LASTEXITCODE` 输出 0，`git show HEAD:windows任务书.md` 能找到“0. 当前状态与测试计划”和第 0.2 节第 4 步。
 3. 把这个提交号写进报告，并写进每个任务的 `output/windows-<任务>/git-head.txt`（第 14.1 节）。W6、W7 的结果只对这个提交有效。
 4. **重新签出三个 mapping 文件（T24u，2026-11-21 21:10 添加）。** 这台机器的工作区是 T24u 之前签出的，三个 mapping 现在是 CRLF；拉到 T24u 后 git 不会重写它们，`git status` 也不显示修改，`git checkout --` 同样会跳过。要先删再签出（在仓库根目录）：
 
