@@ -523,10 +523,52 @@ def test_structure_differences_are_reported():
     state = collect_index(server.client())
 
     assert state.structure_mismatch["chunks"] == [
-        "字段 text 的定义不同",
-        "分词器 docmgr_text 为 standard，应为 smartcn",
+        "字段 text 的定义不同：analyzer 为 （未设置），应为 docmgr_text",
+        "analyzer docmgr_text 的定义为 {'type': 'standard'}，应为 {'type': 'smartcn'}",
     ]
     assert state.structure_mismatch["doc_meta"] == ["多出字段 owner_id"]
+
+
+def test_search_analyzer_and_other_field_keys_are_compared():
+    # T24o：原来只比较 type、analyzer、enabled，加了 search_analyzer 也算“一致”
+    server = FakeOpenSearch()
+    text = server.mappings["chunks"]["mappings"]["properties"]["text"]
+    text["search_analyzer"] = "standard"
+    raw = server.mappings["doc_meta"]["mappings"]["properties"]["filename"]["fields"]["raw"]
+    raw["ignore_above"] = 256
+
+    state = collect_index(server.client())
+
+    assert state.structure_mismatch["chunks"] == [
+        "字段 text 的定义不同：search_analyzer 为 standard，应为 （未设置）"
+    ]
+    assert state.structure_mismatch["doc_meta"] == ["字段 filename 的定义不同：子字段不同"]
+
+
+def test_analysis_components_are_compared_by_name_and_definition():
+    server = FakeOpenSearch()
+    analysis = server.mappings["chunks"]["settings"]["analysis"]
+    analysis["analyzer"]["docmgr_text"] = {"type": "custom", "tokenizer": "smartcn_tokenizer"}
+    analysis["filter"] = {"my_stop": {"type": "stop"}}
+    del server.mappings["doc_meta"]["settings"]["analysis"]["analyzer"]["docmgr_text"]
+
+    state = collect_index(server.client())
+
+    assert state.structure_mismatch["chunks"] == [
+        "analyzer docmgr_text 的定义为 {'type': 'custom', 'tokenizer': 'smartcn_tokenizer'}，"
+        "应为 {'type': 'smartcn'}",
+        "多出 filter my_stop",
+    ]
+    assert state.structure_mismatch["doc_meta"] == ["缺少 analyzer docmgr_text"]
+
+
+def test_string_values_returned_by_opensearch_still_match():
+    # GET _settings / _mapping 可能把布尔值、数字返回成字符串，不能因此误报
+    server = FakeOpenSearch()
+    locator = server.mappings["chunks"]["mappings"]["properties"]["locator"]
+    locator["enabled"] = "false"
+
+    assert collect_index(server.client()).structure_mismatch == {}
 
 
 def test_unavailable_search_service_is_reported_as_such():

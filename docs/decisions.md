@@ -754,7 +754,7 @@ GLOBAL §2 P1 规定“某页文本层有效字符数低于配置阈值时，该
 - 单个文档和全部重建都从数据库读当前版本的片段，写入时用 `refresh=true`（D26：未刷新的数据删不掉）。顺序是删除该文档的全部索引数据，再写片段，最后写 `doc_meta`。没有解析版本的文档没有片段可写，但 `doc_meta` 照样写（D34）。
 - `rebuild-indices` 就是 D26 要求的重建入口，更换 mapping 或分词器后使用。执行前必须先停掉通用 Worker 和 OCR Worker：重建会删除索引，而 compose 设了 `action.auto_create_index=false`（D27），Worker 这时写索引会失败。帮助文字、演练输出都有这条提示。重建期间检索结果不完整。
 
-**索引扫描与结构检查。** 两个索引分别按 keyword 字段分页读出（`doc_meta` 按 `document_id`，`chunks` 按 `chunk_id`，用 `search_after`）。结构检查用 `GET _mapping` 和 `GET _settings` 的结果，与版本库里的 mapping 文件比较字段定义、`dynamic`、分词器类型和 BM25 参数。
+**索引扫描与结构检查。** 两个索引分别按 keyword 字段分页读出（`doc_meta` 按 `document_id`，`chunks` 按 `chunk_id`，用 `search_after`）。结构检查用 `GET _mapping` 和 `GET _settings` 的结果，与版本库里的 mapping 文件比较字段定义、`dynamic`、分词器类型和 BM25 参数。（T24o 起字段定义多比较 `search_analyzer` 等 9 个键，分析配置逐项比较 analyzer、tokenizer、filter、char_filter、normalizer，见 `docs/changes/T24o.md`。）
 
 **退出码。**
 

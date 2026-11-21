@@ -219,6 +219,7 @@ BARRY zou/
 - [x] **T24l Worker 启动时检查数据库迁移**（优化清单第 2 项）：通用 Worker 比对 `alembic_version` 与代码里的最新迁移；OCR Worker 检查它读写的表和列是否存在；不一致时退出码 1 并提示 `alembic upgrade head`
 - [x] **T24m pdf.js 资源同步检查**（优化清单第 3 项）：前端测试逐文件核对 `public/pdfjs/` 与已安装的 pdfjs-dist；新增 `npm run sync:pdfjs` 复制脚本
 - [x] **T24n 文件列表的标签不再被截断**（优化清单第 4 项）：文件名单行省略、悬停看全名，标签放不下时换行
+- [x] **T24o 一致性检查扩大索引结构的比较范围**（优化清单第 5 项）：字段定义比较 12 个键（含 `search_analyzer`），分析配置逐项比较；提示里写出差在哪里
 
 ### 阶段五：实验（W13–W15）
 
@@ -307,7 +308,8 @@ BARRY zou/
   - ~~`scripts/smoke/ocr_e2e.py` 可以加一项检查 `ocr_results.params` 有值。~~（Barry 于 2026-11-19 批准，T24h 已完成）
 - **待议（T24d 记录，见 `docs/changes/T24d.md` §4）**
   - ~~CLAUDE.md 的一致性检查说明没有提 `--force`~~（Barry 于 2026-11-19 同意，已补）。
-  - 结构检查只比较字段类型、分词器类型和 BM25 参数；要不要扩大比较范围（例如 `search_analyzer`），待议。
+  - ~~结构检查只比较字段类型、分词器类型和 BM25 参数；要不要扩大比较范围（例如 `search_analyzer`），待议。~~（Barry 于 2026-11-21 批准，T24o 已完成）
+  - 待 Barry 决定（T24o 记录）：`CLAUDE.md` 一致性检查说明里 `--force` 的举例“改了 `search_analyzer` 等检查比较不到的设置”已不准确（T24o 起能比较到），是否改为“改了分析器插件内部参数等检查比较不到的设置”。
 - **待议（T24e 记录，见 `docs/changes/T24e.md` §4）**
   - （已批准，排为 T24f）前端预览页对 PDF、图片不显示抽取文本，T24e 的排序在界面上看不到。是否给 PDF、图片加一个“抽取文本”标签页（能看到 OCR 识别出了什么，答辩演示 OCR 时有用），属于新功能。Barry 于 2026-11-19 先决定不加（`e759bfc`），随后要求出方案，看过后于同日批准，排为 T24f。
 - **安全方面，本科毕设范围内可以不做，但答辩可能被问到**（Barry 于 2026-11-19 决定：`/health` 一项排为 T24b；其余两项不做，写进论文“局限与改进”并准备答辩回答）
@@ -372,4 +374,5 @@ BARRY zou/
 | T24l | 2026-11-21 | f31590b | 优化清单第 2 项（来源 T24a 待议），Barry 于 2026-11-21 批准；不带 🔒。新增 `backend/app/worker/schema.py`（`expected_heads`、`schema_problem`、`check_schema`），通用 Worker 在 ping 之后检查；OCR Worker 的 `store.py` 新增 `REQUIRED_COLUMNS`、`missing_columns`、`PgStore.schema_problems()`（查 `information_schema.columns`，ocr 环境没有 alembic），启动时检查。已执行：backend 718 passed、229 skipped（新增 7 项）；services/ocr_worker（main 环境）71 passed、4 skipped（新增 4 项）；ruff 通过；ocr 环境能导入；`python -m app.worker` 连不存在的端口仍以退出码 1 结束。**未测试（Not Tested）**：两个检查在真实 PostgreSQL 上的行为，已登记到 untested.md。没有改表结构、迁移、配置、附录 A，没有新下载。修改记录见 `docs/changes/T24l.md` |
 | T24m | 2026-11-21 | 49c67e4 | 优化清单第 3 项（来源：审查 `27b51b2`），Barry 于 2026-11-21 批准；不带 🔒，没有新依赖。新增 `frontend/scripts/pdfjs-assets.mjs`（比较）、`scripts/sync-pdfjs.mjs`（先删后复制四个目录，再复核）、`tests/pdfjs-assets.test.mjs`（3 项）；`package.json` 加 `sync:pdfjs`；`frontend/README.md` 同步。写成 `.mjs` 是因为项目没有 `@types/node`。已执行：前端 70 项通过、类型检查通过；`sync:pdfjs` 运行后 `public/pdfjs/` 没有变化；故意改坏一个文件并加一个多余文件，测试失败且列出两者，同步后恢复。没有未测试项。修改记录见 `docs/changes/T24m.md` |
 | T24n | 2026-11-21 | 0754962 | 优化清单第 4 项（来源：DEVPLAN §4 前端），Barry 于 2026-11-21 批准；不带 🔒。`DocumentsView.vue` 的“文件名”列去掉 `show-overflow-tooltip`（它把整格压成一行，连标签一起截掉），改为文件名单独省略并带 `title`、标签 flex 换行、特别长的标签自身省略。已执行：类型检查通过、前端 70 项通过；浏览器对着临时模拟接口检查（宽 800px）：长文件名省略且 `title` 为全名，6 个标签分两行全部显示，超长标签不撑破单元格。没有未测试项。修改记录见 `docs/changes/T24n.md` |
+| T24o | 2026-11-21 | 待填 | 优化清单第 5 项（来源 T24d 待议），Barry 于 2026-11-21 批准；不带 🔒。`consistency/collect.py`：字段比较的键从 3 个增至 12 个（`search_analyzer`、`search_quote_analyzer`、`index`、`doc_values`、`norms`、`similarity`、`ignore_above`、`null_value`、`format` 等），值统一成字符串再比较；分析配置由只比较 `docmgr_text.type` 改为逐项比较 analyzer、tokenizer、filter、char_filter、normalizer；不一致的提示写出具体差异。向量索引的检查不变。已执行：backend 721 passed、229 skipped（新增 3 项，改写 1 项期望文字）；ruff 通过。**未测试（Not Tested）**：对真实 OpenSearch 运行（可能有误报，见 untested.md 第 4 节）。mapping 文件和索引结构没有改，不需要重建索引。修改记录见 `docs/changes/T24o.md` |
 | Windows 第二轮补测 | 2026-11-19 | 27b51b2 | 由 Barry 在 Windows 上完成并推到 GitHub，本会话合入（合并提交 `73e5b58`），没有重跑全套。测试的是 `50b244b`（T24f 之后、T24g 之前）的代码。结果：backend 923 passed、6 failed、0 skipped；shared 103 passed、2 failed；frontend 67 passed，类型检查和生产构建通过；OCR Worker 主环境 66 passed、4 skipped，ocr 环境真实识别 4 passed；CLIP 17 passed。8 项失败全部是符号链接测试的 WinError 1314（普通权限，测试准备阶段失败）。修复 3 处：中文 PDF 预览空白（`PdfViewer.vue` 配置 CMap、标准字体、WASM、ICC，资源放 `frontend/public/pdfjs/`，与已装的 pdfjs-dist 6.5.438 逐文件一致，不是新下载）；两个测试不再写死 psycopg/httpx 的具体异常类名；向量检索测试不再写死余弦分数 2.0（2.19.1 实测 1.0）。真实产品测试走通了注册登录、上传处理、OCR 检索、删除、共享、CLIP 检索与降级、中文 PDF 预览。本机（macOS）复跑：`test_health.py`、`test_worker_main.py` 11 项通过，前端类型检查通过。**未测试（Not Tested）**：8 项符号链接测试待以开发人员模式重跑；Docker/compose；正式评测数据（候选数据集下载待批准）；Linux `RLIMIT_AS`；并发与长时间运行；极端真实文件；T24g、T24h、T24i 的代码；修复后的 PDF 预览在 macOS 上。逐项见 `docs/untested.md` 第 7 节；第 3 节的 38 项本轮已通过（只有汇总数字），Barry 于 2026-11-19 批准后已从 untested.md 删除，剩 T24g、T24i 的 3 项。修改记录 `docs/changes/windows-2026-11-19.md` |
