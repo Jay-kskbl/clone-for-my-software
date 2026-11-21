@@ -1,0 +1,161 @@
+/* 扫描加载动画（动画 3）。颜色全部引用项目变量（--app-*、--el-*），浅色 / 暗色自动跟随。 */
+.sm-scan {
+  padding: 4px 0;
+}
+
+/* 用 regular 而不是 secondary：secondary 在白底上对比度只有约 3:1，不够正文要求的 4.5:1 */
+.sm-scan-status {
+  min-height: 1.6em;
+  margin: 0 0 12px;
+  color: var(--app-text-regular);
+  font-size: 13px;
+}
+
+.sm-scan-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  transition: opacity 0.3s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.sm-scan-card {
+  position: relative;
+  box-sizing: border-box;
+  height: 84px;
+  padding: 14px;
+  overflow: hidden;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius);
+  background: var(--app-surface);
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity 0.3s cubic-bezier(0.33, 1, 0.68, 1),
+    transform 0.3s cubic-bezier(0.33, 1, 0.68, 1),
+    border-color 0.2s;
+}
+
+.sm-scan-card.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+.sm-scan-card.is-active {
+  border-color: var(--app-primary);
+}
+
+/* 读过的卡片变淡 */
+.sm-scan-card.is-read {
+  opacity: 0.55;
+}
+
+.sm-scan-line {
+  display: block;
+  height: 8px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+  background: var(--el-fill-color);
+}
+
+.sm-scan-line:nth-child(1) {
+  width: 80%;
+}
+
+.sm-scan-line:nth-child(3) {
+  width: 55%;
+}
+
+.sm-scan-beam {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  background: var(--app-primary);
+  box-shadow: 0 0 8px var(--app-primary);
+  opacity: 0;
+}
+
+.sm-scan-card.is-active .sm-scan-beam {
+  opacity: 1;
+}
+
+.sm-scan-check {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  /* dark-2 在白底上对比度约 3.6:1（图形元素要求 3:1）；暗色主题里 Element Plus 会把它换成更亮的绿 */
+  background: var(--el-color-success-dark-2);
+  /* 勾号用页面底色而不是写死白色：暗色主题里底圆变成亮绿，白勾对比度只有约 1.9:1 */
+  color: var(--app-surface);
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity 0.2s cubic-bezier(0.33, 1, 0.68, 1),
+    transform 0.25s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.sm-scan-card.is-read .sm-scan-check {
+  opacity: 1;
+  transform: none;
+}
+
+/* 收拢：朝卡片区中心移动、缩小、淡出（偏移量由脚本写进 --sm-dx / --sm-dy） */
+.sm-scan-cards.is-gathered .sm-scan-card {
+  opacity: 0;
+  transform: translate(var(--sm-dx, 0), var(--sm-dy, 0)) scale(0.85);
+  transition-duration: 0.4s;
+}
+
+.sm-scan-cards.is-dim {
+  opacity: 0.45;
+}
+
+.sm-scan-error {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.sm-scan-error[hidden] {
+  display: none;
+}
+
+.sm-scan-retry {
+  padding: 5px 16px;
+  border: 1px solid var(--el-border-color);
+  border-radius: var(--app-radius);
+  background: var(--app-surface);
+  color: var(--app-primary);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.sm-scan-retry:hover {
+  border-color: var(--app-primary);
+}
+
+.sm-scan-retry:focus-visible {
+  outline: 2px solid var(--app-primary);
+  outline-offset: 2px;
+}
+
+/* 减少动效：去掉扫描线、位移和缩放，只保留对勾依次出现和文字进度（指南 §6.5） */
+.sm-scan.is-reduced .sm-scan-card,
+.sm-scan.is-reduced .sm-scan-check {
+  transform: none !important;
+}
+
+.sm-scan.is-reduced .sm-scan-beam {
+  display: none;
+}

@@ -24,6 +24,12 @@ export const router = createRouter({
       component: () => import('./views/PreviewView.vue'),
       meta: { requiresAuth: true },
     },
+    // 搜索动效演示页（克隆库 feat/search-motion 专用，不需要登录，不调用后端）
+    {
+      path: '/motion-lab',
+      name: 'motion-lab',
+      component: () => import('./features/search-motion/lab/MotionLabView.vue'),
+    },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
   // 提供 scrollBehavior 后，由 vue-router 接管滚动位置（它会把浏览器的自动滚动恢复关掉）：
