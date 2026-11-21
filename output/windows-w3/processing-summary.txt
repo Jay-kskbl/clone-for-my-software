@@ -1,0 +1,57 @@
+Windows W3 测试与处理汇总
+==========================
+
+制作：Codex
+执行日期：2026-11-21
+
+数据集：
+- DocVQA via vidore/docvqa_test_subsampled
+- 修订号：49bf8f13e13c41dd8cdb0cae5314e31c1da1e0d6
+- 500 条文字型查询
+- 500 张不重复图片，全部 JPEG
+
+独立环境：
+- 数据库：docmgr_docvqa
+- 存储：storage/w3-docvqa
+- OpenSearch 前缀：docvqa_
+
+任务最终状态：
+- parse：500 succeeded
+- embed：500 succeeded
+- OCR：500 succeeded
+- failed：0
+
+处理时间：
+- 开始：2026-11-21 13:20:54
+- 全部完成：2026-11-21 15:27:13
+- 总耗时：约 2 小时 6 分 19 秒
+
+OCR：
+- 首次 498 项直接成功
+- mjbw0217.jpg、mkvw0217.jpg 曾因 Windows 原生识别子进程
+  0xC0000005 在自动重试 3 次后失败
+- 改用单 OCR Worker 使用既有任务重试接口后，两项均成功
+- OCR 片段来源数据在 reocr 前后均为 1589
+
+实验：
+- B0、B1、B2、B3、B3-no-ocr、B3-no-clip、clip-only、
+  B3-k10、B3-k30、B3-k100
+- 每个配置 --repeat 3
+- 10 个配置全部退出码 0、complete=true、failed_searches=0
+- reocr 后 B2 复跑退出码 0，指标不变
+
+一致性：
+- python -m app.modules.consistency check
+- 输出“没有发现不一致。”
+- 退出码 0
+
+主库隔离：
+- 主库 docmgr：documents=0
+- W3 库 docmgr_docvqa：documents=500
+
+详细日志：
+- windows-w3-test-evidence.zip
+- experiments.txt
+- metrics-summary.csv
+- experiment-exits.json
+- memory-peaks.json
