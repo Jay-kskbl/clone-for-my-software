@@ -1,0 +1,20 @@
+文件路径,制作或生成者,角色,来源或依据,所属任务,备注
+.gitignore,Codex,修改者,本地 W2 忽略规则实现,W2,增加 DocVQA 原文件、映射和运行结果忽略项
+output/windows-w1/backend.xml,Codex,执行并生成,使用 pytest 实际运行 backend 全套测试,W1,原始 JUnit；测试代码来自仓库既有作者
+output/windows-w1/shared.xml,Codex,执行并生成,使用 pytest 实际运行 shared 全套测试,W1,原始 JUnit；测试代码来自仓库既有作者
+output/windows-w1/ocr_worker.xml,Codex,执行并生成,使用 main 环境实际运行 OCR Worker 测试,W1,原始 JUnit；测试代码来自仓库既有作者
+output/windows-w1/clip_service.xml,Codex,执行并生成,使用 main 环境实际运行 CLIP 服务测试,W1,原始 JUnit；测试代码来自仓库既有作者
+scripts/__init__.py,Codex,新增,仓库级脚本包入口,W2,无
+scripts/datasets/__init__.py,Codex,新增,数据集脚本包入口,W2,无
+scripts/datasets/docvqa_import.py,Codex,新增,按 Windows 任务书 W2/T24j 实现,W2,DocVQA 下载、校验、续跑和转换
+scripts/datasets/tests/test_docvqa_import.py,Codex,新增,按 Windows 任务书 W2/T24j 实现,W2,12 项离线单元测试
+experiments/docvqa/datasets/manifest.csv,Codex,生成,从 Hugging Face vidore/docvqa_test_subsampled 转换,W2,原始数据版权与来源归 DocVQA / UCSF Industry Documents Library
+experiments/docvqa/datasets/source_rows.jsonl,Codex,生成,从 Hugging Face vidore/docvqa_test_subsampled 转换,W2,原始数据版权与来源归 DocVQA / UCSF Industry Documents Library
+experiments/docvqa/queries.tsv,Codex,生成,从 Hugging Face vidore/docvqa_test_subsampled 转换,W2,原始查询归 DocVQA
+experiments/docvqa/qrels/docvqa.tsv,Codex,生成,按任务书以每行的 image_filename 标为 grade 3,W2,相关性标注由 Codex 按任务书规则生成
+docs/changes/T24j.txt,Codex,新增,任务书修改记录要求；因 .md 禁令改用 .txt,W2,内容对应 T24j.md
+docs/downloads_DocVQA.txt,Codex,新增,任务书下载登记要求；因 .md 禁令改用 .txt,W2,内容对应 downloads.md 的新增项
+windows任务报告.txt,Codex,新增并更新,汇总本轮实际测试、下载、实验和未完成项,W1/W2/W3,因 .md 禁令使用 .txt
+windows任务执行留痕.txt,Codex,新增并更新,应 Barry 全局留痕要求记录新增、下载、删除和未完成溯源,W1/W2/W3,逐项记录本轮操作
+windows任务书_同步记录.txt,Codex,新增,核对 GitHub origin/main、ls-remote 与本地任务书,W1,记录远端未发现新版任务书的客观结果
+docvqa-runs.zip,Codex,打包生成,experiments/docvqa/runs 下 11 个实际运行目录,W3,包含 10 个实验配置和 reocr 后 B2 复跑

@@ -163,6 +163,8 @@ W3 尚未提交时的生成物：
 会进入 Git 的最终留痕：
 - windows任务报告.txt
 - windows任务执行留痕.txt
+- windows任务书_同步记录.txt
+- 文件制作人与来源清单.csv
 
 不会进入 Git、由 .gitignore 排除：
 - experiments/docvqa/datasets/files/（500 张 DocVQA 图片）
@@ -172,6 +174,9 @@ W3 尚未提交时的生成物：
 - storage-smoke/（日志、临时测试目录、运行脚本）
 - .venv-main、env_check/.venv-*、models、frontend/node_modules 的 junction
 - docvqa-runs.zip（任务书要求直接交给 Barry，不提交 Git）
+
+2026-11-21 追加：Barry 随后明确要求将目前完成的部分上传到 GitHub，
+因此 docvqa-runs.zip 也纳入本次上传；原始 DocVQA 图片仍按任务书不进入 Git。
 
 压缩包：
 - 路径：docvqa-runs.zip
