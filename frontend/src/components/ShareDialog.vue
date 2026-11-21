@@ -69,7 +69,7 @@ async function onRemove(share: Share) {
   <el-dialog
     :model-value="document !== null"
     :title="document ? `共享：${document.filename}` : ''"
-    width="520px"
+    width="min(520px, 92vw)"
     @close="emit('close')"
   >
     <p class="share-hint">被共享的用户可以查看、下载和检索这个文件，不能删除或再共享给别人。</p>
@@ -96,7 +96,7 @@ async function onRemove(share: Share) {
 <style scoped>
 .share-hint {
   margin: 0 0 12px;
-  color: #606266;
+  color: var(--app-text-regular);
   font-size: 13px;
 }
 

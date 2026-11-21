@@ -1,6 +1,6 @@
 # 未测试清单（Not Tested）
 
-更新日期：2026-11-21（按 T24k–T24n 的提交修正汇总数字和 Windows 未覆盖范围；本次没有运行任何测试。上一次：2026-11-19 T24i 完成后，按 Barry 批准整理，并删除 Windows 第二轮已通过的 38 项）
+更新日期：2026-11-21（T24s 完成后登记前端界面优化的 3 项未验证性质，见第 4 节“T24s 前端界面优化”；自动化测试的合计不变。同日稍早：按 T24k–T24n 的提交修正汇总数字和 Windows 未覆盖范围，没有运行任何测试。再上一次：2026-11-19 T24i 完成后，按 Barry 批准整理，并删除 Windows 第二轮已通过的 38 项）
 
 这里列出**已经写好但从未实际执行过**的测试，以及其他没有经过验证的性质。
 规则来自 GLOBAL.md“测试执行限制与代码验证要求”：跑不了的测试不强行执行、不安装工具，
@@ -30,7 +30,7 @@
 
 T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器）和 T12（切分）不需要数据库，它们的测试全部在本机执行并通过，没有未测试项。
 
-对照（数字取自各任务的 DEVPLAN §5 记录）：2026-11-21（T24l）本机实测 `backend/` 718 项通过、229 项跳过，`services/ocr_worker/`（main 环境）71 项通过、4 项跳过；T24k 时 `backend/` 711 项通过、229 项跳过，`shared/` 108 项通过；T24m、T24n 时 `frontend/` 70 项通过。T24k–T24n 新增的测试都是单元测试，全部在本机运行过，跳过数没有变化，所以上面的合计仍为 3。2026-11-19（T24i）本机实测 `backend/` 709 项通过、229 项跳过；T24g 时为 705 项通过、227 项跳过；T24e 时为 703 项通过、226 项跳过；T24c 时为 692 项通过、216 项跳过，`shared/` 105 项通过；T24 时为 678 项通过、212 项跳过。
+对照（数字取自各任务的 DEVPLAN §5 记录）：2026-11-21（T24l）本机实测 `backend/` 718 项通过、229 项跳过，`services/ocr_worker/`（main 环境）71 项通过、4 项跳过；T24k 时 `backend/` 711 项通过、229 项跳过，`shared/` 108 项通过；T24m、T24n 时 `frontend/` 70 项通过，T24p 时 73 项，T24s 时 93 项（10 个文件）。T24k–T24n、T24p、T24s 新增的测试都是单元测试，全部在本机运行过，跳过数没有变化，所以上面的合计仍为 3。2026-11-19（T24i）本机实测 `backend/` 709 项通过、229 项跳过；T24g 时为 705 项通过、227 项跳过；T24e 时为 703 项通过、226 项跳过；T24c 时为 692 项通过、216 项跳过，`shared/` 105 项通过；T24 时为 678 项通过、212 项跳过。
 
 ## 2. 影响最大的几项
 
@@ -54,8 +54,8 @@ T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器�
 | Worker 子进程的内存上限 | 用 `RLIMIT_AS` 实现，只在 Linux 上有效；开发机是 macOS，内核基本不执行这个限制 | `decisions.md` D16 |
 | 后端连上真实数据库后的整体运行 | **部分验证（2026-11-19 Windows 第二轮）。** Windows 上用真实 PostgreSQL、OpenSearch、OCR Worker、CLIP 服务走通了注册、登录、上传、状态轮询、下载、OCR 检索、删除、共享与取消共享、CLIP 检索与降级。macOS 本机仍没有跑过 | DEVPLAN §5“Windows 第二轮补测” |
 | `deploy/docker-compose.yml` | 只校验过语法，容器从未启动 | DEVPLAN §5 T01 |
-| 前端与真实后端的联调 | **未测试。** 本机没有 PostgreSQL，真实后端的登录、上传等接口跑不起来。T10 的页面是对着一个临时写的模拟接口在浏览器里检查的（模拟接口按 `api.md` 的结构应答，不是项目代码，没有提交）。前端与真实后端之间的不一致——字段名、状态码、multipart 的细节——这种检查发现不了。T16 的检索页、预览页和抽取文本接口同样只对着模拟接口检查过（检索、PDF 跳页、Word 跳到命中段、图片、503 与空结果的区分），从未与真实后端和真实 OpenSearch 联调 | DEVPLAN §5 T10、T16 |
-| 前端页面组件的自动化测试 | 没有写，项目里也没有组件测试工具（加装需要 Barry 同意）。前端单元测试（T10 时 48 项，2026-11-21 T24n 时 70 项）只覆盖接口封装、格式化、摘要清洗和位置格式；登录页、文件列表、共享对话框、检索页、预览页、PDF 查看器只做过人工浏览器检查 | DEVPLAN §5 T10、T16 |
+| 前端与真实后端的联调 | **未测试。** 本机没有 PostgreSQL，真实后端的登录、上传等接口跑不起来。T10 的页面是对着一个临时写的模拟接口在浏览器里检查的（模拟接口按 `api.md` 的结构应答，不是项目代码，没有提交）。前端与真实后端之间的不一致——字段名、状态码、multipart 的细节——这种检查发现不了。T16 的检索页、预览页和抽取文本接口同样只对着模拟接口检查过（检索、PDF 跳页、Word 跳到命中段、图片、503 与空结果的区分），从未与真实后端和真实 OpenSearch 联调。T24s 改了全部页面的布局，检索页新调用 `GET /health`，同样只对着模拟后端检查过（见下面“T24s 前端界面优化”） | DEVPLAN §5 T10、T16、T24s |
+| 前端页面组件的自动化测试 | 没有写，项目里也没有组件测试工具（加装需要 Barry 同意）。前端单元测试（T10 时 48 项，2026-11-21 T24n 时 70 项，T24s 时 93 项）只覆盖接口封装、格式化、摘要清洗、位置格式和检索通道的纯函数（T24s 的 `utils/channels.ts`）；登录页、文件列表、共享对话框、检索页、预览页、PDF 查看器只做过人工浏览器检查 | DEVPLAN §5 T10、T16 |
 | PDF 预览在真实文件上的表现 | **部分验证。** 2026-11-19 Windows 第二轮发现中文 PDF 预览空白（pdf.js 没有配置 CMap 等资源），修复后用一份真实中文 PDF 在真实后端上看到正常显示（截图 `docs/screenshots/windows-2026-11-19/pdf-preview-e2e-fixed.png`）。修复后的预览在 macOS 浏览器里没有看过；扫描件、加密、接近 50 MB 的 PDF 仍没有试过 | `decisions.md` D29 |
 | 真实后端经开发代理的访问 | **部分验证。** T05–T10 核查时启动了真实后端（数据库地址指向不存在的端口）和真实的前端开发代理，用 curl 验证了不需要数据库的路径：健康检查、数据库不可用返回 503、未登录 401、参数校验 422、未登录上传（multipart 经代理）401、超大上传 413。需要数据库的路径（登录成功之后的一切）仍未验证 | DEVPLAN §5 核查记录 |
 | Windows 上的运行 | 2026-11-16 跑过 backend 728 项；2026-11-19 第二轮跑到 T24f（`50b244b`）的代码：backend 923 项中 6 项、shared 2 项因 WinError 1314 失败（普通权限，第 7 节），其余通过。T24g 之后的代码（含 2026-11-21 的 T24k–T24n）没有在 Windows 上跑过 | DEVPLAN §5“T00–T19 补测”“Windows 第二轮补测” |
@@ -135,6 +135,16 @@ T20 的测试都在本机实际运行过（接口测试 39 项，真实模型测
 | 跳到命中片段后的自动滚动 | 这次检查时浏览器面板处于隐藏状态，`requestAnimationFrame` 不触发，滚动那一步没有执行。用改动前的代码在同一环境下对照，同样不滚动，所以不是 T24f 引入的；但 T24f 之后 Word/Excel 和抽取文本标签页的滚动都没有实际看到过 |
 | 与真实后端联调 | 抽取文本标签页、`view=` 参数、默认标签页只对着临时模拟接口检查过 |
 | 页面组件的自动化测试 | 没有（项目里没有组件测试工具）；只有 `initialPreviewTab` 的 5 项单元测试 |
+
+### T24s 前端界面优化（2026-11-21 登记，见 `docs/changes/T24s.md`、`decisions.md` D48）
+
+已执行并通过：类型检查；前端 10 个文件 93 项单元测试（新增 `channels.test.ts` 20 项）；生产构建（首屏 JS 约 483 KB，与 T24p 持平）；`src` 下没有写死的十六进制色值；浏览器对着临时模拟后端（scratchpad 里的 Node 脚本，不在仓库里，返回虚构数据）以 1280×800、375×812 截图核对文件页、脚本派发的 drop 事件（一个成功、一个被拒并显示原因）、检索页说明状态与全通道结果、关闭文件名通道后自动重检（`ch=body,ocr,image`）、CLIP 不可用时的降级显示、预览页标题区、窄屏布局，控制台只有被拒文件预期的 415。以下没有验证：
+
+| 项目 | 说明 | 代码复核 |
+|---|---|---|
+| 与真实后端联调 | 本机没有 PostgreSQL / OpenSearch，只用了模拟后端。要核对：`GET /health` 的真实应答与 CLIP 服务状态的显示；检索响应 `channels` 里各通道的 `status`、`took_ms` 与汇总行、三格名次（未命中 / 未开启 / 不可用）的显示；RRF 融合分；拖拽上传经真实上传接口的成功与拒绝 | 已复核：`HealthResponse`、`ComponentStatus` 与 `backend/app/api/health.py` 的字段一致，`/health` 依赖不可用时也返回 200（所以显示“不可用”而不是“状态未知”）；`ChannelStatus` 与 `search/schemas.py` 的 `ChannelStatusOut` 一致；文字通道关闭时不传 `source_types`，与 api.md §7.1“`source_types` 为空列表返回 422”相符 |
+| 用鼠标从系统文件管理器真实拖入文件 | 本次是用脚本派发 drop 事件模拟的；真实拖放时浏览器给出的 `dataTransfer.files`、拖到子元素上时的 dragleave 没有实际看过 | 已复核：`onDrop` 取 `event.dataTransfer.files` 交给与点击选择相同的上传队列；dragenter、dragover 都 `preventDefault`（否则浏览器会直接打开文件）；dragleave 只在真正离开拖放区时取消高亮 |
+| Chrome 以外的浏览器 | 只在内置浏览器（Chrome 内核）里看过；Safari、Edge、Firefox 的显示效果没有看过 | 已复核：样式里用到的较新特性只有 `min()`、`:focus-visible`、flex 的 `gap` 和 CSS 变量，当前版本的这几种浏览器都支持；没有用 `:has()`、`color-mix()`、容器查询。要留意一处：`onDragLeave` 靠 `relatedTarget` 判断是否真正离开拖放区，有的浏览器（例如部分 Safari 版本）拖动事件的 `relatedTarget` 可能为 null，那样拖过区内文字时高亮会闪一下，不影响放下文件后的上传 |
 
 ### T24e 文本预览排序（2026-11-19 登记，见 `decisions.md` D44）
 
@@ -473,6 +483,6 @@ cd <项目目录> && docker compose --env-file .env -f deploy/docker-compose.yml
 | `RLIMIT_AS` 内存上限 | 只在 Linux 有效；Windows 上没有 WSL/Linux，仍未验证（同第 4 节两行） | `decisions.md` D16、D30 |
 | 并发、长时间运行、吞吐、峰值内存 | Windows 上只用 5 个样本确认 PostgreSQL、OpenSearch、OCR、CLIP 能同时运行，并做了基础内存检查；没有并发压测和长时间观察（OS-6 只算部分完成） | DEVPLAN T27 |
 | 极端真实文件 | 已用 6 个真实样本（中文 PDF、Word、Excel、相机 JPEG、PaddleOCR 示例图、一个 PDF 模糊测试样本）；接近 50 MB 的 PDF、加密 PDF、多栏/表格/水印/竖排/手写扫描件、Office/WPS 实际保存的复杂文件、超大图片、渐进式 JPEG、超限压缩包都没有测 | 第 4 节解析器、OCR 各行 |
-| T24g 之后的代码 | 这一轮基于 `50b244b`，不含 T24g（`test_preflight_reports_mixed_ocr_models`）、T24h（烟测脚本查 `ocr_results.params`）和 T24i（`experiments reocr`），也不含 2026-11-21 的 T24k（Worker 连接超时）、T24l（Worker 启动时检查迁移）、T24m（pdf.js 资源同步检查）、T24n（文件列表标签换行）。T24k–T24n 只在 macOS 本机跑过单元测试；T24k 的连接超时实测只在 macOS 主环境做过（连不可达地址，不设超时 75.0 秒、设 2 秒 2.0 秒报错），OCR Worker 在 ocr 环境只验证了能导入，没有实际连过 | 第 3 节、第 4 节；`docs/changes/T24k.md`–`T24n.md` |
+| T24g 之后的代码 | 这一轮基于 `50b244b`，不含 T24g（`test_preflight_reports_mixed_ocr_models`）、T24h（烟测脚本查 `ocr_results.params`）和 T24i（`experiments reocr`），也不含 2026-11-21 的 T24k（Worker 连接超时）、T24l（Worker 启动时检查迁移）、T24m（pdf.js 资源同步检查）、T24n（文件列表标签换行），以及之后的 T24o–T24s（T24s 是前端界面优化）。T24k–T24n 只在 macOS 本机跑过单元测试；T24k 的连接超时实测只在 macOS 主环境做过（连不可达地址，不设超时 75.0 秒、设 2 秒 2.0 秒报错），OCR Worker 在 ocr 环境只验证了能导入，没有实际连过 | 第 3 节、第 4 节；`docs/changes/T24k.md`–`T24n.md` |
 | 修复后的 PDF 预览在 macOS 上 | `PdfViewer.vue` 新增 `cMapUrl`、`standardFontDataUrl`、`wasmUrl`、`iccUrl`，资源在 `frontend/public/pdfjs/`；只在 Windows 上看过，macOS 浏览器里没有看过；生产构建后资源路径（`BASE_URL`）在 macOS 上也没有检查 | DEVPLAN §5“Windows 第二轮补测” |
 | 余弦分数的绝对值 | `test_vector_index_live.py` 原来断言完全相同方向得 2.0，OpenSearch 2.19.1 实际为 1.0；测试改为只断言排序和严格递减。分数只用于通道内排名，不影响 RRF，但 `search_vectors` 文档里原来写的“1 + 余弦相似度”与实测不符，已改为“范围由版本决定” | `decisions.md` D35 |

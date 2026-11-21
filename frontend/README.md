@@ -31,14 +31,17 @@ npm install
 
 ```
 src/
-├── api/          接口封装：client.ts（令牌、错误转换）、auth.ts、documents.ts、types.ts（与 api.md 对应的类型）
+├── api/          接口封装：client.ts（令牌、错误转换）、auth.ts、documents.ts、search.ts、health.ts（GET /health，T24s）、types.ts（与 api.md 对应的类型）
 ├── auth.ts       登录状态（当前用户）
 ├── router.ts     路由与登录跳转
-├── views/        页面：LoginView（登录/注册）、DocumentsView（文件列表、上传、下载、删除）、
-│                 SearchView（检索：结果、命中通道、图片缩略图、图像检索开关与降级提示）、PreviewView（预览；PDF、图片分“原文件 / 抽取文本”两个标签页，T24f）
-├── components/   ShareDialog（共享）、PdfViewer（PDF 显示）
-└── utils/        格式化、来源定位与通道说明、摘要清洗、缩略图加载（thumbnails.ts）
-tests/            单元测试（接口封装、格式化、来源定位、摘要、缩略图、pdf.js 资源一致性、Element Plus 注册）
+├── App.vue       页面骨架：登录后左侧导航栏 + 内容区（最宽 1200px）；≤768px 时导航栏收成顶部一行（T24s）
+├── styles.css    全局样式：--app-* 公共取值（全部引用 Element Plus 的 CSS 变量）、标题区、检索词高亮 .app-mark（T24s）
+├── views/        页面：LoginView（登录/注册）、DocumentsView（文件列表、拖拽上传与逐个文件的上传记录、下载、删除）、
+│                 SearchView（检索：检索通道面板与 CLIP 服务状态、结果卡片、三个通道的名次与 RRF 融合分、图片缩略图、降级提示）、
+│                 PreviewView（预览；PDF、图片分“原文件 / 抽取文本”两个标签页，T24f）
+├── components/   ShareDialog（共享）、PdfViewer（PDF 显示）、ExtractedText（抽取文本列表）、AppIcon（线条图标）、FileTypeBadge（文件类型色块）
+└── utils/        格式化、来源定位与通道说明、摘要清洗、缩略图加载（thumbnails.ts）、预览默认标签页（preview.ts）、检索通道开关与名次（channels.ts）、保存下载文件（download.ts）
+tests/            单元测试（接口封装、格式化、来源定位、摘要、缩略图、预览标签页、检索通道、pdf.js 资源一致性、Element Plus 注册）
 scripts/          pdfjs-assets.mjs（资源比较）、sync-pdfjs.mjs（复制资源）
 public/pdfjs/     pdf.js 的 CMap、标准字体、WASM 解码器、ICC 配置，PdfViewer 运行时按需加载（中文 PDF 需要 CMap）
 ```
@@ -48,3 +51,4 @@ public/pdfjs/     pdf.js 的 CMap、标准字体、WASM 解码器、ICC 配置�
 - 页面上的登录判断和按钮显隐只决定“显示什么”，不是权限控制；权限由后端每个接口校验。
 - Element Plus 按需引入（T24p）：新页面用到新的 `<el-xxx>` 组件时，在 `src/element.ts` 加它的样式，在 `src/element-components.ts` 加 import 和清单项；漏了的话 `npm test` 会失败。
 - 上传时选择文件的类型过滤只是方便用户，真正的类型检查在后端按文件内容进行。
+- 样式（T24s）：颜色不要在组件里写死十六进制值，引用 Element Plus 的 `--el-*` 变量或 `src/styles.css` 里的 `--app-*`；检索词高亮统一用 `.app-mark` 类（浅黄底）。

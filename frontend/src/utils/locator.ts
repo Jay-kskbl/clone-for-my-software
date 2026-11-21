@@ -22,17 +22,18 @@ export const SOURCE_TYPE_LABEL: Record<SourceType, string> = {
   ocr: 'OCR 文字',
 }
 
+// text 通道同时检索正文和 OCR 文字（用 source_types 区分），所以叫“文字”而不是“正文”（T24s）
 export const CHANNEL_LABEL: Record<Channel, string> = {
   meta: '文件名/标签',
-  text: '正文',
+  text: '文字',
   image: '图像',
 }
 
-// 命中通道标记的颜色：一眼能看出结果来自文字检索还是图像语义检索
-export const CHANNEL_TAG_TYPE: Record<Channel, 'info' | 'primary' | 'success'> = {
-  meta: 'info',
-  text: 'primary',
-  image: 'success',
+// 检索结果右侧名次格子里用的短名称
+export const CHANNEL_SHORT_LABEL: Record<Channel, string> = {
+  meta: '文件名',
+  text: '文字',
+  image: '图像',
 }
 
 /**

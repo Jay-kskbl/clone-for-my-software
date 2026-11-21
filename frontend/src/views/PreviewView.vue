@@ -11,6 +11,7 @@ import { downloadDocument, getDocument } from '../api/documents'
 import type { DocumentItem } from '../api/types'
 import ExtractedText from '../components/ExtractedText.vue'
 import PdfViewer from '../components/PdfViewer.vue'
+import { saveBlob } from '../utils/download'
 import { STATUS_LABEL, formatType, isImageType } from '../utils/format'
 import { type PreviewTab, initialPreviewTab } from '../utils/preview'
 
@@ -81,16 +82,17 @@ function onTabChange(name: string | number) {
 async function onDownload() {
   if (!document.value) return
   try {
-    const blob = await downloadDocument(document.value.id)
-    const url = URL.createObjectURL(blob)
-    const link = window.document.createElement('a')
-    link.href = url
-    link.download = document.value.filename
-    link.click()
-    URL.revokeObjectURL(url)
+    saveBlob(await downloadDocument(document.value.id), document.value.filename)
   } catch (error) {
     ElMessage.error(errorMessage(error))
   }
+}
+
+// 从列表或检索结果点进来时回到原来的页面；直接打开链接时没有上一页，回到文件列表，
+// 不让“返回”把人带出本系统（vue-router 把上一页记在 history.state.back 里）
+function goBack() {
+  if (window.history.state?.back) router.back()
+  else void router.push({ name: 'documents' })
 }
 
 onMounted(() => void load())
@@ -100,17 +102,19 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <el-card>
-    <div class="head">
-      <el-button link @click="$router.back()">← 返回</el-button>
-      <template v-if="document">
-        <span class="title">{{ document.filename }}</span>
-        <span class="type">{{ formatType(document.mime_type) }}</span>
+  <el-button link class="back" @click="goBack">← 返回</el-button>
+  <div class="page-head">
+    <div class="head-main">
+      <h1 class="page-title">{{ document?.filename ?? '文件预览' }}</h1>
+      <p v-if="document" class="page-desc">
+        <span>{{ formatType(document.mime_type) }}</span>
         <el-tag :type="STATUS_LABEL[document.status].type" size="small">{{ STATUS_LABEL[document.status].text }}</el-tag>
-        <el-button class="download" @click="onDownload">下载原文件</el-button>
-      </template>
+      </p>
     </div>
+    <el-button v-if="document" @click="onDownload">下载原文件</el-button>
+  </div>
 
+  <el-card shadow="never" class="preview-card">
     <el-alert v-if="loadError" type="error" :title="loadError" show-icon :closable="false" />
 
     <!-- 两个标签页都懒加载：PdfViewer 不在隐藏的标签页里先渲染（那时量不到容器宽度），
@@ -148,26 +152,17 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
+.back {
+  margin-bottom: 8px;
+  color: var(--app-text-secondary);
 }
 
-.title {
-  font-size: 16px;
-  font-weight: 600;
+.head-main {
+  min-width: 0;
 }
 
-.type {
-  color: #909399;
-  font-size: 13px;
-}
-
-.download {
-  margin-left: auto;
+.preview-card {
+  border-radius: var(--app-radius-lg);
 }
 
 .image-box {
