@@ -1,0 +1,100 @@
+Windows 任务报告
+================
+
+按 Barry 的明确要求，本报告使用 .txt；本任务过程中没有新建或修改任何 .md 文件。
+
+执行日期：2026-11-21（Asia/Shanghai）
+任务书：windows任务书.md（2026-11-19）
+代码基线：8fb5830（origin/main）
+执行目录：C:\Users\lenovo\Desktop\my-software-main\_gh_upload
+
+
+一、环境
+--------
+
+Windows：Microsoft Windows 11 家庭中文版，版本 10.0.22621
+CPU：13th Gen Intel(R) Core(TM) i5-13500H
+内存：15.73 GB
+Python：3.14.0（main 环境）
+PostgreSQL：16.15，127.0.0.1:55432
+OpenSearch：2.19.1，analysis-smartcn 2.19.1
+OpenSearch 集群：单节点，yellow（1 个副本分片未分配，属于单节点本地配置的正常状态）
+OCR：PaddleOCR 3.7.0 / PaddlePaddle 3.3.1，PP-OCRv5 mobile
+CLIP：Chinese-CLIP ViT-B-16，SHA-256 前 12 位 5997ef32c50d
+
+测试库：docmgr_test（每个集成测试前确认为空，测试后清空）
+W3 独立库：docmgr_docvqa（已迁移到 0002）
+W3 索引前缀：docvqa_（W3 执行时使用）
+
+说明：干净仓库没有附带虚拟环境和模型，执行时通过未提交的目录 junction
+复用本机 my-software-main 中的 .venv-main、.venv-ocr、.venv-clip 和 models/。
+这些 junction 都在 .gitignore 范围内，未修改项目代码或测试。
+
+
+二、W1 补测
+-----------
+
+状态：部分通过，唯一阻塞是 Windows 符号链接权限。
+
+| 项目 | 结果 | JUnit |
+|---|---|---|
+| backend | 932 passed, 6 failed, 0 skipped | output/windows-w1/backend.xml |
+| shared | 103 passed, 2 failed, 0 skipped | output/windows-w1/shared.xml |
+| OCR Worker（main） | 66 passed, 4 skipped | output/windows-w1/ocr_worker.xml |
+| OCR Worker（ocr 环境，真实模型） | 4 passed | 不生成 JUnit |
+| CLIP 服务（main） | 39 passed, 17 skipped | output/windows-w1/clip_service.xml |
+| CLIP 服务（clip 环境，真实模型） | 17 passed | 不生成 JUnit |
+| 前端测试 | 67 passed | 命令输出 |
+| 前端类型检查 | 通过 | 命令输出 |
+| 前端生产构建 | 通过 | 命令输出 |
+| ruff check | backend、shared、OCR Worker、CLIP 服务全部通过 | 命令输出 |
+| ruff format --check | 178 个文件全部已格式化 | 命令输出 |
+| OCR 端到端烟测 | PASS | storage-smoke/ocr-e2e/20261121-130539/ |
+
+补充验收项：
+
+- T24g 的 test_preflight_reports_mixed_ocr_models：通过。
+- T24i 的 test_reocr_requeues_finished_ocr_tasks_of_the_current_version：通过。
+- T24i 的 test_reocr_refuses_while_parse_or_ocr_tasks_are_unfinished：通过。
+- OCR 烟测打印值为：
+  {'pdf_dpi': None, 'max_pixels': 100000000, 'min_confidence': 0.0}
+- 烟测同时验证了上传、解析、OCR、params 入库、片段索引、检索命中、删除和索引清理。
+
+6 个 backend 失败和 2 个 shared 失败：
+
+1. backend/tests/unit/test_consistency.py::test_symlinks_are_never_treated_as_stored_files
+2. backend/tests/unit/test_storage.py::test_file_symlink_pointing_outside_rejected
+3. backend/tests/unit/test_storage.py::test_directory_symlink_pointing_outside_rejected[year]
+4. backend/tests/unit/test_storage.py::test_directory_symlink_pointing_outside_rejected[document]
+5. backend/tests/unit/test_storage.py::test_put_refuses_to_write_through_directory_symlink
+6. backend/tests/unit/test_storage.py::test_symlinked_temp_directory_refused_at_startup
+7. shared/tests/test_storage_keys.py::test_symlinked_directory_is_rejected
+8. shared/tests/test_storage_keys.py::test_symlinked_file_is_rejected
+
+共同错误：
+
+  OSError: [WinError 1314] 客户端没有所需的特权。
+
+失败发生在测试准备阶段调用 os.symlink / Path.symlink_to 时，尚未进入项目业务代码。
+当前 Codex 进程身份是 barry-zou\codexsandboxoffline，whoami /priv 没有
+SeCreateSymbolicLinkPrivilege。尝试用 Start-Process -Verb RunAs 启动管理员测试，
+UAC 启动进程返回退出码 4，未能取得管理员令牌。没有把测试改成 junction，也没有跳过测试。
+
+用户在普通终端补测的方法：
+
+1. 开启“设置 → 系统 → 开发者选项 → 开发人员模式”，注销并重新登录；或使用管理员终端。
+2. whoami /priv 确认有 SeCreateSymbolicLinkPrivilege。
+3. 在 backend 和 shared 下重跑完整 pytest，目标为 backend 938 passed、shared 105 passed。
+
+skipped 逐条原因：
+
+- OCR Worker main 环境 4 项：当前 main 环境没有 paddleocr；这 4 项已在 ocr 环境真实运行并通过。
+- CLIP 服务 main 环境 17 项：当前 main 环境没有 torch / cn_clip / PIL；这 17 项已在 clip 环境真实运行并通过。
+
+
+三、W1 结论
+-----------
+
+除 8 个 Windows 符号链接测试外，所有 W1 项目均实际执行并通过。
+因此 W1 验收标准中的“backend 0 failed、shared 0 failed”尚未满足；
+其余自动化测试、真实 OCR、真实 CLIP、前端、ruff 和 OCR 烟测均已完成。
