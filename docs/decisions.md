@@ -1274,3 +1274,22 @@ Barry 于 2026-11-19 对 DEVPLAN §4 中整理出的 14 项待批准事项回复
 - 这个目录里的文件以后在 Windows 上用编辑器打开再保存，如果被改成 CRLF，git 会原样提交进去（不再转换）。这些文件不应手工编辑，要更新就用 `npm run sync:pdfjs`（T24m），所以影响很小。
 - 已经签出成 CRLF 的工作区，拉到这条规则后，这 15 个文件会显示为已修改，要在仓库根目录执行一次 `git checkout -- frontend/public/pdfjs`，才会按新规则重新签出成 LF。这一点在 macOS 上用模拟签出验证过。
 - 只在 macOS 上用 `core.autocrlf=true` 的模拟签出验证过，真实 Windows 签出仍待 W5 第 11.2 节。
+
+### D50 mapping 文件签出、提交都用 LF（T24u）
+
+代码：仓库根目录 `.gitattributes`（新增两条 `text eol=lf`）。相关：`backend/app/modules/experiments/environment.py` 的 `code_versions()`、`windows任务书.md` 第 0.2 节第 4 步。逐项记录见 `docs/changes/T24u.md`。来源：Windows 第一轮核对（`docs/changes/windows-2026-11-21-核对.md` 第 5 节第 1 条），Barry 于 2026-11-21 批准。
+
+**问题。** 实验记录对 `doc_meta.json`、`chunks.json`、`image_vectors.json` 的原始字节算 SHA-256（D32、D38），用来判断两次实验的索引结构是否相同。Windows 上 `core.autocrlf=true` 时这三个文件被签出成 CRLF，第一轮 W3 记下的 hash 与仓库对不上；换成 CRLF 后重算，三个都吻合。内容没问题，但跨机器比较失效。
+
+**做法。** 对这两个目录的 `*.json` 设 `text eol=lf`：不论 `core.autocrlf` 怎么设，签出都是 LF；提交时如果是 CRLF，也会规范成 LF。仓库里这三个文件本来就是 LF，规则生效后不改任何内容，不需要重建索引。
+
+**为什么不用 T24t（D49）的 `-text`。** pdfjs 目录是复制来的第三方文件，不该手工编辑，`-text` 让 git 原样保存。mapping 是项目自己的文件，会被手工修改；用 `-text` 的话，Windows 上编辑后存成 CRLF 会原样进入仓库，hash 又会变。`eol=lf` 两头都管住。
+
+**为什么不改成对解析后的 JSON 算 hash。** 那要改代码，而且以前记下的 hash（Mac 上的实验记录、测试里的期望值）都会变，需要另行说明；而问题只出在签出的换行符上，配置一条规则就能解决。
+
+**代价与局限。**
+
+- 规则生效之前签出的工作区不会自己改正：拉取后文件仍是 CRLF，`git status` 不显示修改（git 按规则规范化后比较，认为内容相同），`git checkout -- <路径>` 也会跳过。必须先删掉文件再签出（macOS 模拟验证过；Windows 上的步骤见任务书第 0.2 节第 4 步）。
+- 同样的原因，工作区里的 mapping 如果被改成 CRLF 而没有提交，`git_dirty` 不会因此变成 true，实验记录里的 hash 却是 CRLF 的。以 hash 本身为准。
+- 只在 macOS 上用 `core.autocrlf=true` 的模拟签出验证过，真实 Windows 签出待任务书第 0.2 节第 4 步。
+

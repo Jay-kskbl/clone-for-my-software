@@ -44,9 +44,19 @@
 
 GitHub `main`（`bb3883c`）上有第一轮的 4 个提交，但**没有** Mac 上之后的提交（截至本次修订前共 26 个：T24k–T24s、W4、W5、开发报告；加上本次修订是 27 个）。W4–W7 都要用新代码，所以开始之前：
 
-1. Barry 在 Mac 上把 `origin/main` 合进本地 `main`（Claude 可以代做合并，但要 Barry 说“合并”），再由 Barry 推到 GitHub。
+1. Barry 在 Mac 上把 `origin/main` 合进本地 `main`（Claude 可以代做合并，但要 Barry 说“合并”），再由 Barry 推到 GitHub。（2026-11-21 21:10：合并已完成，`1178e1c`；还差 Barry 推送。）
 2. Windows 上 `git pull`，确认是快进（fast-forward），`git log -1 --format=%H` 的提交里包含本任务书第 0 节（`git show HEAD:windows任务书.md` 能找到“0. 当前状态与测试计划”）。
 3. 把这个提交号写进报告，并写进每个任务的 `output/windows-<任务>/git-head.txt`（第 14.1 节）。W6、W7 的结果只对这个提交有效。
+4. **重新签出三个 mapping 文件（T24u，2026-11-21 21:10 添加）。** 这台机器的工作区是 T24u 之前签出的，三个 mapping 现在是 CRLF；拉到 T24u 后 git 不会重写它们，`git status` 也不显示修改，`git checkout --` 同样会跳过。要先删再签出（在仓库根目录）：
+
+   ```powershell
+   Remove-Item shared\text_index\mappings\*.json, backend\app\modules\vector_index\mappings\*.json
+   git checkout -- shared/text_index/mappings backend/app/modules/vector_index/mappings
+   git ls-files --eol -- shared/text_index/mappings backend/app/modules/vector_index/mappings
+   Get-FileHash shared\text_index\mappings\*.json, backend\app\modules\vector_index\mappings\*.json -Algorithm SHA256
+   ```
+
+   预期：三行都是 `i/lf w/lf attr/text eol=lf`；SHA-256 开头分别为 `be91f8071d05`（doc_meta）、`0c7937251bab`（chunks）、`c984e85b889b`（image_vectors），与 Mac 一致。把输出存成 `output/windows-w6/mapping-eol.txt`。不做这一步，之后的实验记录仍会是 CRLF 的 hash。
 
 ### 0.3 报告格式
 
@@ -111,6 +121,7 @@ Barry 要求 Windows 上的执行者不新建、不修改 `.md` 文件。所以�
 | T24q（2026-11-21 14:29 添加） | `b18909e`：新增根目录 `README.md`（课题说明、快速开始、文档索引）。对执行的影响：无；命令仍以 `CLAUDE.md` 和本任务书为准 | 无 |
 | T24r（2026-11-21 14:29 添加） | `f0ef765`：整理零散文件，上一轮的原始说明移到 `docs/changes/windows-2026-11-19-原始说明.txt`，截图移到 `docs/screenshots/windows-2026-11-19/`，空的 `output/` 目录删了。对执行的影响：第 1 节第 4 项的路径已改；W1 的 JUnit XML 仍写到 `output/windows-w1/`，`pytest --junitxml` 会自己建目录 | 无 |
 | T24t（2026-11-21 20:40 添加） | `6521a1d`：新增根目录 `.gitattributes`，`frontend/public/pdfjs/**` 签出时不转换换行符（`-text`）。对执行的影响：W5 第 11.2 节的步骤已改，不再需要修改 git 设置；T24t 之前签出的工作区要按 11.2 第 5 步重新签出这个目录一次 | W5 第 11.2 节；W6 第 12.2 节的 `npm test` |
+| T24u（2026-11-21 21:10 添加） | `.gitattributes` 新增两条：`shared/text_index/mappings/*.json`、`backend/app/modules/vector_index/mappings/*.json` 设 `text eol=lf`，签出和提交都用 LF。原因：第一轮 W3 的 `config.json` 里三个 mapping 的 hash 是 CRLF 版本，和仓库对不上（`docs/changes/windows-2026-11-21-核对.md` 第 5 节）。对执行的影响：**已有的工作区拉取后不会自己改正，`git status` 也看不出来**，必须按第 0.2 节第 4 步删掉这三个文件再签出 | 第 0.2 节第 4 步；W6 第 12.4 节第 10 步、W7 之后的 `config.json` 由 Claude 核对 mapping hash |
 | T24s（2026-11-21 14:26 添加） | 前端界面优化（`281b226`，只改前端）：侧栏布局、拖拽上传与逐个文件的上传记录、检索通道面板、每条结果三个通道的名次与 RRF 融合分。只对着临时模拟后端检查过 | W1 第 5 项的前端测试（本机 93 项）；W4（第 10 节）的联调与界面核对 |
 
 ------------------------------------------------------------------------

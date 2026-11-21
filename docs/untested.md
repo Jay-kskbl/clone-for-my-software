@@ -491,7 +491,7 @@ cd <项目目录> && docker compose --env-file .env -f deploy/docker-compose.yml
 | 项目 | 说明 | 后续 |
 |---|---|---|
 | 8 项符号链接测试 | 仍因 WinError 1314 失败（同第 7.1 节）：执行方的沙箱账号没有 `SeCreateSymbolicLinkPrivilege`，提权返回退出码 4 | `windows任务书.md` W6 第 12.3 节，由 Barry 本人的终端运行 |
-| 实验记录的 mapping hash 跨机器不一致 | `config.json` 的三个 mapping SHA-256 与仓库文件不符；把仓库文件换成 CRLF 后完全吻合，即 Windows 按 `core.autocrlf=true` 签出了 CRLF。内容没问题，但两台机器的实验记录不能用这个 hash 判断索引结构是否相同 | 待 Barry 决定：把 mapping 加进 `.gitattributes`，或改为对解析后的 JSON 算 hash |
+| 实验记录的 mapping hash 跨机器不一致 | `config.json` 的三个 mapping SHA-256 与仓库文件不符；把仓库文件换成 CRLF 后完全吻合，即 Windows 按 `core.autocrlf=true` 签出了 CRLF。内容没问题，但两台机器的实验记录不能用这个 hash 判断索引结构是否相同 | T24u（2026-11-21）已在 `.gitattributes` 里把三个 mapping 设为 `text eol=lf`，macOS 上用 `core.autocrlf=true` 的模拟签出验证过；真实 Windows 签出待 `windows任务书.md` 第 0.2 节第 4 步，之后 W6 的 `config.json` 由 Claude 核对 hash |
 | `git_dirty: true` | W3 的 11 个结果目录都记录工作区不干净；很可能是执行前已有的 6 个未跟踪文件，没有当时的输出确认 | W6 第 12.11 节说明；任务书第 2 节第 11 条要求以后先保证工作区干净 |
 | OCR 子进程访问违例 | 两张图片的 OCR 子进程以 `0xC0000005` 退出，4 个 OCR Worker 同时运行时 3 次重试都失败，单个 Worker 时手动重试成功；没有日志 | W6 第 12.11 节补交日志 |
 | W3 处理过程的数字 | 任务数、OCR 片段 1589、一致性检查、峰值内存、OCR 每任务 53.57 秒只有报告，没有原始数据 | W6 第 12.11 节补交 |
