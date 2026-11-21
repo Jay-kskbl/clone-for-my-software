@@ -3,6 +3,8 @@
 
 export interface MotionTokens {
   primary: string
+  /** 比 primary 深一档：小面积图形在白底上要 3:1，primary 只有约 2.8:1；暗色主题里 Element Plus 会把它换成更亮的蓝 */
+  primaryStrong: string
   primarySoft: string
   text: string
   textSecondary: string
@@ -13,6 +15,7 @@ export interface MotionTokens {
 
 const SOURCES: Record<keyof MotionTokens, [cssVar: string, fallback: string]> = {
   primary: ['--app-primary', '#409eff'],
+  primaryStrong: ['--el-color-primary-dark-2', '#337ecc'],
   primarySoft: ['--app-primary-soft', '#ecf5ff'],
   text: ['--app-text', '#303133'],
   textSecondary: ['--app-text-secondary', '#909399'],

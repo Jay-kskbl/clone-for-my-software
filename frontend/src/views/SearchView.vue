@@ -9,7 +9,10 @@ import { downloadDocument } from '../api/documents'
 import { fetchHealth } from '../api/health'
 import { search } from '../api/search'
 import type { ChannelStatus, SearchHit, SearchResponse } from '../api/types'
+import AppIcon from '../components/AppIcon.vue'
 import FileTypeBadge from '../components/FileTypeBadge.vue'
+import IdleSpinner from '../features/search-motion/idle-spinner/IdleSpinner.vue'
+import { useLaunchAnimation } from '../features/search-motion/launch/useLaunchAnimation'
 import { SEARCH_TEXT } from '../features/search-motion/messages'
 import { controlsFrom, type ScanLoaderHandle } from '../features/search-motion/scan-loader/handle'
 import type { ScanPhase } from '../features/search-motion/scan-loader/machine'
@@ -40,6 +43,12 @@ const route = useRoute()
 const router = useRouter()
 
 const query = ref(typeof route.query.q === 'string' ? route.query.q : '')
+const PLACEHOLDER =
+  '输入关键词，检索文件名、标签、正文和图片中识别出的文字；开启图像语义检索后也可以描述图片内容'
+
+// 启动动画（search-motion）：会话内第一次进检索页时播放；地址栏带着检索词进来时不播
+const searchInput = ref<{ $el?: unknown } | null>(null)
+useLaunchAnimation(searchInput, { placeholder: PLACEHOLDER, hasValue: () => query.value !== '' })
 // 四个开关、三个通道（utils/channels.ts）。图像通道默认关闭（与后端配置一致，D36）；
 // 开关放进地址栏，刷新后保持
 const selection = reactive(selectionFromQuery(route.query))
@@ -201,13 +210,17 @@ onBeforeUnmount(() => {
   <el-card shadow="never" class="search-card">
     <form class="search-bar" @submit.prevent="onSearch">
       <el-input
+        ref="searchInput"
         v-model="query"
+        class="sm-launch-target search-input"
         size="large"
         clearable
-        placeholder="输入关键词，检索文件名、标签、正文和图片中识别出的文字；开启图像语义检索后也可以描述图片内容"
+        :placeholder="PLACEHOLDER"
         maxlength="256"
-      />
-      <el-button type="primary" size="large" native-type="submit" :loading="loading">检索</el-button>
+      >
+        <template #prefix><AppIcon name="search" /></template>
+      </el-input>
+      <el-button type="primary" size="large" round native-type="submit" :loading="loading">检索</el-button>
     </form>
 
     <div class="channels" role="group" aria-label="检索通道">
@@ -260,14 +273,18 @@ onBeforeUnmount(() => {
     <ScanLoader ref="scan" retryable @phase="(p: ScanPhase) => (scanPhase = p)" @done="onScanDone" @retry="onSearch" />
 
     <div v-if="hits === null && failure === null && !loading" class="guide">
-      <p class="guide-title">输入关键词开始检索</p>
-      <ul class="guide-list">
-        <li>文件名/标签：匹配文件名和上传时填写的标签</li>
-        <li>正文：Word、PDF、Excel 里抽取出的文字</li>
-        <li>OCR 文字：扫描页和图片里识别出的文字</li>
-        <li>图像语义（CLIP）：用一句话描述画面，能找到图上没有文字的图片，例如“机房里的机柜”</li>
-      </ul>
-      <p class="guide-foot">每条结果右侧会显示它在各通道的名次和 RRF 融合分。</p>
+      <div class="guide-text">
+        <p class="guide-title">输入关键词开始检索</p>
+        <ul class="guide-list">
+          <li>文件名/标签：匹配文件名和上传时填写的标签</li>
+          <li>正文：Word、PDF、Excel 里抽取出的文字</li>
+          <li>OCR 文字：扫描页和图片里识别出的文字</li>
+          <li>图像语义（CLIP）：用一句话描述画面，能找到图上没有文字的图片，例如“机房里的机柜”</li>
+        </ul>
+        <p class="guide-foot">每条结果右侧会显示它在各通道的名次和 RRF 融合分。</p>
+      </div>
+      <!-- 待机动画（search-motion）：8 秒无操作时出现在引导区右侧空白处，任意操作淡出 -->
+      <IdleSpinner class="guide-idle" />
     </div>
 
     <template v-else-if="hits !== null">
@@ -337,6 +354,11 @@ onBeforeUnmount(() => {
 .search-bar {
   display: flex;
   gap: 12px;
+}
+
+/* 胶囊形检索框（search-motion：启动动画的终点就是这个形状） */
+.search-input :deep(.el-input__wrapper) {
+  border-radius: 999px;
 }
 
 .channels {
@@ -421,6 +443,9 @@ onBeforeUnmount(() => {
 }
 
 .guide {
+  display: flex;
+  align-items: center;
+  gap: 24px;
   padding: 18px 24px;
   border: 1px dashed var(--el-border-color);
   border-radius: var(--app-radius-lg);
@@ -428,6 +453,15 @@ onBeforeUnmount(() => {
   color: var(--app-text-regular);
   font-size: 14px;
   line-height: 1.9;
+}
+
+.guide-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.guide-idle {
+  margin-right: 24px;
 }
 
 .guide-title {
@@ -658,6 +692,10 @@ onBeforeUnmount(() => {
 @media (max-width: 600px) {
   .search-bar {
     flex-direction: column;
+  }
+
+  .guide-idle {
+    display: none;
   }
 }
 </style>

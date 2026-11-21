@@ -9,6 +9,7 @@ import { controlsFrom, type ScanLoaderHandle } from '../scan-loader/handle'
 import AppIcon from '../../../components/AppIcon.vue'
 import { resetLaunchPlayed } from '../launch/playOnce'
 import { useLaunchAnimation } from '../launch/useLaunchAnimation'
+import IdleLabPanel from './IdleLabPanel.vue'
 import ScanLoader from '../scan-loader/ScanLoader.vue'
 import { createSearchSession, SearchTimeoutError } from '../scan-loader/searchSession'
 import type { ScanPhase } from '../scan-loader/machine'
@@ -184,6 +185,8 @@ onBeforeUnmount(() => {
         </li>
       </ul>
     </section>
+
+    <IdleLabPanel @log="note" />
 
     <section class="lab-log">
       <h2>事件</h2>
