@@ -45,5 +45,10 @@ dist/
 /experiments/datasets/document_map.csv
 /experiments/runs/
 
+# W2 DocVQA 原文件、导入映射和实验运行结果不进版本库
+/experiments/docvqa/datasets/files/
+/experiments/docvqa/datasets/document_map.csv
+/experiments/docvqa/runs/
+
 # scripts/smoke/ocr_e2e.py 的运行输出（日志、生成的图片、存储目录）
 storage-smoke/

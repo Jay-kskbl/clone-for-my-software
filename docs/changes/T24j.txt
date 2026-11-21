@@ -1,0 +1,89 @@
+修改记录：T24j DocVQA 下载与转换脚本（2026-11-21）
+=================================================
+
+因 Barry 明确要求不新建或修改任何 .md 文件，本记录使用 .txt。
+
+来源：
+  windows任务书.md 第 5 节；Barry 于 2026-11-19 批准方案 B。
+
+任务性质：
+  不带锁；新增仓库级脚本和单元测试；没有修改数据契约、表结构、索引、
+  API、附录 A、检索参数、切分参数、OCR 参数或实验配置。
+
+修改者：
+  Codex（Windows 任务执行会话）
+
+
+一、逐文件修改记录
+------------------
+
+1. 新增 scripts/datasets/docvqa_import.py
+
+   - 用 httpx 调 datasets-server rows 接口，每批 100 行。
+   - 立即下载当批签名图片，地址过期时刷新该批 rows。
+   - 纯函数负责编号、排序、文本清洗、文件头识别、manifest/queries/qrels 转换。
+   - file_id = dv_ + image_filename；query_id = dvq_ + questionId。
+   - PNG/JPEG 按文件头判断，其它格式报错；单图上限 50 MB。
+   - 记录 sha256、字节数、宽、高。
+   - source_rows.jsonl 不保存签名地址。
+   - 已有图片在 sha256 一致时跳过；网络失败最多重试 3 次。
+
+2. 新增 scripts/datasets/tests/test_docvqa_import.py
+
+   - 12 项测试，全部使用假数据和假网络对象。
+   - 覆盖编号与排序、重复查询共用图片、PNG/JPEG/其它文件头、
+     制表符和换行清洗、CSV 逗号和引号、load_dataset 回读、
+     已有 sha256 一致时不再下载、签名地址不写入留底。
+
+3. 新增 scripts/__init__.py、scripts/datasets/__init__.py
+
+   - 让测试可通过 scripts.datasets.docvqa_import 稳定导入。
+
+4. 修改 .gitignore
+
+   - 增加：
+     /experiments/docvqa/datasets/files/
+     /experiments/docvqa/datasets/document_map.csv
+     /experiments/docvqa/runs/
+
+5. 生成 experiments/docvqa/
+
+   - datasets/manifest.csv：500 行。
+   - datasets/source_rows.jsonl：500 行。
+   - queries.tsv：500 行。
+   - qrels/docvqa.tsv：500 行。
+   - 图片 500 个，全部为 JPEG，总计 169224953 字节。
+
+6. 新增 docs/downloads_DocVQA.txt
+
+   - 原任务书要求登记到 docs/downloads.md；因 .md 不可修改，改用 .txt 记录。
+
+
+二、验证
+--------
+
+- ruff check scripts/datasets：通过。
+- ruff format --check scripts/datasets：通过。
+- pytest scripts/datasets/tests：12 passed。
+- 真实下载：500 行、500 查询、500 不重复图片、重复 0。
+- 图片格式：500 个 JPEG，0 个 PNG；最大单图 2523797 字节，小于 50 MB。
+- experiments validate 退出码 0：
+  files=500、queries=500、qrels=500、relevant_pairs=500。
+- 第二次完整运行：下载 0、跳过 500。
+- 四份输出文件运行前后 SHA-256 相同：
+  manifest.csv
+  E8B643BA95AC1530991103190C9AAFBBF600F0CC5F4711807921C620F72F1E1E
+  queries.tsv
+  A76D869FF33FC777CC7D83311748D75F6F42FC714CAFBBFF9C3AB79F351E9055
+  qrels/docvqa.tsv
+  F297D44B9D394F2BBDCC35C4E6BAE48503625ACEDF1C416D02C13625723BE1BE
+  source_rows.jsonl
+  32234C8CB7EC653AEF47268FD86835B54A96F274E489E6A124647DFAFBB99194
+
+
+三、修改建议（后续）
+--------------------
+
+1. 正式论文评测应使用中文、视觉型和混合型查询的数据集；DocVQA 结果只作流程验证。
+2. 如以后允许修改 .md，可把 downloads_DocVQA.txt 的内容并入 docs/downloads.md，
+   再把本记录按 T24h 格式转成 docs/changes/T24j.md。

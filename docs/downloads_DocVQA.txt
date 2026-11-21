@@ -1,0 +1,24 @@
+DocVQA 下载登记（W2 / T24j）
+============================
+
+因 Barry 明确要求不新建或修改任何 .md 文件，本条登记使用 .txt。
+
+内容：vidore/docvqa_test_subsampled
+版本：49bf8f13e13c41dd8cdb0cae5314e31c1da1e0d6
+来源：
+  https://huggingface.co/datasets/vidore/docvqa_test_subsampled
+  Hugging Face datasets-server 的 rows 与 cached-assets 接口
+安装位置：
+  experiments/docvqa/datasets/files/docvqa/
+规模：
+  500 行、500 条查询、500 个不重复图片文件
+  图片总大小 169224953 字节（约 161.39 MiB）
+用途：
+  只用于打通导入、解析、OCR、embed、B0-B3 实验流程并记录性能；
+  查询均为英文，不作为论文正式检索效果结论。
+许可：
+  数据集卡片标注 MIT；图片原始来源为 UCSF Industry Documents Library。
+批准：
+  Barry 于 2026-11-19 签发 Windows 任务书时批准方案 B。
+
+未下载 Parquet、pyarrow 或 Docker；没有其它新增网络下载。

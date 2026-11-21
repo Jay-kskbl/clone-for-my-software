@@ -1,0 +1,501 @@
+query_id	type	text
+dvq_1016	text	What is the team leader's name?
+dvq_1027	text	What is indicated as second or third line treatment of type 2 diabetes mellitus?
+dvq_10294	text	What is the company's name on the letter head?
+dvq_10297	text	What is written in the top right of the document ?
+dvq_10307	text	Which Company's Fax transmission Cover Sheet is this ?
+dvq_1050	text	When did the term of this agreement commence?
+dvq_11345	text	What is the telephone number mentioned at the beginning?
+dvq_1172	text	what is the carcinoma(transitional cell )  of group 1 ?
+dvq_1187	text	who is the lead responsibility for evaluating data from study OCT020
+dvq_1284	text	What is the component that needs to included?
+dvq_1288	text	what is the trend of patient growth?
+dvq_1293	text	What is the title of the document ?
+dvq_1306	text	What is the latency period associated with cancer?
+dvq_1330	text	What is the name of the person who has signed the letter?
+dvq_14981	text	What is the name of the meeting?
+dvq_1637	text	What is the fullform of ils?
+dvq_16384	text	What is the name of the person in the CC field ?
+dvq_16390	text	What is the Log-in No. ?
+dvq_16478	text	What is the % Promoted Volume in EDLP stores?
+dvq_16512	text	What is the fullform of AAN?
+dvq_16584	text	What is the title of the document ?
+dvq_16624	text	From which university does James V. Fiorca come ?
+dvq_16653	text	What is the purchase order number?
+dvq_16673	text	What is osteoporosis corelated to?
+dvq_16690	text	What is the name of the company on top of the document ?
+dvq_16724	text	What is the abbreviation of Hormone Intelligent Notification Transmission?
+dvq_1675	text	what is the company's name on the letter head?
+dvq_16804	text	What is the title of the document ?
+dvq_16810	text	What is the name of the company on the letter head ?
+dvq_16897	text	What is the budget offered for 3 Posters( including production)?
+dvq_16913	text	What Budget Estimate is given in this document?
+dvq_16925	text	Who is the sender of the Fax?
+dvq_16939	text	What is the Budget Estimate for CME Reviewer Provider Fee?
+dvq_16955	text	What is the Fax no of Karen Mittleman?
+dvq_16960	text	Which company's fax message is this?
+dvq_17155	text	What is the Budget estimate for recruit editorial board/monthly newsletter development?
+dvq_17160	text	What is the client name mentioned in this document?
+dvq_1799	text	What is the full form of FERS?
+dvq_1804	text	What is the full form of EPA?
+dvq_18532	text	What is the title of the document ?
+dvq_18592	text	What is the title of the sheet?
+dvq_18637	text	What is the name of the person repsonsible for implementing ?
+dvq_18644	text	What kind of voucher is given here?
+dvq_18684	text	Which department is mentioned in this document?
+dvq_18709	text	What is the RJR Account number ?
+dvq_18786	text	What is the title of the document ?
+dvq_18883	text	What is the name of the company on the letter head?
+dvq_1895	text	Whose name is mentioned first under EPA Attendees?
+dvq_1897	text	What is the title?
+dvq_19034	text	What is the name of the originator ?
+dvq_1904	text	What is the last for profit sponsor listed here?
+dvq_1906	text	What is step 6 in the flow chart?
+dvq_1912	text	On which page is Appendix D?
+dvq_19204	text	what is the date mentioned in the given page ?
+dvq_1966	text	What is the Doc #?
+dvq_1989	text	"In which page number is ""Introduction""?"
+dvq_1992	text	Whose picture is given?
+dvq_20073	text	What is the Title of the document?
+dvq_206	text	What is SCGP?
+dvq_209	text	What is written in red ink at the top?
+dvq_21320	text	what is the name of the university ?
+dvq_2178	text	What is the subject?
+dvq_2183	text	Who is this letter sent to ?
+dvq_221	text	Experiences of the which branch of the clan will you be most interested in?
+dvq_2219	text	Which company is Martin Miller associated with?
+dvq_2224	text	Who is the secretary of chamber of commerce?
+dvq_2230	text	What is the PO box number of Mr and Mrs. Edward Lehman?
+dvq_2300	text	What is the P.O.Box Number?
+dvq_2312	text	What is the date on which the letter has been filed?
+dvq_23166	text	which committee is mentioned in the document?
+dvq_2325	text	Who is the sender ?
+dvq_2328	text	What is the date of sending on the letter?
+dvq_238	text	Which work area is this related?
+dvq_246	text	Who is the third person in CC
+dvq_249	text	Who is this question addressed to?
+dvq_25428	text	Who is the Professor of History of Religions?
+dvq_25442	text	When was this meeting happened?
+dvq_25492	text	Who sent this form?
+dvq_25644	text	where did this program happen?
+dvq_25671	text	Who is the staff representative as per the agenda?
+dvq_25688	text	What is the page no mentioned in this document?
+dvq_25699	text	When was the Nutrition Committee held?
+dvq_257	text	"How much menthol does KOOL ""C"" have?"
+dvq_25742	text	What is the page no mentioned in this newspaper?
+dvq_260	text	Where is this Philip Morris office located at?
+dvq_262	text	Whose contact is given at the end?
+dvq_26336	text	To Whom is this letter addressed to?
+dvq_268	text	Who signed this?
+dvq_26953	text	What is written in top of the document ?
+dvq_26982	text	What is the Title of the document ?
+dvq_272	text	To whom is the letter is addressed?
+dvq_27317	text	What is the year specified in the logo?
+dvq_277	text	What is the average age of camel smoker?
+dvq_280	text	To whom the letter is addressed?
+dvq_286	text	What is the heading?
+dvq_291	text	When was the meeting held?
+dvq_301	text	For when is startup of the wiegand evaporator system at park 500 is scheduled?
+dvq_302	text	what is the slope of set #1?
+dvq_3026	text	What is the kind of water ?
+dvq_3035	text	What is the name of the memo ?
+dvq_3054	text	What is the name of the factory ?
+dvq_3095	text	What is the analysis about?
+dvq_310	text	At what rate is Methoprene currently added to B&W's tobaccos?
+dvq_3108	text	What is the name of the factory ?
+dvq_311	text	What is the heading of the document?
+dvq_322	text	What is cut tobacco no in this page?
+dvq_327	text	what is the title of this page ?
+dvq_32850	text	How many adult deaths were in 1978 as per 2nd quarter report ?
+dvq_32866	text	Which year was the meeting held?
+dvq_32884	text	What is the order no. ?
+dvq_32895	text	Which hospital is mentioned in Appendix V ?
+dvq_32901	text	When is the memorandum dated?
+dvq_32967	text	What is the deadline date?
+dvq_32973	text	What is the negotiated budget for Rutgers Med. Sch. given in the document?
+dvq_32982	text	Which department is mentioned in the document?
+dvq_33011	text	How much is the Mean square value of the Children variation?
+dvq_34265	text	what is the minimum value of sodium in mg/100kcal?
+dvq_34275	text	What is the Title of the document?
+dvq_350	text	what is the subject of this letter?
+dvq_35201	text	what is the docket number?
+dvq_35331	text	What is the study experience?
+dvq_354	text	What has to be provided to SULT/SLT development?
+dvq_3551	text	How many facts are listed here?
+dvq_36146	text	what is the budget bureau no.?
+dvq_36410	text	what is the heading mentioned in the given page ?
+dvq_36489	text	what is the heading of the page ?
+dvq_36494	text	in which state is Wisdom at ?
+dvq_36532	text	in which city is QM Food & Container Institute at ?
+dvq_36798	text	What is the number shown below the heading on top right corner?
+dvq_36824	text	During which period were the Part III examinations held?
+dvq_36842	text	What is Payee's Account No?
+dvq_36930	text	Which city is mentioned in the table 30 ?
+dvq_36942	text	What is mentioned in 'Purpose of Temporary Duty' ?
+dvq_36965	text	What do the values in the y-axis depict ?
+dvq_37230	text	Which is the last food specified in the page ?
+dvq_37235	text	What is the first title under the heading TABLE OF CONTENTS?
+dvq_37507	text	What is the value given for girls of 13-15 yrs for 3 months?
+dvq_37508	text	what is written at the middle of round seal?
+dvq_37537	text	Which is the first year on x-axis?
+dvq_3794	text	"What is the name of the ""Mayor"" ?"
+dvq_38063	text	What is the main heading of the document given under APPENDIX V-9?
+dvq_3812	text	what is the designation of 'Harlan Seaworth' ?
+dvq_3823	text	Who did the research on Sugar and cardiovascular disease?
+dvq_3848	text	Who is the owner of Edson Express ?
+dvq_38504	text	"What is the highest value for ""Intake, mg/1000 kcal "" plotted on the 'X' axis of the graph?"
+dvq_38960	text	Were CME credits offered?
+dvq_39655	text	"What was the duration of the course ""teaching of epidomiology"" in hours?"
+dvq_40745	text	What is the number of live births for Alabama?
+dvq_41734	text	Who is the Chairman of special Committee members?
+dvq_41809	text	When dealing with patients, what would appear to be a safer and more appropriate solution?
+dvq_41928	text	When is the Knee Panel Meeting held in Chicago, IL?
+dvq_41958	text	What is the Requisition No. given in the document?
+dvq_42333	text	what is the project number ?
+dvq_42433	text	What is the page no mentioned in this document?
+dvq_42639	text	How much is the 'Meetings Budget' of RAISH in $?
+dvq_42695	text	Which is the 10% neutral buffered formalin used?
+dvq_43027	text	What is the heading?
+dvq_43032	text	What is the title of the article?
+dvq_43046	text	what type of communication is this?
+dvq_43084	text	What is the name of the company issuing the ' royalty payment form',  mentioned at the top of the document?
+dvq_43171	text	What is the document heading?
+dvq_43185	text	What is the location code?
+dvq_43190	text	Under the ' Risk/Consequence Questions', what is the heading for the first type of Risk questions?
+dvq_43259	text	What is the project number?
+dvq_43350	text	What is the title of the pie chart ?
+dvq_43353	text	what is the name of the company mentioned on the bottom left of the page ?
+dvq_43354	text	What is the ID number?
+dvq_43403	text	what is the 'Effective rate %' for ' 5.15 % debentures due 2012' in the year 2011?
+dvq_43586	text	From which decade onwards 'metal-on-metal' bearings was being used in the U.S.?
+dvq_43662	text	What is the tracking number of the form?
+dvq_43715	text	what is the first quote written at the top right of the page?
+dvq_44113	text	What is the date of the letter enclosed?
+dvq_44699	text	Which number is printed last on the first column of the table?
+dvq_44723	text	What is the table number mentioned at the top centre of the page?
+dvq_44767	text	What is the title given above the cartoon in right side of the page?
+dvq_44832	text	Who is the holder of this curriculum vitae?
+dvq_44861	text	What is title given at the top of the page?
+dvq_44873	text	What type of communication is this, as mentioned on the top left corner of the page?
+dvq_44916	text	What is the date of the executive committee meeting ?
+dvq_45047	text	What is the date given?
+dvq_45072	text	How many bullet points are there?
+dvq_45075	text	Which page of the form is this
+dvq_45159	text	What is the name printed on the top of the page?
+dvq_45164	text	What is the name of the sugar company?
+dvq_45166	text	What is the date mentioned at the bottom of the page?
+dvq_45180	text	What is the first name of the month mentioned at the top of the page?
+dvq_45280	text	who is the president of sugar research foundation,inc.?
+dvq_45685	text	Which director is the president of the 'colonial sugars company'?
+dvq_45711	text	When is the next meeting held?
+dvq_46240	text	Which meeting is expected to have the highest ' attendance ' ?
+dvq_46246	text	What is the date and time mentioned at the top of the page, outside of the Tabular representation?
+dvq_46250	text	Who is the Medical Monitor or designee?
+dvq_46251	text	What is the Manuscript number specified in the 'Title' ?
+dvq_46256	text	What is page number printed at the bottom of the page?
+dvq_46368	text	To which department the address for Correspondence is written?
+dvq_46373	text	What is the text printed on the bottom right corner of the page?
+dvq_46600	text	What is the text printed on the bottom right corner of the page?
+dvq_470	text	what is the index of shared of the 21-25 segment
+dvq_47340	text	What is the Dept.No?
+dvq_47414	text	By what statistical 'method' is the the data collected ?
+dvq_47433	text	What is the underlined text on the top right corner of the page?
+dvq_47739	text	What is the subject of Memorandum?
+dvq_47847	text	What is the title of the chart on the right ?
+dvq_47880	text	How much funds ‘from Reserve’?
+dvq_47995	text	When is the remittance due ?
+dvq_48276	text	Through her noteworthy career, what did she work as?
+dvq_49186	text	What is the 10th 'title' in Contents ?
+dvq_49254	text	Which year's Budget was this?
+dvq_49295	text	Which year's report was this?
+dvq_49340	text	What is the name of the medical association?
+dvq_49353	text	What is the ‘title’ of the plot?
+dvq_49408	text	What is the number printed at the top right of first slip?
+dvq_49409	text	What is vitamin A requirement for age group 8-10 years ?
+dvq_49540	text	which floor details are mentioned in the document?
+dvq_49610	text	What is the figure number?
+dvq_49642	text	What is the name of the foundation?
+dvq_49837	text	What type of letter is this?
+dvq_50124	text	What is the name of the book store?
+dvq_50143	text	What is the name of the company?
+dvq_50167	text	What is the name of the company mentioned at the top of the page?
+dvq_50198	text	What is the VO. NO.?
+dvq_50242	text	What is the full form of I.P. ?
+dvq_50285	text	"W ho from ""Garvw Travel in Boston"" has telephoned ?"
+dvq_50324	text	What is the date at the top right corner of the page?
+dvq_50368	text	What is the ext.?
+dvq_50403	text	Who is the secretary?
+dvq_50455	text	What is the heading printed in red?
+dvq_50495	text	What is the page no.?
+dvq_50783	text	What is the amount ?
+dvq_50786	text	What is the weight of the shipment?
+dvq_50794	text	What shortens life?
+dvq_50807	text	Which advertisement theme did the 'coke adds life to ..' campaign replace?
+dvq_50809	text	What is on the X axis of this plot?
+dvq_50811	text	protein solution mixed with what makes a stable dispersion?
+dvq_50822	text	What is the name of the magazine mentioned at the top left of the page?
+dvq_50828	text	Who is the prime minister of Japan mentioned here?
+dvq_50833	text	For which brand  of soft drink is the product information provided?
+dvq_50846	text	"In which country is ""The Bronze Gallery""?"
+dvq_50852	text	Who was in editorial committee in 1985-1987 period?
+dvq_50854	text	What is the phone number to reach Dr Donald?
+dvq_50857	text	Which institute's medical advisory board meeting is mentioned here?
+dvq_50870	text	What is the cost of postage ( see the postal stamp at top left)?
+dvq_50872	text	What is on the Y axis of the plot?
+dvq_50888	text	What is the name of this commercial track for Coca-Cola?
+dvq_50896	text	What is the date for wind data from baltimore
+dvq_50908	text	At what time did Charles Muller call Dr. Darby?
+dvq_50917	text	What is the date of the letter ?
+dvq_51009	text	In which period is average annual number the highest?
+dvq_51014	text	In which year ( 1970 or 1969) net sales worldwide is larger?
+dvq_51094	text	What is the heading?
+dvq_51118	text	What is the page number of Introduction?
+dvq_51144	text	Which organization has suggested the definition of Best available science ?
+dvq_51155	text	By whom are the 'Observations/ concerns' raised?
+dvq_51234	text	What is the name of the filer?
+dvq_51316	text	Who should you contact if you have any questions? And what is the contact number?
+dvq_51333	text	What is the heading in sl.no ‘V’?
+dvq_51344	text	How much estimated hours for salary and wages under ‘direct labor’?
+dvq_51361	text	What is the ‘heading’?
+dvq_51488	text	What is the 4th point in the agenda of EIG MEETING?
+dvq_51491	text	Whose nomination is endorsed ?
+dvq_51510	text	What is the ‘heading’?
+dvq_51539	text	Which university ‘letterhead’ is given?
+dvq_51560	text	Who is ‘ Charlotte McDaniel’?
+dvq_51575	text	How many points are there under the title ‘distribution’?
+dvq_51591	text	What is written in bold letters?
+dvq_51613	text	What is the total cost of fertilizer?
+dvq_51665	text	What is the page number?
+dvq_51666	text	What is the date of Analysis?
+dvq_51732	text	Where is ‘Spreckels’ newest processing plant’?
+dvq_51793	text	Which company’s memorandum is given?
+dvq_51804	text	What is the page number?
+dvq_51806	text	Which meeting is this?
+dvq_52119	text	What is the title of the plot?
+dvq_52179	text	What is the name of the company?
+dvq_52225	text	What is the first heading of the table?
+dvq_52251	text	What is the amount shown for the recipient ‘Nutrition Fdn.NY’?
+dvq_52398	text	What is the date of the Approval note?
+dvq_52424	text	What is the heading of the form?
+dvq_52438	text	What is written at the top right end of the page?
+dvq_52446	text	What is the ‘heading’?
+dvq_52451	text	What is the title of first plot?
+dvq_52470	text	What time is the ‘formal presentation’?
+dvq_52473	text	What is the ‘heading’?
+dvq_52488	text	What is the page no mentioned in this document?
+dvq_52506	text	What is plotted along the y axis ?
+dvq_52566	text	What is the charge number given in the form?
+dvq_52691	text	What is the date of the order?
+dvq_53442	text	What is the DTS date?
+dvq_53677	text	Which US city's name is given at the bottom?
+dvq_54088	text	Who will bring cots and EMS equipment?
+dvq_55936	text	Which year is the percentage of raw material imported higher (current/previous)?
+dvq_56376	text	Which fiscal year's currency use is shown in the pie chart?
+dvq_56413	text	What is the educational qualification of the Chairman?
+dvq_57344	text	What is the dividend payout in 2012?
+dvq_57422	text	What is the brand name of the ITC personal care product advertised here?
+dvq_57433	text	What Tobacco brand of GPI is shown in the picture?
+dvq_57573	text	What are the letters in the monogram logo at the top right of the document?
+dvq_57574	text	What is the number in parentheses [ ], between the two Tables?
+dvq_57579	text	What is the income tax for 2003?
+dvq_57663	text	What is the Page Number?
+dvq_57745	text	What is the name of the bank?
+dvq_57772	text	What % of vests is available for conversion after 3 year?
+dvq_57792	text	What is the name of the airline?
+dvq_57796	text	What is the amount of check?
+dvq_57806	text	What is the page number?
+dvq_57828	text	What is the name of the client?
+dvq_57850	text	What is the date of submission?
+dvq_57874	text	What is the table number?
+dvq_57892	text	What is the report on?
+dvq_57911	text	What is the heading of the document?
+dvq_57937	text	What is the Priority of Article P2(3)?
+dvq_57943	text	What type of report is this?
+dvq_57990	text	What is the progress Report number?
+dvq_57996	text	Who are the medical journals for?
+dvq_58002	text	What is the Strategic Publication Development Budget?
+dvq_58010	text	What is the progress Report number?
+dvq_58031	text	What is the phone number given at the top left end of the page?
+dvq_58037	text	How many countries has approved Totelle(R) dossier?
+dvq_58040	text	Which cigarette brand beats Marlboro lights?
+dvq_58041	text	Who is the client?
+dvq_58051	text	Which university ‘letterhead’ is given?
+dvq_58063	text	What is written at the bottom right end of the ‘page’?
+dvq_58065	text	What is the phone number given?
+dvq_58316	text	What is the priority of the Article WMC(2)?
+dvq_58324	text	What is the Day 2 event for the time 9:00-10:30 am?
+dvq_58339	text	What is the ‘heading’?
+dvq_58342	text	What is the letter in the single initial monogram based on header?
+dvq_58359	text	Who is the ‘Senior Product Manager ‘of Wyeth-Ayerst Pharmaceuticals?
+dvq_58362	text	Which number is repeated several times on the page?
+dvq_58376	text	What is the name of the Client given in the report?
+dvq_58412	text	What is the title of table 3?
+dvq_58460	text	What is the page number?
+dvq_58470	text	What is the CME Expense?
+dvq_58473	text	Which company’s annual report is shown?
+dvq_58476	text	What is point number 1?
+dvq_58564	text	What is the page number?
+dvq_58568	text	Which company bill is given?
+dvq_58574	text	Which is precurser (d) of Tuberculosis ?
+dvq_58599	text	What is the ‘EXPIRATION DATE’ of the Manufacturer coupon?
+dvq_58602	text	What is written at the top of the page in bold capital letters?
+dvq_58607	text	What is the heading of the first Article?
+dvq_58642	text	What is the page number?
+dvq_58693	text	What is the discount for Safeway employees on race tickets?
+dvq_58704	text	What is plotted along the x axis ?
+dvq_58714	text	What is the date mentioned at the top of the page?
+dvq_58731	text	Who is the client in the document?
+dvq_58735	text	Who is the Dealer?
+dvq_58745	text	What is the date of the document mentioned at the top?
+dvq_58747	text	What is the name of the laboratory?
+dvq_58757	text	Who is the president of NATIONAL ACADEMY OF SCIENCES-NATIONAL RESEARCH COUNCIL?
+dvq_58765	text	When to return the complete account information form?
+dvq_58780	text	What is the ‘heading’?
+dvq_58795	text	What date is given on the top of the document?
+dvq_58798	text	Who are the photographers?
+dvq_58834	text	Who is the winner of the 1978 Christopher Book award?
+dvq_58844	text	What is the day and date of the program?
+dvq_58881	text	What is the announcement on?
+dvq_58960	text	What is the test name?
+dvq_58971	text	What is the ‘one day postgraduate course’?
+dvq_58977	text	What number written at the bottom right end of the page?
+dvq_59035	text	For which school the contribution was done?
+dvq_59048	text	Who is this fax for?
+dvq_59052	text	What is the name of the hotel?
+dvq_59136	text	What is the title of the document?
+dvq_592	text	What is the net operating revenue for the year 2010?
+dvq_59267	text	What is the time of the reception?
+dvq_59275	text	What is the underlined text?
+dvq_59279	text	What is the name of chocolate brand?
+dvq_59284	text	What is the heading of the first column of the table?
+dvq_59296	text	What is the name of the company mentioned just below the logo?
+dvq_59309	text	What is the name of the company in the logo?
+dvq_59321	text	What is the Total years of experience of the first employee?
+dvq_59332	text	What is the page number?
+dvq_59358	text	Which session is mentioned here?
+dvq_59365	text	What type of Mail is it?
+dvq_59382	text	What type of communication is it?
+dvq_59389	text	What is the name of the company mentioned at the top of the table?
+dvq_59434	text	What time does registration open?
+dvq_59446	text	What is the professional title of Dr.Albert Siegel ?
+dvq_59453	text	Whose picture is given?
+dvq_59472	text	How much is the grand total of the budget of the Institution?
+dvq_59482	text	To whom the memoranda submitted?
+dvq_59501	text	Who is Dr.Robert Tilden?
+dvq_59504	text	What is the page number?
+dvq_59513	text	How many points are there in the ‘conditions of Contract’?
+dvq_59517	text	What is the item# ?
+dvq_59526	text	How much is included for renovation expenses of Helen Keller International,Incorporated?
+dvq_59527	text	What type of document is this?
+dvq_59554	text	What is the color of the walking stick?
+dvq_59573	text	What is the name of the country mentioned at the top of the page?
+dvq_59583	text	What is the page number?
+dvq_59593	text	Who wrote the ‘letter’?
+dvq_59629	text	What is written at the bottom right end of the ‘notice’?
+dvq_59642	text	What is the amount of  'Research support for Scholars'?
+dvq_59683	text	What is the name written under the sponsor ‘s signature (2)?
+dvq_59686	text	What course Mr.Bill has to present at Eleventh Graduate Summer Session in Epidemiology held at the University of Minnesota?
+dvq_59688	text	What amount was requested by Lange, L.G, Washington University Medical Center?
+dvq_59721	text	Who is operating ‘Pine Bluff Arsenal’?
+dvq_59778	text	Who is shown in the picture/photo?
+dvq_59818	text	What is  the title of figure 4?
+dvq_59828	text	What is the date of the letter mentioned by William J Darby?
+dvq_59868	text	What is the preferred location for the meeting?
+dvq_59886	text	What is given in the footer?
+dvq_59889	text	What is the heading below SECTION 1?
+dvq_59900	text	What is the name of the financial company mentioned at the top?
+dvq_59933	text	Who is from Indiana?
+dvq_59947	text	What is the name of the company?
+dvq_59953	text	Who is receiving the ALCOHOLIC BEVERAGE MEDICAL RESEARCH FOUNDATION ‘s Research Grant Awards for Massachusetts General Hospital?
+dvq_59971	text	What type of document is this?
+dvq_59976	text	How many hours of sound sleep needed each night for good health?
+dvq_59982	text	What is the ‘heading’?
+dvq_59997	text	What is the heading?
+dvq_60014	text	Who claimed government's move to be a wise decision?
+dvq_60018	text	What is the name of the excerpt/reprint?
+dvq_60025	text	What memo is it?
+dvq_60036	text	What is the page number?
+dvq_60050	text	Whose picture is on the page?
+dvq_60057	text	What is the date of receipt stamped?
+dvq_60062	text	What is the title of the research project?
+dvq_60063	text	"Which comes under ""Clusters of Colleges"" other than ""Instructors Meeting"" ?"
+dvq_60081	text	Who is there in the first photo?
+dvq_60089	text	At what intervals does FASEB Bus Service operate?
+dvq_60113	text	Who is the assistant director of center for International studies?
+dvq_60174	text	What is the y-axis of the plot?
+dvq_60409	text	Who has written the note?
+dvq_60413	text	What is the body weight of Pig#2 at 3 days of age?
+dvq_60420	text	Who is the letter from?
+dvq_60441	text	Which chicken entrees is made with good chicken broth,meat and green peppers?
+dvq_60458	text	What is the ‘heading’?
+dvq_60461	text	What is the page number?
+dvq_60526	text	In Dinner #16, what is in the cup?
+dvq_60584	text	What is the title of the page?
+dvq_60590	text	What is subheading X ?
+dvq_60612	text	What time is the lunch?
+dvq_60662	text	What is the title on page 2?
+dvq_60665	text	What is the date of the memorandum?
+dvq_60751	text	What is the name of the doctor?
+dvq_60776	text	Who is the letter from?
+dvq_60818	text	Whose photograph is shown at the top left side of the page ?
+dvq_60824	text	What is the document about?
+dvq_60854	text	What is the table number?
+dvq_60926	text	What is the page number?
+dvq_60939	text	What is the invoice no.?
+dvq_60948	text	Who is the letter to ?
+dvq_60980	text	Who is the letter from?
+dvq_60984	text	What form of communication is used?
+dvq_60991	text	Who has signed the card?
+dvq_61002	text	Who is the note to?
+dvq_61081	text	What is the subject?
+dvq_61085	text	What is the title in uppercase?
+dvq_61090	text	Whose Logo is it?
+dvq_61101	text	What type of letter is this?
+dvq_61115	text	In fig 3, what is plotted along x axis?
+dvq_61140	text	What is the figure number?
+dvq_61148	text	Who is the note from?
+dvq_61152	text	Who is the note from?
+dvq_61174	text	What is the year mentioned at the top?
+dvq_61180	text	What is the name of the publication given?
+dvq_61186	text	What is serial number I of the ‘Wyeth-Ayers Laboratories’ Meeting agenda?
+dvq_61197	text	Whose picture is given in the square shaped UNITED STATES POSTAGE?
+dvq_61200	text	What is the document heading?
+dvq_61207	text	What is the folio number of the bill?
+dvq_61216	text	What is the meeting on?
+dvq_61222	text	Which is the birth defects special treatment center in North Carolina?
+dvq_61254	text	What is the phone number of PINK&BLACK CORAL FACTORY?
+dvq_61262	text	What is the Received date stamped?
+dvq_61277	text	What type of communication is this?
+dvq_61284	text	What is the last line on the page?
+dvq_61291	text	What is the name of the travel agency?
+dvq_61512	text	What is the name of the courrier Service?
+dvq_61523	text	What statement is this?
+dvq_61563	text	What is the year mentioned?
+dvq_61569	text	What is the table number?
+dvq_61584	text	What is the name?
+dvq_61620	text	What is the day and date of dinner?
+dvq_61625	text	What is the name of the city mentioned?
+dvq_61631	text	Which session of 85th congress is mentioned in this document?
+dvq_61870	text	What is the personnel costs in the 4th year?
+dvq_61883	text	What is the second subheading?
+dvq_61886	text	Which is the railways company?
+dvq_61905	text	What is the day and date of Meeting?
+dvq_62643	text	What was the parking fee at St. Luis airport?
+dvq_631	text	Which proposed section would require food processors promulgated by FDA?
+dvq_63509	text	What is No. 2-26 of subheading H ?
+dvq_63516	text	Under Private service how many patients were discharged in Neurology?
+dvq_63520	text	What is the full form of AHA?
+dvq_63529	text	What is the table number?
+dvq_63601	text	What is the RDA for Calories for Sedentary woman(1948 report)?
+dvq_63605	text	What is the goal for CB < 175?
+dvq_65127	text	What is plotted along the x axis ?
+dvq_65129	text	What is the table number?
+dvq_679	text	what is re written in place of 34.8gallons
+dvq_856	text	What is the name of addressee in this letter?
+dvq_894	text	Who is the sender of this letter?
+dvq_911	text	Which company is mentioned in this document?
+dvq_928	text	What is the subject line of this email?
+dvq_9424	text	What is the Direct account name?
+dvq_9769	text	When is the effective date mentioned in the form?
+dvq_9869	text	R J Reynolds Tobacco Company made this offer for which markets
+dvq_996	text	What does this document relate to ?
