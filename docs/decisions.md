@@ -1253,3 +1253,24 @@ Barry 于 2026-11-19 对 DEVPLAN §4 中整理出的 14 项待批准事项回复
 - 图标手画 SVG，没装 @element-plus/icons-vue（不新增依赖）。
 
 **局限。** 页面组件仍没有自动化测试，能抽成纯函数的逻辑放进 `utils/channels.ts` 并有 20 项单元测试。浏览器检查只对着临时模拟后端、在 Chrome 内核的内置浏览器里做过；拖拽上传用脚本派发的 drop 事件模拟；没有与真实后端联调（见 `untested.md` T24s）。
+
+
+### D49 只对 pdf.js 资源目录关闭换行符转换（T24t）
+
+代码：仓库根目录 `.gitattributes`（一条规则 `frontend/public/pdfjs/** -text`）。相关：`frontend/tests/pdfjs-assets.test.mjs`（T24m）、`windows任务书.md` W5 第 11.2 节。逐项记录见 `docs/changes/T24t.md`。来源：Barry 于 2026-11-21 批准 W5 第 11.2 节的待定项“根治要靠 `.gitattributes`”。
+
+**问题。** `frontend/public/pdfjs/` 是从 `node_modules/pdfjs-dist` 原样复制来的 202 个文件，T24m 的测试逐个比较两边的 sha256。其中 15 个是文本文件（LICENSE、`.js`）。在 Windows 上，如果 git 设了 `core.autocrlf=true`（Git for Windows 安装时的常见选项），这 15 个文件签出时会被转成 CRLF，sha256 跟着变，测试失败，而代码其实没有问题。
+
+**做法。** 只对这个目录设 `-text`：git 把其中的文件都当二进制处理，签出、提交时都不做换行符转换，不受 `core.autocrlf` 影响。仓库里这些文件本来就是 LF，与 npm 包一致，所以规则生效后不需要改任何文件内容。
+
+**为什么不改全仓库的换行策略**（例如 `* text=auto eol=lf`）：
+
+- 别的文本文件（代码、文档）在 Windows 上签出成 CRLF 不影响运行和测试：Python、Node.js、PowerShell 都能读，提交时 `autocrlf` 又会转回 LF。按字节比对的只有这个目录。
+- 加全局规则后，git 会按新规则重新判断每个文件的换行符。仓库里现在有 7 个 CRLF 文件、3 个 CRLF 与 LF 混用的文件（2026-11-21 用 `git ls-files --eol` 统计，都在 `change-deepseek-v4/` 下，是 Windows 补测的原始记录）。它们会显示为已修改，需要一次规范化提交，等于改动原始记录，影响面远大于要解决的问题。
+- 规则只有一条，作用范围一眼能看清；以后再有按字节比对的目录，照这个写法单独加一条。
+
+**代价与局限。**
+
+- 这个目录里的文件以后在 Windows 上用编辑器打开再保存，如果被改成 CRLF，git 会原样提交进去（不再转换）。这些文件不应手工编辑，要更新就用 `npm run sync:pdfjs`（T24m），所以影响很小。
+- 已经签出成 CRLF 的工作区，拉到这条规则后，这 15 个文件会显示为已修改，要在仓库根目录执行一次 `git checkout -- frontend/public/pdfjs`，才会按新规则重新签出成 LF。这一点在 macOS 上用模拟签出验证过。
+- 只在 macOS 上用 `core.autocrlf=true` 的模拟签出验证过，真实 Windows 签出仍待 W5 第 11.2 节。

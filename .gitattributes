@@ -1,0 +1,5 @@
+# 签出时不做换行符转换（T24t）。
+# frontend/public/pdfjs/ 里的文件是从 node_modules/pdfjs-dist 原样复制来的，
+# frontend/tests/pdfjs-assets.test.mjs 按 sha256 逐个比对（T24m）。
+# Windows 上 core.autocrlf=true 时，Git 会把其中的文本文件签出成 CRLF，比对就会失败。
+frontend/public/pdfjs/** -text
