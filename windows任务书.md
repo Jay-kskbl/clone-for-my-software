@@ -24,7 +24,7 @@
 1. `GLOBAL.md`：全局约束，冲突时以它为准；附录 A 是已定决策，不得修改
 2. `CLAUDE.md`：命令速查（启动后端、Worker、OCR Worker、CLIP 服务、测试、实验）
 3. `experiments/README.md`：实验数据的三个文件怎么填、操作顺序、结果格式、退出码
-4. `本轮测试失败与未完成.txt`：上一轮 Windows 测试（2026-11-19，基于 `50b244b`）的结果
+4. `docs/changes/windows-2026-11-19-原始说明.txt`（原在仓库根目录，T24r 移到这里）：上一轮 Windows 测试（2026-11-19，基于 `50b244b`）的结果
 5. `docs/untested.md`：当前的未测试清单，尤其是第 1、3、7 节
 
 上一轮之后新增的代码：

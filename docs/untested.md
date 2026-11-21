@@ -12,7 +12,7 @@
 >
 > 计数：本机 backend 跳过 212 项，其中 188 项属于上述 11 个文件（Windows 上同一批文件收集到 190 项，差异来自 `test_migrations.py`、`test_auth.py` 各多 1 项），剩下 24 项见第 1 节。
 
-> **2026-11-19 Windows 第二轮补测（`27b51b2`，基于 `50b244b`，即 T24f 之后、T24g 之前的代码）：** 由 Barry 在 Windows 上完成，原始说明是仓库根目录的 `本轮测试失败与未完成.txt`，截图在 `output/playwright/`；本会话没有重跑，只是据此登记。汇总：backend 923 passed、6 failed、0 skipped；shared 103 passed、2 failed；frontend 67 passed，类型检查和生产构建通过；OCR Worker 主环境 66 passed、4 skipped，ocr 环境真实识别 4 passed；CLIP 17 passed。8 项失败全部是符号链接测试的 WinError 1314（见第 7 节）。
+> **2026-11-19 Windows 第二轮补测（`27b51b2`，基于 `50b244b`，即 T24f 之后、T24g 之前的代码）：** 由 Barry 在 Windows 上完成，原始说明是 `docs/changes/windows-2026-11-19-原始说明.txt`，截图在 `docs/screenshots/windows-2026-11-19/`（T24r 从仓库根目录和 `output/playwright/` 移过来）；本会话没有重跑，只是据此登记。汇总：backend 923 passed、6 failed、0 skipped；shared 103 passed、2 failed；frontend 67 passed，类型检查和生产构建通过；OCR Worker 主环境 66 passed、4 skipped，ocr 环境真实识别 4 passed；CLIP 17 passed。8 项失败全部是符号链接测试的 WinError 1314（见第 7 节）。
 >
 > **同日删除（Barry 批准）：** backend 0 skipped 说明原第 3 节中 T24g 之前的 38 项（T22 `test_search_db.py` 1 项；`test_experiments_db.py` 中 D34 3 项、T24 4 项、T24c 4 项；`test_embed_db.py` 8 项；`test_vector_index_live.py` 8 项；`test_document_text.py` 的 T24e 10 项）以及 T24c、T24e 之后要重跑的 `test_migrations.py`、`test_ocr_worker_db.py`、`test_document_text.py` 原有 11 项都在这一轮执行并通过，已按 Barry 于 2026-11-19 的批准（“Delete them”）从本文件删除，连同第 2 节的 🧪 三行和第 4 节中只由这些测试覆盖的 12 行。限制：这一轮只有汇总数字，没有逐项的原始结果（JUnit XML）；通过的是 `50b244b` 的代码，之后 T24g、T24i 只改了实验框架（`experiments/__main__.py`），没有改这些测试覆盖的代码。T24g、T24h、T24i 登记的项目仍未测试。
 
@@ -56,7 +56,7 @@ T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器�
 | `deploy/docker-compose.yml` | 只校验过语法，容器从未启动 | DEVPLAN §5 T01 |
 | 前端与真实后端的联调 | **未测试。** 本机没有 PostgreSQL，真实后端的登录、上传等接口跑不起来。T10 的页面是对着一个临时写的模拟接口在浏览器里检查的（模拟接口按 `api.md` 的结构应答，不是项目代码，没有提交）。前端与真实后端之间的不一致——字段名、状态码、multipart 的细节——这种检查发现不了。T16 的检索页、预览页和抽取文本接口同样只对着模拟接口检查过（检索、PDF 跳页、Word 跳到命中段、图片、503 与空结果的区分），从未与真实后端和真实 OpenSearch 联调 | DEVPLAN §5 T10、T16 |
 | 前端页面组件的自动化测试 | 没有写，项目里也没有组件测试工具（加装需要 Barry 同意）。前端单元测试（T10 时 48 项，2026-11-21 T24n 时 70 项）只覆盖接口封装、格式化、摘要清洗和位置格式；登录页、文件列表、共享对话框、检索页、预览页、PDF 查看器只做过人工浏览器检查 | DEVPLAN §5 T10、T16 |
-| PDF 预览在真实文件上的表现 | **部分验证。** 2026-11-19 Windows 第二轮发现中文 PDF 预览空白（pdf.js 没有配置 CMap 等资源），修复后用一份真实中文 PDF 在真实后端上看到正常显示（截图 `output/playwright/pdf-preview-e2e-fixed.png`）。修复后的预览在 macOS 浏览器里没有看过；扫描件、加密、接近 50 MB 的 PDF 仍没有试过 | `decisions.md` D29 |
+| PDF 预览在真实文件上的表现 | **部分验证。** 2026-11-19 Windows 第二轮发现中文 PDF 预览空白（pdf.js 没有配置 CMap 等资源），修复后用一份真实中文 PDF 在真实后端上看到正常显示（截图 `docs/screenshots/windows-2026-11-19/pdf-preview-e2e-fixed.png`）。修复后的预览在 macOS 浏览器里没有看过；扫描件、加密、接近 50 MB 的 PDF 仍没有试过 | `decisions.md` D29 |
 | 真实后端经开发代理的访问 | **部分验证。** T05–T10 核查时启动了真实后端（数据库地址指向不存在的端口）和真实的前端开发代理，用 curl 验证了不需要数据库的路径：健康检查、数据库不可用返回 503、未登录 401、参数校验 422、未登录上传（multipart 经代理）401、超大上传 413。需要数据库的路径（登录成功之后的一切）仍未验证 | DEVPLAN §5 核查记录 |
 | Windows 上的运行 | 2026-11-16 跑过 backend 728 项；2026-11-19 第二轮跑到 T24f（`50b244b`）的代码：backend 923 项中 6 项、shared 2 项因 WinError 1314 失败（普通权限，第 7 节），其余通过。T24g 之后的代码（含 2026-11-21 的 T24k–T24n）没有在 Windows 上跑过 | DEVPLAN §5“T00–T19 补测”“Windows 第二轮补测” |
 | 管理员视角的前端 | 模拟接口里没有管理员账号，页面上“管理员”标记和“管理员可见”来源没有实际显示过 | — |
@@ -447,7 +447,7 @@ cd <项目目录> && docker compose --env-file .env -f deploy/docker-compose.yml
 
 ## 7. Windows 第二轮补测（2026-11-19）登记的未通过与未测试项
 
-来源：`本轮测试失败与未完成.txt`（`27b51b2`）。本会话没有重跑；在 macOS 上只重跑了这一轮改过的两个单元测试文件（`test_health.py`、`test_worker_main.py`，11 项通过）和前端类型检查（通过）。
+来源：`docs/changes/windows-2026-11-19-原始说明.txt`（`27b51b2`）。本会话没有重跑；在 macOS 上只重跑了这一轮改过的两个单元测试文件（`test_health.py`、`test_worker_main.py`，11 项通过）和前端类型检查（通过）。
 
 ### 7.1 未通过：符号链接测试（WinError 1314）
 
