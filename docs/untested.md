@@ -148,6 +148,13 @@ T20 的测试都在本机实际运行过（接口测试 39 项，真实模型测
 |---|---|---|
 | 对真实 OpenSearch 执行 `--fix rebuild-indices --force --yes` | 计划、演练、参数校验和命令行流程都有单元测试（假的采集和 apply，已通过）；真正删除并重建三个索引的 `rebuild_indices()` 原来就没在真实 OpenSearch 上跑过（第 4 节“一致性检查对真实 OpenSearch 的操作”），本任务没有改它 | 已复核：强制项与检查发现的重建项走同一个 `apply()` 分支 |
 
+### T24l Worker 启动时检查数据库迁移（2026-11-21 登记，见 `docs/changes/T24l.md`）
+
+| 项目 | 说明 | 代码复核 |
+|---|---|---|
+| 通用 Worker 的迁移版本检查在真实 PostgreSQL 上 | 空库时 `SELECT version_num FROM alembic_version` 应抛 `UndefinedTable` 并给出“还没有建表”；已迁移的库应通过。单元测试只用了假连接 | 已复核：连接是 autocommit，查询失败不会留下中断的事务；连接用完即关 |
+| OCR Worker 的列检查在真实 PostgreSQL 上 | `information_schema.columns` 查询、`current_schema()`、`ANY(%(tables)s)` 传列表；单元测试只用了假连接 | 已复核：列清单与 backend 模型的一致性有单元测试（已通过） |
+
 ### T24i 重新 OCR（2026-11-19 登记，见 `decisions.md` D47）
 
 | 项目 | 说明 | 代码复核 |

@@ -8,8 +8,8 @@
 
 收到 SIGTERM / Ctrl-C 时，做完手头的任务再退出（退出码 130，上面的循环随之结束）。
 
-退出码：0 处理满任务数后正常退出；1 配置有问题或启动时连不上数据库（重新拉起也没用，
-外层循环应当停下）；130 收到停止信号。
+退出码：0 处理满任务数后正常退出；1 配置有问题、启动时连不上数据库，或数据库没有迁移到
+代码要求的版本（重新拉起也没用，外层循环应当停下）；130 收到停止信号。
 """
 
 import logging
@@ -25,6 +25,7 @@ from app.config import load_settings
 from app.core.errors import ConfigError
 from app.worker.loop import PgTaskQueue, WorkerOptions, run_worker
 from app.worker.registry import HANDLERS
+from app.worker.schema import check_schema
 
 logger = logging.getLogger("app.worker")
 
@@ -57,6 +58,11 @@ def main() -> int:
     )
     try:
         queue.ping()
+        # T24l：空库或没升级时，启动就说清楚，而不是等到领取任务时报 SQL 错误
+        problem = check_schema(
+            settings.database_url,
+            connect_timeout_seconds=settings.worker_db_connect_timeout_seconds,
+        )
     except psycopg.Error as exc:
         # GLOBAL §12：数据库连接失败时启动就给出清楚的错误，不进入“看起来在运行”的状态
         # （与 OCR Worker 一致，D30）。运行中数据库短暂中断则不退出，主循环会重试。
@@ -66,6 +72,10 @@ def main() -> int:
             f"Worker 无法连接数据库（{type(exc).__name__}），请确认数据库已启动、DATABASE_URL 正确",
             file=sys.stderr,
         )
+        return 1
+    if problem is not None:
+        queue.reset()
+        print(f"Worker 无法启动：{problem}", file=sys.stderr)
         return 1
 
     # 在连上数据库之后才接管信号：启动检查期间按 Ctrl-C 照常中断

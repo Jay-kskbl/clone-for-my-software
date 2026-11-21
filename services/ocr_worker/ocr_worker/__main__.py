@@ -84,12 +84,24 @@ def main() -> int:
     store = PgStore(settings.database_url, connect_timeout_seconds=connect_timeout)
     try:
         store.ping()
+        # T24l：空库或没升级时启动就说清楚，而不是等到第一次写入时报 SQL 错误
+        missing = store.schema_problems()
     except psycopg.Error as exc:
         # GLOBAL §12：数据库连接失败时启动就给出清楚的错误，不进入“看起来在运行”的状态。
         # 运行中数据库短暂中断则不退出，主循环会重试
         engine.close()
         print(
             f"OCR Worker 无法连接数据库（{type(exc).__name__}），请确认数据库已启动",
+            file=sys.stderr,
+        )
+        return 1
+    if missing:
+        engine.close()
+        store.reset()
+        shown = "、".join(missing[:5]) + ("等" if len(missing) > 5 else "")
+        print(
+            f"OCR Worker 无法启动：数据库缺少 {len(missing)} 个需要的列（{shown}），"
+            "先在 backend/ 目录运行 alembic upgrade head",
             file=sys.stderr,
         )
         return 1

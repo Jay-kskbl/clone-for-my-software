@@ -48,6 +48,8 @@ def run_worker_calls(monkeypatch: pytest.MonkeyPatch) -> list[object]:
 
     monkeypatch.setattr(worker_main, "run_worker", fake_run_worker)
     monkeypatch.setattr(worker_main.signal, "signal", lambda *_args: None)
+    # 结构检查默认通过；需要检查失败的测试自己再替换
+    monkeypatch.setattr(worker_main, "check_schema", lambda *_args, **_kwargs: None)
     return calls
 
 
@@ -130,6 +132,46 @@ def test_any_database_error_at_startup_exits_1(
     assert worker_main.main() == 1
     assert run_worker_calls == []
     assert queue.resets == 1
+
+
+def test_unmigrated_database_exits_1_with_the_upgrade_hint(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    run_worker_calls: list[object],
+) -> None:
+    # T24l：连得上，但数据库没有迁移到代码要求的版本
+    queue = FakeQueue()
+    monkeypatch.setattr(worker_main, "load_settings", lambda: fake_settings("postgresql://x"))
+    monkeypatch.setattr(worker_main, "PgTaskQueue", lambda *_args, **_kwargs: queue)
+    monkeypatch.setattr(
+        worker_main,
+        "check_schema",
+        lambda *_a, **_k: "数据库还没有建表，先运行 alembic upgrade head",
+    )
+
+    assert worker_main.main() == 1
+    assert run_worker_calls == []
+    assert queue.resets == 1
+    assert "Worker 无法启动：数据库还没有建表" in capsys.readouterr().err
+
+
+def test_database_error_during_the_schema_check_is_a_connection_error(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    run_worker_calls: list[object],
+) -> None:
+    queue = FakeQueue()
+
+    def broken(*_args, **_kwargs):
+        raise psycopg.OperationalError("connection lost")
+
+    monkeypatch.setattr(worker_main, "load_settings", lambda: fake_settings("postgresql://x"))
+    monkeypatch.setattr(worker_main, "PgTaskQueue", lambda *_args, **_kwargs: queue)
+    monkeypatch.setattr(worker_main, "check_schema", broken)
+
+    assert worker_main.main() == 1
+    assert run_worker_calls == []
+    assert "Worker 无法连接数据库（OperationalError）" in capsys.readouterr().err
 
 
 def test_ping_on_the_real_queue_raises_when_nothing_listens() -> None:
