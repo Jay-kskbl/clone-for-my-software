@@ -104,12 +104,13 @@ Barry 要求 Windows 上的执行者不新建、不修改 `.md` 文件。所以�
 | T24i | 新命令 `python -m app.modules.experiments reocr [--yes]` | `test_experiments_db.py` 中 `test_reocr_requeues_finished_ocr_tasks_of_the_current_version`、`test_reocr_refuses_while_parse_or_ocr_tasks_are_unfinished` |
 | T24k（2026-11-21 14:29 添加） | `891facb`：通用 Worker 与 OCR Worker 连接数据库带 `connect_timeout`，新配置 `WORKER_DB_CONNECT_TIMEOUT_SECONDS`、`OCR_WORKER_DB_CONNECT_TIMEOUT_SECONDS`（默认 10 秒，`.env.example` 已同步）。对执行的影响：`.env` 不用改（不写就用默认值）；数据库连不上时 Worker 约 10 秒内报错退出，不再卡一两分钟 | W1 第 1–3 项会一并跑到（shared `test_task_queue.py`，backend `test_worker_main.py` 等，OCR Worker `test_store_connect.py`）；连不通的地址上的实际超时见 W5 第 11.5 节（2026-11-21 14:37 添加） |
 | T24l（2026-11-21 14:29 添加） | `f31590b`：通用 Worker 启动时比对 `alembic_version` 与代码里的最新迁移，OCR Worker 启动时检查它读写的表和列；不一致就以退出码 1 结束并提示 `alembic upgrade head`。迁移仍只到 `0002`。对执行的影响：W3 的 `docmgr_docvqa`、W4 的 `docmgr_ui` 必须先 `alembic upgrade head` 再启动 Worker（第 6.1、10.1 节已写），漏了 Worker 会直接退出 | W1 第 1、3 项会一并跑到（`test_worker_schema.py`、`test_store_schema.py` 是假连接的单元测试）；W3、W4 启动 Worker 时等于在真实 PostgreSQL 上走了一次“已迁移、检查通过”；空库和版本落后的情况见 W5 第 11.4 节（2026-11-21 14:37 添加） |
-| T24m（2026-11-21 14:29 添加） | `49c67e4`：前端测试逐文件核对 `public/pdfjs/` 与已安装的 pdfjs-dist（比 sha256），新增 `npm run sync:pdfjs`；`package.json` 只加了这个脚本，依赖没变，不用重新 `npm install`。对执行的影响：如果这台机器的 git 开了 `core.autocrlf`，`public/pdfjs/` 里的 LICENSE、`.js` 等文本文件检出时会变成 CRLF，与 `node_modules` 里的 LF 版本 sha256 不同，`pdfjs-assets.test.mjs` 会失败。遇到时按第 4.2 节记成环境问题，写出 `git config core.autocrlf` 的值，**不要**运行 `sync:pdfjs` 去覆盖、也不要改测试 | W1 第 5 项的 `npm test`（`tests/pdfjs-assets.test.mjs` 3 项）；**W1 之前先做 W5 第 11.2 节的换行符预检**（2026-11-21 14:37 添加） |
+| T24m（2026-11-21 14:29 添加） | `49c67e4`：前端测试逐文件核对 `public/pdfjs/` 与已安装的 pdfjs-dist（比 sha256），新增 `npm run sync:pdfjs`；`package.json` 只加了这个脚本，依赖没变，不用重新 `npm install`。对执行的影响：如果这台机器的 git 开了 `core.autocrlf`，`public/pdfjs/` 里的 LICENSE、`.js` 等文本文件检出时会变成 CRLF，与 `node_modules` 里的 LF 版本 sha256 不同，`pdfjs-assets.test.mjs` 会失败。遇到时按第 4.2 节记成环境问题，写出 `git config core.autocrlf` 的值，**不要**运行 `sync:pdfjs` 去覆盖、也不要改测试。（2026-11-21 20:40 注：T24t 加了 `.gitattributes` 后，这个问题按第 11.2 节处理，见第 1 节 T24t 一行） | W1 第 5 项的 `npm test`（`tests/pdfjs-assets.test.mjs` 3 项）；**W1 之前先做 W5 第 11.2 节的换行符预检**（2026-11-21 14:37 添加） |
 | T24n（2026-11-21 14:29 添加） | `0754962`：文件列表的标签不再被截断（文件名单行省略、标签换行）。T24s 又重排了这张表。对执行的影响：无 | W1 第 5 项；显示效果在 W4 第 10.2 节第 2 项一起看 |
 | T24o（2026-11-21 14:29 添加） | `33a2384`：一致性检查的结构比较从 3 个键扩大到 12 个（含 `search_analyzer`），分析配置逐项比较，提示写出具体差异；mapping 和索引结构没有改，不需要重建索引。对执行的影响：W3 第 6.2 节第 5 步是这个检查第一次对真实 OpenSearch 运行。如果新建的索引就报“结构不一致”，多半是 OpenSearch 自己补上的键造成的误报：把提示原文写进报告，不要为此运行 `repair --fix rebuild-indices` | W1 第 1 项（`test_consistency.py`）；W3 第 6.2 节第 5 步；人为制造结构差异再重建见 W5 第 11.3 节（2026-11-21 14:37 添加） |
 | T24p（2026-11-21 14:29 添加） | `aaa4bbc`：Element Plus 改为按需引入，首屏 JS 约 874 KB → 483 KB；没有新依赖，不用重新 `npm install`。对执行的影响：无；`npm run build` 在本机（T24s 之后）已不再提示分块超过 500 KB，Windows 上若仍提示，写进报告即可，不算失败 | W1 第 5 项（`tests/element.test.ts` 3 项和构建）；生产构建在浏览器里打开见 W5 第 11.6 节（2026-11-21 14:37 添加） |
 | T24q（2026-11-21 14:29 添加） | `b18909e`：新增根目录 `README.md`（课题说明、快速开始、文档索引）。对执行的影响：无；命令仍以 `CLAUDE.md` 和本任务书为准 | 无 |
 | T24r（2026-11-21 14:29 添加） | `f0ef765`：整理零散文件，上一轮的原始说明移到 `docs/changes/windows-2026-11-19-原始说明.txt`，截图移到 `docs/screenshots/windows-2026-11-19/`，空的 `output/` 目录删了。对执行的影响：第 1 节第 4 项的路径已改；W1 的 JUnit XML 仍写到 `output/windows-w1/`，`pytest --junitxml` 会自己建目录 | 无 |
+| T24t（2026-11-21 20:40 添加） | `6521a1d`：新增根目录 `.gitattributes`，`frontend/public/pdfjs/**` 签出时不转换换行符（`-text`）。对执行的影响：W5 第 11.2 节的步骤已改，不再需要修改 git 设置；T24t 之前签出的工作区要按 11.2 第 5 步重新签出这个目录一次 | W5 第 11.2 节；W6 第 12.2 节的 `npm test` |
 | T24s（2026-11-21 14:26 添加） | 前端界面优化（`281b226`，只改前端）：侧栏布局、拖拽上传与逐个文件的上传记录、检索通道面板、每条结果三个通道的名次与 RRF 融合分。只对着临时模拟后端检查过 | W1 第 5 项的前端测试（本机 93 项）；W4（第 10 节）的联调与界面核对 |
 
 ------------------------------------------------------------------------
@@ -532,22 +533,19 @@ T24s（`281b226`，2026-11-21）重做了前端界面，只改前端，后端和
 
 切换方法同第 6.1 节：每个 PowerShell 窗口先设置 `DATABASE_URL`、`STORAGE_ROOT`、`OPENSEARCH_INDEX_PREFIX`。建库可以用 `psql -h localhost -U <用户> -c "CREATE DATABASE docmgr_w5"`（`docmgr_w5_empty` 同样）。第 11.4、11.5 节会把 `DATABASE_URL` 改成别的值，**每一节开一个新窗口**，做完关掉，免得后面的命令带着错误的设置运行。
 
-### 11.2 T24m 换行符预检（在 W1 之前做，2026-11-21 14:37 添加）
+### 11.2 T24m 换行符预检（在 W1 之前做，2026-11-21 14:37 添加；按 T24t 修改于 2026-11-21 20:40）
 
-对应 `docs/untested.md` 第 7.2 节“T24g 之后的代码”一行里的 T24m（只在 macOS 上跑过）。背景：`tests/pdfjs-assets.test.mjs` 逐个比较 `frontend/public/pdfjs/` 与 `node_modules/pdfjs-dist` 里文件的 sha256。202 个文件里有 15 个是文本（LICENSE、`.js`），git 开了 `core.autocrlf=true` 时，这 15 个文件签出后会变成 CRLF，sha256 跟着变，测试就会失败，但代码其实没问题。
+T24t 在仓库根目录加了 `.gitattributes`，`frontend/public/pdfjs/**` 签出时不做换行符转换，Windows 上不需要再改 `core.autocrlf`。
 
-1. 记下设置：在仓库根目录执行 `git config --show-origin --get core.autocrlf`（没有输出就是没设置，等同 `false`）。
-2. 看这个目录里文件的实际换行符：`git ls-files --eol -- frontend/public/pdfjs`。每行开头的 `i/` 是仓库里的换行符，`w/` 是工作区的。预期：文本文件都是 `i/lf w/lf`，二进制文件是 `i/-text w/-text`。**注意：** `git diff --stat -- frontend/public/pdfjs` 在 `autocrlf=true` 时看不出来，因为 git 比较前会把 CRLF 当成 LF，所以要用 `--eol`。
-3. 再跑这一个测试：在 `frontend/` 下 `npm test -- tests/pdfjs-assets.test.mjs`。预期 3 项通过。
-4. 如果第 2 步有 `w/crlf`，或第 3 步报 `changed: …LICENSE…` 之类：
-   - **不要**按测试提示运行 `npm run sync:pdfjs`。它会用 `node_modules` 里的文件覆盖，测试暂时能过，但下一次签出又会变回 CRLF，问题被掩盖了。
-   - 临时处理（只对本仓库，不加 `--global`，不影响这台机器上别的仓库）：
-     1. 先确认这个目录没有未提交的改动：`git status --short -- frontend/public/pdfjs` 没有输出。
-     2. `git config core.autocrlf input`。签出时不再转换，提交时仍把 CRLF 转成 LF。不建议设成 `false`：那样以后在 Windows 上编辑、提交的文件如果是 CRLF，会原样进入仓库。
-     3. 只重新签出这个目录：`Remove-Item -Recurse -Force frontend\public\pdfjs`，然后 `git checkout -- frontend/public/pdfjs`。这个目录里的文件都在 Git 里，删掉再签出不会丢东西。
-     4. 重做第 2、3 步，应为 `w/lf`、3 项通过。
-   - 影响：改了设置以后，其他文本文件要等下次签出才会变成 LF，现在工作区里已有的 CRLF 文件不变，`git status` 也不会因此显示改动。Python、Node.js、PowerShell 都能读 LF 文件。报告里写明改前、改后的 `core.autocrlf` 值。
-   - 根治办法是在仓库里加 `.gitattributes`，把 `frontend/public/pdfjs/**` 标成不转换（`-text`）。这是仓库配置的改动，**等 Barry 决定，本任务不做**。
+背景：`tests/pdfjs-assets.test.mjs`（T24m）逐个比较 `frontend/public/pdfjs/` 与 `node_modules/pdfjs-dist` 里文件的 sha256。202 个文件里有 15 个是文本（LICENSE、`.js`），`core.autocrlf=true` 时它们原来会被签出成 CRLF，sha256 跟着变，测试就失败。对应 `docs/untested.md` 第 7.2 节“T24g 之后的代码”一行里的 T24m。
+
+1. 确认已拉到 T24t：`git log --oneline -1 -- .gitattributes` 有输出（Barry 推送之后才拉得到，见第 0.2 节）。没有输出就先停下，不要往下做。
+2. 记下 `git config --show-origin --get core.autocrlf` 的结果（只记录，不修改；没有输出就是没设置）。
+3. `git ls-files --eol -- frontend/public/pdfjs`。预期每行的属性列都是 `attr/-text`，工作区列是 `w/lf` 或 `w/-text`，没有 `w/crlf`。**注意：** `git diff --stat` 在 `autocrlf=true` 时看不出换行符的差别，所以要用 `--eol`。
+4. 在 `frontend/` 下 `npm test -- tests/pdfjs-assets.test.mjs`，预期 3 项通过。
+5. 如果这份签出是 T24t 之前做的、第 3 步里还有 `w/crlf`，`git status --short -- frontend/public/pdfjs` 可能把这些文件显示为已修改（只是换行符不同，不是内容改动）。直接 `git checkout -- frontend/public/pdfjs` 重新签出这个目录，再重做第 3、4 步。**不要**改 `core.autocrlf`，**不要**运行 `npm run sync:pdfjs`（它会用 `node_modules` 里的文件覆盖，把问题掩盖掉）。
+
+报告里写明第 2 步的值、第 3 步的结果（有没有 `w/crlf`）、是否做了第 5 步、第 4 步的结果。
 
 ### 11.3 T24o 一致性检查：人为制造结构差异，再只重建 `w5_` 的索引（2026-11-21 14:37 添加）
 
@@ -648,7 +646,7 @@ OCR Worker 是先加载模型、再连数据库的，总耗时里包括加载模
 
 ### 11.7 验收标准（2026-11-21 14:37 添加）
 
-- [ ] 第 11.2 节在 W1 之前做了：写明 `core.autocrlf` 的值、`git ls-files --eol` 的结果、单个测试的结果；做了临时处理的，写明改前改后的值；没有运行 `sync:pdfjs`，没有加 `.gitattributes`
+- [ ] 第 11.2 节在 W1 之前做了：写明 `core.autocrlf` 的值、`git ls-files --eol` 的结果、单个测试的结果；确认了已拉到 T24t；做了第 5 步重新签出的写明；没有修改 `core.autocrlf`，没有运行 `sync:pdfjs`（按 T24t 修改于 2026-11-21 20:40）
 - [ ] 第 11.3 节：每条 `consistency` 命令之前都确认了前缀是 `w5_`；第 4 步的结果如实写出（干净还是误报）；第 6 步报出了具体差异；第 7–10 步之后检查干净；其他前缀的索引没有变
 - [ ] 第 11.4 节：空库、只升到 `0001` 的库上，两个 Worker 都以退出码 1 结束，提示与预期一致；升到最新后正常启动
 - [ ] 第 11.5 节：两个 Worker 的耗时和退出码都记下了；超时设置生效（或如实写出这台机器的网络测不到超时）
