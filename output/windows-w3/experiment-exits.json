@@ -1,0 +1,82 @@
+﻿[
+    {
+        "config":  "B0",
+        "exit_code":  0,
+        "started_at":  "2026-11-21T15:27:51.2233934+08:00",
+        "finished_at":  "2026-11-21T15:28:00.3176805+08:00",
+        "elapsed_seconds":  9.094,
+        "run_dir":  "20261121T072752.578492Z_B0_fb8d13"
+    },
+    {
+        "config":  "B1",
+        "exit_code":  0,
+        "started_at":  "2026-11-21T15:28:00.4873960+08:00",
+        "finished_at":  "2026-11-21T15:28:09.1528608+08:00",
+        "elapsed_seconds":  8.665,
+        "run_dir":  "20261121T072801.849837Z_B1_208efe"
+    },
+    {
+        "config":  "B2",
+        "exit_code":  0,
+        "started_at":  "2026-11-21T15:28:09.1681949+08:00",
+        "finished_at":  "2026-11-21T15:28:48.7247320+08:00",
+        "elapsed_seconds":  39.557,
+        "run_dir":  "20261121T072810.421694Z_B2_70e342"
+    },
+    {
+        "config":  "B3",
+        "exit_code":  0,
+        "started_at":  "2026-11-21T15:28:48.7363006+08:00",
+        "finished_at":  "2026-11-21T15:31:31.6561470+08:00",
+        "elapsed_seconds":  162.92,
+        "run_dir":  "20261121T072850.263358Z_B3_10c5eb"
+    },
+    {
+        "config":  "B3-no-ocr",
+        "exit_code":  0,
+        "started_at":  "2026-11-21T15:31:31.6860483+08:00",
+        "finished_at":  "2026-11-21T15:34:07.3975521+08:00",
+        "elapsed_seconds":  155.712,
+        "run_dir":  "20261121T073133.437004Z_B3-no-ocr_c243dd"
+    },
+    {
+        "config":  "B3-no-clip",
+        "exit_code":  0,
+        "started_at":  "2026-11-21T15:34:07.4112538+08:00",
+        "finished_at":  "2026-11-21T15:34:49.2949674+08:00",
+        "elapsed_seconds":  41.884,
+        "run_dir":  "20261121T073408.731073Z_B3-no-clip_64ef27"
+    },
+    {
+        "config":  "clip-only",
+        "exit_code":  0,
+        "started_at":  "2026-11-21T15:34:49.3059846+08:00",
+        "finished_at":  "2026-11-21T15:37:22.5309269+08:00",
+        "elapsed_seconds":  153.225,
+        "run_dir":  "20261121T073450.816476Z_clip-only_0fe6ac"
+    },
+    {
+        "config":  "B3-k10",
+        "exit_code":  0,
+        "started_at":  "2026-11-21T15:37:22.5543271+08:00",
+        "finished_at":  "2026-11-21T15:40:08.9483432+08:00",
+        "elapsed_seconds":  166.394,
+        "run_dir":  "20261121T073724.339076Z_B3-k10_2cf64a"
+    },
+    {
+        "config":  "B3-k30",
+        "exit_code":  0,
+        "started_at":  "2026-11-21T15:40:08.9636968+08:00",
+        "finished_at":  "2026-11-21T15:42:53.1205213+08:00",
+        "elapsed_seconds":  164.157,
+        "run_dir":  "20261121T074010.609329Z_B3-k30_9985f0"
+    },
+    {
+        "config":  "B3-k100",
+        "exit_code":  0,
+        "started_at":  "2026-11-21T15:42:53.1341861+08:00",
+        "finished_at":  "2026-11-21T15:45:38.6593087+08:00",
+        "elapsed_seconds":  165.525,
+        "run_dir":  "20261121T074254.721991Z_B3-k100_c59526"
+    }
+]

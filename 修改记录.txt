@@ -1,0 +1,534 @@
+======================================================================
+T00–T19 测试补全：代码修改记录
+======================================================================
+项目：基于多模态信息检索的智能文档管理系统
+项目目录：C:\Users\lenovo\Desktop\my-software-main\my-software-main
+记录时间：2026-11-16（Asia/Shanghai）
+测试环境：Windows 11 / Python 3.14.0 / PostgreSQL 16.15 / OpenSearch 2.19.1 + analysis-smartcn
+
+说明：
+1. 本文件只记录“源代码与测试代码”的修改，共 8 个文件、11 处。
+2. CLAUDE.md、GLOBAL.md、DEVPLAN.md、docs/*.md 等所有 .md 文件均未修改。
+3. 没有新建 .env，没有修改数据库表结构、API 契约、索引 mapping、依赖版本。
+4. 原项目目录不是 Git 仓库（没有 .git），因此没有 commit；修改已直接写回原目录。
+5. 每处修改都标注了：文件、行号、修改前、修改后、原因、验证结果。
+
+======================================================================
+一、修改总表
+======================================================================
+编号  文件                                                      行号        类型
+----  --------------------------------------------------------  ----------  --------------
+C01   backend/alembic.ini                                      1–2         生产配置
+C02   backend/app/modules/experiments/__main__.py              316         生产代码
+C03   backend/tests/integration/test_experiments_db.py         230–233     测试代码
+C04   backend/tests/integration/test_experiments_db.py         272–275     测试代码
+C05   backend/tests/integration/test_experiments_db.py         277         测试代码
+C06   backend/tests/integration/test_consistency_db.py         222         测试代码
+C07   backend/tests/integration/test_consistency_db.py         407         测试代码
+C08   backend/tests/integration/test_ocr_worker_db.py          159         测试代码
+C09   backend/tests/integration/test_search_db.py              270         测试代码
+C10   env_check/_common.py                                     11–15, 47–53  环境脚本
+C11   services/ocr_worker/ocr_worker/engine_process.py         147, 184    生产代码
+
+合计：8 个文件，11 处修改。
+其中生产代码 3 处（C01、C02、C11），测试代码 7 处，环境脚本 1 处。
+
+======================================================================
+二、逐处修改详情
+======================================================================
+
+----------------------------------------------------------------------
+C01  backend/alembic.ini（第 1–2 行）
+----------------------------------------------------------------------
+类型：生产配置 / Windows 编码兼容
+原因：文件是 UTF-8，Alembic 的 configparser 在中文 Windows 上按
+      locale（cp936/GBK）读取，中文注释触发 UnicodeDecodeError。
+      该错误会让所有数据库集成测试在 setup 阶段失败（共 171 项 ERROR）。
+
+修改前：
+  # 数据库地址不写在这里：由 app/db/migrations/env.py 从配置（环境变量 / .env）读取。
+
+修改后：
+  # Database URL is not set here: app/db/migrations/env.py reads it from configuration
+  # (environment variables / .env).
+
+影响：只改注释文字，配置项和运行行为完全不变。
+验证：backend/tests/integration/test_migrations.py 14 项全部通过。
+
+----------------------------------------------------------------------
+C02  backend/app/modules/experiments/__main__.py（第 316 行）
+----------------------------------------------------------------------
+类型：生产代码 / Windows 路径格式
+原因：raw_results_path 写入数据库时使用 str(Path)，在 Windows 上得到
+      "experiments\runs\..."；项目其他位置和测试约定使用正斜杠。
+      该字段会出现在实验记录、API 和论文材料中，必须跨平台一致。
+
+修改前：
+  run_row.raw_results_path = str(run_dir.relative_to(root.parent))
+
+修改后：
+  run_row.raw_results_path = run_dir.relative_to(root.parent).as_posix()
+
+验证：test_experiments_db.py 8 项全部通过。
+
+----------------------------------------------------------------------
+C03  backend/tests/integration/test_experiments_db.py（第 230–233 行）
+----------------------------------------------------------------------
+类型：测试代码 / 文件编码
+原因：results.jsonl 由生产代码以 UTF-8 写入，测试用 read_text() 默认按
+      Windows 本地编码（GBK）读取，中文内容触发 UnicodeDecodeError。
+
+修改前：
+  records = [json.loads(line) for line in (run_dir / "results.jsonl").read_text().splitlines()]
+
+修改后（同时按 ruff 行宽要求换行）：
+  records = [
+      json.loads(line)
+      for line in (run_dir / "results.jsonl").read_text(encoding="utf-8").splitlines()
+  ]
+
+验证：test_experiments_db.py 8 项全部通过。
+
+----------------------------------------------------------------------
+C04  backend/tests/integration/test_experiments_db.py（第 272–275 行）
+----------------------------------------------------------------------
+类型：测试代码 / 文件编码
+原因：同 C03，读取“检索服务不可用”场景的 results.jsonl。
+
+修改前：
+  records = [json.loads(line) for line in (run_dir / "results.jsonl").read_text().splitlines()]
+
+修改后：
+  records = [
+      json.loads(line)
+      for line in (run_dir / "results.jsonl").read_text(encoding="utf-8").splitlines()
+  ]
+
+验证：test_experiments_db.py 8 项全部通过。
+
+----------------------------------------------------------------------
+C05  backend/tests/integration/test_experiments_db.py（第 277 行）
+----------------------------------------------------------------------
+类型：测试代码 / 文件编码
+原因：config.json 同样是 UTF-8，读取时必须显式指定编码。
+
+修改前：
+  assert json.loads((run_dir / "config.json").read_text())["complete"] is False
+
+修改后：
+  assert json.loads((run_dir / "config.json").read_text(encoding="utf-8"))["complete"] is False
+
+验证：test_experiments_db.py 8 项全部通过。
+
+----------------------------------------------------------------------
+C06  backend/tests/integration/test_consistency_db.py（第 222 行）
+----------------------------------------------------------------------
+类型：测试代码 / 测试前置数据
+原因：test_stale_ocr_results_are_removed 需要 page 1 的 OCR 任务作为
+      “当前有效目标”，但原测试没有写 status，默认是 pending。
+      pending 会让文档被视为 busy，一致性检查按设计跳过该文档的 OCR 问题，
+      因此 page 2 的过期结果不会被删除，测试与实际设计冲突。
+      改为 succeeded：仍然是有效的 OCR 目标，但不再表示“正在处理”。
+
+修改前：
+  ProcessingTask(
+      task_type="ocr",
+      document_id=document.id,
+      payload={"parse_version": V1, "locator": PAGE1},
+  )
+
+修改后：
+  ProcessingTask(
+      task_type="ocr",
+      document_id=document.id,
+      status="succeeded",
+      payload={"parse_version": V1, "locator": PAGE1},
+  )
+
+说明：同一文件中 test_collect_db_reads_tags_cleanup_tasks_and_ocr_targets
+      的同类任务保持原样（未修改），以保持最小改动。
+验证：test_consistency_db.py 12 项全部通过。
+
+----------------------------------------------------------------------
+C07  backend/tests/integration/test_consistency_db.py（第 407 行）
+----------------------------------------------------------------------
+类型：测试代码 / 跨平台排序
+原因：代码已经 sorted(...)，但期望值是 [V1, V2]；
+      这两个字符串本身不是升序（c1-m500... 与 c1-m300...），
+      所以断言在任何平台都会失败。应比较排序后的期望值。
+
+修改前：
+  assert sorted(session.scalars(select(DocumentChunk.parse_version)).all()) == [V1, V2]
+
+修改后：
+  assert sorted(session.scalars(select(DocumentChunk.parse_version)).all()) == sorted([V1, V2])
+
+验证：test_consistency_db.py 12 项全部通过。
+
+----------------------------------------------------------------------
+C08  backend/tests/integration/test_ocr_worker_db.py（第 159 行）
+----------------------------------------------------------------------
+类型：测试代码 / 中文排序
+原因：texts 已经 sorted(...)，但期望列表按人工书写顺序排列。
+      Python 按 Unicode 码点排序，实际顺序为：
+      ['正文', '第一页重识别', '第二页']。
+      原期望 ['第一页重识别', '第二页', '正文'] 在任何平台都不成立。
+
+修改前：
+  assert texts == ["第一页重识别", "第二页", "正文"]
+
+修改后：
+  assert texts == sorted(["第一页重识别", "第二页", "正文"])
+
+验证：test_ocr_worker_db.py 10 项全部通过。
+
+----------------------------------------------------------------------
+C09  backend/tests/integration/test_search_db.py（第 270 行）
+----------------------------------------------------------------------
+类型：测试代码 / 测试前置数据
+原因：test_every_search_is_logged_including_failures 要验证“检索失败也写日志”。
+      但用户当时没有任何可访问文档，meta/text 两个通道都会直接短路返回，
+      不会访问 OpenSearch，因此不会触发服务故障，meta 状态自然是 ok。
+      需要先创建一个可访问文档，才能让通道真正请求故障服务。
+
+修改前：
+  def test_every_search_is_logged_including_failures(client, session, alice):
+      headers = login(client, "alice")
+
+      search(client, headers, "第一次")  # 检索服务不可用 → 503
+
+修改后：
+  def test_every_search_is_logged_including_failures(client, session, alice):
+      headers = login(client, "alice")
+      add_document(session, alice)
+
+      search(client, headers, "第一次")  # 检索服务不可用 → 503
+
+验证：test_search_db.py 20 项全部通过（含真实 OpenSearch 1 项）。
+
+----------------------------------------------------------------------
+C10  env_check/_common.py（第 11–15 行、第 47–53 行）
+----------------------------------------------------------------------
+类型：环境实测脚本 / Windows 兼容
+原因：resource 是 Unix 专用模块，Windows 上 import 会直接失败，
+      导致 T00 的 01_check_opensearch.py 无法运行。
+      同时 peak_rss_mb() 依赖 resource，需要给出 Windows 下的降级值。
+
+修改前（第 11 行附近）：
+  import resource
+
+修改后：
+  try:
+      import resource
+  except ImportError:  # Windows 没有 resource 模块
+      resource = None  # type: ignore[assignment]
+
+修改前（第 47 行）：
+  def peak_rss_mb() -> float:
+      """进程生命周期内的峰值常驻内存（MB）。..."""
+      peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+
+修改后：
+  def peak_rss_mb() -> float | None:
+      """进程生命周期内的峰值常驻内存（MB）。..."""
+      if resource is None:  # Windows 没有 resource 模块
+          return None
+      peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+
+验证：01_check_opensearch.py 在本机 Windows 上完整运行并输出结果。
+
+----------------------------------------------------------------------
+C11  services/ocr_worker/ocr_worker/engine_process.py（第 147、184 行）
+----------------------------------------------------------------------
+类型：生产代码 / Windows 子进程时序
+原因：子进程崩溃时，父进程先收到管道 EOF，再读取 process.exitcode。
+      在 Windows 上此时进程可能尚未完全退出，exitcode 为 None，
+      错误信息变成“退出码 None”，测试无法确认崩溃码 3。
+      应先等待子进程结束（join）再读取退出码。
+
+修改位置 1（第 147 行，启动阶段 EOF）：
+修改前：
+  except EOFError:
+      exitcode = process.exitcode
+      self._stop()
+
+修改后：
+  except EOFError:
+      process.join(_KILL_WAIT_SECONDS)
+      exitcode = process.exitcode
+      self._stop()
+
+修改位置 2（第 184 行，识别阶段 EOF）：
+修改前：
+  except EOFError:
+      exitcode = self._process.exitcode
+      self._stop()
+
+修改后：
+  except EOFError:
+      self._process.join(_KILL_WAIT_SECONDS)
+      exitcode = self._process.exitcode
+      self._stop()
+
+验证：services/ocr_worker 63 项通过、4 项跳过（4 项为需要 ocr 环境和真实模型的
+      真实识别测试，不属于本次 T00–T19 的未测试项）。
+
+======================================================================
+三、修改后的测试结果
+======================================================================
+
+1) backend 完整套件（原项目目录，管理员权限）
+   命令：
+     $env:TEST_DATABASE_URL = "postgresql://docmgr:change-me@127.0.0.1:55432/docmgr_test"
+     $env:TEST_OPENSEARCH_URL = "http://127.0.0.1:9200"
+     cd backend
+     ..\.venv-main\Scripts\python.exe -m pytest -q
+   结果：728 passed，0 failed，0 skipped。
+   覆盖：T03、T06、T07、T08、T14、T15、T16、T17、T18、T19 的全部
+         数据库集成测试、OpenSearch 真实索引测试和 Worker 端到端测试。
+
+2) shared 完整套件
+   结果：105 passed，0 failed，0 skipped。
+
+3) services/ocr_worker
+   结果：63 passed，4 skipped。
+   说明：4 项为真实 OCR 识别测试，需要 ocr 环境和模型文件，本次未运行。
+
+4) frontend
+   结果：
+     单元测试 48 passed；
+     类型检查通过；
+     生产构建成功（仅 Vite 大包提示，不是错误）。
+
+5) 代码检查（ruff）
+   backend：check 通过，112 个文件格式检查通过。
+   shared：check 通过，23 个文件格式检查通过。
+   services/ocr_worker：check 通过，18 个文件格式检查通过。
+
+6) T00 OpenSearch 实测（01_check_opensearch.py）
+   - OpenSearch 2.19.1，analysis-smartcn 2.19.1 已加载。
+   - smartcn 切分 22 个词；standard 切分 34 个单字，smartcn 更适合中文。
+   - BM25、精确向量检索、带权限过滤的向量检索均正常。
+   - BM25 P50 15.28 ms / P95 26.93 ms。
+   - 精确向量 P50 16.89 ms / P95 30.06 ms。
+   - 过滤向量 P50 16.01 ms / P95 26.31 ms。
+   - JVM 堆 475.5 / 1024 MB。
+   - 高亮摘要 HTML 转义已验证：
+       <script>alert(1)</script> 报销标准
+       → &lt;script&gt;alert(1)&lt;&#x2F;script&gt; <em>报销</em>标准
+
+======================================================================
+四、生成的文件和安装内容（不是源代码修改）
+======================================================================
+以下内容是为了运行测试而生成或安装的，不属于上面的 8 个源文件修改：
+
+项目内（均可删除，重新安装即可）：
+  .venv-main\                     176.1 MB   Python 虚拟环境（backend + shared 依赖）
+  frontend\node_modules\          213.0 MB   前端依赖（135 个包，按 package-lock）
+  frontend\dist\                  3.0 MB     前端生产构建输出
+  backend\.pytest_cache\          缓存
+  shared\.pytest_cache\           缓存
+  services\ocr_worker\.pytest_cache\  缓存
+
+工作目录（不在项目内）：
+  C:\Users\lenovo\Documents\Codex\2026-11-16\new-chat\work\env\
+      约 3.21 GB：Python 安装包、PostgreSQL 16.15 免安装版、
+      OpenSearch 2.19.1、analysis-smartcn 插件及测试数据。
+  C:\Users\lenovo\Documents\Codex\2026-11-16\new-chat\work\project\
+      验证副本（与修改后的原项目一致，可删除）。
+
+没有创建或修改：
+  .env
+  deploy/docker-compose.yml
+  deploy/opensearch/Dockerfile
+  shared/text_index/mappings/*.json
+  backend/app/db/models.py
+  backend/app/db/migrations/versions/*.py
+  frontend/src/**（前端源码一行未改）
+  所有 .md 文件（CLAUDE.md、GLOBAL.md、DEVPLAN.md、docs/**、README 等）
+
+======================================================================
+五、当前仍在运行的服务与停止方法
+======================================================================
+PostgreSQL 16.15：
+  地址：127.0.0.1:55432
+  用户：docmgr / change-me
+  数据目录：C:\Users\lenovo\Documents\Codex\2026-11-16\new-chat\work\env\pgdata
+  停止：
+    & "C:\Users\lenovo\Documents\Codex\2026-11-16\new-chat\work\env\pgsql\pgsql\bin\pg_ctl.exe" `
+      -D "C:\Users\lenovo\Documents\Codex\2026-11-16\new-chat\work\env\pgdata" stop
+
+OpenSearch 2.19.1：
+  地址：127.0.0.1:9200
+  安装目录：C:\Users\lenovo\Documents\Codex\2026-11-16\new-chat\work\env\opensearch\opensearch-2.19.1
+  日志：work\env\os-stdout.log、work\env\os-stderr.log
+  停止：关闭该目录启动的 java/cmd 进程，或在启动窗口按 Ctrl+C。
+
+注意：OpenSearch 的 analysis-smartcn 插件是用官方 zip 手工解压安装的。
+      官方 opensearch-plugin.bat 在 Windows 上报 AccessDenied（.installing 目录
+      权限问题），因此跳过安装器，直接解压到 plugins\analysis-smartcn。
+      _cat/plugins 已确认插件 2.19.1 正常加载。
+
+======================================================================
+六、复现命令
+======================================================================
+1. 启动 PostgreSQL（如未启动）：
+   & "...\pgsql\pgsql\bin\pg_ctl.exe" -D "...\pgdata" -o "-p 55432 -h 127.0.0.1" start
+
+2. 启动 OpenSearch（如未启动）：
+   $env:OPENSEARCH_JAVA_HOME = "...\opensearch\opensearch-2.19.1\jdk"
+   cmd /c "...\opensearch\opensearch-2.19.1\bin\opensearch.bat"
+
+3. 运行 backend（需要管理员权限，符号链接测试才能全部通过）：
+   $env:TEST_DATABASE_URL = "postgresql://docmgr:change-me@127.0.0.1:55432/docmgr_test"
+   $env:TEST_OPENSEARCH_URL = "http://127.0.0.1:9200"
+   cd backend
+   ..\.venv-main\Scripts\python.exe -m pytest
+
+4. 运行 shared：
+   cd shared
+   ..\.venv-main\Scripts\python.exe -m pytest
+
+5. 运行 OCR Worker：
+   cd services\ocr_worker
+   ..\..\.venv-main\Scripts\python.exe -m pytest
+
+6. 运行前端：
+   cd frontend
+   npm test
+   npm run typecheck
+   npm run build
+
+======================================================================
+七、结论
+======================================================================
+本次共修改 8 个文件、11 处，全部是为了让 T00–T19 的未测试项在
+Windows 中文环境下能够真实执行，或修正测试自身的跨平台错误。
+修改后：
+  backend 728/728 通过
+  shared 105/105 通过
+  OCR Worker 63 通过、4 项真实识别测试跳过
+  frontend 48/48 通过
+  三个 Python 目录的 ruff 检查与格式检查全部通过
+所有 .md 文件保持原样，未做任何修改。
+
+======================================================================
+八、2026-11-16 补充：真实 OCR 测试环境补齐
+======================================================================
+目标：实际运行原先跳过的 4 项真实识别测试（tests/test_real_ocr.py）。
+
+环境与模型：
+  .tools\Python313\                 60.2 MB   Python 3.13.14（项目内，未改系统 PATH）
+  env_check\.venv-ocr\             904.8 MB   OCR 虚拟环境
+     paddlepaddle 3.3.1 / paddleocr 3.7.0 / paddlex 3.7.2
+  models\ocr\PP-OCRv5_mobile_det\    4.8 MB
+  models\ocr\PP-OCRv5_mobile_rec\   15.9 MB
+  两个模型的 inference.pdiparams 的 sha256 与 downloads.md #27/#28 一致。
+
+代码修改（1 处）：
+  services/ocr_worker/ocr_worker/engine.py  第 71 行
+  PaddleOCR(...) 增加 enable_mkldnn=os.name != "nt"
+  原因：PaddlePaddle 3.3.1 在 Windows CPU 上启用 oneDNN 时，加载
+        PP-OCRv5 模型会报 NotImplementedError:
+        ConvertPirAttribute2RuntimeAttribute not support
+        [pir::ArrayAttribute<pir::DoubleAttribute>]
+  关闭 oneDNN 后推理正常；这只影响 CPU 推理路径，不改模型、接口和数据库。
+
+测试结果：
+  test_real_ocr.py：4/4 通过
+    - 扫描版 PDF 页识别
+    - 独立图片识别
+    - 空白图不产生文字
+    - 模型版本记录库版本和权重哈希
+  services/ocr_worker 原有测试：63 通过、4 跳过（跳过项在 main 环境）
+  ruff check 与 ruff format --check：通过
+
+运行链路冒烟（真实 PostgreSQL + OpenSearch）：
+  GET /health：database=ok，opensearch=ok，clip_service=unavailable（预期）
+  注册 → 登录 → 上传 PDF → 后台解析 succeeded → 全文检索命中 → 删除：全部通过
+  （第一次冒烟用 PyMuPDF 内置中文字体生成 PDF，文本被写成问号，导致 0 命中；
+    改用可提取的英文内容后检索命中，不是系统缺陷。）
+
+======================================================================
+记录结束
+======================================================================
+======================================================================
+九、2026-11-16 补充：真实 OCR 全链路验证
+======================================================================
+目的：完成上次中断的最后一步——真实图片上传、OCR Worker 识别、写索引、检索命中。
+方式：新建普通 Python 脚本 storage-smoke/ocr_e2e.py，用 subprocess 启动 API 和两个 Worker；
+      没有使用 Start-Job、ScriptBlock::Create、EncodedCommand 等容易被安全软件误判的写法。
+
+实际执行结果：PASS
+  - 健康检查：database=ok，opensearch=ok，clip_service=unavailable（预期，T20 尚未实现）
+  - 上传 PNG -> parse 任务 succeeded -> 自动创建 OCR 任务
+  - OCR Worker 加载 PP-OCRv5 mobile 模型后处理 1 个任务，退出码 0
+  - 数据库中的 OCR 文本：'智能文档管理系统\nOCR SMOKE 2026'
+  - 检索命中来自 OCR 片段，evidence.source_type=ocr
+  - 删除文档后 OCR 片段被清理，且文档不再出现在检索结果中
+  - 4 项真实 OCR 测试（ocr 环境）：4/4 通过（11.47 秒）
+  - OCR Worker 主环境测试：63 passed，4 skipped（跳过项是需要在 ocr 环境运行的真实识别测试，
+    已在 ocr 环境 4/4 通过）
+
+说明：本次没有修改任何 .md 文件，没有新增下载，没有修改数据库表结构、接口或索引 mapping。
+运行日志与测试图片保留在 storage-smoke/ocr-e2e/20261116-143732/，可删除。
+
+----------------------------------------------------------------------
+补充：11 个连调测试文件已于 2026-11-16 16:51–16:54 用专用空库
+docmgr_test_report 完整重跑，190 passed / 0 failed / 0 skipped。
+逐文件结果见同目录下 `测试结果逐文件汇总.txt`。
+原始 JUnit 结果见 `storage-smoke/integration-results.xml`。
+`docs/untested.md` 因 .md 不可修改仍显示旧状态，以逐文件汇总 TXT 为准。
+----------------------------------------------------------------------
+
+----------------------------------------------------------------------
+完整逐处明细（C01–C12 全部修改 + N01 新增烟测脚本，含修改位置、原因、
+修改前后完整源代码和验证结果）见同目录下：
+  代码修改全部明细.txt
+本文件前面的 C01–C11 是当时的简版记录；如两者有差异，以
+代码修改全部明细.txt 的当前文件和当前行号为准。
+----------------------------------------------------------------------
+======================================================================
+十、2026-11-19 补充：T25 数据集冻结方案与结论文件
+======================================================================
+任务：T25「冻结数据集与标注」起步。Barry 于 2026-11-19 批准自建数据集方案。
+
+Barry 的三条指示：
+1. 同意自建「中文 + 混合格式 + 三类查询」最小真实集（不用公开数据集）。
+2. 不写入 experiments/README.md；新建 deepseek-v4-test.md 存放结论。
+3. 本次修改仍记入本文件（修改记录）。
+
+本次改动：
+  新增 deepseek-v4-test.md
+    - 内容：数据集方案、文件格式、收集与标注清单、冻结记录表、正式评测回填区。
+    - 当前状态：0 文件、0 查询、0 标注，未冻结。
+
+未改动：
+  未修改任何已有 .md（experiments/README.md、DEVPLAN.md、GLOBAL.md、docs/* 等）；
+  未修改代码、数据库表结构、索引 mapping、API 契约、依赖版本；
+  未新增下载。
+说明：deepseek-v4-test.md 是 Barry 明确要求新建的结论文件，属新增，不属于对既有 .md 的修改。
+======================================================================
+十一、2026-11-19 补充：本轮测试中的 3 处修复
+======================================================================
+本轮（2026-11-19）在真实 PostgreSQL + OpenSearch + OCR + CLIP 环境下补测，
+发现并修复 3 处，均已复测通过；详细过程见同目录下 `本轮测试失败与未完成.txt`。
+
+C12  frontend/src/components/PdfViewer.vue + frontend/public/pdfjs/**
+类型：生产代码 / 前端静态资源
+原因：中文 PDF 原文件预览空白。PDF.js 缺少 CMap、标准字体、WASM、ICC 静态资源。
+修复：PdfViewer.vue 配置 cMapUrl / standardFontDataUrl / wasmUrl / iccUrl；
+      对应资源放入 frontend/public/pdfjs（cmaps、standard_fonts、wasm、iccs，共 202 个文件）。
+验证：真实中文 PDF 正常显示；frontend 单元测试、类型检查、生产构建通过。
+
+C13  backend/tests/unit/test_health.py、test_worker_main.py
+类型：测试代码 / 异常类名断言
+原因：psycopg 在空闲端口上抛更具体的子类 ConnectionTimeout，测试却写死 OperationalError。
+修复：断言只要求安全的异常类名（OperationalError 及其子类均可），仍检查不泄露主机、端口、用户名、密码。
+验证：相关 backend 单元测试通过。
+
+C14  backend/tests/opensearch/test_vector_index_live.py
+类型：测试代码 / OpenSearch 分数断言
+原因：测试写死完全相同向量的 cosinesimil 得 2.0，OpenSearch 2.19.1 实际返回 1.0。
+修复：保留跨版本稳定的断言——返回顺序正确、分数严格递减，不再断言绝对分数值。
+验证：真实 OpenSearch 向量测试 8 项全部通过。

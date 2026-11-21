@@ -17,4 +17,24 @@ docs/downloads_DocVQA.txt,Codex,新增,任务书下载登记要求；因 .md 禁
 windows任务报告.txt,Codex,新增并更新,汇总本轮实际测试、下载、实验和未完成项,W1/W2/W3,因 .md 禁令使用 .txt
 windows任务执行留痕.txt,Codex,新增并更新,应 Barry 全局留痕要求记录新增、下载、删除和未完成溯源,W1/W2/W3,逐项记录本轮操作
 windows任务书_同步记录.txt,Codex,新增,核对 GitHub origin/main、ls-remote 与本地任务书,W1,记录远端未发现新版任务书的客观结果
+windows任务书.md,Claude（初稿与增补）；Barry（推送）,上游作者；Codex 仅拉取合并,远端 c4e7561 合入 W4-W7 与第 0/14/15 节,W1-W7,本次未手工修改 .md 内容
 docvqa-runs.zip,Codex,打包生成,experiments/docvqa/runs 下 11 个实际运行目录,W3,包含 10 个实验配置和 reocr 后 B2 复跑
+scripts/windows/run_backend_worker_loop.ps1,Codex,新增,长期运行通用 Worker 的测试辅助脚本,W3,默认参数下自动重启 Worker
+scripts/windows/run_ocr_worker_loop.ps1,Codex,新增,长期运行 OCR Worker 的测试辅助脚本,W3,默认参数下自动重启 Worker
+scripts/windows/monitor_w3_memory.ps1,Codex,新增,采集 API/CLIP/Worker/OCR 进程树峰值内存,W3,按 3 秒采样
+scripts/windows/run_w3_experiments.ps1,Codex,新增,依次运行 10 个配置并记录退出码和结果目录,W3,每配置 --repeat 3
+output/windows-w3/metrics-summary.csv,Codex,生成,从 11 个 metrics.json/config.json 汇总,W3,指标与延迟摘要
+output/windows-w3/experiment-exits.json,Codex,生成,实验运行器记录,W3,10 个配置退出码与耗时
+output/windows-w3/memory-peaks.json,Codex,生成,进程内存监控记录,W3,四个逻辑服务进程树峰值
+output/windows-w3/experiments.txt,Codex,生成,10 个实验命令的原始控制台输出,W3,包含每个配置指标
+output/windows-w3/processing-summary.txt,Codex,新增,W3 处理与 reocr 汇总,W3,人工整理自实际数据库和日志
+output/windows-w3/windows-w3-test-evidence.zip,Codex,打包生成,storage-smoke 中 W3 日志与 OCR 烟测证据,W1/W3,原始运行日志
+output/windows-w3/TEST_EVIDENCE_FILES.csv,Codex,生成,逐条列出测试证据压缩包内每个文件,W1/W3,标注内部文件制作人
+output/windows-w3/DOCVQA_RUN_FILES.csv,Codex,生成,逐条列出 docvqa-runs.zip 内每个文件,W3,标注内部文件制作人
+文件制作人与来源清单.csv,Codex,新增并维护,应 Barry 要求逐文件标注制作人,W1/W2/W3,本清单自身也在此登记
+deepseek-v4-test.md,前序 DeepSeek-V4 会话（文件名标注）,原始作者；Codex 未修改内容,前序 T25 数据集方案记录,上传时补充,本次仅由 Codex 添加到 Git
+代码修改全部明细.txt,前序未署名 Windows GPT/Codex 测试会话,原始作者；Codex 未修改内容,前序 T00-T19 修改明细,上传时补充,本次仅由 Codex 添加到 Git
+修改记录.txt,前序未署名 Windows GPT/Codex 测试会话,原始作者；Codex 未修改内容,前序 T00-T24 修改记录,上传时补充,本次仅由 Codex 添加到 Git
+失败的.md,前序未署名测试会话,原始作者；Codex 未修改内容,前序 Windows 测试失败记录,上传时补充,本次仅由 Codex 添加到 Git
+测试结果逐文件汇总.txt,前序未署名 Windows 测试会话,原始作者；Codex 未修改内容,前序 T00-T19 逐文件测试结果,上传时补充,本次仅由 Codex 添加到 Git
+错误与失败清单.txt,前序未署名 Windows 测试会话,原始作者；Codex 未修改内容,前序测试错误与失败清单,上传时补充,本次仅由 Codex 添加到 Git

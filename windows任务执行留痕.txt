@@ -208,3 +208,56 @@ W3 尚未提交时的生成物：
 
 停止进程不等于删除数据；databases、models、DocVQA 图片、日志和 experiment runs
 均已保留，便于 Barry 复核。
+
+
+十一、GitHub 上传留痕（2026-11-21）
+-----------------------------------
+
+第一次推送：
+- 提交 bb3883c
+- 推送 W1、W2、W3 的代码、测试 XML、实验数据、报告、留痕、
+  docvqa-runs.zip 和第一次逐文件制作人清单。
+
+Barry 随后要求把当前测试和修改部分全部上传，故补充上传：
+- 前序会话遗留的 6 个测试/修改记录文件（本次未修改内容）：
+  deepseek-v4-test.md、代码修改全部明细.txt、修改记录.txt、
+  失败的.md、测试结果逐文件汇总.txt、错误与失败清单.txt
+- scripts/windows/ 下 4 个测试编排脚本
+- output/windows-w3/ 下的指标、退出码、内存、实验输出和处理汇总
+- windows-w3-test-evidence.zip（W3 日志和 OCR 烟测证据）
+- TEST_EVIDENCE_FILES.csv（证据压缩包内每个文件的制作人）
+- DOCVQA_RUN_FILES.csv（docvqa-runs.zip 内每个文件的制作人）
+
+未上传：
+- DocVQA 原始 500 张图片和 storage/w3-docvqa 用户文件
+- .venv、models、node_modules
+- __pycache__、pytest cache、ruff cache
+- 临时测试数据目录和临时 junction
+
+原因：这些是缓存、依赖、大体积原始文件或可由脚本重建的数据；
+任务书原本也要求 DocVQA 原图和运行目录不进入 Git，本次仅上传压缩结果。
+
+安全检查：
+- 新增 output/windows-w3 和 scripts/windows 未发现密码、令牌或连接串。
+- 前序记录中的 change-me、测试用 JWT 和一次性烟测密码均为历史测试记录，
+  本次没有新增真实生产凭据。
+
+
+十二、新版 Windows 任务书同步
+-----------------------------
+
+首次拉取时远端仍为 8fb5830；随后 GitHub 出现 Barry 推送的新提交：
+- origin/main：c4e75611032b8398f344d863dc8d2b29ba46cd67
+- 新版任务书 SHA-256：
+  B4CE080BE73020574221FE9629FCD658F0C32CF0D5724DDEED198CFCE7DBBDB3
+- 新增第 0 节、W4、W5、W6、W7、第 14 和 15 节。
+
+同步方式：
+- git fetch --prune origin
+- git merge --no-edit origin/main
+- 本地合并提交：72696346fcf648c5c1348b61d43d0f75d588994f
+
+结果：
+- 远端 26 个新提交和 W4-W7 任务书成功合入。
+- 本地 W1-W3 报告、测试记录、脚本、日志和结果压缩包全部保留。
+- Codex 没有手工创建或修改任何 .md；任务书由 Git 合并更新。

@@ -1,0 +1,70 @@
+基于多模态信息检索的智能文档管理系统
+T00–T19 连调测试逐文件结果汇总
+生成时间：2026-11-16 16:54（Asia/Shanghai）
+
+测试环境：
+  Windows 11 / Python 3.14.0（项目 .venv-main）
+  PostgreSQL 16.15（127.0.0.1:55432，专用空测试库 docmgr_test_report）
+  OpenSearch 2.19.1 + analysis-smartcn（127.0.0.1:9200）
+
+测试范围：
+  docs/untested.md §1 列出的 11 个需要 PostgreSQL / OpenSearch 的连调测试文件。
+  本次不是抽样，而是把这 11 个文件完整执行了一遍。
+
+总体结果：
+  190 passed，0 failed，0 skipped，耗时 189.95 秒。
+  原始 JUnit 结果：storage-smoke/integration-results.xml
+
+原始明细位置：
+  本文件中的引用：第 16 行“原始 JUnit 结果：storage-smoke/integration-results.xml”
+  原始明细文件（绝对路径）：
+    C:\Users\lenovo\Desktop\my-software-main\my-software-main\storage-smoke\integration-results.xml
+  逐文件汇总表：本文件“逐文件结果”一节
+  读取方式：XML 的 testsuites/testsuite 下有 190 个 testcase；
+            classname 是测试文件，name 是测试名，time 是耗时；
+            没有 failure/error/skipped 子节点表示该测试通过。
+
+逐文件结果：
+----------------------------------------------------------------------
+序号  任务   测试文件                                              项数   通过   失败   跳过   结果
+----------------------------------------------------------------------
+1     T03    backend/tests/integration/test_migrations.py           14     14     0      0      通过
+2     T06    backend/tests/integration/test_auth.py                 20     20     0      0      通过
+3     T07    backend/tests/integration/test_task_queue.py           18     18     0      0      通过
+4     T08    backend/tests/integration/test_documents.py            41     41     0      0      通过
+5     T13    backend/tests/opensearch/test_text_index_live.py       13     13     0      0      通过
+6     T14    backend/tests/integration/test_pipeline_db.py          23     23     0      0      通过
+7     T15    backend/tests/integration/test_search_db.py            20     20     0      0      通过
+8     T16    backend/tests/integration/test_document_text.py        11     11     0      0      通过
+9     T17    backend/tests/integration/test_ocr_worker_db.py        10     10     0      0      通过
+10    T18    backend/tests/integration/test_consistency_db.py       12     12     0      0      通过
+11    T19    backend/tests/integration/test_experiments_db.py       8      8      0      0      通过
+----------------------------------------------------------------------
+合计                                                          190    190    0      0      全部通过
+
+说明：
+1. docs/untested.md 里原来的项数合计是 188，本次实际收集到 190 项：
+   test_migrations.py 由 13 项变为 14 项，test_auth.py 由 19 项变为 20 项。
+   以本次实际执行结果为准。
+2. docs/untested.md 仍然写着“未测试”，因为 Barry 要求不能修改任何 .md 文件；
+   该文件目前是过期记录，本 TXT 是这 11 个文件的逐文件结果记录。
+3. 这些连调测试覆盖的正是原清单中“需要 PostgreSQL / OpenSearch”的部分：
+   迁移、认证权限、任务队列、文档管理、真实 OpenSearch 索引、解析流水线、
+   检索、抽取文本、OCR Worker 数据库读写、一致性检查、实验框架。
+4. docs/untested.md §4、§6 里还有少量“不是自动化测试”的未验证性质，
+   例如真实扫描件/手机照片、前端浏览器联调、CLIP/OCR 并发内存、IK 分词器、
+   Dockerfile 构建、200–500 个真实评测文档。它们不在本次 190 项连调测试范围内，
+   仍不能写成“已验证”。
+
+其它已执行测试的汇总结果（来自修改记录.txt，本次未重跑）：
+  backend 完整套件：728 passed，0 failed，0 skipped
+  shared 完整套件：105 passed，0 failed，0 skipped
+  services/ocr_worker 主环境：63 passed，4 skipped
+  services/ocr_worker 真实识别（ocr 环境）：4/4 passed
+  frontend：48 passed，类型检查通过，生产构建成功
+  ruff：backend / shared / services/ocr_worker 全部通过
+
+本次真实 OCR 全链路（本次新跑）：
+  上传图片 -> 解析 -> OCR 任务 -> OCR Worker 识别 -> 写索引 -> 检索命中 -> 删除清理
+  结果：PASS；OCR 文本为“智能文档管理系统 / OCR SMOKE 2026”。
+  见 修改记录.txt 第九节。
