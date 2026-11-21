@@ -8,8 +8,9 @@
 - 增补：2026-11-21 14:29 第 1 节补上 T24k–T24r（任务书写成之后、T24s 之前完成的 8 项；T24j 就是 W2，还没有做）
 - 增补：2026-11-21 14:37 添加 W5（T24k、T24l、T24m、T24o、T24p 在真实环境上的补测，第 11 节），并在第 1、4、8、9 节补了对应的行
 - 增补：2026-11-21 19:40 收到第一轮执行结果（GitHub `bb3883c`，执行者 Codex，基于 `8fb5830`）后添加：第 0 节（当前状态、基线同步、报告格式、测试计划、怎样才算完成）；W6（新基线复测、符号链接、其余真实环境补测、补交 W1–W3 原始数据，第 12 节）；W7（跨机器 CLIP 向量一致性、同时运行的内存、负载下的查询编码，第 13 节）；第 14 节（交回的原始数据与 Claude 的核对方法）；第 15 节（不交给 Windows 的项目）。并在第 2、8、9 节补了对应的行。W1–W5 已写的内容没有改
+- 增补：2026-11-21 21:20 读了第一轮补充上传的日志（`0408d25`，核对记录见 `docs/changes/windows-2026-11-21-补充核对.md`）后，添加 W8（第 16 节：查 OCR 崩溃的事件日志、复现崩溃、OCR Worker 数与吞吐、smartcn 怎么切英文、B2 漏检分析、没有内存上限时的畸形文件防护），并在第 0.1、0.4、8、9、14 节补了对应的行；第 0.1 节的发现那一段补了一句。W1–W7 已写的步骤没有改
 
-本任务书有七项任务。**执行顺序以第 0.4 节为准**（W4 于 2026-11-21 14:26 添加，W5 于 14:37 添加，W6、W7 于 19:40 添加；W1–W3 第一轮已执行，状态见第 0.1 节）：
+本任务书有八项任务。**执行顺序以第 0.4 节为准**（W4 于 2026-11-21 14:26 添加，W5 于 14:37 添加，W6、W7 于 19:40 添加，W8 于 21:20 添加；W1–W3 第一轮已执行，状态见第 0.1 节）：
 
 | 编号 | 任务 | 结果 |
 |---|---|---|
@@ -20,6 +21,7 @@
 | W5 | T24k/T24l/T24m/T24o/T24p 的补测：换行符预检、一致性检查的结构比较与重建、空库启动 Worker、连接超时、生产构建（2026-11-21 14:37 添加） | 报告里的逐项结果（命令输出、退出码、耗时） |
 | W6 | 新基线上的全套复测；8 项符号链接测试（Barry 本人的终端）；一致性修复、Worker 崩溃恢复与并发、解析超时、Ctrl-C、端口占用、真实文件解析与 OCR 的真实环境补测；补交 W1–W3 的原始数据（2026-11-21 19:40 添加） | JUnit XML、数据库与索引的导出文件、命令输出、真实样本与人工抄录文本 |
 | W7 | 跨机器 CLIP 向量一致性；数据库、OpenSearch、后端、两个 Worker、CLIP 同时运行时的内存采样；OCR 负载下的查询编码耗时（2026-11-21 19:40 添加） | 向量 JSON、内存采样 CSV、检索耗时 CSV |
+| W8 | 针对第一轮日志的补充测试：事件日志查 OCR 崩溃、复现崩溃、1/2/4 个 OCR Worker 的吞吐、smartcn 切英文、B2 漏检的导出与人工核对、没有内存上限时的畸形文件防护（2026-11-21 21:20 添加） | 事件日志导出、任务 CSV、1 秒间隔的内存与 CPU 采样、分词结果、OCR 文本导出、人工答案、畸形文件的任务 JSON |
 
 做完后按第 8 节交付，按第 9 节自查，按第 14 节交回原始数据。
 
@@ -37,8 +39,9 @@
 | W4 | 未开始 | — | 按第 10 节做 |
 | W5 | 未开始 | — | 按第 11 节做 |
 | W6、W7 | 新增，未开始 | — | 按第 12、13 节做 |
+| W8 | 新增（2026-11-21 21:20），未开始 | — | 按第 16 节做 |
 
-第一轮里值得记下的发现（Claude 会写进 `docs/untested.md` 和 T27 的参考）：两张图片（`mjbw0217.jpg`、`mkvw0217.jpg`）的 OCR 子进程以 `0xC0000005`（访问违例）退出，自动重试 3 次都失败，改成只开一个 OCR Worker 后手动重试才成功；处理阶段同时开了 4 个 OCR Worker，OCR 每个任务平均 53.57 秒（macOS 单张测试图 0.44 秒，两者条件不同，不能直接比较）；DocVQA 上 B3 的指标低于 B2（CLIP 对英文查询起了负作用）。
+第一轮里值得记下的发现（Claude 会写进 `docs/untested.md` 和 T27 的参考）：两张图片（`mjbw0217.jpg`、`mkvw0217.jpg`）的 OCR 子进程以 `0xC0000005`（访问违例）退出，自动重试 3 次都失败，改成只开一个 OCR Worker 后手动重试才成功；处理阶段同时开了 4 个 OCR Worker，OCR 每个任务平均 53.57 秒（macOS 单张测试图 0.44 秒，两者条件不同，不能直接比较）；DocVQA 上 B3 的指标低于 B2（CLIP 对英文查询起了负作用）。（2026-11-21 21:20 补充：补充上传的日志显示，崩溃一共 8 次、涉及 4 个文档，全部集中在 14:31:08–14:31:59，4 个 Worker 都碰到了；reocr 时没有再崩。详见第 16.1 节，W8 要查清原因。）
 
 ### 0.2 基线同步（Barry 做，Claude 不 push）
 
@@ -71,15 +74,20 @@ Barry 要求 Windows 上的执行者不新建、不修改 `.md` 文件。所以�
 | 顺序 | 内容 | 谁做 | 依赖 | 预计耗时 |
 |---|---|---|---|---|
 | 1 | 基线同步（第 0.2 节） | Barry | — | 10 分钟 |
-| 2 | W5 第 11.2 节：换行符预检 | GPT | 1 | 10 分钟 |
-| 3 | W6 第 12.2 节：新基线全套复测 | GPT | 2 | 1 小时 |
-| 4 | W6 第 12.3 节：8 项符号链接测试 | **Barry 本人**（开发人员模式或管理员终端） | 1 | 20 分钟 |
-| 5 | W6 第 12.11 节：补交 W1–W3 原始数据（`docmgr_docvqa` 还在时先导出，免得后面的步骤改了它） | GPT | 1 | 30 分钟 |
-| 6 | W5 第 11.3–11.6 节 | GPT | 3 | 1 小时 |
-| 7 | W4（第 10 节） | GPT；第 10.3 节的鼠标拖入要有人操作 | 3 | 2 小时 |
-| 8 | W6 第 12.4–12.10 节 | GPT；第 12.9 节的真实样本和人工抄录由 Barry 准备 | 3、5 | 半天 |
-| 9 | W7（第 13 节） | GPT | 8（用 W6 建好的 `docmgr_w6`） | 1 小时 |
-| 10 | 按第 14.1 节整理原始数据、算 SHA-256、提交；Barry 推送，大文件另交 | GPT、Barry | 全部 | 30 分钟 |
+| 2 | W8 第 16.3 节：查事件日志里的 OCR 崩溃记录（应用程序日志满了会覆盖旧记录，越早做越好；2026-11-21 21:20 添加） | GPT | 1 | 10 分钟 |
+| 3 | W5 第 11.2 节：换行符预检 | GPT | 1 | 10 分钟 |
+| 4 | W6 第 12.2 节：新基线全套复测 | GPT | 3 | 1 小时 |
+| 5 | W6 第 12.3 节：8 项符号链接测试 | **Barry 本人**（开发人员模式或管理员终端） | 1 | 20 分钟 |
+| 6 | W6 第 12.11 节：补交 W1–W3 原始数据（`docmgr_docvqa` 还在时先导出，免得后面的步骤改了它）；同时做 W8 第 16.6 节和第 16.7 节 A（都只读 `docmgr_docvqa` 和 `docvqa_` 索引；2026-11-21 21:20 添加） | GPT | 1 | 45 分钟 |
+| 7 | W5 第 11.3–11.6 节 | GPT | 4 | 1 小时 |
+| 8 | W4（第 10 节） | GPT；第 10.3 节的鼠标拖入要有人操作 | 4 | 2 小时 |
+| 9 | W6 第 12.4–12.10 节 | GPT；第 12.9 节的真实样本和人工抄录由 Barry 准备 | 4、6 | 半天 |
+| 10 | W7（第 13 节） | GPT | 9（用 W6 建好的 `docmgr_w6`） | 1 小时 |
+| 11 | W8 第 16.4、16.5、16.8 节（会把 CPU 占满，不要和 W7 或其他测量同时跑；2026-11-21 21:20 添加） | GPT | 10 | 3–4 小时 |
+| 12 | W8 第 16.7 节 B：30 条漏检查询的人工核对（不依赖其他步骤，任何时候都可以做；2026-11-21 21:20 添加） | **Barry 本人** | — | 40 分钟 |
+| 13 | 按第 14.1 节整理原始数据、算 SHA-256、提交；Barry 推送，大文件另交 | GPT、Barry | 全部 | 30 分钟 |
+
+（2026-11-21 21:20：插入 W8 后重新编了号。原来的第 2–9 步依次变成第 3–10 步，原来的第 10 步变成第 13 步；原有步骤的内容没有变，只在第 6 步加上了 W8 的两项只读导出。）
 
 某一步做不了时，按第 9 节最后一句处理：写明卡在哪里，继续做不依赖它的步骤。
 
@@ -137,7 +145,7 @@ Barry 要求 Windows 上的执行者不新建、不修改 `.md` 文件。所以�
 7. 依赖分环境：backend、shared 和 W2 脚本用 main 环境（`.venv-main`）；OCR Worker 用 `env_check/.venv-ocr`；CLIP 服务用 `env_check/.venv-clip`。不得混装。
 8. 提交：每项任务（W1、W2、W3）各一个 commit，只包含该任务的改动，提交信息用中文，写明任务编号。**不要 push**，由 Barry 决定。
 9. 不在日志、报告、提交里写密码、令牌和连接串。
-10. **交回原始数据**（2026-11-21 19:40 添加）：W4–W7 每一项都按第 14.1 节交回原始文件（JUnit XML、`--json` 输出、SQL 导出、命令输出原文），不能只在报告里写结论。导出前检查一遍，去掉密码、令牌、连接串。
+10. **交回原始数据**（2026-11-21 19:40 添加）：W4–W8（W8 于 2026-11-21 21:20 加入本条）每一项都按第 14.1 节交回原始文件（JUnit XML、`--json` 输出、SQL 导出、命令输出原文），不能只在报告里写结论。导出前检查一遍，去掉密码、令牌、连接串。
 11. **写明基线**（2026-11-21 19:40 添加）：每个任务开始前记下 `git rev-parse HEAD` 和 `git status --porcelain`；工作区有未提交改动时先停下来问 Barry，不要带着改动测试。
 
 ------------------------------------------------------------------------
@@ -383,6 +391,7 @@ python -m app.modules.experiments --root ..\experiments\docvqa run --config ..\e
 | `windows任务报告.txt` 的 W6、W7 两节（2026-11-21 19:40 添加；报告用 `.txt`，见第 0.3 节） | 第 12、13 节每一步的命令、输出、退出码、耗时；结果与预期不符的逐条写出 | 是 |
 | `output/windows-w4/` 至 `output/windows-w7/`（2026-11-21 19:40 添加） | 第 14.1 节列出的原始数据、`git-head.txt`、`SHA256SUMS.txt` | 是（单个文件超过 5 MB 的除外，见第 14.1 节） |
 | 大文件压缩包（2026-11-21 19:40 添加） | 第 14.1 节中标“另交”的文件，按任务各打一个 zip | 否，交给 Barry；SHA-256 写进对应目录的 `SHA256SUMS.txt` |
+| `windows任务报告.txt` 的 W8 一节、`output/windows-w8/`（2026-11-21 21:20 添加） | 第 16 节每一步的命令、输出、退出码、耗时，以及第 16.9 节列出的原始文件；`missed30-answers.tsv` 由 Barry 填好后一起提交 | 是（`ocr-chunks.csv`、日志若超过 5 MB，按第 14.1 节另交） |
 
 提交顺序：W1（报告初稿 + XML）→ W2（脚本、测试、数据、`.gitignore`、`downloads.md`、`T24j.md`）→ W3（报告补全）→ W4（报告的 W4 一节 + 截图）→ W5（报告的 W5 一节；第 11.2 节的预检结果在 W1 的提交里先写进报告初稿）→ W6 → W7（各一个 commit，2026-11-21 19:40 添加）。
 
@@ -427,6 +436,11 @@ python -m app.modules.experiments --root ..\experiments\docvqa run --config ..\e
 | 31 | W1–W3 的原始数据按第 12.11 节补交（2026-11-21 19:40 添加） | 12.12 |
 | 32 | CLIP 向量 JSON、内存采样 CSV、负载下检索耗时 CSV 都交回，采样没有长于 15 秒的空档（2026-11-21 19:40 添加） | 13.5 |
 | 33 | 每个任务目录都有 `git-head.txt`、`SHA256SUMS.txt`，与第 0.2 节的提交一致（2026-11-21 19:40 添加） | 14.1 |
+| 34 | 事件日志已导出；8 个崩溃时刻对上了，或写明日志已被覆盖 / 当时没有生成（2026-11-21 21:20 添加） | 16.9 |
+| 35 | 崩溃复现：单 Worker、4 Worker 各 10 轮的 CSV 齐全，1 秒间隔的内存采样覆盖全程（2026-11-21 21:20 添加） | 16.9 |
+| 36 | Worker 数与吞吐：N = 1、2、4、1 四组 CSV 齐全，每组 40 个任务（2026-11-21 21:20 添加） | 16.9 |
+| 37 | smartcn 分词 17 行、OCR 文本导出、30 条人工答案都交回（2026-11-21 21:20 添加） | 16.9 |
+| 38 | 三个畸形文件都被拒绝解析、`attempts = 1`、错误原文与预期一致；对照组成功；通用 Worker 没有退出，峰值不超过 500 MB（2026-11-21 21:20 添加） | 16.9 |
 
 任何一项做不到，不要硬凑：在报告里写明哪一项、卡在哪里、已经试过什么，然后继续做不依赖它的部分。
 
@@ -1027,7 +1041,7 @@ for ($i = 0; $i -lt 200; $i++) {
 
 ### 14.1 交回什么、怎么交
 
-每个任务一个目录：`output/windows-w4/`、`output/windows-w5/`、`output/windows-w6/`、`output/windows-w7/`、`output/windows-w3-supplement/`。每个目录里都要有：
+每个任务一个目录：`output/windows-w4/`、`output/windows-w5/`、`output/windows-w6/`、`output/windows-w7/`、`output/windows-w8/`（2026-11-21 21:20 添加；里面的 `missed/missed270.tsv`、`missed/missed30.tsv` 是 Claude 预先放好的输入，不要改）、`output/windows-w3-supplement/`。每个目录里都要有：
 
 - `git-head.txt`：`git rev-parse HEAD` 和 `git status --porcelain` 的输出（第 2 节第 11 条）
 - `commands.txt`：按执行顺序列出实际运行的命令（去掉密码、令牌、连接串）和每条的退出码
@@ -1055,6 +1069,11 @@ Claude 在 Mac 上做，不装新东西；Mac 上没有 PostgreSQL 和 OpenSearc
 | 13.2 内存 | 按组、按采样时刻加总内存，算每组峰值、总峰值和最低可用内存；检查采样间隔 | 间隔不超过 15 秒、六组都在；数字作为论文“实验环境”的数据 |
 | 13.3 负载下检索 | 从两份 CSV 算总耗时与图像通道耗时的 P50/P95、图像通道 `unavailable` 的比例 | 数据完整（各 200 行）；结论作为 T27 与 D36 局限的依据 |
 | W4、W5 | 对照报告逐项看截图、命令输出、退出码 | 每个核对点都有结果和证据 |
+| W8 第 16.3 节（2026-11-21 21:20 添加） | 把事件的时刻和 OCR Worker 日志里的 8 次失败逐一对应，提取出错模块和异常代码 | 时刻能对上（或者写明日志已被覆盖）；按第 16.3 节的规则归类 |
+| W8 第 16.4、16.5 节 | 从 CSV 统计每轮、每组的崩溃次数、耗时 P50/P95、吞吐量；把崩溃时刻对到 `memory.csv`，看崩溃前 10 秒的可用内存和 CPU；重算 `SHA256SUMS.txt` | 行数齐全、时刻对得上；结论按第 16.4 节的三种情况归类，第 16.5 节的数字进 T27 |
+| W8 第 16.6 节 | 逐行看分词结果，判断有没有转小写、词干化、去停用词 | 17 行齐全；结论写进论文“局限”一节 |
+| W8 第 16.7 节 | 对 270 条漏检按第 16.7 节分三类；30 条人工答案与 OCR 文本比对，算字符级的编辑距离比例 | 文件齐全；`ocr-chunks.csv` 的行数与 1589 一致，或者已说明差异 |
+| W8 第 16.8 节 | 逐个对照任务 JSON 里的 `status`、`attempts`、`error`；从 `memory.csv` 取 `worker` 组的峰值 | 与第 16.8 节的预期逐条一致，才判为通过 |
 
 核对中发现的代码问题，Claude 不自己修，先报给 Barry（与第 2 节第 5 条相同）。
 
@@ -1075,3 +1094,345 @@ Claude 在 Mac 上做，不装新东西；Mac 上没有 PostgreSQL 和 OpenSearc
 | `CLIP_DEVICE=mps`、`cuda` | Windows 没有 MPS；这台机器的 GPU 与 CUDA 环境没有确认，装 CUDA 版 torch 是新安装 | MPS 可以在 Mac 上由 Claude 做（Barry 同意后） |
 | Safari | W4 第 10.4 节已写成“有设备就看” | 同 W4 |
 | T29–T32 测试报告、部署说明、一致性核对、答辩脚本 | 是文档工作，依赖 W4–W7 的核对结果 | Claude 与 Barry |
+
+------------------------------------------------------------------------
+
+## 16. W8：针对第一轮日志的补充测试（2026-11-21 21:20 添加）
+
+来源：Claude 读了第一轮补充上传的文件（`output/windows-w3/`、`windows-w3-test-evidence.zip` 里的日志、`docvqa-runs.zip` 的逐条结果），发现几处 W4–W7 都没覆盖的问题，核对记录在 `docs/changes/windows-2026-11-21-补充核对.md`。W8 就是为这些问题补的测试。
+
+规则与 W6 相同：只测量和核对，**不改代码和配置文件**，环境变量只在窗口里临时设，而且只设本节写明的；**不调参**，第 16.5 节比较 Worker 数只是测量，结果不拿来改默认配置，要改先问 Barry；结果与预期不符时，记下现象、复现步骤、完整输出，问 Barry。原始数据按第 14.1 节放进 `output/windows-w8/`，报告写进 `windows任务报告.txt` 末尾新加的 W8 一节。
+
+### 16.1 第一轮发现了什么
+
+| # | 发现 | 依据 | 对应小节 |
+|---|---|---|---|
+| 1 | 8 次 `0xC0000005` 全部发生在 14:31:08–14:31:59 这 51 秒内，4 个 OCR Worker 都碰到了。涉及 4 个文档，不是报告里写的 2 个：manifest 里相邻的 `dv_mjbw0217`、`dv_mjxn0226`、`dv_mkhg0227`、`dv_mkvw0217`（数据行第 238–241 行）。其中 `mjbw0217`、`mkvw0217` 3 次都失败，另外两个第二次就成功了。之后 reocr 同样开 4 个 Worker、同样这 500 张图，一次都没崩 | `ocr*.err.log`、`reocr-ocr*.err.log` | 16.3、16.4 |
+| 2 | 任务失败后立即回到 `pending`。领取按 `created_at` 排序，失败的任务马上又被领走，3 次尝试大约 40 秒就用完了，一次短暂的故障就足以让任务永久失败 | 日志时间；`shared/tasks.py` | 16.4 只记录现象，不改代码（改要动表结构，属 🔒） |
+| 3 | 内存只记了 4 个 Python 进程组的峰值，没有时间线，也没有系统可用内存，判断不了 14:31 是不是内存不足 | `memory-peaks.json`、`monitor_w3_memory.ps1` | 16.4、16.5 |
+| 4 | Windows 上 Worker 的子进程没有内存上限：通用 Worker 日志里“当前系统不支持设置内存上限”出现了 1000 次（D16）。防 zip 炸弹、防超大图片只能靠解析前的检查 | `worker.err.log` | 16.8 |
+| 5 | B2 只有 230/500 条查询的相关文档进了前 20 名。漏掉的 270 条里，很多是“What is the title of the document?”这类没有内容词的问题 | `docvqa-runs.zip` | 16.7 |
+| 6 | smartcn 怎么切英文、数字、标点，从来没有实测过，而 DocVQA 的查询和 OCR 文本都是英文 | — | 16.6 |
+
+### 16.2 环境
+
+| 用途 | 数据库 | 存储 | 索引前缀 | 用在 |
+|---|---|---|---|---|
+| W3 的数据（只读） | `docmgr_docvqa`（已有） | W3 的 `storage/w3-docvqa` | `docvqa_` | 16.6、16.7 |
+| 崩溃复现 | `docmgr_w8a`（新建，`alembic upgrade head`） | 新的空目录 | `w8a_` | 16.4 |
+| Worker 数与吞吐、畸形文件 | `docmgr_w8b`（新建，`alembic upgrade head`） | 新的空目录 | `w8b_` | 16.5、16.8 |
+
+切换方法同第 6.1 节。每执行一条会写数据的命令之前，先 `echo $env:DATABASE_URL $env:OPENSEARCH_INDEX_PREFIX $env:STORAGE_ROOT` 确认（输出里的密码不要抄进报告）。数据库密码用 `$env:PGPASSWORD` 在窗口里设，不写进任何文件。
+
+**公用的准备**（仓库根目录，每个新开的 PowerShell 窗口执行一次；`<用户>` 换成数据库用户名）：
+
+```powershell
+$repo = (Get-Location).Path
+$out  = "$repo\output\windows-w8"
+New-Item -ItemType Directory -Force "$out\logs", "$out\crash4", "$out\scale", "$out\analyze", "$out\missed", "$out\bad-files" | Out-Null
+function Q($db, $sql) { psql -h localhost -U <用户> -d $db -tAc $sql }
+function Export($db, $sql, $file) { psql -h localhost -U <用户> -d $db -c "\copy ($sql) TO '$file' CSV HEADER" }
+function Wait-Tasks($db, $types) {
+  do { Start-Sleep -Seconds 5; $n = [int](Q $db "SELECT count(*) FROM processing_tasks WHERE task_type IN ($types) AND status IN ('pending', 'processing')") } while ($n -gt 0)
+}
+function Start-Ocr($name) {
+  Start-Process -FilePath "$repo\env_check\.venv-ocr\Scripts\python.exe" -ArgumentList '-m', 'ocr_worker' -WorkingDirectory "$repo\services\ocr_worker" -RedirectStandardOutput "$out\logs\$name.out.log" -RedirectStandardError "$out\logs\$name.err.log" -NoNewWindow -PassThru
+}
+```
+
+`Start-Ocr` 返回的进程对象要记下来（`$w1 = Start-Ocr 'crash4-single'`），停止时用 `Stop-Process -Id $w1.Id`。**只在队列已经清空、Worker 空闲时停止**（`Wait-Tasks` 返回之后），这样不会打断正在识别的任务。`Export` 的文件路径用相对仓库根目录的正斜杠路径，例如 `'output/windows-w8/crash4/single-r01.csv'`。
+
+**内存与 CPU 采样脚本**（第 13.2 节脚本的变体：每 1 秒一次，多记一行 CPU 总占用，有停止文件时结束）。先把它存到仓库外：
+
+```powershell
+Set-Content -Encoding utf8 "<仓库外的目录>\sample_w8.ps1" -Value @'
+param([string]$Out, [string]$Stop)
+"time,group,pid,working_set_mb,private_mb" | Out-File -Encoding utf8 $Out
+while (-not (Test-Path -LiteralPath $Stop)) {
+  $now = (Get-Date).ToString("o")
+  Get-CimInstance Win32_Process | Where-Object { $_.Name -in @('postgres.exe','java.exe','python.exe','node.exe') } | ForEach-Object {
+    $c = "$($_.CommandLine)"
+    $g = if ($_.Name -eq 'postgres.exe') {'postgresql'} elseif ($_.Name -eq 'java.exe') {'opensearch'} elseif ($_.Name -eq 'node.exe') {'node'} elseif ($c -match 'uvicorn') {'api'} elseif ($c -match 'ocr_worker') {'ocr_worker'} elseif ($c -match 'clip_service') {'clip_service'} elseif ($c -match 'app.worker') {'worker'} else {'python_other'}
+    $p = Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue
+    if ($p) { "$now,$g,$($_.ProcessId),{0:F1},{1:F1}" -f ($p.WorkingSet64/1MB), ($p.PrivateMemorySize64/1MB) | Out-File -Append -Encoding utf8 $Out }
+  }
+  $avail = (Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory / 1KB
+  "$now,system_available,0,{0:F1},0" -f $avail | Out-File -Append -Encoding utf8 $Out
+  $cpu = (Get-CimInstance Win32_PerfFormattedData_PerfOS_Processor -Filter "Name='_Total'").PercentProcessorTime
+  "$now,cpu_total_percent,0,$cpu,0" | Out-File -Append -Encoding utf8 $Out
+  Start-Sleep -Seconds 1
+}
+'@
+```
+
+在一个单独的窗口里运行：`powershell -NoProfile -ExecutionPolicy Bypass -File "<仓库外的目录>\sample_w8.ps1" -Out "$out\<小节目录>\memory.csv" -Stop "$out\<小节目录>\stop.flag"`。结束时 `New-Item "$out\<小节目录>\stop.flag"`，再把 `stop.flag` 删掉。用 CIM 类名而不用 `Get-Counter`，原因见第 13.2 节（中文版 Windows 的计数器名称是中文的）。报告里写明机器的逻辑处理器数和总内存：`(Get-CimInstance Win32_Processor).NumberOfLogicalProcessors`、`(Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory`，存成 `$out\machine.txt`。
+
+**小数据集的生成脚本**（第 12.5 节脚本的变体，多两个参数：从第几行开始、取几行，行号从 0 算）。脚本里只用单引号：Windows PowerShell 5.1 把参数传给 `python -c` 时会吞掉里面的双引号，所以写成文件再运行（第 12.5 节如果遇到 `SyntaxError`，也改用这个脚本，参数写 `0 60`）：
+
+```powershell
+Set-Content -Encoding utf8 "<仓库外的目录>\make_subset.py" -Value @'
+import csv, shutil, sys
+from pathlib import Path
+src, dst, start, count = Path(sys.argv[1]), Path(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4])
+with open(src / 'datasets/manifest.csv', encoding='utf-8', newline='') as f:
+    rows = list(csv.DictReader(f))[start:start + count]
+ids = {r['file_id'] for r in rows}
+(dst / 'datasets/files/docvqa').mkdir(parents=True)
+(dst / 'qrels').mkdir()
+with open(dst / 'datasets/manifest.csv', 'w', encoding='utf-8', newline='') as f:
+    w = csv.DictWriter(f, fieldnames=list(rows[0].keys()), lineterminator='\n')
+    w.writeheader()
+    w.writerows(rows)
+for r in rows:
+    shutil.copy2(src / 'datasets/files' / r['path'], dst / 'datasets/files' / r['path'])
+qrels = (src / 'qrels/docvqa.tsv').read_text(encoding='utf-8').splitlines()
+keep = [qrels[0]] + [line for line in qrels[1:] if line.split('\t')[1] in ids]
+qids = {line.split('\t')[0] for line in keep[1:]}
+(dst / 'qrels/docvqa.tsv').write_text('\n'.join(keep) + '\n', encoding='utf-8', newline='\n')
+queries = (src / 'queries.tsv').read_text(encoding='utf-8').splitlines()
+picked = [queries[0]] + [line for line in queries[1:] if line.split('\t')[0] in qids]
+(dst / 'queries.tsv').write_text('\n'.join(picked) + '\n', encoding='utf-8', newline='\n')
+print(len(rows), 'files,', len(qids), 'queries:', ' '.join(sorted(ids)))
+'@
+```
+
+### 16.3 查 Windows 事件日志里的崩溃记录（最先做）
+
+**为什么：** 发现 1。Windows 给每次程序崩溃都会记一条“应用程序错误”（事件 ID 1000），里面写着出错的是哪个模块（dll）。这是最快的定位办法，但应用程序日志满了会覆盖旧记录，所以**基线同步之后马上做**。
+
+**步骤**（普通权限的 PowerShell 就能读应用程序日志）：
+
+```powershell
+Get-WinEvent -FilterHashtable @{LogName='Application'; Id=1000,1001; StartTime='2026-11-21 13:15'; EndTime='2026-11-21 15:30'} -ErrorAction SilentlyContinue | Where-Object { $_.Message -match 'python' } | Format-List TimeCreated, Id, ProviderName, Message | Out-File -Encoding utf8 "$out\crash-events.txt"
+Get-WinEvent -ListLog Application | Format-List LogName, FileSize, MaximumSizeInBytes, RecordCount, LogMode | Out-File -Encoding utf8 "$out\application-log-info.txt"
+(Get-WinEvent -LogName Application -MaxEvents 1 -Oldest).TimeCreated.ToString('o') | Out-File -Append -Encoding utf8 "$out\application-log-info.txt"
+Get-ChildItem "C:\ProgramData\Microsoft\Windows\WER\ReportArchive", "$env:LOCALAPPDATA\Microsoft\Windows\WER\ReportArchive" -Directory -Filter 'AppCrash_python*' -ErrorAction SilentlyContinue | Select-Object FullName, LastWriteTime | Format-Table -AutoSize | Out-File -Encoding utf8 "$out\wer-reports.txt"
+```
+
+时间范围 13:15–15:30 覆盖了 W3 处理的全过程（13:20–15:27），可以顺便看有没有日志里没记到的崩溃。`wer-reports.txt` 里列出的、时间在 11-21 14:31 前后的目录，把其中的 `Report.wer`（文本文件）复制到 `$out\wer\<目录名>.wer`。交回之前检查一遍内容：可以有用户名和路径，但不能有密码和令牌。
+
+**预期：**
+- `crash-events.txt` 里有 ID 1000 的事件，时间与下面 8 个时刻逐一对应（相差 2 秒以内）：14:31:08、14:31:09、14:31:32、14:31:33、14:31:48、14:31:49、14:31:51、14:31:59。每条都有“错误模块名称”和“异常代码 0xc0000005”。
+- 如果一条都没有：看 `application-log-info.txt` 里最早一条事件的时间，晚于 11-21 14:31 就是被覆盖了，在报告里写“已被覆盖”。早于这个时间却仍然没有，就写“当时没有生成错误报告”。这两种情况都不算失败，接着做第 16.4 节。
+
+**Claude 怎么判断**（核对时用，见第 14.2 节）：出错模块是 Paddle 自己的 dll（例如 `paddle_inference.dll`、`mkldnn.dll`、`libiomp5md.dll`），记为“多个识别进程同时运行时 Paddle 出错”，论文里写成局限，部署建议少开 Worker。是 `ntdll.dll`、`ucrtbase.dll` 一类，记为“堆内存被写坏或内存不足”，要看第 16.4 节当时的可用内存。
+
+### 16.4 复现 OCR 崩溃（`docmgr_w8a`）
+
+**为什么：** 发现 1–3。要分清两件事：崩溃是这 4 张图片本身引起的，还是“4 个识别进程同时运行”引起的。还要第一次拿到崩溃前后的内存时间线。
+
+**准备：**
+1. 生成 4 个文件的小数据集，预期打印 `4 files, 4 queries: dv_mjbw0217 dv_mjxn0226 dv_mkhg0227 dv_mkvw0217`：
+
+   ```powershell
+   $crash4 = "<仓库外的新目录>\docvqa-crash4"
+   .\.venv-main\Scripts\python -I "<仓库外的目录>\make_subset.py" experiments\docvqa $crash4 237 4
+   ```
+
+2. 窗口变量指向 `docmgr_w8a`、`w8a_`、新的存储目录；在 `backend/` 下 `alembic upgrade head`，然后 `validate`、`import`（`--root $crash4`，同第 12.5 节）。
+3. 启动 CLIP 服务和一个通用 Worker，等 parse 和 embed 全部完成：`Wait-Tasks 'docmgr_w8a' "'parse', 'embed'"`。然后在各自的窗口里按 Ctrl+C 停掉 CLIP 服务和通用 Worker，让后面的测量只有 OCR 在跑。此时 4 个 OCR 任务处于 `pending`，**还没有任何 OCR Worker 在运行**。
+4. 在另一个窗口启动采样脚本，输出到 `$out\crash4\memory.csv`。
+
+**A. 单个 OCR Worker，10 轮：**
+
+```powershell
+$w = Start-Ocr 'crash4-single'
+for ($r = 1; $r -le 10; $r++) {
+  if ($r -gt 1) { Push-Location backend; ..\.venv-main\Scripts\python -m app.modules.experiments --root $crash4 reocr --yes; Pop-Location }
+  Wait-Tasks 'docmgr_w8a' "'ocr'"
+  Export 'docmgr_w8a' "SELECT id, document_id, status, attempts, claimed_by, error, started_at, finished_at FROM processing_tasks WHERE task_type = 'ocr' ORDER BY document_id" ("output/windows-w8/crash4/single-r{0:D2}.csv" -f $r)
+}
+Stop-Process -Id $w.Id
+```
+
+**B. 4 个 OCR Worker 同时运行，10 轮：** 每轮 4 个任务分给 4 个 Worker 同时识别，也就是 14:31 时的情形。
+
+```powershell
+$ws = 1..4 | ForEach-Object { Start-Ocr "crash4-multi$_" }
+Start-Sleep -Seconds 60   # 等 4 个 Worker 都加载完模型（看各自的 .err.log 里出现“OCR 模型已加载”）
+for ($r = 1; $r -le 10; $r++) {
+  Push-Location backend; ..\.venv-main\Scripts\python -m app.modules.experiments --root $crash4 reocr --yes; Pop-Location
+  Wait-Tasks 'docmgr_w8a' "'ocr'"
+  Export 'docmgr_w8a' "SELECT id, document_id, status, attempts, claimed_by, error, started_at, finished_at FROM processing_tasks WHERE task_type = 'ocr' ORDER BY document_id" ("output/windows-w8/crash4/multi4-r{0:D2}.csv" -f $r)
+}
+$ws | ForEach-Object { Stop-Process -Id $_.Id }
+```
+
+如果某一轮有任务最终 `failed`，`reocr` 照样会把它放回队列，下一轮继续，不用手动重试。全部结束后停掉采样（`New-Item "$out\crash4\stop.flag"`），再把 `$out\logs\crash4-*.err.log` 留着交回。
+
+**预期：**
+- 20 个 CSV，每个 4 行。A 的 10 轮都应为 `succeeded`、`attempts = 1`。如果 A 也崩了，说明和图片有关，在报告里写明是哪一张、第几轮。
+- B 可能崩，也可能不崩，两种都如实记录。崩溃时 `error` 写着“识别子进程异常退出（退出码 3221225477）”，`attempts` 大于 1。
+- 有崩溃的话，按第 16.3 节的命令把这次测试时段的事件日志也导出来，存成 `$out\crash4\crash-events.txt`。
+- `memory.csv` 覆盖 A、B 的全过程，相邻两次采样间隔不超过 3 秒，`ocr_worker`、`system_available`、`cpu_total_percent` 三组都有。
+
+**Claude 怎么判断：** 统计 A、B 各自的崩溃次数和崩溃的任务；把每次崩溃的时刻（日志里的“失败”行，以及 CSV 里 `attempts > 1` 的任务）对到 `memory.csv`，看崩溃前 10 秒内 `system_available` 的最低值和 `ocr_worker` 的合计。三种结论：
+- A 不崩、B 崩，崩时可用内存接近 0：内存不足；
+- A 不崩、B 崩，崩时可用内存充足：多个识别进程同时运行时 Paddle 出错（结合第 16.3 节的模块名）；
+- A、B 都不崩：第一轮的崩溃复现不了，记为“与当时的机器状态有关，原因不明”。
+同时记下 B 里每个崩溃任务前后几次尝试的间隔秒数，作为发现 2 的实测数据（不改代码）。
+
+### 16.5 开几个 OCR Worker 合适（`docmgr_w8b`）
+
+**为什么：** 发现 3。第一轮开 4 个 Worker 时，每张图平均 53.57 秒（第 0.1 节）。每个识别进程都会尽量占满 CPU，几个进程可能在互相抢。T27 的性能实验和论文的部署建议，都需要知道 1、2、4 个 Worker 的吞吐量、每张耗时和内存。
+
+**准备：**
+1. 生成 40 个文件的小数据集：manifest 数据行第 221–260 行（从 `dv_lxkp0227` 到 `dv_mzbx0227`），包含第 16.4 节的 4 个文件。预期打印 `40 files, 40 queries: ...`：
+
+   ```powershell
+   $scale = "<仓库外的新目录>\docvqa-scale40"
+   .\.venv-main\Scripts\python -I "<仓库外的目录>\make_subset.py" experiments\docvqa $scale 220 40
+   ```
+
+2. 窗口变量指向 `docmgr_w8b`、`w8b_`、新的存储目录；`alembic upgrade head`、`validate`、`import`（`--root $scale`）。和第 16.4 节一样，用 CLIP 服务和一个通用 Worker 做完 parse、embed，然后停掉它们。
+3. 启动采样脚本，输出到 `$out\scale\memory.csv`。
+
+**步骤：** 按 N = 1、2、4、1 的顺序做 4 组。最后再做一次 N = 1，是为了看机器状态有没有随时间变化。第一组直接处理 import 产生的 OCR 任务，后面每组先 `reocr --yes`：
+
+```powershell
+$plan = 1, 2, 4, 1
+for ($i = 0; $i -lt $plan.Count; $i++) {
+  $n = $plan[$i]
+  $ws = 1..$n | ForEach-Object { Start-Ocr ("scale-g{0}-w{1}" -f ($i + 1), $_) }
+  Start-Sleep -Seconds 60   # 等模型加载完，再放任务
+  if ($i -gt 0) { Push-Location backend; ..\.venv-main\Scripts\python -m app.modules.experiments --root $scale reocr --yes; Pop-Location }
+  Wait-Tasks 'docmgr_w8b' "'ocr'"
+  Export 'docmgr_w8b' "SELECT id, document_id, status, attempts, claimed_by, error, started_at, finished_at FROM processing_tasks WHERE task_type = 'ocr' ORDER BY started_at" ("output/windows-w8/scale/g{0}-n{1}.csv" -f ($i + 1), $n)
+  $ws | ForEach-Object { Stop-Process -Id $_.Id }
+}
+```
+
+注意：第一组的 OCR 任务在 import 时就已经是 `pending`，Worker 一启动就会领，所以第一组的耗时里含模型加载。报告里写明，Claude 会用 `started_at` 扣掉这一段。全部做完后停止采样，并在报告里写明每组开始和结束的时刻。
+
+**预期：** 4 个 CSV，每个 40 行，最终全部 `succeeded`。有失败或 `attempts > 1` 的，如实列出来，不要重试到成功再交。
+
+**Claude 怎么判断：** 每组算：总耗时（最晚 `finished_at` 减最早 `started_at`）、吞吐量（张/分钟）、每张耗时（`finished_at − started_at`）的 P50 和 P95、崩溃次数；再从 `memory.csv` 按时段算 OCR 组内存峰值、最低可用内存、CPU 平均占用。结果作为 T27 的输入和论文“部署建议”的依据。**不设通过线**，数据完整就算完成。如果吞吐量在 N = 2 或 4 时没有比 N = 1 明显提高，就说明多开 Worker 主要是在抢 CPU，报告里照实写。
+
+### 16.6 smartcn 怎么切英文（`docvqa_` 索引，只读）
+
+**为什么：** 发现 6。论文要说明 BM25 在英文查询上的局限，需要知道 smartcn 对英文有没有转小写、有没有词干化、去不去停用词、怎么处理数字和标点。
+
+**步骤：** OpenSearch 在运行即可，不需要 Worker。
+
+```powershell
+$texts = @(Get-Content experiments\docvqa\queries.tsv -Encoding utf8 | Select-Object -Skip 1 -First 10 | ForEach-Object { ($_ -split "`t")[2] })
+$texts += 'Names NAMED naming', 'U.S.A. e-mail 2026-11-21 $1,234.50 No.5', 'What is the title of the document?', '智能文档管理系统 Document Management'
+$s = Invoke-RestMethod -Method Post -Uri 'http://127.0.0.1:9200/docvqa_chunks/_search' -ContentType 'application/json' -Body '{"size":3,"query":{"term":{"source_type":"ocr"}},"sort":[{"chunk_id":"asc"}],"_source":["chunk_id","text"]}'
+$texts += @($s.hits.hits | ForEach-Object { $_._source.text })
+$texts | ForEach-Object {
+  $b = @{ analyzer = 'docmgr_text'; text = $_ } | ConvertTo-Json -Compress
+  $r = Invoke-RestMethod -Method Post -Uri 'http://127.0.0.1:9200/docvqa_chunks/_analyze' -ContentType 'application/json; charset=utf-8' -Body ([Text.Encoding]::UTF8.GetBytes($b))
+  @{ text = $_; tokens = @($r.tokens | ForEach-Object { $_.token }) } | ConvertTo-Json -Compress
+} | Out-File -Encoding utf8 "$out\analyze\analyze.jsonl"
+```
+
+**预期：** `analyze.jsonl` 有 17 行（10 条查询 + 4 句测试文字 + 3 段 OCR 文本），每行都有 `tokens`。
+
+**Claude 怎么判断：** 逐行看：`Names`、`NAMED` 是否变成小写；`names`、`named`、`naming` 有没有归到同一个词干；`what`、`is`、`the` 有没有被去掉；`U.S.A.`、`e-mail`、日期、金额被切成什么。结论写进论文“局限”一节和 T27 的分析，**不设通过线**，数据完整就算完成。
+
+### 16.7 B2 为什么漏检（导出在 `docmgr_docvqa` 上只读；人工核对由 Barry 做）
+
+**为什么：** 发现 5。270 条漏检，要分清三种原因：查询本身没有内容词（例如“What is the title of the document?”）、OCR 没认出答案所在的那些字、文字认出来了但排名不够靠前。前两种在论文里的写法完全不同。
+
+**A. 导出 OCR 文本（GPT 做，与第 12.11 节同时进行）：**
+
+```powershell
+Export 'docmgr_docvqa' "SELECT document_id, seq, text FROM document_chunks WHERE source_type = 'ocr' ORDER BY document_id, seq" 'output/windows-w8/missed/ocr-chunks.csv'
+Copy-Item experiments\docvqa\datasets\document_map.csv "$out\missed\document_map.csv"
+```
+
+预期：`ocr-chunks.csv` 有 1589 行数据（不算表头），与第一轮报告的数一致；不一致就照实写。
+
+**B. 人工核对 30 条（Barry 做，约 40 分钟）：** Claude 已从 B2 的结果里挑出漏检的 270 条，放在 `output/windows-w8/missed/missed270.tsv`；按 `query_id` 顺序取前 30 条，放在 `output/windows-w8/missed/missed30.tsv`。对每一行：
+1. 打开 `image` 列给出的图片（图片在 W2 下载的目录里，不进 Git）；
+2. 找到能回答 `query` 的地方，把图上的原文照抄到 `answer_in_image` 列里，大小写、标点都照抄，最多 50 个字符；图上有多处，就选最明显的那一处；找不到或者有歧义，写 `无法确定`；
+3. **做完 30 条之前不要看 OCR 结果**，免得被它带偏。
+
+另存为 `output/windows-w8/missed/missed30-answers.tsv`（UTF-8、制表符分隔，不要用 Excel 另存，Excel 会改编码）。
+
+**Claude 怎么判断：**
+- 270 条全部自动分类：①去掉“what / is / the / document / title / name”这类模板词后，查询里没有剩下的内容词，记为“查询太泛”；②有内容词，而且相关文档的 OCR 文本里都出现了，记为“排名问题”；③有内容词，但 OCR 文本里缺了，记为“OCR 缺字”。
+- 30 条人工答案：每条看 `answer_in_image` 有没有出现在相关文档的 OCR 文本里（统一大小写、去掉空白后比较），再算字符级的编辑距离比例。
+- 结果作为论文分析 B2 局限的数据，**不设通过线**。A、B 两份文件都交回才算完成。
+
+### 16.8 没有内存上限时，畸形文件的防护还管不管用（`docmgr_w8b`）
+
+**为什么：** 发现 4。Linux 上子进程有内存上限兜底，Windows 上没有，只能靠解析之前的三道检查：zip 解压后的总大小（`PARSE_ZIP_MAX_TOTAL_BYTES`，200 MB）、zip 里的文件数（`PARSE_ZIP_MAX_ENTRIES`，5000）、图片像素数（`PARSE_IMAGE_MAX_PIXELS`，1 亿）。这三道检查只有单元测试，没有用真实 Worker 在 Windows 上跑过（GLOBAL §7.2、§9.1“畸形压缩包处理”）。
+
+**步骤：**
+1. 用 main 环境的标准库（不需要新依赖）在仓库外生成三个文件：
+
+   ```powershell
+   Set-Content -Encoding utf8 "<仓库外的目录>\make_bad_files.py" -Value @'
+   import struct, sys, zlib, zipfile
+   from pathlib import Path
+   out = Path(sys.argv[1]); out.mkdir(parents=True, exist_ok=True)
+   CT = ('<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+         '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>')
+   with zipfile.ZipFile(out / 'bomb.docx', 'w', zipfile.ZIP_DEFLATED) as z:
+       z.writestr('[Content_Types].xml', CT)
+       with z.open('word/document.xml', 'w') as f:
+           block = b' ' * (1 << 20)
+           for _ in range(300):
+               f.write(block)
+   with zipfile.ZipFile(out / 'many.docx', 'w', zipfile.ZIP_DEFLATED) as z:
+       z.writestr('[Content_Types].xml', CT)
+       for i in range(6000):
+           z.writestr(f'word/media/x{i}.txt', 'x')
+   def chunk(t, d):
+       return struct.pack('>I', len(d)) + t + d + struct.pack('>I', zlib.crc32(t + d) & 0xFFFFFFFF)
+   w, h = 12000, 9000
+   c = zlib.compressobj(9)
+   row = b'\x00' * (w + 1)
+   idat = bytearray()
+   for _ in range(h):
+       idat += c.compress(row)
+   idat += c.flush()
+   png = (b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', w, h, 8, 0, 0, 0, 0))
+          + chunk(b'IDAT', bytes(idat)) + chunk(b'IEND', b''))
+   (out / 'huge.png').write_bytes(png)
+   for p in sorted(out.iterdir()):
+       print(p.name, p.stat().st_size)
+   '@
+   .\.venv-main\Scripts\python -I "<仓库外的目录>\make_bad_files.py" "<仓库外的新目录>\bad-files"
+   ```
+
+   （`CT` 那两行里的双引号是 XML 属性的引号，在 Python 字符串里，不经过命令行传参，不受 PowerShell 5.1 吞引号的影响。）Mac 上同一脚本生成的大小是：`bomb.docx` 306197 字节（解压后 314573058 字节）、`huge.png` 105052 字节（12000×9000 像素）、`many.docx` 712105 字节（6001 个文件）。Windows 上应该相同或只差几个字节。
+2. 窗口变量指向 `docmgr_w8b`、`w8b_`。启动后端和**一个**通用 Worker，不开 OCR Worker 和 CLIP 服务。启动采样脚本，输出到 `$out\bad-files\memory.csv`。
+3. 在 `backend/` 下 `python -m app.modules.auth create-admin w8admin` 建一个用户（密码在终端里输入，不写进报告）；用第 12.6 节第 3 步的写法登录，拿到 `$tok`。
+4. 逐个上传，记下 HTTP 状态码和应答。最后一个 `ffhv0228.jpg` 是对照组：它是正常图片，而且不在第 16.5 节的 40 个文件里，用来证明 Worker 处理完三个畸形文件之后仍然正常：
+
+   ```powershell
+   foreach ($f in 'bomb.docx', 'many.docx', 'huge.png') {
+     curl.exe -s -o "$out\bad-files\upload-$f.json" -w "%{http_code}`n" -H "Authorization: Bearer $tok" -F "file=@<仓库外的新目录>\bad-files\$f" http://127.0.0.1:8000/api/documents
+   }
+   curl.exe -s -o "$out\bad-files\upload-control.json" -w "%{http_code}`n" -H "Authorization: Bearer $tok" -F "file=@experiments\docvqa\datasets\files\docvqa\ffhv0228.jpg" http://127.0.0.1:8000/api/documents
+   ```
+
+5. 等 parse 任务全部结束（`Wait-Tasks 'docmgr_w8b' "'parse'"`），对 4 个文档各导出 `GET /api/documents/<id>` 和 `GET /api/documents/<id>/tasks`，存成 `$out\bad-files\<文件名>-document.json`、`<文件名>-tasks.json`；再导出一次 `GET /health`，存成 `health.json`。然后停止采样。
+
+**预期：**
+- 4 次上传都返回 `201`。上传时只看文件头和 `[Content_Types].xml`，三道上限检查发生在解析阶段，这是设计如此。
+- `bomb.docx`：parse 任务 `failed`、`attempts = 1`（这类错误不可重试，不浪费重试次数），`error` 是“解压后共 314573058 字节，超过上限 209715200 字节，拒绝解析（可能是 zip 炸弹）”；文档 `status` 为 `failed`。
+- `many.docx`：同上，`error` 是“压缩包内有 6001 个文件，超过上限 5000 个，拒绝解析”。
+- `huge.png`：同上，`error` 是“图片尺寸为 12000×9000，像素数超过上限 100000000，拒绝处理”；没有产生 ocr 和 embed 任务。
+- 对照组 `ffhv0228.jpg`：parse `succeeded`，产生了 ocr 和 embed 任务（因为 OCR Worker 和 CLIP 没开，它们停在 `pending` 是正常的）。
+- `memory.csv` 里 `worker` 组的峰值不超过 500 MB（第一轮 W3 处理 500 张图时的峰值是 261.7 MB）；整个过程中通用 Worker 没有退出。
+- 如果错误原文、`attempts` 或状态与上面不同，照原样记下来，不要重试到符合预期为止。
+
+**Claude 怎么判断：** 逐个对照 JSON 里的 `status`、`attempts`、`error` 和上面的预期；从 `memory.csv` 取 `worker` 组在上传前后的峰值；确认对照组成功。全部符合就判为通过，并从 `docs/untested.md` 删去对应的“Windows 上没有内存上限时的畸形文件处理”。
+
+### 16.9 验收标准
+
+- [ ] 16.3：`crash-events.txt`、`application-log-info.txt`、`wer-reports.txt` 都在；有事件时 8 个时刻都对上了，没有事件时写明是被覆盖还是当时没生成
+- [ ] 16.4：20 个 CSV，每个 4 行；A、B 的崩溃次数写进报告；`memory.csv` 覆盖全程、间隔不超过 3 秒；有崩溃时附上这次的事件日志
+- [ ] 16.5：4 个 CSV，每个 40 行；每组的开始、结束时刻写进报告；`memory.csv` 覆盖全程；`machine.txt` 在
+- [ ] 16.6：`analyze.jsonl` 有 17 行
+- [ ] 16.7：`ocr-chunks.csv`（1589 行，或者写明实际行数）、`document_map.csv`、Barry 填好的 `missed30-answers.tsv`
+- [ ] 16.8：4 份上传应答、8 份文档和任务 JSON、`health.json`、`memory.csv`；每个文件的结果都与预期逐条对照过
+- [ ] 全程没有改代码和配置文件；没有碰 `docmgr`、`docmgr_test`、`docmgr_w6`；对 `docmgr_docvqa` 只读
+- [ ] `output/windows-w8/` 里有 `git-head.txt`、`commands.txt`、`SHA256SUMS.txt`（第 14.1 节）
+
+### 16.10 怎样算测试成功
+
+按第 0.5 节的三条判定：执行方自查通过（第 16.9 节每条都打勾，报告里有命令、输出、退出码），原始数据齐全，Claude 核对通过（第 14.2 节的 W8 几行）。W8 里只有第 16.8 节有通过或失败之分；其余各节是测量，**数据完整、来源可查就算完成**，结论由 Claude 核对后写进核对记录和 `docs/untested.md`，作为 T27 和论文的依据。任何一项做不到，按第 9 节最后一句处理：写明卡在哪里，继续做不依赖它的部分。

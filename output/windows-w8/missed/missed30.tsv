@@ -1,0 +1,31 @@
+query_id	file_id	image	query	answer_in_image
+dvq_10294	dv_hlhp0053	experiments/docvqa/datasets/files/docvqa/hlhp0053.jpg	What is the company's name on the letter head?	
+dvq_10297	dv_krlf0023	experiments/docvqa/datasets/files/docvqa/krlf0023.jpg	What is written in the top right of the document ?	
+dvq_11345	dv_jjnl0052	experiments/docvqa/datasets/files/docvqa/jjnl0052.jpg	What is the telephone number mentioned at the beginning?	
+dvq_1284	dv_jfkf0226	experiments/docvqa/datasets/files/docvqa/jfkf0226.jpg	What is the component that needs to included?	
+dvq_1293	dv_ymjf0226	experiments/docvqa/datasets/files/docvqa/ymjf0226.jpg	What is the title of the document ?	
+dvq_1330	dv_nrcj0037	experiments/docvqa/datasets/files/docvqa/nrcj0037.jpg	What is the name of the person who has signed the letter?	
+dvq_14981	dv_sxvw0217	experiments/docvqa/datasets/files/docvqa/sxvw0217.jpg	What is the name of the meeting?	
+dvq_1637	dv_spjf0226	experiments/docvqa/datasets/files/docvqa/spjf0226.jpg	What is the fullform of ils?	
+dvq_16384	dv_lflm0081	experiments/docvqa/datasets/files/docvqa/lflm0081.jpg	What is the name of the person in the CC field ?	
+dvq_16584	dv_kqbw0217	experiments/docvqa/datasets/files/docvqa/kqbw0217.jpg	What is the title of the document ?	
+dvq_16653	dv_rkww0217	experiments/docvqa/datasets/files/docvqa/rkww0217.jpg	What is the purchase order number?	
+dvq_16690	dv_jycw0217	experiments/docvqa/datasets/files/docvqa/jycw0217.jpg	What is the name of the company on top of the document ?	
+dvq_1675	dv_mljf0226	experiments/docvqa/datasets/files/docvqa/mljf0226.jpg	what is the company's name on the letter head?	
+dvq_16804	dv_mfdw0217	experiments/docvqa/datasets/files/docvqa/mfdw0217.jpg	What is the title of the document ?	
+dvq_16810	dv_fsdw0217	experiments/docvqa/datasets/files/docvqa/fsdw0217.jpg	What is the name of the company on the letter head ?	
+dvq_17160	dv_lqcw0217	experiments/docvqa/datasets/files/docvqa/lqcw0217.jpg	What is the client name mentioned in this document?	
+dvq_1804	dv_nlcn0226	experiments/docvqa/datasets/files/docvqa/nlcn0226.jpg	What is the full form of EPA?	
+dvq_18532	dv_fggw0081	experiments/docvqa/datasets/files/docvqa/fggw0081.jpg	What is the title of the document ?	
+dvq_18592	dv_fgbd0079	experiments/docvqa/datasets/files/docvqa/fgbd0079.jpg	What is the title of the sheet?	
+dvq_18684	dv_lhfd0079	experiments/docvqa/datasets/files/docvqa/lhfd0079.jpg	Which department is mentioned in this document?	
+dvq_18786	dv_fkkj0079	experiments/docvqa/datasets/files/docvqa/fkkj0079.jpg	What is the title of the document ?	
+dvq_18883	dv_pzyy0078	experiments/docvqa/datasets/files/docvqa/pzyy0078.jpg	What is the name of the company on the letter head?	
+dvq_1897	dv_thcn0226	experiments/docvqa/datasets/files/docvqa/thcn0226.jpg	What is the title?	
+dvq_19034	dv_jfgv0079	experiments/docvqa/datasets/files/docvqa/jfgv0079.jpg	What is the name of the originator ?	
+dvq_1906	dv_hzbn0226	experiments/docvqa/datasets/files/docvqa/hzbn0226.jpg	What is step 6 in the flow chart?	
+dvq_19204	dv_prbn0226	experiments/docvqa/datasets/files/docvqa/prbn0226.jpg	what is the date mentioned in the given page ?	
+dvq_1992	dv_khnk0226	experiments/docvqa/datasets/files/docvqa/khnk0226.jpg	Whose picture is given?	
+dvq_20073	dv_klbm0227	experiments/docvqa/datasets/files/docvqa/klbm0227.jpg	What is the Title of the document?	
+dvq_209	dv_yqgl0228	experiments/docvqa/datasets/files/docvqa/yqgl0228.jpg	What is written in red ink at the top?	
+dvq_21320	dv_hnnp0227	experiments/docvqa/datasets/files/docvqa/hnnp0227.jpg	what is the name of the university ?	
