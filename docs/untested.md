@@ -1,6 +1,6 @@
 # 未测试清单（Not Tested）
 
-更新日期：2026-11-21（T24s 完成后登记前端界面优化的 3 项未验证性质，见第 4 节“T24s 前端界面优化”；自动化测试的合计不变。同日稍早：按 T24k–T24n 的提交修正汇总数字和 Windows 未覆盖范围，没有运行任何测试。再上一次：2026-11-19 T24i 完成后，按 Barry 批准整理，并删除 Windows 第二轮已通过的 38 项）
+更新日期：2026-11-21（14:37 补登 T24p 漏登的一项，并注明 T24d、T24k、T24l、T24m、T24o 的条目已排进 `windows任务书.md` W5；同日稍早，T24s 完成后登记前端界面优化的 3 项未验证性质，见第 4 节“T24s 前端界面优化”；自动化测试的合计不变。同日稍早：按 T24k–T24n 的提交修正汇总数字和 Windows 未覆盖范围，没有运行任何测试。再上一次：2026-11-19 T24i 完成后，按 Barry 批准整理，并删除 Windows 第二轮已通过的 38 项）
 
 这里列出**已经写好但从未实际执行过**的测试，以及其他没有经过验证的性质。
 规则来自 GLOBAL.md“测试执行限制与代码验证要求”：跑不了的测试不强行执行、不安装工具，
@@ -65,7 +65,7 @@ T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器�
 | 解析超时对真实解析器的作用 | 超时在 Worker 子进程边界执行，机制本身有测试（`test_worker_runner.py`）；但解析器要到 T14 才接入 Worker，“一个真的卡住的解析被杀掉”还没有端到端跑过 | `decisions.md` D24 |
 | mapping 文件随安装包发布 | T17 起 mapping 在 `shared/text_index/mappings/`，`shared/pyproject.toml` 声明了 package-data（`shared.text_index` 下的 `mappings/*.json`）。两个环境都是 editable 安装，没有做过普通安装来验证文件确实被打包。验证方法：在一个临时虚拟环境里 `pip install ./shared`（会联网下载依赖，按规则先征得同意），然后确认 `site-packages/shared/text_index/mappings/` 下有两个 JSON 文件 | `decisions.md` D26、D30 |
 | B0–B2 实验 | 从未在真实数据上运行过：现在没有评测数据集和标注；也从未连真实 PostgreSQL 和 OpenSearch 跑过导入和运行。指标计算本身已用手算样例验证（单元测试） | `decisions.md` D32 |
-| 一致性检查对真实 OpenSearch 的操作 | 索引扫描（`search_after` 分页）、结构检查（`_mapping`、`_settings` 的返回结构）、单个文档重建和 `rebuild-indices` 全部重建都从未在真实 OpenSearch 上运行过；单元测试和集成测试里的应答是按文档写的。T24o 扩大了结构比较的范围（字段的 12 个键、分析配置逐项），如果真实 OpenSearch 返回了 mapping 文件里没有写、它自己补上的键，会误报“结构不一致”，新建索引后先跑一次 `check` 确认没有问题 | `decisions.md` D31 |
+| 一致性检查对真实 OpenSearch 的操作 | 索引扫描（`search_after` 分页）、结构检查（`_mapping`、`_settings` 的返回结构）、单个文档重建和 `rebuild-indices` 全部重建都从未在真实 OpenSearch 上运行过；单元测试和集成测试里的应答是按文档写的。T24o 扩大了结构比较的范围（字段的 12 个键、分析配置逐项），如果真实 OpenSearch 返回了 mapping 文件里没有写、它自己补上的键，会误报“结构不一致”，新建索引后先跑一次 `check` 确认没有问题。（2026-11-21 14:37：新建索引后的检查、人为制造结构差异、`rebuild-indices` 全部重建已排进 `windows任务书.md` 第 11.3 节 W5，只用 `w5_` 前缀的索引；单个文档重建和 `search_after` 分页在有数据时才走到，W5 不覆盖） | `decisions.md` D31 |
 | 一致性检查在真实数据上的运行 | 从未对一个真实使用过的系统跑过 `check` 和 `repair`，误报率、耗时和内存占用都没有数据 | `decisions.md` D31 |
 | OCR 在真实文件上的表现 | 只用 PyMuPDF 现场生成的扫描版 PDF 页、图片和空白图验证过；没有真实扫描件、手机照片、多栏排版、竖排或手写文字 | `decisions.md` D30 |
 | OCR 子进程的内存上限 | `OCR_WORKER_MEMORY_LIMIT_MB` 用 `RLIMIT_AS` 实现，只在 Linux 上有效；本机（macOS）启动时打印“无法设置识别子进程的内存上限”，只受超时保护。没有在 Linux 上验证过 | `decisions.md` D16、D30 |
@@ -136,6 +136,14 @@ T20 的测试都在本机实际运行过（接口测试 39 项，真实模型测
 | 与真实后端联调 | 抽取文本标签页、`view=` 参数、默认标签页只对着临时模拟接口检查过 |
 | 页面组件的自动化测试 | 没有（项目里没有组件测试工具）；只有 `initialPreviewTab` 的 5 项单元测试 |
 
+### T24p Element Plus 按需引入（2026-11-21 补登，见 `docs/changes/T24p.md`）
+
+T24p 完成时 DEVPLAN §5 写了这一项未测试，但当时没有登记到本文件，2026-11-21 14:37 补登。
+
+| 项目 | 说明 | 代码复核 |
+|---|---|---|
+| 生产构建产物没有在浏览器里打开过 | T24p 只在开发服务器上逐页检查过（控制台没有“Failed to resolve component”警告）；`npm run build` 生成的 `dist/` 没有在浏览器里打开。生产构建里 Vue 不打印这条警告，漏注册的组件只会原样留成不认识的标签。已排进 `windows任务书.md` 第 11.6 节 W5（`npm run preview`，2026-11-21 14:37 添加） | 已复核：开发与生产用同一份 `element.ts` / `element-components.ts`；`element.test.ts` 扫描全部 `.vue` 核对注册（已通过）。Vite 8.3.8 的 `preview.proxy` 默认取 `server.proxy`，preview 也会转发 `/api`、`/health` |
+
 ### T24s 前端界面优化（2026-11-21 登记，见 `docs/changes/T24s.md`、`decisions.md` D48）
 
 已执行并通过：类型检查；前端 10 个文件 93 项单元测试（新增 `channels.test.ts` 20 项）；生产构建（首屏 JS 约 483 KB，与 T24p 持平）；`src` 下没有写死的十六进制色值；浏览器对着临时模拟后端（scratchpad 里的 Node 脚本，不在仓库里，返回虚构数据）以 1280×800、375×812 截图核对文件页、脚本派发的 drop 事件（一个成功、一个被拒并显示原因）、检索页说明状态与全通道结果、关闭文件名通道后自动重检（`ch=body,ocr,image`）、CLIP 不可用时的降级显示、预览页标题区、窄屏布局，控制台只有被拒文件预期的 415。以下没有验证（已排进 `windows任务书.md` 第 10 节 W4，2026-11-21 14:26 添加；做完后按报告删除或改写对应行）：
@@ -156,9 +164,11 @@ T20 的测试都在本机实际运行过（接口测试 39 项，真实模型测
 
 | 项目 | 说明 | 代码复核 |
 |---|---|---|
-| 对真实 OpenSearch 执行 `--fix rebuild-indices --force --yes` | 计划、演练、参数校验和命令行流程都有单元测试（假的采集和 apply，已通过）；真正删除并重建三个索引的 `rebuild_indices()` 原来就没在真实 OpenSearch 上跑过（第 4 节“一致性检查对真实 OpenSearch 的操作”），本任务没有改它 | 已复核：强制项与检查发现的重建项走同一个 `apply()` 分支 |
+| 对真实 OpenSearch 执行 `--fix rebuild-indices --force --yes` | 计划、演练、参数校验和命令行流程都有单元测试（假的采集和 apply，已通过）；真正删除并重建三个索引的 `rebuild_indices()` 原来就没在真实 OpenSearch 上跑过（第 4 节“一致性检查对真实 OpenSearch 的操作”），本任务没有改它。（2026-11-21 14:37：已排进 `windows任务书.md` 第 11.3 节 W5 第 9 步） | 已复核：强制项与检查发现的重建项走同一个 `apply()` 分支 |
 
 ### T24l Worker 启动时检查数据库迁移（2026-11-21 登记，见 `docs/changes/T24l.md`）
+
+下面两行已排进 `windows任务书.md` 第 11.4 节 W5（2026-11-21 14:37 添加）：空库、只升到 `0001` 的库、升到最新的库上各启动一次两个 Worker。
 
 | 项目 | 说明 | 代码复核 |
 |---|---|---|
@@ -483,6 +493,6 @@ cd <项目目录> && docker compose --env-file .env -f deploy/docker-compose.yml
 | `RLIMIT_AS` 内存上限 | 只在 Linux 有效；Windows 上没有 WSL/Linux，仍未验证（同第 4 节两行） | `decisions.md` D16、D30 |
 | 并发、长时间运行、吞吐、峰值内存 | Windows 上只用 5 个样本确认 PostgreSQL、OpenSearch、OCR、CLIP 能同时运行，并做了基础内存检查；没有并发压测和长时间观察（OS-6 只算部分完成） | DEVPLAN T27 |
 | 极端真实文件 | 已用 6 个真实样本（中文 PDF、Word、Excel、相机 JPEG、PaddleOCR 示例图、一个 PDF 模糊测试样本）；接近 50 MB 的 PDF、加密 PDF、多栏/表格/水印/竖排/手写扫描件、Office/WPS 实际保存的复杂文件、超大图片、渐进式 JPEG、超限压缩包都没有测 | 第 4 节解析器、OCR 各行 |
-| T24g 之后的代码 | 这一轮基于 `50b244b`，不含 T24g（`test_preflight_reports_mixed_ocr_models`）、T24h（烟测脚本查 `ocr_results.params`）和 T24i（`experiments reocr`），也不含 2026-11-21 的 T24k（Worker 连接超时）、T24l（Worker 启动时检查迁移）、T24m（pdf.js 资源同步检查）、T24n（文件列表标签换行），以及之后的 T24o–T24s（T24s 是前端界面优化）。T24k–T24n 只在 macOS 本机跑过单元测试；T24k 的连接超时实测只在 macOS 主环境做过（连不可达地址，不设超时 75.0 秒、设 2 秒 2.0 秒报错），OCR Worker 在 ocr 环境只验证了能导入，没有实际连过 | 第 3 节、第 4 节；`docs/changes/T24k.md`–`T24n.md` |
+| T24g 之后的代码 | 这一轮基于 `50b244b`，不含 T24g（`test_preflight_reports_mixed_ocr_models`）、T24h（烟测脚本查 `ocr_results.params`）和 T24i（`experiments reocr`），也不含 2026-11-21 的 T24k（Worker 连接超时）、T24l（Worker 启动时检查迁移）、T24m（pdf.js 资源同步检查）、T24n（文件列表标签换行），以及之后的 T24o–T24s（T24s 是前端界面优化）。T24k–T24n 只在 macOS 本机跑过单元测试；T24k 的连接超时实测只在 macOS 主环境做过（连不可达地址，不设超时 75.0 秒、设 2 秒 2.0 秒报错），OCR Worker 在 ocr 环境只验证了能导入，没有实际连过。（2026-11-21 14:37：T24k 连不通的地址上的超时已排进 `windows任务书.md` 第 11.5 节 W5；T24m 的资源核对在 `core.autocrlf=true` 时可能因换行符失败，W1 之前先做第 11.2 节的预检） | 第 3 节、第 4 节；`docs/changes/T24k.md`–`T24n.md` |
 | 修复后的 PDF 预览在 macOS 上 | `PdfViewer.vue` 新增 `cMapUrl`、`standardFontDataUrl`、`wasmUrl`、`iccUrl`，资源在 `frontend/public/pdfjs/`；只在 Windows 上看过，macOS 浏览器里没有看过；生产构建后资源路径（`BASE_URL`）在 macOS 上也没有检查 | DEVPLAN §5“Windows 第二轮补测” |
 | 余弦分数的绝对值 | `test_vector_index_live.py` 原来断言完全相同方向得 2.0，OpenSearch 2.19.1 实际为 1.0；测试改为只断言排序和严格递减。分数只用于通道内排名，不影响 RRF，但 `search_vectors` 文档里原来写的“1 + 余弦相似度”与实测不符，已改为“范围由版本决定” | `decisions.md` D35 |

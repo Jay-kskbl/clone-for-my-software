@@ -6,8 +6,9 @@
 - 基线：GitHub `main` 上包含本文件的那个提交（本文件随该提交一起推送）
 - 增补：2026-11-21 14:26 添加 W4（T24s 前端界面优化的真实后端联调与界面核对，第 10 节），并在第 1、8、9 节补了对应的行
 - 增补：2026-11-21 14:29 第 1 节补上 T24k–T24r（任务书写成之后、T24s 之前完成的 8 项；T24j 就是 W2，还没有做）
+- 增补：2026-11-21 14:37 添加 W5（T24k、T24l、T24m、T24o、T24p 在真实环境上的补测，第 11 节），并在第 1、4、8、9 节补了对应的行
 
-本任务书有四项任务，按顺序做（W4 于 2026-11-21 14:26 添加，只依赖 W1 的环境，不依赖 W2、W3）：
+本任务书有五项任务，按顺序做（W4 于 2026-11-21 14:26 添加，W5 于 2026-11-21 14:37 添加；W5 的第 11.2 节要在 W1 之前做，其余只依赖 W1 的环境，不依赖 W2、W3）：
 
 | 编号 | 任务 | 结果 |
 |---|---|---|
@@ -15,6 +16,7 @@
 | W2 | T24j：写 DocVQA 数据集的下载与转换脚本 | 一个脚本 + 它的单元测试 + 转换好的实验数据 |
 | W3 | 用 DocVQA 把实验流程从导入到 B0–B3 全部跑通 | 10 组实验的结果目录和汇总 |
 | W4 | T24s 前端：真实后端联调、鼠标真实拖入、Windows 浏览器显示、重新截图（2026-11-21 14:26 添加） | 报告里的逐项核对结果 + 新界面截图 |
+| W5 | T24k/T24l/T24m/T24o/T24p 的补测：换行符预检、一致性检查的结构比较与重建、空库启动 Worker、连接超时、生产构建（2026-11-21 14:37 添加） | 报告里的逐项结果（命令输出、退出码、耗时） |
 
 做完后按第 8 节交付，按第 9 节自查。
 
@@ -37,12 +39,12 @@
 | T24g | 实验运行前检查拦下混用的 OCR 模型 | `test_experiments_db.py::test_preflight_reports_mixed_ocr_models` |
 | T24h | 烟测脚本 `scripts/smoke/ocr_e2e.py` 查 `ocr_results.params` | 运行烟测脚本 |
 | T24i | 新命令 `python -m app.modules.experiments reocr [--yes]` | `test_experiments_db.py` 中 `test_reocr_requeues_finished_ocr_tasks_of_the_current_version`、`test_reocr_refuses_while_parse_or_ocr_tasks_are_unfinished` |
-| T24k（2026-11-21 14:29 添加） | `891facb`：通用 Worker 与 OCR Worker 连接数据库带 `connect_timeout`，新配置 `WORKER_DB_CONNECT_TIMEOUT_SECONDS`、`OCR_WORKER_DB_CONNECT_TIMEOUT_SECONDS`（默认 10 秒，`.env.example` 已同步）。对执行的影响：`.env` 不用改（不写就用默认值）；数据库连不上时 Worker 约 10 秒内报错退出，不再卡一两分钟 | W1 第 1–3 项会一并跑到（shared `test_task_queue.py`，backend `test_worker_main.py` 等，OCR Worker `test_store_connect.py`） |
-| T24l（2026-11-21 14:29 添加） | `f31590b`：通用 Worker 启动时比对 `alembic_version` 与代码里的最新迁移，OCR Worker 启动时检查它读写的表和列；不一致就以退出码 1 结束并提示 `alembic upgrade head`。迁移仍只到 `0002`。对执行的影响：W3 的 `docmgr_docvqa`、W4 的 `docmgr_ui` 必须先 `alembic upgrade head` 再启动 Worker（第 6.1、10.1 节已写），漏了 Worker 会直接退出 | W1 第 1、3 项会一并跑到（`test_worker_schema.py`、`test_store_schema.py` 是假连接的单元测试）；W3、W4 启动 Worker 时等于在真实 PostgreSQL 上走了一次“已迁移、检查通过” |
-| T24m（2026-11-21 14:29 添加） | `49c67e4`：前端测试逐文件核对 `public/pdfjs/` 与已安装的 pdfjs-dist（比 sha256），新增 `npm run sync:pdfjs`；`package.json` 只加了这个脚本，依赖没变，不用重新 `npm install`。对执行的影响：如果这台机器的 git 开了 `core.autocrlf`，`public/pdfjs/` 里的 LICENSE、`.js` 等文本文件检出时会变成 CRLF，与 `node_modules` 里的 LF 版本 sha256 不同，`pdfjs-assets.test.mjs` 会失败。遇到时按第 4.2 节记成环境问题，写出 `git config core.autocrlf` 的值，**不要**运行 `sync:pdfjs` 去覆盖、也不要改测试 | W1 第 5 项的 `npm test`（`tests/pdfjs-assets.test.mjs` 3 项） |
+| T24k（2026-11-21 14:29 添加） | `891facb`：通用 Worker 与 OCR Worker 连接数据库带 `connect_timeout`，新配置 `WORKER_DB_CONNECT_TIMEOUT_SECONDS`、`OCR_WORKER_DB_CONNECT_TIMEOUT_SECONDS`（默认 10 秒，`.env.example` 已同步）。对执行的影响：`.env` 不用改（不写就用默认值）；数据库连不上时 Worker 约 10 秒内报错退出，不再卡一两分钟 | W1 第 1–3 项会一并跑到（shared `test_task_queue.py`，backend `test_worker_main.py` 等，OCR Worker `test_store_connect.py`）；连不通的地址上的实际超时见 W5 第 11.5 节（2026-11-21 14:37 添加） |
+| T24l（2026-11-21 14:29 添加） | `f31590b`：通用 Worker 启动时比对 `alembic_version` 与代码里的最新迁移，OCR Worker 启动时检查它读写的表和列；不一致就以退出码 1 结束并提示 `alembic upgrade head`。迁移仍只到 `0002`。对执行的影响：W3 的 `docmgr_docvqa`、W4 的 `docmgr_ui` 必须先 `alembic upgrade head` 再启动 Worker（第 6.1、10.1 节已写），漏了 Worker 会直接退出 | W1 第 1、3 项会一并跑到（`test_worker_schema.py`、`test_store_schema.py` 是假连接的单元测试）；W3、W4 启动 Worker 时等于在真实 PostgreSQL 上走了一次“已迁移、检查通过”；空库和版本落后的情况见 W5 第 11.4 节（2026-11-21 14:37 添加） |
+| T24m（2026-11-21 14:29 添加） | `49c67e4`：前端测试逐文件核对 `public/pdfjs/` 与已安装的 pdfjs-dist（比 sha256），新增 `npm run sync:pdfjs`；`package.json` 只加了这个脚本，依赖没变，不用重新 `npm install`。对执行的影响：如果这台机器的 git 开了 `core.autocrlf`，`public/pdfjs/` 里的 LICENSE、`.js` 等文本文件检出时会变成 CRLF，与 `node_modules` 里的 LF 版本 sha256 不同，`pdfjs-assets.test.mjs` 会失败。遇到时按第 4.2 节记成环境问题，写出 `git config core.autocrlf` 的值，**不要**运行 `sync:pdfjs` 去覆盖、也不要改测试 | W1 第 5 项的 `npm test`（`tests/pdfjs-assets.test.mjs` 3 项）；**W1 之前先做 W5 第 11.2 节的换行符预检**（2026-11-21 14:37 添加） |
 | T24n（2026-11-21 14:29 添加） | `0754962`：文件列表的标签不再被截断（文件名单行省略、标签换行）。T24s 又重排了这张表。对执行的影响：无 | W1 第 5 项；显示效果在 W4 第 10.2 节第 2 项一起看 |
-| T24o（2026-11-21 14:29 添加） | `33a2384`：一致性检查的结构比较从 3 个键扩大到 12 个（含 `search_analyzer`），分析配置逐项比较，提示写出具体差异；mapping 和索引结构没有改，不需要重建索引。对执行的影响：W3 第 6.2 节第 5 步是这个检查第一次对真实 OpenSearch 运行。如果新建的索引就报“结构不一致”，多半是 OpenSearch 自己补上的键造成的误报：把提示原文写进报告，不要为此运行 `repair --fix rebuild-indices` | W1 第 1 项（`test_consistency.py`）；W3 第 6.2 节第 5 步 |
-| T24p（2026-11-21 14:29 添加） | `aaa4bbc`：Element Plus 改为按需引入，首屏 JS 约 874 KB → 483 KB；没有新依赖，不用重新 `npm install`。对执行的影响：无；`npm run build` 在本机（T24s 之后）已不再提示分块超过 500 KB，Windows 上若仍提示，写进报告即可，不算失败 | W1 第 5 项（`tests/element.test.ts` 3 项和构建） |
+| T24o（2026-11-21 14:29 添加） | `33a2384`：一致性检查的结构比较从 3 个键扩大到 12 个（含 `search_analyzer`），分析配置逐项比较，提示写出具体差异；mapping 和索引结构没有改，不需要重建索引。对执行的影响：W3 第 6.2 节第 5 步是这个检查第一次对真实 OpenSearch 运行。如果新建的索引就报“结构不一致”，多半是 OpenSearch 自己补上的键造成的误报：把提示原文写进报告，不要为此运行 `repair --fix rebuild-indices` | W1 第 1 项（`test_consistency.py`）；W3 第 6.2 节第 5 步；人为制造结构差异再重建见 W5 第 11.3 节（2026-11-21 14:37 添加） |
+| T24p（2026-11-21 14:29 添加） | `aaa4bbc`：Element Plus 改为按需引入，首屏 JS 约 874 KB → 483 KB；没有新依赖，不用重新 `npm install`。对执行的影响：无；`npm run build` 在本机（T24s 之后）已不再提示分块超过 500 KB，Windows 上若仍提示，写进报告即可，不算失败 | W1 第 5 项（`tests/element.test.ts` 3 项和构建）；生产构建在浏览器里打开见 W5 第 11.6 节（2026-11-21 14:37 添加） |
 | T24q（2026-11-21 14:29 添加） | `b18909e`：新增根目录 `README.md`（课题说明、快速开始、文档索引）。对执行的影响：无；命令仍以 `CLAUDE.md` 和本任务书为准 | 无 |
 | T24r（2026-11-21 14:29 添加） | `f0ef765`：整理零散文件，上一轮的原始说明移到 `docs/changes/windows-2026-11-19-原始说明.txt`，截图移到 `docs/screenshots/windows-2026-11-19/`，空的 `output/` 目录删了。对执行的影响：第 1 节第 4 项的路径已改；W1 的 JUnit XML 仍写到 `output/windows-w1/`，`pytest --junitxml` 会自己建目录 | 无 |
 | T24s（2026-11-21 14:26 添加） | 前端界面优化（`281b226`，只改前端）：侧栏布局、拖拽上传与逐个文件的上传记录、检索通道面板、每条结果三个通道的名次与 RRF 融合分。只对着临时模拟后端检查过 | W1 第 5 项的前端测试（本机 93 项）；W4（第 10 节）的联调与界面核对 |
@@ -78,6 +80,8 @@
 ## 4. W1：补测
 
 ### 4.1 要做的事
+
+**（2026-11-21 14:37 添加）开始本节之前，先做第 11.2 节的 T24m 换行符预检**，把结果记进报告，否则第 5 项的前端测试失败时分不清是代码问题还是换行符问题。
 
 | # | 内容 | 命令（目录） |
 |---|---|---|
@@ -297,8 +301,9 @@ python -m app.modules.experiments --root ..\experiments\docvqa run --config ..\e
 | `docvqa-runs.zip` | W3 全部结果目录 | 否，直接交给 Barry |
 | `windows任务报告.md` 的 W4 一节（2026-11-21 14:26 添加） | 第 10 节每个核对点的结果（通过 / 不符 / 未测试 + 原因）、浏览器名称和版本、发现的问题 | 是 |
 | `docs/screenshots/windows-<执行日期>-t24s/*.png`（2026-11-21 14:26 添加） | 第 10.5 节的新界面截图 | 是 |
+| `windows任务报告.md` 的 W5 一节（2026-11-21 14:37 添加） | 第 11 节每一步的命令、完整输出（去掉密码和连接串）、退出码、耗时；`core.autocrlf` 的值和 `git ls-files --eol` 的结果；结果与预期不符的逐条写出 | 是 |
 
-提交顺序：W1（报告初稿 + XML）→ W2（脚本、测试、数据、`.gitignore`、`downloads.md`、`T24j.md`）→ W3（报告补全）→ W4（报告的 W4 一节 + 截图）。
+提交顺序：W1（报告初稿 + XML）→ W2（脚本、测试、数据、`.gitignore`、`downloads.md`、`T24j.md`）→ W3（报告补全）→ W4（报告的 W4 一节 + 截图）→ W5（报告的 W5 一节；第 11.2 节的预检结果在 W1 的提交里先写进报告初稿）。
 
 ------------------------------------------------------------------------
 
@@ -325,6 +330,11 @@ python -m app.modules.experiments --root ..\experiments\docvqa run --config ..\e
 | 17 | 鼠标真实拖入：支持的类型上传成功，不支持的类型显示拒绝原因（2026-11-21 14:26 添加） | 10.6 |
 | 18 | 写明看过的浏览器名称和版本（2026-11-21 14:26 添加） | 10.6 |
 | 19 | 新界面截图齐全，画面里没有密码、令牌和个人文件（2026-11-21 14:26 添加） | 10.6 |
+| 20 | W1 之前做了换行符预检，写明 `core.autocrlf` 和 `public/pdfjs/` 的换行符（2026-11-21 14:37 添加） | 11.7 |
+| 21 | 只在 `w5_` 前缀下：结构差异被报出，重建（含 `--force`）后检查干净；其他前缀的索引没有变（2026-11-21 14:37 添加） | 11.7 |
+| 22 | 空库、版本落后的库上两个 Worker 都以退出码 1 结束，提示与预期一致（2026-11-21 14:37 添加） | 11.7 |
+| 23 | 连不通的地址上两个 Worker 都在设定秒数左右以退出码 1 结束（或如实写出不同的结果）（2026-11-21 14:37 添加） | 11.7 |
+| 24 | 生产构建经 `npm run preview` 打开，各页面正常、没有未注册的组件（2026-11-21 14:37 添加） | 11.7 |
 
 任何一项做不到，不要硬凑：在报告里写明哪一项、卡在哪里、已经试过什么，然后继续做不依赖它的部分。
 
@@ -414,3 +424,153 @@ T24s（`281b226`，2026-11-21）重做了前端界面，只改前端，后端和
 - [ ] 第 10.4 节：写明看过的浏览器名称和版本；Safari 有没有看写清楚
 - [ ] 第 10.5 节的截图齐全，画面里没有敏感信息
 - [ ] 没有改任何前端代码；发现的问题只记录、问 Barry
+
+
+------------------------------------------------------------------------
+
+## 11. W5：T24k、T24l、T24m、T24o、T24p 的补测（2026-11-21 14:37 添加）
+
+这五项在 macOS 上只跑了单元测试（假连接、假应答），真实环境上的行为没有验证过（`docs/untested.md` 第 4 节、第 7.2 节）。改了什么见第 1 节对应的行和 `docs/changes/T24k.md`、`T24l.md`、`T24m.md`、`T24o.md`、`T24p.md`。
+
+规则与 W4 相同：
+
+- 只核对，**不改任何代码和配置文件**（包括 `.gitattributes`、`package.json`、mapping 文件）。结果不符时记下现象、复现步骤、完整输出，问 Barry（第 2 节第 5 条）。
+- 每一步在报告里写命令、输出（去掉密码和连接串）、退出码；要计时的写耗时。`docs/untested.md` 里对应的条目由 Claude 收到报告后删除或改写，GPT 不改这个文件。
+- 不装任何新工具；下面用到的 `git`、`psql`、`curl.exe`、PowerShell 的 `Invoke-RestMethod` 都是这台机器上已有的。
+- 第 11.2 节在 W1 之前做；第 11.3–11.6 节按顺序做。
+
+### 11.1 环境（2026-11-21 14:37 添加）
+
+和 W3、W4 一样用独立的一套数据，不碰主库、`docmgr_test`、W3 的 `docmgr_docvqa` 和 W4 的 `docmgr_ui`：
+
+| 项目 | 设置 | 用在 |
+|---|---|---|
+| 数据库 | 新建空库 `docmgr_w5`，`alembic upgrade head` | 11.3、11.6 |
+| 数据库 | 新建空库 `docmgr_w5_empty`，**不要**执行 `alembic upgrade` | 11.4 |
+| 文件存储 | `STORAGE_ROOT` 指向一个新的空目录 | 11.3、11.6 |
+| 索引 | `OPENSEARCH_INDEX_PREFIX=w5_`（索引名为 `w5_doc_meta`、`w5_chunks`、`w5_image_vectors`） | 11.3、11.6 |
+
+切换方法同第 6.1 节：每个 PowerShell 窗口先设置 `DATABASE_URL`、`STORAGE_ROOT`、`OPENSEARCH_INDEX_PREFIX`。建库可以用 `psql -h localhost -U <用户> -c "CREATE DATABASE docmgr_w5"`（`docmgr_w5_empty` 同样）。第 11.4、11.5 节会把 `DATABASE_URL` 改成别的值，**每一节开一个新窗口**，做完关掉，免得后面的命令带着错误的设置运行。
+
+### 11.2 T24m 换行符预检（在 W1 之前做，2026-11-21 14:37 添加）
+
+对应 `docs/untested.md` 第 7.2 节“T24g 之后的代码”一行里的 T24m（只在 macOS 上跑过）。背景：`tests/pdfjs-assets.test.mjs` 逐个比较 `frontend/public/pdfjs/` 与 `node_modules/pdfjs-dist` 里文件的 sha256。202 个文件里有 15 个是文本（LICENSE、`.js`），git 开了 `core.autocrlf=true` 时，这 15 个文件签出后会变成 CRLF，sha256 跟着变，测试就会失败，但代码其实没问题。
+
+1. 记下设置：在仓库根目录执行 `git config --show-origin --get core.autocrlf`（没有输出就是没设置，等同 `false`）。
+2. 看这个目录里文件的实际换行符：`git ls-files --eol -- frontend/public/pdfjs`。每行开头的 `i/` 是仓库里的换行符，`w/` 是工作区的。预期：文本文件都是 `i/lf w/lf`，二进制文件是 `i/-text w/-text`。**注意：** `git diff --stat -- frontend/public/pdfjs` 在 `autocrlf=true` 时看不出来，因为 git 比较前会把 CRLF 当成 LF，所以要用 `--eol`。
+3. 再跑这一个测试：在 `frontend/` 下 `npm test -- tests/pdfjs-assets.test.mjs`。预期 3 项通过。
+4. 如果第 2 步有 `w/crlf`，或第 3 步报 `changed: …LICENSE…` 之类：
+   - **不要**按测试提示运行 `npm run sync:pdfjs`。它会用 `node_modules` 里的文件覆盖，测试暂时能过，但下一次签出又会变回 CRLF，问题被掩盖了。
+   - 临时处理（只对本仓库，不加 `--global`，不影响这台机器上别的仓库）：
+     1. 先确认这个目录没有未提交的改动：`git status --short -- frontend/public/pdfjs` 没有输出。
+     2. `git config core.autocrlf input`。签出时不再转换，提交时仍把 CRLF 转成 LF。不建议设成 `false`：那样以后在 Windows 上编辑、提交的文件如果是 CRLF，会原样进入仓库。
+     3. 只重新签出这个目录：`Remove-Item -Recurse -Force frontend\public\pdfjs`，然后 `git checkout -- frontend/public/pdfjs`。这个目录里的文件都在 Git 里，删掉再签出不会丢东西。
+     4. 重做第 2、3 步，应为 `w/lf`、3 项通过。
+   - 影响：改了设置以后，其他文本文件要等下次签出才会变成 LF，现在工作区里已有的 CRLF 文件不变，`git status` 也不会因此显示改动。Python、Node.js、PowerShell 都能读 LF 文件。报告里写明改前、改后的 `core.autocrlf` 值。
+   - 根治办法是在仓库里加 `.gitattributes`，把 `frontend/public/pdfjs/**` 标成不转换（`-text`）。这是仓库配置的改动，**等 Barry 决定，本任务不做**。
+
+### 11.3 T24o 一致性检查：人为制造结构差异，再只重建 `w5_` 的索引（2026-11-21 14:37 添加）
+
+对应 `docs/untested.md` 第 4 节“一致性检查对真实 OpenSearch 的操作”（T24o 扩大了结构比较的范围，担心真实 OpenSearch 自己补上的键造成误报），以及“T24d rebuild-indices --force”一节的“对真实 OpenSearch 执行 `--fix rebuild-indices --force --yes`”。做法参照 `docs/changes/T24o.md` 修改建议第 1 条、`docs/decisions.md` D31、D43。
+
+**每一步执行 `consistency` 命令之前，先确认前缀：** `echo $env:OPENSEARCH_INDEX_PREFIX` 必须输出 `w5_`，`echo $env:DATABASE_URL` 必须指向 `docmgr_w5`。前缀为空时，重建会删掉并重建主索引 `doc_meta`、`chunks`、`image_vectors`。这一节不要启动任何 Worker：重建会删索引，Worker 这时写索引会失败（D31）。
+
+在 `backend/` 下（main 环境），先记一次全部索引：`curl.exe -s "http://127.0.0.1:9200/_cat/indices?v&h=index,docs.count,creation.date.string"`。
+
+| # | 命令 | 预期 |
+|---|---|---|
+| 1 | `python -m app.modules.consistency check` | 退出码 2，报 2 个 `index_missing`：“索引 doc_meta 不存在”“索引 chunks 不存在”（提示里写的是不带前缀的名字；库里还没有图片向量，所以向量索引不存在不算问题） |
+| 2 | `python -m app.modules.consistency repair --fix rebuild-indices` | 演练：打印要重建三个索引的计划和“先停掉 Worker”的提示，退出码 2，不做任何改动 |
+| 3 | `python -m app.modules.consistency repair --fix rebuild-indices --yes` | 退出码 0；`_cat/indices` 里出现 `w5_doc_meta`、`w5_chunks`、`w5_image_vectors`（重建时三个一起建），其他索引的创建时间没有变 |
+| 4 | `python -m app.modules.consistency check` | **退出码 0，没有任何结构问题。** 这是 T24o 的比较第一次对着真实 OpenSearch 新建的索引运行：如果这里就报“结构不一致”，就是误报，把提示原文全部写进报告，后面的步骤照做 |
+| 5 | 改一处 mapping（见下面的命令） | OpenSearch 返回 `acknowledged: true` |
+| 6 | `python -m app.modules.consistency check` | 退出码 2，报 `index_structure_mismatch`。用办法 A 时提示应为“索引 chunks 的结构与版本库里的 mapping 不一致：字段 text 的定义不同：search_analyzer 为 standard，应为 （未设置）”；用办法 B 时为“……多出字段 w5_extra” |
+| 7 | `repair --fix rebuild-indices`（演练），再加 `--yes` | 演练退出码 2；执行退出码 0；只有 `w5_` 三个索引的创建时间变了 |
+| 8 | `python -m app.modules.consistency check` | 退出码 0 |
+| 9 | `repair --fix rebuild-indices --force`（演练），再加 `--yes`（D43） | 检查没有问题时也能强制重建：演练打印 `forced_rebuild` 计划，退出码 2；执行退出码 0；仍然只有 `w5_` 的索引被重建 |
+| 10 | `python -m app.modules.consistency check`，最后再记一次 `_cat/indices` | 退出码 0；与开始时比较，只有 `w5_` 开头的索引是新的，其他前缀（包括主索引、`docvqa_`、`ui_`）的创建时间和文档数都没有变 |
+
+第 5 步改 mapping 的办法：只动 `w5_chunks`，不删数据，改完由第 7 步重建恢复。
+
+- **办法 A（优先，正好覆盖 T24o 新加的比较项）：** 给 `text` 字段加 `search_analyzer`。OpenSearch 允许对已有字段更新 `search_analyzer`，但要把原来的 `type` 和 `analyzer` 一起写上（与 `shared/text_index/mappings/chunks.json` 里一致）：
+
+  ```powershell
+  Invoke-RestMethod -Method Put -Uri "http://127.0.0.1:9200/w5_chunks/_mapping" -ContentType "application/json" -Body '{"properties":{"text":{"type":"text","analyzer":"docmgr_text","search_analyzer":"standard"}}}'
+  ```
+
+- **办法 B（A 被拒绝时用）：** 加一个版本库 mapping 里没有的字段。索引是 `dynamic: strict`，但 strict 只拒绝文档里的未知字段，用 mapping 接口显式加字段是允许的：
+
+  ```powershell
+  Invoke-RestMethod -Method Put -Uri "http://127.0.0.1:9200/w5_chunks/_mapping" -ContentType "application/json" -Body '{"properties":{"w5_extra":{"type":"keyword"}}}'
+  ```
+
+  办法 B 走的是 T24o 之前就有的“多出字段”比较，覆盖不到 T24o 新加的比较项。报告里写明用的是哪种，A 被拒绝时附上 OpenSearch 的错误原文。
+
+不要改分析配置（`_settings` 里的 analysis）：那要先关闭索引，步骤多，容易误操作到别的索引。
+
+### 11.4 T24l 空库上启动 Worker（2026-11-21 14:37 添加）
+
+对应 `docs/untested.md` 第 4 节“T24l Worker 启动时检查数据库迁移”的两行（通用 Worker 的迁移版本检查、OCR Worker 的列检查，在真实 PostgreSQL 上）。提示文字取自 `backend/app/worker/schema.py`、`services/ocr_worker/ocr_worker/__main__.py`。
+
+新开一个窗口，`DATABASE_URL` 指向 `docmgr_w5_empty`（其余两个变量照 11.1 设置），然后：
+
+| # | 操作 | 预期 |
+|---|---|---|
+| 1 | 在 `backend/` 下 `..\.venv-main\Scripts\python -m app.worker`，然后 `echo $LASTEXITCODE` | 立刻结束，退出码 1，输出“Worker 无法启动：数据库还没有建表（没有 alembic_version），先在 backend/ 目录运行 alembic upgrade head” |
+| 2 | 在 `services/ocr_worker/` 下 `..\..\env_check\.venv-ocr\Scripts\python -m ocr_worker`，然后 `echo $LASTEXITCODE` | 先加载 OCR 模型（日志“OCR 模型已加载”），然后结束，退出码 1，输出“OCR Worker 无法启动：数据库缺少 34 个需要的列（……等），先在 backend/ 目录运行 alembic upgrade head”，括号里列出前 5 个，都是 `document_chunks.` 开头 |
+| 3 | 在 `backend/` 下 `..\.venv-main\Scripts\python -m alembic upgrade 0001`（只升到第一个迁移），再重复第 1、2 步 | 通用 Worker：退出码 1，“数据库结构版本为 ['0001']，代码要求 ['0002']：数据库落后时先在 backend/ 目录运行 alembic upgrade head；数据库比代码新时请更新代码”。OCR Worker：退出码 1，“数据库缺少 1 个需要的列（ocr_results.params）” |
+| 4 | `..\.venv-main\Scripts\python -m alembic upgrade head`，再分别启动两个 Worker，启动后没有报错、进入等待时按 Ctrl+C | 两个都正常启动，不报结构问题（库里没有任务，所以只是空转） |
+
+输出里不能有数据库密码；如果有，记下来（那是 bug）。做完关掉这个窗口，`docmgr_w5_empty` 留着或删掉都可以，报告里写明。
+
+### 11.5 T24k 连不通的数据库地址（2026-11-21 14:37 添加）
+
+对应 `docs/untested.md` 第 7.2 节“T24g 之后的代码”一行里的 T24k：连接超时只在 macOS 主环境实测过，OCR Worker 在 ocr 环境没有实际连过。
+
+新开一个窗口，把 `DATABASE_URL` 设成一个**会超时**的地址，用户名、密码随便写，不要用真实的：
+
+```powershell
+$env:DATABASE_URL = "postgresql://w5:w5@10.255.255.1:5432/w5"
+```
+
+`10.255.255.1` 是一个通常不会回应的内网地址。不要用 `127.0.0.1` 上没有服务的端口：那会立刻被拒绝，测不到超时。
+
+计时的写法（PowerShell）：
+
+```powershell
+$t0 = Get-Date; <启动命令>; $code = $LASTEXITCODE; "{0:N1} 秒，退出码 {1}" -f ((Get-Date) - $t0).TotalSeconds, $code
+```
+
+| # | 操作 | 预期 |
+|---|---|---|
+| 1 | 通用 Worker（`backend/` 下 `..\.venv-main\Scripts\python -m app.worker`），不设超时变量（默认 10 秒） | 约 10 秒后结束，退出码 1，输出“Worker 无法连接数据库（ConnectionTimeout），请确认数据库已启动、DATABASE_URL 正确” |
+| 2 | 同上，先 `$env:WORKER_DB_CONNECT_TIMEOUT_SECONDS = "3"` | 约 3 秒后结束，退出码 1 |
+| 3 | OCR Worker（`services/ocr_worker/` 下 `..\..\env_check\.venv-ocr\Scripts\python -m ocr_worker`），`$env:OCR_WORKER_DB_CONNECT_TIMEOUT_SECONDS = "5"` | 先加载模型，再约 5 秒后结束，退出码 1，输出“OCR Worker 无法连接数据库（ConnectionTimeout），请确认数据库已启动” |
+| 4 | 同上，改成 `"20"` | 比第 3 步约多 15 秒 |
+
+OCR Worker 是先加载模型、再连数据库的，总耗时里包括加载模型的时间。所以用第 3、4 步的差值（约 15 秒）判断超时设置生效，也可以对照日志里“OCR 模型已加载”那一行的时间。
+
+如果这台机器所在的网络会立刻回绝这个地址（几秒内就报 `OperationalError`，而不是等到设定的秒数），这一节就测不到超时：如实记下现象和耗时，两种结果都有用。不要为此改网络设置。
+
+### 11.6 T24p 生产构建在浏览器里打开（2026-11-21 14:37 添加）
+
+对应 `docs/untested.md` 第 4 节“T24p Element Plus 按需引入”一行（生产构建产物没有在浏览器里打开过）。T24p 之前只在开发服务器上检查过：开发服务器和生产构建用的是同一份注册代码，但打包方式不同，按需引入漏掉的组件、样式只在生产构建里才可能暴露。这一步顺带看 T24s 的新界面在生产构建里的样子。
+
+1. 用 11.1 的 `docmgr_w5`（第 11.3 节已经建好 `w5_` 索引）启动后端和通用 Worker。OCR Worker、CLIP 服务可开可不开：不开时检索页会显示 CLIP 不可用，也正好看提示条。用 `create-admin` 建一个管理员。
+2. 在 `frontend/` 下 `npm run build`，再 `npm run preview`，浏览器打开它显示的地址（默认 `http://localhost:4173`）。
+3. **先确认转发：** Vite 的 `preview` 沿用 `vite.config.ts` 里 `server.proxy` 的设置（本仓库用的 Vite 8.3.8 的源码里，`preview.proxy` 默认取 `server.proxy`），所以 `/api`、`/health` 应当照样转发到 8000 端口。打开开发者工具的“网络”面板登录一次，`POST /api/auth/login` 应为 200。如果是 404 或连不上，说明没有转发：这一步只能看登录页，记为限制，后面的页面不用看了。
+4. 登录后各打开一次，每页都看开发者工具的“控制台”有没有报错：
+   - 文件页：先上传一份中文 PDF、一张图片、一份 Word（不要用个人文件），等通用 Worker 处理完；看表格、标签、状态标签、“全部 / 我上传的 / 共享给我的”单选按钮组、分页（含每页条数下拉）、加载中的遮罩、上传区和上传记录、共享对话框、删除确认框（打开后取消，不要真删）
+   - 检索页：输入框、检索通道的复选框、提示条、结果卡片、三格名次和融合分
+   - 预览页：PDF 的“原文件 / 抽取文本”标签页和翻页、缩放（中文 PDF 应正常显示文字，CMap 等资源从 `pdfjs/` 加载）、图片的原图和抽取文本、Word 的抽取文本
+   - 登录页：卡片、表单、注册链接
+5. **怎么判断有没有漏注册的组件：** 生产构建里 Vue 不会在控制台提示“Failed to resolve component”，漏注册的组件只会原样留成一个不认识的标签、不显示内容。所以在开发者工具的“元素”面板里按 Ctrl+F 搜索 `<el-`：正常情况下一个都找不到，Element Plus 的组件会渲染成 `div`、`button` 等，class 以 `el-` 开头。找到了就记下标签名和所在页面。
+
+### 11.7 验收标准（2026-11-21 14:37 添加）
+
+- [ ] 第 11.2 节在 W1 之前做了：写明 `core.autocrlf` 的值、`git ls-files --eol` 的结果、单个测试的结果；做了临时处理的，写明改前改后的值；没有运行 `sync:pdfjs`，没有加 `.gitattributes`
+- [ ] 第 11.3 节：每条 `consistency` 命令之前都确认了前缀是 `w5_`；第 4 步的结果如实写出（干净还是误报）；第 6 步报出了具体差异；第 7–10 步之后检查干净；其他前缀的索引没有变
+- [ ] 第 11.4 节：空库、只升到 `0001` 的库上，两个 Worker 都以退出码 1 结束，提示与预期一致；升到最新后正常启动
+- [ ] 第 11.5 节：两个 Worker 的耗时和退出码都记下了；超时设置生效（或如实写出这台机器的网络测不到超时）
+- [ ] 第 11.6 节：写明 preview 有没有转发 `/api`；各页面的检查结果；“元素”面板里搜索 `<el-` 的结果
+- [ ] 全程没有碰主库、`docmgr_test`、`docmgr_docvqa`、`docmgr_ui` 和它们的索引；没有改任何代码和配置文件
