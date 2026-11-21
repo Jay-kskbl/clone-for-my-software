@@ -17,6 +17,7 @@ docs/downloads_DocVQA.txt,Codex,新增,任务书下载登记要求；因 .md 禁
 windows任务报告.txt,Codex,新增并更新,汇总本轮实际测试、下载、实验和未完成项,W1/W2/W3,因 .md 禁令使用 .txt
 windows任务执行留痕.txt,Codex,新增并更新,应 Barry 全局留痕要求记录新增、下载、删除和未完成溯源,W1/W2/W3,逐项记录本轮操作
 windows任务书_同步记录.txt,Codex,新增,核对 GitHub origin/main、ls-remote 与本地任务书,W1,记录远端未发现新版任务书的客观结果
+windows任务书.md,Claude（初稿与增补）；Barry（推送）,上游作者；Codex 仅拉取合并,远端 c4e7561 合入 W4-W7 与第 0/14/15 节,W1-W7,本次未手工修改 .md 内容
 docvqa-runs.zip,Codex,打包生成,experiments/docvqa/runs 下 11 个实际运行目录,W3,包含 10 个实验配置和 reocr 后 B2 复跑
 scripts/windows/run_backend_worker_loop.ps1,Codex,新增,长期运行通用 Worker 的测试辅助脚本,W3,默认参数下自动重启 Worker
 scripts/windows/run_ocr_worker_loop.ps1,Codex,新增,长期运行 OCR Worker 的测试辅助脚本,W3,默认参数下自动重启 Worker

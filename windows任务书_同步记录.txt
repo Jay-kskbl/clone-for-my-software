@@ -11,21 +11,33 @@ Windows 任务书同步记录
   git fetch --prune origin
   git ls-remote origin HEAD refs/heads/main
   git ls-remote --heads --tags origin
+  git merge --no-edit origin/main
 
-远端结果：
-  HEAD：8fb5830f1644041d6a4efd53b0387ff560cc8d24
-  refs/heads/main：8fb5830f1644041d6a4efd53b0387ff560cc8d24
-  没有其它远端分支或 tag。
+第一次核对：
+  main 仍为 8fb5830，没有新版任务书。
+
+随后 GitHub 出现新的远端提交：
+  origin/main：c4e75611032b8398f344d863dc8d2b29ba46cd67
+  提交者：Barry <barry@users.noreply.github.com>
+  标题：DEVPLAN：填写 T24u 的 commit 编号
+
+新版任务书内容：
+  - 第 0 节：当前状态、基线同步、报告格式、测试计划和完成判定
+  - W4：T24s 前端真实后端联调与界面核对
+  - W5：T24k、T24l、T24m、T24o、T24p 的真实环境补测
+  - W6：新基线复测、符号链接、原始数据补交等
+  - W7：跨机器 CLIP 向量一致性、内存和负载测试
+  - 第 14、15 节：原始数据核对方法和不交给 Windows 的项目
 
 本地 windows任务书.md：
-  SHA-256：F817477C3EBF0E48619ED42D5BDBE6BFB92A957BEE2F672440FB93BBBAF5AC3B
+  SHA-256：B4CE080BE73020574221FE9629FCD658F0C32CF0D5724DDEED198CFCE7DBBDB3
+  行数来源：GitHub c4e7561 的历史合并结果
 
-结论：
-  2026-11-21 当前从 GitHub 可获取的 main 仍与本仓库基线 8fb5830 相同，
-  没有发现 Barry 所说新一轮任务书对应的新提交。
-  本次已执行 fetch 和远端引用核对，但没有可下载的新任务书内容；
-  因此没有手工改动任何 .md。
+本地合并：
+  合并提交：72696346fcf648c5c1348b61d43d0f75d588994f
+  合并方式：git merge --no-edit origin/main
+  结果：新版任务书和远端 26 个新提交成功合入；
+        本地 W1-W3 报告、测试记录和证据全部保留。
 
-补充：
-  Barry 更新后若生成了新提交，请再次拉取；本记录不代表否定更新，
-  只表示执行本次核对时 GitHub 端尚未显示新版本。
+说明：
+  新版任务书由 GitHub 合并更新，Codex 没有手工新建或修改 .md。

@@ -241,3 +241,23 @@ Barry 随后要求把当前测试和修改部分全部上传，故补充上传�
 - 新增 output/windows-w3 和 scripts/windows 未发现密码、令牌或连接串。
 - 前序记录中的 change-me、测试用 JWT 和一次性烟测密码均为历史测试记录，
   本次没有新增真实生产凭据。
+
+
+十二、新版 Windows 任务书同步
+-----------------------------
+
+首次拉取时远端仍为 8fb5830；随后 GitHub 出现 Barry 推送的新提交：
+- origin/main：c4e75611032b8398f344d863dc8d2b29ba46cd67
+- 新版任务书 SHA-256：
+  B4CE080BE73020574221FE9629FCD658F0C32CF0D5724DDEED198CFCE7DBBDB3
+- 新增第 0 节、W4、W5、W6、W7、第 14 和 15 节。
+
+同步方式：
+- git fetch --prune origin
+- git merge --no-edit origin/main
+- 本地合并提交：72696346fcf648c5c1348b61d43d0f75d588994f
+
+结果：
+- 远端 26 个新提交和 W4-W7 任务书成功合入。
+- 本地 W1-W3 报告、测试记录、脚本、日志和结果压缩包全部保留。
+- Codex 没有手工创建或修改任何 .md；任务书由 Git 合并更新。
