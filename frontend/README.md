@@ -25,6 +25,7 @@ npm install
 | `npm run typecheck` | 类型检查（包括 `.vue` 文件） |
 | `npm test` | 单元测试 |
 | `npm run build` | 类型检查 + 生产构建，产物在 `dist/` |
+| `npm run sync:pdfjs` | 把 `node_modules/pdfjs-dist` 的 `cmaps`、`standard_fonts`、`wasm`、`iccs` 复制到 `public/pdfjs/`。**升级 pdfjs-dist 之后必须运行**，否则 `npm test` 里的一致性检查会失败（T24m） |
 
 ## 目录
 
@@ -37,7 +38,9 @@ src/
 │                 SearchView（检索：结果、命中通道、图片缩略图、图像检索开关与降级提示）、PreviewView（预览；PDF、图片分“原文件 / 抽取文本”两个标签页，T24f）
 ├── components/   ShareDialog（共享）、PdfViewer（PDF 显示）
 └── utils/        格式化、来源定位与通道说明、摘要清洗、缩略图加载（thumbnails.ts）
-tests/            单元测试（接口封装、格式化、来源定位、摘要、缩略图）
+tests/            单元测试（接口封装、格式化、来源定位、摘要、缩略图、pdf.js 资源一致性）
+scripts/          pdfjs-assets.mjs（资源比较）、sync-pdfjs.mjs（复制资源）
+public/pdfjs/     pdf.js 的 CMap、标准字体、WASM 解码器、ICC 配置，PdfViewer 运行时按需加载（中文 PDF 需要 CMap）
 ```
 
 ## 说明
