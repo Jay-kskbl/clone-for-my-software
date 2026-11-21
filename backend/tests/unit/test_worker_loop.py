@@ -308,6 +308,13 @@ def test_worker_defaults():
     assert settings.worker_lease_seconds == 60.0
     assert settings.worker_heartbeat_seconds == 15.0
     assert settings.worker_max_tasks == 50
+    assert settings.worker_db_connect_timeout_seconds == 10
+
+
+def test_db_connect_timeout_must_be_at_least_2_seconds():
+    # libpq 把小于 2 的 connect_timeout 当成 2，配置里直接拒绝，避免以为设了 1 秒
+    with pytest.raises(ValueError):
+        Settings(**BASE, worker_db_connect_timeout_seconds=1)
 
 
 def test_heartbeat_must_leave_room_for_a_missed_renewal():

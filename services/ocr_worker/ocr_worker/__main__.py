@@ -74,10 +74,14 @@ def main() -> int:
     signal.signal(signal.SIGINT, request_stop)
 
     worker_id = f"ocr-{socket.gethostname()}-{os.getpid()}-{uuid.uuid4().hex[:6]}"
+    connect_timeout = settings.ocr_worker_db_connect_timeout_seconds
     queue = PgTaskQueue(
-        settings.database_url, worker_id=worker_id, lease_seconds=settings.ocr_worker_lease_seconds
+        settings.database_url,
+        worker_id=worker_id,
+        lease_seconds=settings.ocr_worker_lease_seconds,
+        connect_timeout_seconds=connect_timeout,
     )
-    store = PgStore(settings.database_url)
+    store = PgStore(settings.database_url, connect_timeout_seconds=connect_timeout)
     try:
         store.ping()
     except psycopg.Error as exc:

@@ -33,6 +33,7 @@ def fake_settings(database_url: str) -> SimpleNamespace:
         worker_heartbeat_seconds=15.0,
         worker_task_timeout_seconds=600.0,
         worker_memory_limit_mb=None,
+        worker_db_connect_timeout_seconds=10,
     )
 
 
@@ -96,6 +97,26 @@ def test_reachable_database_enters_the_loop_with_the_same_queue(
     assert queue.pinged == 1
     assert run_worker_calls == [queue]
     assert queue.resets == 1  # 退出时释放连接
+
+
+def test_connect_timeout_from_settings_is_passed_to_the_queue(
+    monkeypatch: pytest.MonkeyPatch, run_worker_calls: list[object]
+) -> None:
+    # T24k：主机不可达时启动检查在配置的时间内报错，而不是等操作系统的 TCP 超时
+    created: list[dict[str, object]] = []
+    queue = FakeQueue()
+
+    def fake_queue(*_args, **kwargs):
+        created.append(kwargs)
+        return queue
+
+    settings = fake_settings("postgresql://x")
+    settings.worker_db_connect_timeout_seconds = 4
+    monkeypatch.setattr(worker_main, "load_settings", lambda: settings)
+    monkeypatch.setattr(worker_main, "PgTaskQueue", fake_queue)
+
+    assert worker_main.main() == 0
+    assert created[0]["connect_timeout_seconds"] == 4
 
 
 def test_any_database_error_at_startup_exits_1(

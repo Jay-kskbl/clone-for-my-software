@@ -134,6 +134,9 @@ class Settings(BaseSettings):
     worker_memory_limit_mb: int = Field(default=2048, gt=0)
     # 处理多少个任务后 Worker 主动退出，由外层重新拉起
     worker_max_tasks: int = Field(default=50, gt=0)
+    # 连接数据库最多等多久（秒，libpq 的 connect_timeout 只接受整数，最小有效值 2）。
+    # 不设上限时主机不可达要等操作系统的 TCP 超时，启动检查迟迟不报错（T24k）
+    worker_db_connect_timeout_seconds: int = Field(default=10, ge=2, le=300)
 
     @model_validator(mode="after")
     def _overlap_shorter_than_chunk(self) -> "Settings":

@@ -50,7 +50,10 @@ def main() -> int:
         logger.info("收到信号 %s，完成当前任务后退出", signal.Signals(signum).name)
 
     queue = PgTaskQueue(
-        settings.database_url, worker_id=worker_id, lease_seconds=settings.worker_lease_seconds
+        settings.database_url,
+        worker_id=worker_id,
+        lease_seconds=settings.worker_lease_seconds,
+        connect_timeout_seconds=settings.worker_db_connect_timeout_seconds,
     )
     try:
         queue.ping()

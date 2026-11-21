@@ -17,6 +17,7 @@ def test_defaults_point_at_the_project_model_directory():
     assert settings.ocr_rec_model_dir == PROJECT_ROOT / "models/ocr/PP-OCRv5_mobile_rec"
     assert settings.storage_root == PROJECT_ROOT / "storage"
     assert (settings.ocr_pdf_dpi, settings.ocr_min_confidence) == (200, 0.0)
+    assert settings.ocr_worker_db_connect_timeout_seconds == 10
 
 
 def test_missing_required_variables_are_listed_without_values():

@@ -12,6 +12,7 @@ from typing import Any, Protocol
 import psycopg
 from psycopg.types.json import Jsonb
 from shared.contracts import Chunk, OCRResult
+from shared.task_queue import connect_kwargs
 
 
 @dataclass(frozen=True)
@@ -84,13 +85,17 @@ VALUES
 class PgStore:
     """每个操作自己开一个事务。连接出错后丢弃，下次重新连接。"""
 
-    def __init__(self, database_url: str) -> None:
+    def __init__(self, database_url: str, *, connect_timeout_seconds: int | None = None) -> None:
         self._database_url = database_url
+        self._connect_timeout_seconds = connect_timeout_seconds
         self._conn: psycopg.Connection | None = None
 
     def _connection(self) -> psycopg.Connection:
         if self._conn is None or self._conn.closed:
-            self._conn = psycopg.connect(self._database_url, autocommit=True)
+            # 与任务队列用同一个连接超时（T24k）
+            self._conn = psycopg.connect(
+                self._database_url, autocommit=True, **connect_kwargs(self._connect_timeout_seconds)
+            )
         return self._conn
 
     def reset(self) -> None:
