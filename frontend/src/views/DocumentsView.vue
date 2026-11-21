@@ -168,10 +168,14 @@ onBeforeUnmount(() => clearTimeout(refreshTimer))
     </div>
 
     <el-table v-loading="loading" :data="documents" empty-text="还没有文件">
-      <el-table-column label="文件名" min-width="220" show-overflow-tooltip>
+      <!-- 不用 show-overflow-tooltip：它把整格压成一行，标签会和文件名一起被省略号截掉（T24n）。
+           文件名自己省略、悬停看全名；标签放不下时换到下一行 -->
+      <el-table-column label="文件名" min-width="220">
         <template #default="{ row }: { row: DocumentItem }">
-          {{ row.filename }}
-          <el-tag v-for="tag in row.tags" :key="tag" size="small" class="doc-tag">{{ tag }}</el-tag>
+          <div class="doc-name">
+            <span class="doc-filename" :title="row.filename">{{ row.filename }}</span>
+            <el-tag v-for="tag in row.tags" :key="tag" size="small" class="doc-tag" :title="tag">{{ tag }}</el-tag>
+          </div>
         </template>
       </el-table-column>
       <el-table-column label="类型" width="120">
@@ -241,8 +245,29 @@ onBeforeUnmount(() => clearTimeout(refreshTimer))
   font-size: 13px;
 }
 
+.doc-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  min-width: 0;
+}
+
+.doc-filename {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 很长的标签也不撑破单元格 */
 .doc-tag {
-  margin-left: 6px;
+  max-width: 100%;
+}
+
+.doc-tag :deep(.el-tag__content) {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .pagination {

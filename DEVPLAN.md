@@ -218,6 +218,7 @@ BARRY zou/
 - [x] **T24k Worker 连接数据库加超时**（Barry 于 2026-11-21 批准优化清单 A、B 组，第 1 项）：通用 Worker 与 OCR Worker 的数据库连接带 libpq `connect_timeout`，默认 10 秒，可配置
 - [x] **T24l Worker 启动时检查数据库迁移**（优化清单第 2 项）：通用 Worker 比对 `alembic_version` 与代码里的最新迁移；OCR Worker 检查它读写的表和列是否存在；不一致时退出码 1 并提示 `alembic upgrade head`
 - [x] **T24m pdf.js 资源同步检查**（优化清单第 3 项）：前端测试逐文件核对 `public/pdfjs/` 与已安装的 pdfjs-dist；新增 `npm run sync:pdfjs` 复制脚本
+- [x] **T24n 文件列表的标签不再被截断**（优化清单第 4 项）：文件名单行省略、悬停看全名，标签放不下时换行
 
 ### 阶段五：实验（W13–W15）
 
@@ -318,7 +319,7 @@ BARRY zou/
 - **前端**
   - 新想法（T23 记录，Barry 于 2026-11-19 决定暂不做，归入 P4）：后端缩略图接口。现在检索页的缩略图取的是原图（D37），图片多、图片大时费流量。可以在后端加一个按需生成并缓存小图的接口，但需要 Pillow 之类的图像库（主环境新依赖），须 Barry 批准；不属于核心验收条件。
   - （Barry 于 2026-11-19 决定暂不做，写进局限）上传前没有在浏览器里检查文件大小（上限在后端配置里，前端不知道）。超限的文件要传完才被拒绝。
-  - 文件名一栏较窄时，标签会被省略号截断。
+  - ~~文件名一栏较窄时，标签会被省略号截断。~~（Barry 于 2026-11-21 批准，T24n 已完成）
 
 ------------------------------------------------------------------------
 
@@ -370,4 +371,5 @@ BARRY zou/
 | T24k | 2026-11-21 | 891facb | 优化清单第 1 项（来源 T24a 待议），Barry 于 2026-11-21 批准 A、B 组；不带 🔒。`shared/task_queue.py` 新增 `connect_kwargs()`，`PgTaskQueue` 新增可选参数 `connect_timeout_seconds`；OCR Worker 的 `PgStore` 同样；新配置 `WORKER_DB_CONNECT_TIMEOUT_SECONDS`、`OCR_WORKER_DB_CONNECT_TIMEOUT_SECONDS`（整数 2–300，默认 10），`.env.example` 同步。已执行：shared 108 passed（新增 `test_task_queue.py` 3 项）；backend 711 passed、229 skipped（新增 2 项）；services/ocr_worker（main 环境）67 passed、4 skipped（新增 `test_store_connect.py` 1 项、默认值断言 1 处）；三个目录 ruff 通过；ocr 环境能导入改过的模块。实测连一个不可达的地址（10.255.255.1）：不设超时 75.0 秒才报 OperationalError，设 2 秒时 2.0 秒报 ConnectionTimeout。没有改表结构、接口、附录 A，没有新下载，没有未测试项。修改记录见 `docs/changes/T24k.md` |
 | T24l | 2026-11-21 | f31590b | 优化清单第 2 项（来源 T24a 待议），Barry 于 2026-11-21 批准；不带 🔒。新增 `backend/app/worker/schema.py`（`expected_heads`、`schema_problem`、`check_schema`），通用 Worker 在 ping 之后检查；OCR Worker 的 `store.py` 新增 `REQUIRED_COLUMNS`、`missing_columns`、`PgStore.schema_problems()`（查 `information_schema.columns`，ocr 环境没有 alembic），启动时检查。已执行：backend 718 passed、229 skipped（新增 7 项）；services/ocr_worker（main 环境）71 passed、4 skipped（新增 4 项）；ruff 通过；ocr 环境能导入；`python -m app.worker` 连不存在的端口仍以退出码 1 结束。**未测试（Not Tested）**：两个检查在真实 PostgreSQL 上的行为，已登记到 untested.md。没有改表结构、迁移、配置、附录 A，没有新下载。修改记录见 `docs/changes/T24l.md` |
 | T24m | 2026-11-21 | 49c67e4 | 优化清单第 3 项（来源：审查 `27b51b2`），Barry 于 2026-11-21 批准；不带 🔒，没有新依赖。新增 `frontend/scripts/pdfjs-assets.mjs`（比较）、`scripts/sync-pdfjs.mjs`（先删后复制四个目录，再复核）、`tests/pdfjs-assets.test.mjs`（3 项）；`package.json` 加 `sync:pdfjs`；`frontend/README.md` 同步。写成 `.mjs` 是因为项目没有 `@types/node`。已执行：前端 70 项通过、类型检查通过；`sync:pdfjs` 运行后 `public/pdfjs/` 没有变化；故意改坏一个文件并加一个多余文件，测试失败且列出两者，同步后恢复。没有未测试项。修改记录见 `docs/changes/T24m.md` |
+| T24n | 2026-11-21 | 待填 | 优化清单第 4 项（来源：DEVPLAN §4 前端），Barry 于 2026-11-21 批准；不带 🔒。`DocumentsView.vue` 的“文件名”列去掉 `show-overflow-tooltip`（它把整格压成一行，连标签一起截掉），改为文件名单独省略并带 `title`、标签 flex 换行、特别长的标签自身省略。已执行：类型检查通过、前端 70 项通过；浏览器对着临时模拟接口检查（宽 800px）：长文件名省略且 `title` 为全名，6 个标签分两行全部显示，超长标签不撑破单元格。没有未测试项。修改记录见 `docs/changes/T24n.md` |
 | Windows 第二轮补测 | 2026-11-19 | 27b51b2 | 由 Barry 在 Windows 上完成并推到 GitHub，本会话合入（合并提交 `73e5b58`），没有重跑全套。测试的是 `50b244b`（T24f 之后、T24g 之前）的代码。结果：backend 923 passed、6 failed、0 skipped；shared 103 passed、2 failed；frontend 67 passed，类型检查和生产构建通过；OCR Worker 主环境 66 passed、4 skipped，ocr 环境真实识别 4 passed；CLIP 17 passed。8 项失败全部是符号链接测试的 WinError 1314（普通权限，测试准备阶段失败）。修复 3 处：中文 PDF 预览空白（`PdfViewer.vue` 配置 CMap、标准字体、WASM、ICC，资源放 `frontend/public/pdfjs/`，与已装的 pdfjs-dist 6.5.438 逐文件一致，不是新下载）；两个测试不再写死 psycopg/httpx 的具体异常类名；向量检索测试不再写死余弦分数 2.0（2.19.1 实测 1.0）。真实产品测试走通了注册登录、上传处理、OCR 检索、删除、共享、CLIP 检索与降级、中文 PDF 预览。本机（macOS）复跑：`test_health.py`、`test_worker_main.py` 11 项通过，前端类型检查通过。**未测试（Not Tested）**：8 项符号链接测试待以开发人员模式重跑；Docker/compose；正式评测数据（候选数据集下载待批准）；Linux `RLIMIT_AS`；并发与长时间运行；极端真实文件；T24g、T24h、T24i 的代码；修复后的 PDF 预览在 macOS 上。逐项见 `docs/untested.md` 第 7 节；第 3 节的 38 项本轮已通过（只有汇总数字），Barry 于 2026-11-19 批准后已从 untested.md 删除，剩 T24g、T24i 的 3 项。修改记录 `docs/changes/windows-2026-11-19.md` |
