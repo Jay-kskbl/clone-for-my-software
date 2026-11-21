@@ -6,6 +6,9 @@ import 'element-plus/theme-chalk/dark/css-vars.css'
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 import { controlsFrom, type ScanLoaderHandle } from '../scan-loader/handle'
+import AppIcon from '../../../components/AppIcon.vue'
+import { resetLaunchPlayed } from '../launch/playOnce'
+import { useLaunchAnimation } from '../launch/useLaunchAnimation'
 import ScanLoader from '../scan-loader/ScanLoader.vue'
 import { createSearchSession, SearchTimeoutError } from '../scan-loader/searchSession'
 import type { ScanPhase } from '../scan-loader/machine'
@@ -25,7 +28,14 @@ const MODE_DELAY: Record<Mode, number> = { fast: 300, slow: 5000, error: 1500, h
 const LAB_TIMEOUT_MS = 8000
 
 const mode = ref<Mode>('fast')
-const query = ref('机房巡检记录')
+const query = ref('')
+const PLACEHOLDER = '输入关键词，检索文件名、标签、正文和图片中识别出的文字'
+const input = ref<{ $el?: unknown } | null>(null)
+useLaunchAnimation(input, {
+  placeholder: PLACEHOLDER,
+  hasValue: () => query.value !== '',
+  onFinish: (reason) => note(`启动动画结束：${reason}`),
+})
 const results = ref<MockHit[] | null>(null)
 const failure = ref<string | null>(null)
 const phase = ref<ScanPhase>('idle')
@@ -83,7 +93,7 @@ function onSearch(which: Mode = mode.value) {
   results.value = null
   failure.value = null
   note(`第 ${n} 次检索（${which}）开始`)
-  void session.run((signal) => mockSearch(`${query.value}#${n}`, which, signal))
+  void session.run((signal) => mockSearch(`${query.value || '示例'}#${n}`, which, signal))
 }
 
 function onRapid() {
@@ -104,6 +114,11 @@ function onPhase(value: ScanPhase) {
 function setReduced(value: 'system' | 'on' | 'off') {
   reducedChoice.value = value
   setReducedMotionOverride(value === 'system' ? null : value === 'on')
+}
+
+function replayLaunch() {
+  resetLaunchPlayed()
+  location.reload()
 }
 
 function toggleDark() {
@@ -128,6 +143,7 @@ onBeforeUnmount(() => {
       <h1 class="page-title">搜索动效演示</h1>
       <p class="page-desc">克隆库专用自测页：模拟请求，不连后端。</p>
       <div class="lab-tools">
+        <el-button size="small" data-test="replay" @click="replayLaunch">重播启动动画（刷新）</el-button>
         <el-button size="small" @click="toggleDark">{{ dark ? '切到浅色' : '切到暗色' }}</el-button>
         <el-radio-group :model-value="reducedChoice" size="small" @change="(v: unknown) => setReduced(v as 'system' | 'on' | 'off')">
           <el-radio-button value="system">减少动效：跟随系统（{{ prefersReducedMotion() ? '开' : '关' }}）</el-radio-button>
@@ -141,8 +157,10 @@ onBeforeUnmount(() => {
 
     <el-card shadow="never" class="lab-card">
       <form class="lab-bar" @submit.prevent="onSearch()">
-        <el-input v-model="query" size="large" placeholder="输入关键词" />
-        <el-button type="primary" size="large" native-type="submit">检索</el-button>
+        <el-input ref="input" v-model="query" size="large" class="sm-launch-target lab-input" :placeholder="PLACEHOLDER">
+          <template #prefix><AppIcon name="search" /></template>
+        </el-input>
+        <el-button type="primary" size="large" round native-type="submit">检索</el-button>
       </form>
       <div class="lab-modes">
         <el-radio-group v-model="mode" size="small">
@@ -208,6 +226,10 @@ onBeforeUnmount(() => {
 .lab-bar {
   display: flex;
   gap: 12px;
+}
+
+.lab-input :deep(.el-input__wrapper) {
+  border-radius: 999px;
 }
 
 .lab-results {
