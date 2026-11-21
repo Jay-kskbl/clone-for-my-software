@@ -98,3 +98,203 @@ skipped 逐条原因：
 除 8 个 Windows 符号链接测试外，所有 W1 项目均实际执行并通过。
 因此 W1 验收标准中的“backend 0 failed、shared 0 failed”尚未满足；
 其余自动化测试、真实 OCR、真实 CLIP、前端、ruff 和 OCR 烟测均已完成。
+
+
+四、W2 DocVQA 下载与转换
+------------------------
+
+状态：通过。
+
+脚本：scripts/datasets/docvqa_import.py
+测试：scripts/datasets/tests/test_docvqa_import.py，12 passed
+ruff check：通过
+ruff format --check：通过
+
+真实数据：
+
+- 数据集：vidore/docvqa_test_subsampled
+- 修订：49bf8f13e13c41dd8cdb0cae5314e31c1da1e0d6
+- 行数：500
+- 查询数：500
+- 不重复图片：500
+- 重复引用：0
+- 文件格式：500 JPEG，0 PNG
+- 图片总量：169224953 字节
+- 最大单图：2523797 字节（小于 50 MB）
+- experiments validate：退出码 0
+- files=file 500、queries=500、qrels=500、relevant_pairs=500
+
+可续跑验证：
+
+- 第二次完整运行下载数 0，跳过数 500。
+- manifest.csv、queries.tsv、qrels/docvqa.tsv、source_rows.jsonl
+  在第二次运行前后 SHA-256 完全一致。
+
+留痕：
+
+- docs/downloads_DocVQA.txt
+- docs/changes/T24j.txt
+- windows任务执行留痕.txt
+
+任务书要求写入 docs/downloads.md 和 docs/changes/T24j.md；因为 Barry
+要求不能修改或新建 .md，本次使用对应 .txt，内容相同。
+
+
+五、W3 独立环境与数据处理
+-------------------------
+
+独立配置：
+
+- DATABASE_URL 指向 docmgr_docvqa
+- STORAGE_ROOT：storage/w3-docvqa
+- OPENSEARCH_INDEX_PREFIX=docvqa_
+- OCR Worker 与 CLIP 服务使用原默认识别/推理参数
+
+导入：
+
+- validate：退出码 0
+- import：500 个文件，0 跳过，退出码 0，耗时 7.87 秒
+- document_map.csv 已生成并被 .gitignore 忽略
+
+处理：
+
+- 开始：2026-11-21 13:20:54
+- parse：500 succeeded，0 failed
+- embed：500 succeeded，0 failed
+- OCR：500 succeeded，0 failed（最终状态）
+- 全部处理完成：2026-11-21 15:27:13
+- 总处理耗时：约 2 小时 6 分 19 秒
+
+OCR 失败与恢复：
+
+- mjbw0217.jpg 和 mkvw0217.jpg 的 OCR 子进程曾以
+  3221225477（0xC0000005）退出，自动重试 3/3 后为 failed。
+- 停止多余 Worker，只保留一个 OCR Worker 后，用既有任务重试接口
+  对这两个 failed 任务做受控重试；两项均 succeeded。
+- 最终没有 failed 任务；没有修改业务代码、OCR 参数和测试。
+
+OCR 时长：
+
+- 根据原始 OCR Worker 日志，498 个首次成功任务的平均任务耗时为 53.57 秒，
+  中位数 45 秒，P95 131 秒。
+- 另 2 个任务经过失败重试，其完整排队与恢复时间计入总体处理时间。
+
+进程峰值内存（每项为对应逻辑服务的进程树合计，采样约每 3 秒一次）：
+
+- API：115.7 MB
+- CLIP 服务：1088.9 MB
+- 通用 Worker：261.7 MB
+- OCR Worker 合计：4910.9 MB（处理阶段同时使用 4 个 OCR Worker）
+
+一致性：
+
+- python -m app.modules.consistency check
+- 输出：“没有发现不一致。”
+- 退出码 0，耗时 3.45 秒
+
+主库隔离：
+
+- W3 所有命令显式设置 DATABASE_URL=docmgr_docvqa。
+- W3 索引名均以 docvqa_ 开头。
+- W3 文件写入 storage/w3-docvqa。
+- 主库 docmgr 的文档数仍为 0；docmgr_docvqa 为 500。
+
+
+六、W3 实验指标
+---------------
+
+10 个配置均使用 --repeat 3、500 条文字型查询，退出码均为 0，
+config.json 的 complete 均为 true，failed_searches 均为 0。
+三次重复的全部指标波动 stdev 均为 0。
+
+| 配置 | 实际 RRF k | P@10 | R@10 | nDCG@10 | 延迟 P50 ms | 延迟 P95 ms | 运行耗时 s |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| B0 | 60 | 0.0000 | 0.0000 | 0.0000 | 2 | 4 | 9.09 |
+| B1 | 60 | 0.0000 | 0.0000 | 0.0000 | 2 | 3 | 8.67 |
+| B2 | 60 | 0.0424 | 0.4240 | 0.3383 | 22 | 31 | 39.56 |
+| B3 | 60 | 0.0246 | 0.2460 | 0.1557 | 100 | 123 | 162.92 |
+| B3-no-ocr | 60 | 0.0142 | 0.1420 | 0.0826 | 97 | 114 | 155.71 |
+| B3-no-clip | 60 | 0.0424 | 0.4240 | 0.3383 | 23 | 35 | 41.88 |
+| clip-only | 60 | 0.0142 | 0.1420 | 0.0826 | 96 | 112 | 153.23 |
+| B3-k10 | 10 | 0.0428 | 0.4280 | 0.2724 | 102 | 127 | 166.39 |
+| B3-k30 | 30 | 0.0364 | 0.3640 | 0.2022 | 102 | 122 | 164.16 |
+| B3-k100 | 100 | 0.0242 | 0.2420 | 0.1520 | 103 | 123 | 165.53 |
+
+结果目录：
+
+- experiments/docvqa/runs/<时间>_<配置>_<随机串>/
+- 每个目录都有 config.json、results.jsonl、metrics.json
+- runs/ 不进入 Git；完成后另打包 docvqa-runs.zip
+
+观察：
+
+- B0（文件名/标签）为 0，符合预期。
+- B1（正文）为 0，符合“图片无正文”的预期。
+- B2（正文 + OCR）显著高于 B1，R@10=0.4240，符合预期。
+- B3 的图像通道会降低英文查询上的指标；B3-no-ocr 与 clip-only 相同，
+  说明在本数据上 OCR 通道是主要文本贡献，CLIP 结果对融合产生了负向干扰。
+- 这些数字只用于流程验证，不作为论文正式效果结论；没有根据结果调参。
+
+七、W3 reocr 复核与最终验收
+---------------------------
+
+reocr 演练：
+
+- 命令：python -m app.modules.experiments --root ..\experiments\docvqa reocr
+- 输出：将把 500 个文档的 500 个 OCR 任务放回队列
+- 退出码：0，演练没有改动数据
+
+reocr 执行：
+
+- 命令：python -m app.modules.experiments --root ..\experiments\docvqa reocr --yes
+- 输出：已放回队列 500 个 OCR 任务
+- 退出码：0
+- OCR Worker 重做后：ocr succeeded=500、failed=0
+
+片段数核对：
+
+- 重做前 OpenSearch docvqa_chunks 中 source_type=ocr：1589
+- 重做前数据库 document_chunks 中 source_type=ocr：1589
+- 重做后 OpenSearch docvqa_chunks 中 source_type=ocr：1589
+- 重做后数据库 document_chunks 中 source_type=ocr：1589
+- 结论：覆盖写入，没有叠加。
+
+B2 复跑：
+
+- 命令：python -m app.modules.experiments --root ..\experiments\docvqa
+  run --config ..\experiments\configs\B2.json --repeat 3
+- 结果目录：20261121T094555.814487Z_B2_b53578
+- 退出码：0，耗时 51.489 秒
+- P@10=0.0424、R@10=0.4240、nDCG@10=0.3383
+- 与 reocr 前 B2 完全一致
+
+最终隔离确认：
+
+- 主库 docmgr documents=0
+- W3 库 docmgr_docvqa documents=500
+- W3 库 document_chunks(source_type=ocr)=1589
+
+结果压缩包：
+
+- 文件：docvqa-runs.zip
+- 包含 11 个运行目录（10 个配置 + reocr 后 B2 复跑）
+- 大小：8071418 字节
+- SHA-256：287E939A34566DD7EEF1AEC194F3CAC6097CEE9B1EF5B8921D8A89A715452504
+
+
+八、最终状态
+------------
+
+已完成：
+
+- W2 全部完成。
+- W3 全部完成并通过验收。
+- W1 除 8 项符号链接测试外的全部项目完成。
+
+明确未完成：
+
+- W1 的 6 项 backend 符号链接测试和 2 项 shared 符号链接测试。
+- 阻塞原因仅为当前 Windows 执行账号没有 SeCreateSymbolicLinkPrivilege。
+- 没有跳过、放宽或改写这些测试。
+
+所有数字、耗时和失败均来自本轮实际执行，没有伪造结果。
