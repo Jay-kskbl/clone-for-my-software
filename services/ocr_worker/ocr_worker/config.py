@@ -56,6 +56,8 @@ class OcrSettings(BaseModel):
     # 识别子进程的内存上限（MB），只在 Linux 上有效（decisions.md D16）
     ocr_worker_memory_limit_mb: int = Field(default=3072, gt=0)
     ocr_worker_max_tasks: int = Field(default=200, gt=0)
+    # 连接数据库最多等多久（秒，整数，最小有效值 2），与通用 Worker 的同名配置含义相同（T24k）
+    ocr_worker_db_connect_timeout_seconds: int = Field(default=10, ge=2, le=300)
 
     @field_validator("storage_root", "ocr_det_model_dir", "ocr_rec_model_dir", mode="after")
     @classmethod

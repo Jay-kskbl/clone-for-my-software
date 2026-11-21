@@ -12,11 +12,31 @@ from shared import tasks
 from shared.tasks import Task
 
 
+def connect_kwargs(connect_timeout_seconds: int | None) -> dict[str, int]:
+    """psycopg.connect 的额外参数。关键字参数会覆盖连接串里同名的 connect_timeout。"""
+    if connect_timeout_seconds is None:
+        return {}
+    return {"connect_timeout": connect_timeout_seconds}
+
+
 class PgTaskQueue:
-    def __init__(self, database_url: str, *, worker_id: str, lease_seconds: float) -> None:
+    def __init__(
+        self,
+        database_url: str,
+        *,
+        worker_id: str,
+        lease_seconds: float,
+        connect_timeout_seconds: int | None = None,
+    ) -> None:
+        """connect_timeout_seconds：建立连接最多等多久（libpq 的 connect_timeout，整数秒）。
+
+        None 表示用 libpq 的默认行为（不设上限，主机不可达时要等操作系统的 TCP 超时，
+        可能一两分钟）。Worker 传配置里的值，启动检查才能及时报错（T24k）。
+        """
         self._database_url = database_url
         self._worker_id = worker_id
         self._lease_seconds = lease_seconds
+        self._connect_timeout_seconds = connect_timeout_seconds
         self._conn: psycopg.Connection | None = None
 
     @property
@@ -26,7 +46,9 @@ class PgTaskQueue:
     def _connection(self) -> psycopg.Connection:
         if self._conn is None or self._conn.closed:
             # autocommit：shared.tasks 的每个操作自己开事务、自己提交
-            self._conn = psycopg.connect(self._database_url, autocommit=True)
+            self._conn = psycopg.connect(
+                self._database_url, autocommit=True, **connect_kwargs(self._connect_timeout_seconds)
+            )
         return self._conn
 
     def ping(self) -> None:

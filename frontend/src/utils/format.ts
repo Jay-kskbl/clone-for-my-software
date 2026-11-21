@@ -50,6 +50,21 @@ export function formatType(mimeType: string): string {
   return TYPE_LABEL[mimeType] ?? mimeType
 }
 
+export type BadgeTone = 'danger' | 'primary' | 'success' | 'warning' | 'info'
+
+// 文件类型色块上的短文字和颜色（components/FileTypeBadge.vue，T24s）
+const TYPE_BADGE: Record<string, { text: string; tone: BadgeTone }> = {
+  'application/pdf': { text: 'PDF', tone: 'danger' },
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': { text: 'DOC', tone: 'primary' },
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': { text: 'XLS', tone: 'success' },
+  'image/png': { text: '图片', tone: 'warning' },
+  'image/jpeg': { text: '图片', tone: 'warning' },
+}
+
+export function typeBadge(mimeType: string): { text: string; tone: BadgeTone } {
+  return TYPE_BADGE[mimeType] ?? { text: '文件', tone: 'info' }
+}
+
 /** 还没有处理完的文档：列表需要继续刷新它们的状态。 */
 export function isInProgress(status: Status): boolean {
   return status === 'pending' || status === 'processing'

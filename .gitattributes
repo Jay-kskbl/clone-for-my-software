@@ -1,0 +1,13 @@
+# 签出时不做换行符转换（T24t）。
+# frontend/public/pdfjs/ 里的文件是从 node_modules/pdfjs-dist 原样复制来的，
+# frontend/tests/pdfjs-assets.test.mjs 按 sha256 逐个比对（T24m）。
+# Windows 上 core.autocrlf=true 时，Git 会把其中的文本文件签出成 CRLF，比对就会失败。
+frontend/public/pdfjs/** -text
+
+# 索引 mapping 一律用 LF 签出和提交（T24u）。
+# 实验记录（backend/app/modules/experiments/environment.py 的 code_versions）对这三个文件的原始字节算 sha256，
+# 用来判断两次实验的索引结构是否相同。Windows 上 core.autocrlf=true 时它们会被签出成 CRLF，
+# 同一份 mapping 在两台机器上记下的 hash 就不同（Windows 第一轮 W3 实际发生过）。
+# 这些文件会被手工编辑，所以用 eol=lf（提交时也规范成 LF），而不是 pdfjs 那样的 -text。
+shared/text_index/mappings/*.json text eol=lf
+backend/app/modules/vector_index/mappings/*.json text eol=lf

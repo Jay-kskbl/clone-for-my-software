@@ -1,16 +1,29 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+// 检索页（T24s 重新排版）：检索框下面是检索通道开关；每条结果右侧显示它在三个通道里的名次
+// 和 RRF 融合分，让“多通道检索 + 融合”在页面上看得见（GLOBAL §4.4）。
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { ApiError, errorMessage } from '../api/client'
 import { downloadDocument } from '../api/documents'
+import { fetchHealth } from '../api/health'
 import { search } from '../api/search'
-import type { ChannelStatus, SearchHit, SourceType } from '../api/types'
+import type { ChannelStatus, SearchHit } from '../api/types'
+import FileTypeBadge from '../components/FileTypeBadge.vue'
+import {
+  buildSearchRequest,
+  cellText,
+  channelCells,
+  channelStatusText,
+  formatScore,
+  isEmptySelection,
+  selectionFromQuery,
+  selectionToQuery,
+} from '../utils/channels'
 import { formatType, isImageType } from '../utils/format'
 import {
   CHANNEL_LABEL,
-  CHANNEL_TAG_TYPE,
-  SOURCE_TYPE_LABEL,
+  CHANNEL_SHORT_LABEL,
   degradedNotice,
   evidenceLabel,
   previewQuery,
@@ -22,9 +35,10 @@ const route = useRoute()
 const router = useRouter()
 
 const query = ref(typeof route.query.q === 'string' ? route.query.q : '')
-const sourceTypes = ref<SourceType[]>(['body', 'ocr'])
-// 图像语义检索（CLIP）。默认关闭（与后端配置一致，D36）；开关放进地址栏，刷新后保持
-const imageEnabled = ref(route.query.img === '1')
+// 四个开关、三个通道（utils/channels.ts）。图像通道默认关闭（与后端配置一致，D36）；
+// 开关放进地址栏，刷新后保持
+const selection = reactive(selectionFromQuery(route.query))
+const noChannel = computed(() => isEmptySelection(selection))
 const loading = ref(false)
 // 三种结果要分开显示：还没搜、搜到了（可能为空）、检索服务出错
 const hits = ref<SearchHit[] | null>(null)
@@ -35,7 +49,36 @@ const failure = ref<{ unavailable: boolean; message: string } | null>(null)
 /** 本应执行却失败的通道（例如 CLIP 服务没启动时的图像通道），如实告诉用户。 */
 const degraded = computed(() => channels.value.filter((c) => c.status === 'unavailable'))
 
-// 图片结果的缩略图：document_id → 状态
+// ---- CLIP 服务状态：进入页面时查一次 /health，图像通道检索成功时也说明它在线 ----
+
+type ClipState = 'checking' | 'ok' | 'unavailable' | 'unknown'
+
+const CLIP_TEXT: Record<ClipState, string> = {
+  checking: 'CLIP 服务：检查中',
+  ok: 'CLIP 服务在线',
+  unavailable: 'CLIP 服务不可用，图像通道会被跳过',
+  unknown: 'CLIP 服务状态未知',
+}
+
+const clip = ref<ClipState>('checking')
+
+async function checkClip() {
+  try {
+    clip.value = (await fetchHealth()).clip_service.status
+  } catch {
+    clip.value = 'unknown'
+  }
+}
+
+function updateClipFrom(statuses: ChannelStatus[]) {
+  const image = statuses.find((c) => c.channel === 'image')
+  if (image?.status === 'ok') clip.value = 'ok'
+  // 图像通道不可用不一定是 CLIP 服务的问题（也可能是向量索引），重新查一次健康检查
+  else if (image?.status === 'unavailable') void checkClip()
+}
+
+// ---- 图片结果的缩略图：document_id → 状态 ----
+
 const thumbnails = reactive<Record<string, ThumbnailState>>({})
 const loader = new ThumbnailLoader({
   download: downloadDocument,
@@ -65,27 +108,29 @@ function loadThumbnails(results: SearchHit[]) {
   )
 }
 
+// ---- 检索 ----
+
+// 检索进行中又改了开关：等这次返回后按新的开关再查一次
+let rerun = false
+
 async function onSearch() {
   const text = query.value.trim()
   // 上一次检索还没返回时不再发新的（在输入框里连按回车）：两个应答谁后到谁显示，结果会错位
-  if (!text || loading.value) return
-  // 检索词放进地址栏：刷新页面或从预览页返回时结果还在
-  const img = imageEnabled.value ? '1' : undefined
-  if (route.query.q !== text || route.query.img !== img) {
-    void router.replace({ query: { q: text, img } })
+  if (!text || noChannel.value || loading.value) return
+  // 检索词和通道开关放进地址栏：刷新页面或从预览页返回时结果还在
+  const ch = selectionToQuery(selection)
+  if (route.query.q !== text || route.query.ch !== ch || route.query.img !== undefined) {
+    void router.replace({ query: { q: text, ch } })
   }
 
   loading.value = true
   failure.value = null
   try {
-    const response = await search({
-      query: text,
-      source_types: sourceTypes.value.length > 0 ? sourceTypes.value : undefined,
-      channels: { image: imageEnabled.value },
-    })
+    const response = await search(buildSearchRequest(text, selection))
     hits.value = response.hits
     channels.value = response.channels
     tookMs.value = response.took_ms
+    updateClipFrom(response.channels)
     loadThumbnails(response.hits)
   } catch (error) {
     clearThumbnails()
@@ -97,8 +142,20 @@ async function onSearch() {
     }
   } finally {
     loading.value = false
+    if (rerun) {
+      rerun = false
+      void onSearch()
+    }
   }
 }
+
+// 改动开关后自动重新检索：同一个查询换一组通道马上能对照（便于演示消融对照）。
+// 还没检索过时不自动发请求
+watch(selection, () => {
+  if (hits.value === null && failure.value === null) return
+  if (loading.value) rerun = true
+  else void onSearch()
+})
 
 function open(hit: SearchHit) {
   void router.push({
@@ -112,6 +169,7 @@ function open(hit: SearchHit) {
 }
 
 onMounted(() => {
+  void checkClip()
   if (query.value) void onSearch()
 })
 
@@ -119,7 +177,14 @@ onBeforeUnmount(clearThumbnails)
 </script>
 
 <template>
-  <el-card>
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">检索</h1>
+      <p class="page-desc">在文件名、正文、OCR 文字和图片内容中查找你有权访问的文件</p>
+    </div>
+  </div>
+
+  <el-card shadow="never" class="search-card">
     <form class="search-bar" @submit.prevent="onSearch">
       <el-input
         v-model="query"
@@ -130,149 +195,296 @@ onBeforeUnmount(clearThumbnails)
       />
       <el-button type="primary" size="large" native-type="submit" :loading="loading">检索</el-button>
     </form>
-    <div class="search-options">
-      <span class="option-label">正文范围</span>
-      <el-checkbox-group v-model="sourceTypes">
-        <el-checkbox value="body">{{ SOURCE_TYPE_LABEL.body }}</el-checkbox>
-        <el-checkbox value="ocr">{{ SOURCE_TYPE_LABEL.ocr }}</el-checkbox>
-      </el-checkbox-group>
-      <el-checkbox v-model="imageEnabled" class="image-switch">图像语义检索（CLIP）</el-checkbox>
+
+    <div class="channels" role="group" aria-label="检索通道">
+      <div class="channel-group">
+        <span class="group-label">文件名通道</span>
+        <div class="group-items">
+          <el-checkbox v-model="selection.meta" border>文件名/标签</el-checkbox>
+        </div>
+      </div>
+      <div class="channel-group">
+        <span class="group-label">文字通道</span>
+        <div class="group-items">
+          <el-checkbox v-model="selection.body" border>正文</el-checkbox>
+          <el-checkbox v-model="selection.ocr" border>OCR 文字</el-checkbox>
+        </div>
+      </div>
+      <div class="channel-group">
+        <span class="group-label">图像通道</span>
+        <div class="group-items">
+          <el-checkbox v-model="selection.image" border>图像语义（CLIP）</el-checkbox>
+          <span class="clip-state" :class="`clip-${clip}`">{{ CLIP_TEXT[clip] }}</span>
+        </div>
+      </div>
     </div>
-
-    <el-alert
-      v-if="failure"
-      :type="failure.unavailable ? 'error' : 'warning'"
-      :title="failure.unavailable ? '检索服务暂时不可用' : '检索失败'"
-      :description="failure.unavailable ? '这不是“没有搜到”：检索服务出了故障，请稍后重试。' : failure.message"
-      show-icon
-      :closable="false"
-      class="notice"
-    />
-
-    <el-alert
-      v-for="channel in degraded"
-      :key="channel.channel"
-      type="warning"
-      :title="degradedNotice(channel)"
-      show-icon
-      :closable="false"
-      class="notice"
-    />
-
-    <div v-loading="loading">
-      <template v-if="hits !== null">
-        <p class="summary">共 {{ hits.length }} 个文件，用时 {{ tookMs }} 毫秒</p>
-        <el-empty v-if="hits.length === 0" description="没有找到匹配的文件" />
-        <ul class="hits">
-          <li v-for="hit in hits" :key="hit.document.id" class="hit">
-            <div
-              v-if="thumbnails[hit.document.id]"
-              class="hit-thumb"
-              :title="`打开 ${hit.document.filename}`"
-              @click="open(hit)"
-            >
-              <img v-if="thumbUrl(hit.document.id)" :src="thumbUrl(hit.document.id)" :alt="hit.document.filename" />
-              <span v-else-if="thumbnails[hit.document.id].status === 'loading'" class="thumb-note">加载中</span>
-              <span v-else-if="thumbnails[hit.document.id].status === 'skipped'" class="thumb-note">图片较大<br />点击查看</span>
-              <span v-else class="thumb-note">无法显示</span>
-            </div>
-            <div class="hit-body">
-              <div class="hit-head">
-                <el-link type="primary" class="hit-title" @click="open(hit)">{{ hit.document.filename }}</el-link>
-                <span class="hit-type">{{ formatType(hit.document.mime_type) }}</span>
-                <el-tag v-for="tag in hit.document.tags" :key="tag" size="small" class="hit-tag">{{ tag }}</el-tag>
-              </div>
-              <!-- 摘要经过白名单清洗，只保留 <em>（utils/snippet.ts） -->
-              <p
-                v-if="hit.evidence?.snippet"
-                class="hit-snippet"
-                v-html="sanitizeSnippet(hit.evidence.snippet)"
-              />
-              <div class="hit-meta">
-                <span>{{ evidenceLabel(hit.evidence) }}</span>
-                <span class="hit-channels">
-                  命中：
-                  <el-tag
-                    v-for="c in hit.channels"
-                    :key="c.channel"
-                    size="small"
-                    effect="plain"
-                    :type="CHANNEL_TAG_TYPE[c.channel]"
-                    class="hit-tag"
-                  >
-                    {{ CHANNEL_LABEL[c.channel] }} 第 {{ c.rank }} 名
-                  </el-tag>
-                </span>
-              </div>
-            </div>
-          </li>
-        </ul>
-      </template>
-    </div>
+    <p v-if="noChannel" class="channels-error">至少选择一个检索通道</p>
+    <p v-else class="channels-hint">开启的通道各自检索，再按 RRF 合并成一个排序；检索过之后改动开关会自动重新检索。</p>
   </el-card>
+
+  <el-alert
+    v-if="failure"
+    :type="failure.unavailable ? 'error' : 'warning'"
+    :title="failure.unavailable ? '检索服务暂时不可用' : '检索失败'"
+    :description="failure.unavailable ? '这不是“没有搜到”：检索服务出了故障，请稍后重试。' : failure.message"
+    show-icon
+    :closable="false"
+    class="notice"
+  />
+
+  <el-alert
+    v-for="channel in degraded"
+    :key="channel.channel"
+    type="warning"
+    :title="degradedNotice(channel)"
+    show-icon
+    :closable="false"
+    class="notice"
+  />
+
+  <div v-loading="loading" class="results">
+    <div v-if="hits === null && failure === null && !loading" class="guide">
+      <p class="guide-title">输入关键词开始检索</p>
+      <ul class="guide-list">
+        <li>文件名/标签：匹配文件名和上传时填写的标签</li>
+        <li>正文：Word、PDF、Excel 里抽取出的文字</li>
+        <li>OCR 文字：扫描页和图片里识别出的文字</li>
+        <li>图像语义（CLIP）：用一句话描述画面，能找到图上没有文字的图片，例如“机房里的机柜”</li>
+      </ul>
+      <p class="guide-foot">每条结果右侧会显示它在各通道的名次和 RRF 融合分。</p>
+    </div>
+
+    <template v-else-if="hits !== null">
+      <p class="summary">
+        <span>共 {{ hits.length }} 个文件，用时 {{ tookMs }} 毫秒</span>
+        <span v-for="c in channels" :key="c.channel">{{ CHANNEL_LABEL[c.channel] }}：{{ channelStatusText(c) }}</span>
+      </p>
+      <el-empty v-if="hits.length === 0" description="没有找到匹配的文件。换个关键词，或打开更多检索通道试试" />
+      <ul v-else class="hits">
+        <li v-for="(hit, index) in hits" :key="hit.document.id" class="hit">
+          <span class="hit-rank">{{ index + 1 }}</span>
+          <div
+            v-if="thumbnails[hit.document.id]"
+            class="hit-thumb"
+            :title="`打开 ${hit.document.filename}`"
+            @click="open(hit)"
+          >
+            <img v-if="thumbUrl(hit.document.id)" :src="thumbUrl(hit.document.id)" :alt="hit.document.filename" />
+            <span v-else-if="thumbnails[hit.document.id].status === 'loading'" class="thumb-note">加载中</span>
+            <span v-else-if="thumbnails[hit.document.id].status === 'skipped'" class="thumb-note">图片较大<br />点击查看</span>
+            <span v-else class="thumb-note">无法显示</span>
+          </div>
+          <FileTypeBadge v-else :mime-type="hit.document.mime_type" size="large" class="hit-badge" @click="open(hit)" />
+
+          <div class="hit-body">
+            <div class="hit-head">
+              <el-link type="primary" class="hit-title" @click="open(hit)">{{ hit.document.filename }}</el-link>
+              <span class="hit-type">{{ formatType(hit.document.mime_type) }}</span>
+              <el-tag v-for="tag in hit.document.tags" :key="tag" size="small">{{ tag }}</el-tag>
+            </div>
+            <!-- 摘要经过白名单清洗，只保留 <em>（utils/snippet.ts）；高亮样式见 styles.css 的 .app-mark -->
+            <p
+              v-if="hit.evidence?.snippet"
+              class="hit-snippet app-mark"
+              v-html="sanitizeSnippet(hit.evidence.snippet)"
+            />
+            <div class="hit-meta">{{ evidenceLabel(hit.evidence) }}</div>
+          </div>
+
+          <div class="hit-fusion">
+            <div class="cells">
+              <div
+                v-for="cell in channelCells(hit.channels, channels)"
+                :key="cell.channel"
+                class="cell"
+                :class="`cell-${cell.state}`"
+              >
+                <span class="cell-label">{{ CHANNEL_SHORT_LABEL[cell.channel] }}</span>
+                <span class="cell-value">{{ cellText(cell) }}</span>
+              </div>
+            </div>
+            <div class="fused" title="RRF 融合分：命中的各通道 1/(k + 名次) 之和，k 的取值见后端配置">
+              融合分<strong>{{ formatScore(hit.score) }}</strong>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </template>
+  </div>
 </template>
 
 <style scoped>
+.search-card {
+  border-radius: var(--app-radius-lg);
+}
+
 .search-bar {
   display: flex;
   gap: 12px;
 }
 
-.search-options {
+.channels {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 12px 0 4px;
+  flex-wrap: wrap;
+  gap: 12px 28px;
+  margin-top: 16px;
 }
 
-.option-label {
-  color: #606266;
-  font-size: 14px;
+.channel-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.group-label {
+  color: var(--app-text-secondary);
+  font-size: 12px;
+}
+
+.group-items {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Element Plus 给相邻的带边框复选框加了外边距，这里统一用 gap 排开 */
+.group-items .el-checkbox {
+  margin: 0;
+}
+
+.clip-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--app-text-secondary);
+  font-size: 12px;
+}
+
+.clip-state::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--el-text-color-placeholder);
+}
+
+.clip-ok::before {
+  background: var(--el-color-success);
+}
+
+.clip-unavailable {
+  color: var(--el-color-danger);
+}
+
+.clip-unavailable::before {
+  background: var(--el-color-danger);
+}
+
+.channels-hint,
+.channels-error {
+  margin: 12px 0 0;
+  font-size: 12px;
+}
+
+.channels-hint {
+  color: var(--app-text-secondary);
+}
+
+.channels-error {
+  color: var(--el-color-danger);
 }
 
 .notice {
   margin-top: 12px;
 }
 
+.results {
+  min-height: 120px;
+  margin-top: 16px;
+}
+
+.guide {
+  padding: 18px 24px;
+  border: 1px dashed var(--el-border-color);
+  border-radius: var(--app-radius-lg);
+  background: var(--app-surface);
+  color: var(--app-text-regular);
+  font-size: 14px;
+  line-height: 1.9;
+}
+
+.guide-title {
+  margin: 0 0 4px;
+  color: var(--app-text);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.guide-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.guide-foot {
+  margin: 6px 0 0;
+  color: var(--app-text-secondary);
+  font-size: 13px;
+}
+
 .summary {
-  color: #909399;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 0 0 12px;
+  color: var(--app-text-secondary);
   font-size: 13px;
 }
 
 .hits {
-  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   margin: 0;
   padding: 0;
+  list-style: none;
 }
 
 .hit {
   display: flex;
+  align-items: flex-start;
   gap: 14px;
-  padding: 14px 0;
-  border-bottom: 1px solid #ebeef5;
+  padding: 14px 16px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-lg);
+  background: var(--app-surface);
 }
 
-.hit-body {
-  flex: 1;
-  min-width: 0;
+.hit:hover {
+  border-color: var(--el-border-color);
 }
 
-.image-switch {
-  margin-left: 12px;
+.hit-rank {
+  flex: none;
+  width: 20px;
+  padding-top: 2px;
+  color: var(--app-text-secondary);
+  font-weight: 600;
+  text-align: center;
 }
 
 /* 缩略图：原图由浏览器缩小显示，保持比例 */
 .hit-thumb {
-  flex: none;
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: center;
-  width: 96px;
-  height: 96px;
+  width: 72px;
+  height: 72px;
   overflow: hidden;
-  border: 1px solid #ebeef5;
-  border-radius: 4px;
-  background: #f5f7fa;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius);
+  background: var(--el-fill-color-light);
   cursor: pointer;
 }
 
@@ -283,9 +495,18 @@ onBeforeUnmount(clearThumbnails)
 }
 
 .thumb-note {
-  color: #909399;
+  color: var(--app-text-secondary);
   font-size: 12px;
   text-align: center;
+}
+
+.hit-badge {
+  cursor: pointer;
+}
+
+.hit-body {
+  flex: 1;
+  min-width: 0;
 }
 
 .hit-head {
@@ -300,32 +521,105 @@ onBeforeUnmount(clearThumbnails)
 }
 
 .hit-type {
-  color: #909399;
+  color: var(--app-text-secondary);
   font-size: 13px;
 }
 
 .hit-snippet {
-  margin: 8px 0;
-  color: #303133;
+  margin: 6px 0;
+  color: var(--app-text);
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-all;
 }
 
-.hit-snippet :deep(em) {
-  color: #f56c6c;
-  font-style: normal;
-}
-
 .hit-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  color: #909399;
+  margin-top: 4px;
+  color: var(--app-text-secondary);
   font-size: 13px;
 }
 
-.hit-tag {
-  margin-left: 4px;
+.hit-fusion {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.cells {
+  display: flex;
+  gap: 6px;
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 64px;
+  padding: 5px 0;
+  border-radius: 6px;
+  background: var(--el-fill-color-light);
+  color: var(--app-text-secondary);
+  font-size: 12px;
+}
+
+.cell-label {
+  font-size: 11px;
+}
+
+.cell-hit {
+  background: var(--app-primary-soft);
+  color: var(--app-primary);
+}
+
+.cell-hit .cell-value {
+  font-weight: 600;
+}
+
+.cell-disabled {
+  color: var(--el-text-color-placeholder);
+}
+
+.cell-unavailable {
+  background: var(--el-color-danger-light-9);
+  color: var(--el-color-danger);
+}
+
+.fused {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  color: var(--app-text-secondary);
+  font-size: 12px;
+}
+
+.fused strong {
+  color: var(--app-text);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 窄屏：名次和融合分换到结果下面一行 */
+@media (max-width: 900px) {
+  .hit {
+    flex-wrap: wrap;
+  }
+
+  .hit-fusion {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding-top: 10px;
+    border-top: 1px solid var(--app-border);
+  }
+}
+
+@media (max-width: 600px) {
+  .search-bar {
+    flex-direction: column;
+  }
 }
 </style>

@@ -350,7 +350,7 @@ GLOBAL §2 P1 规定“某页文本层有效字符数低于配置阈值时，该
 - 下载先用带令牌的请求取回文件内容，再由浏览器保存。理由：下载接口需要登录，普通链接带不上令牌。代价：文件会先完整读入浏览器内存，大文件（接近 50 MB 上限）会占用相应内存。
 - 列表里只要有“等待处理”或“处理中”的文档，就每 5 秒自动刷新一次，直到全部处理完。
 - 前端的登录判断和按钮显隐只决定“显示什么”，不是权限控制。权限由后端每个接口校验（GLOBAL §7.2）。
-- Element Plus 整体引入，没有做按需加载。代价：打包后的主文件约 870 KB（gzip 后约 280 KB）。毕设规模下可以接受。
+- Element Plus 整体引入，没有做按需加载。代价：打包后的主文件约 870 KB（gzip 后约 280 KB）。毕设规模下可以接受。（T24p 已改为按需引入：主 JS 349 KB，首屏 JS 合计约 483 KB，CSS 150 KB，见 `docs/changes/T24p.md`。）
 - TypeScript 锁定在 6.0.3。理由：7.x 是用另一种语言重写的版本，vue-tsc 3.3.14 还不支持，装上后类型检查无法启动。
 
 ### D23 Node.js 装在项目目录内（T10）
@@ -617,7 +617,7 @@ GLOBAL §2 P1 规定“某页文本层有效字符数低于配置阈值时，该
 
 - PDF：用 pdf.js 6.5.438 画在 canvas 上，按设备像素比放大以保证清晰。支持翻页、输入页码、缩放 50%–300%。打开时跳到检索命中的页，页码超出范围时夹到有效页。没有文字选择层。传给 pdf.js 的是数据副本，因为 pdf.js 会把传入的 ArrayBuffer 转交给后台线程，原来那份随之失效。离开页面时调用 loadingTask 的 `destroy()` 释放。
 - 图片：用 blob URL 原生显示。下载接口需要登录令牌，所以先带令牌取回字节，PDF 也一样。
-- Word、Excel：显示抽取出的文本，并提示看不到原始格式。命中片段加底色并滚动到可见位置，检索词标红。滚动在渲染完成后（`nextTick` 再等两帧）瞬时执行。路由加了 `scrollBehavior`，由 vue-router 接管滚动位置。
+- Word、Excel：显示抽取出的文本，并提示看不到原始格式。命中片段加底色并滚动到可见位置，检索词标红（T24s 起改为浅黄底，见 D48）。滚动在渲染完成后（`nextTick` 再等两帧）瞬时执行。路由加了 `scrollBehavior`，由 vue-router 接管滚动位置。
 
 **位置显示。** 数据里 `para_index` 从 0 开始，界面从 1 开始显示（`para_index` 为 25 显示为“第 26 段”），写在 `utils/locator.ts` 的注释里。Word 只定位到段落（附录 A9）。Excel 显示工作表名和单元格范围，图片显示“图片”。
 
@@ -754,7 +754,7 @@ GLOBAL §2 P1 规定“某页文本层有效字符数低于配置阈值时，该
 - 单个文档和全部重建都从数据库读当前版本的片段，写入时用 `refresh=true`（D26：未刷新的数据删不掉）。顺序是删除该文档的全部索引数据，再写片段，最后写 `doc_meta`。没有解析版本的文档没有片段可写，但 `doc_meta` 照样写（D34）。
 - `rebuild-indices` 就是 D26 要求的重建入口，更换 mapping 或分词器后使用。执行前必须先停掉通用 Worker 和 OCR Worker：重建会删除索引，而 compose 设了 `action.auto_create_index=false`（D27），Worker 这时写索引会失败。帮助文字、演练输出都有这条提示。重建期间检索结果不完整。
 
-**索引扫描与结构检查。** 两个索引分别按 keyword 字段分页读出（`doc_meta` 按 `document_id`，`chunks` 按 `chunk_id`，用 `search_after`）。结构检查用 `GET _mapping` 和 `GET _settings` 的结果，与版本库里的 mapping 文件比较字段定义、`dynamic`、分词器类型和 BM25 参数。
+**索引扫描与结构检查。** 两个索引分别按 keyword 字段分页读出（`doc_meta` 按 `document_id`，`chunks` 按 `chunk_id`，用 `search_after`）。结构检查用 `GET _mapping` 和 `GET _settings` 的结果，与版本库里的 mapping 文件比较字段定义、`dynamic`、分词器类型和 BM25 参数。（T24o 起字段定义多比较 `search_analyzer` 等 9 个键，分析配置逐项比较 analyzer、tokenizer、filter、char_filter、normalizer，见 `docs/changes/T24o.md`。）
 
 **退出码。**
 
@@ -953,7 +953,7 @@ Barry 要求由 Fable 5.2 重新查看 Opus 5.5 写的 T15–T19 并修正不足
 
 **向量索引结构。** 逻辑名 `image_vectors`，登记在 `shared/text_index/client.py` 的 `IMAGE_VECTORS`，与另两个索引共用 `OPENSEARCH_INDEX_PREFIX`；不在 `INDEX_NAMES` 里，因为它不是文本索引。mapping：1 分片 0 副本，`dynamic: strict`；`image_id`、`document_id`、`sha256`、`model_name`、`model_version` 为 keyword，`vector` 为 `knn_vector`、`dimension` 512。不开 `index.knn`、不配 `method`，不建 HNSW 图（附录 A12）。`_id` = image_id（独立图片就是 document_id），重复写入是覆盖。写入用 `refresh=true`。mapping 文件在 `backend/pyproject.toml` 里声明为 package-data。新增索引不影响已有两个索引，不需要重建它们。
 
-**精确检索 `search_vectors`。** `script_score` + `lang: knn`、`source: knn_score`、`space_type: cosinesimil`，与 `env_check/01_check_opensearch.py` 在 OpenSearch 2.19.1 上实测通过的写法一致。过滤放在 `script_score.query` 里（前置过滤）：model_name、model_version 两个 term，加可访问 document_id 的 terms（管理员传 `None` 不加；空集合直接返回空、不发请求）。排序 `["_score", {"document_id": "asc"}]`，按 document_id 折叠（P4 内嵌图片出现后每个文档只留最相似的一张）。分数取 `hit.sort[0]`，是 1 + 余弦相似度，只用于排名。索引不存在时先建索引、返回空；其他故障照常抛出，不把故障变成空结果；不合法的命中记日志后跳过。返回前的数据库二次校验仍由 M11 负责（附录 A10）。**尚未接入 M11**：图像通道的调用和超时降级属于 T22。
+**精确检索 `search_vectors`。** `script_score` + `lang: knn`、`source: knn_score`、`space_type: cosinesimil`，与 `env_check/01_check_opensearch.py` 在 OpenSearch 2.19.1 上实测通过的写法一致。过滤放在 `script_score.query` 里（前置过滤）：model_name、model_version 两个 term，加可访问 document_id 的 terms（管理员传 `None` 不加；空集合直接返回空、不发请求）。排序 `["_score", {"document_id": "asc"}]`，按 document_id 折叠（P4 内嵌图片出现后每个文档只留最相似的一张）。分数取 `hit.sort[0]`，是 `knn_score` 在 cosinesimil 下的值，只用于通道内排名（RRF 只用名次）。原来这里写的是“1 + 余弦相似度”，2026-11-19 Windows 第二轮补测在 OpenSearch 2.19.1 上实测完全相同的方向得 1.0 而不是 2.0（`27b51b2`），所以不写绝对范围，只依赖“相似度越高分数越高”。索引不存在时先建索引、返回空；其他故障照常抛出，不把故障变成空结果；不合法的命中记日志后跳过。返回前的数据库二次校验仍由 M11 负责（附录 A10）。**尚未接入 M11**：图像通道的调用和超时降级属于 T22。
 
 **cleanup。** 删两个文本索引之后，再删 `image_vectors` 里该文档的数据（索引不存在时 404 视为 0 条）。`image_embeddings` 不删：按内容共用（D10），由一致性检查清理。
 
@@ -1031,13 +1031,13 @@ Barry 要求由 Fable 5.2 重新查看 Opus 5.5 写的 T15–T19 并修正不足
 
 **通道标记与命中依据。**
 
-- 命中通道的标签按通道着色：文件名/标签为灰（info），正文为蓝（primary），图像为绿（success）。名次文字不变。
+- 命中通道的标签按通道着色：文件名/标签为灰（info），正文为蓝（primary），图像为绿（success）。名次文字不变。（T24s 起改为每条结果右侧的三格名次，`CHANNEL_TAG_TYPE` 已删除，见 D48。）
 - 只被图像通道命中、证据是图片时，命中依据写“图像语义匹配（CLIP）”，不写“位置：图片”，与 OCR 文字命中（“位置：图片（OCR 文字）”）分开（GLOBAL §4.1、§13）。
 
 **图像通道开关。**
 
 - 检索页新增“图像语义检索（CLIP）”勾选框，默认不勾（与后端默认关闭一致，D36）。
-- 勾选状态写进地址栏（`img=1`），刷新或从预览页返回后保持。
+- 勾选状态写进地址栏（`img=1`），刷新或从预览页返回后保持。（T24s 起四个通道开关统一写进地址栏参数 `ch`，旧地址的 `img=1` 仍能打开，见 D48。）
 - 请求里总是显式发送 `channels.image`（true 或 false），不依赖后端默认值。
 
 **降级提示。** `status=unavailable` 的通道用黄色（warning）提示。图像通道的提示为“图像检索暂时不可用，本次结果只来自文字检索（原因：…）”，其余通道沿用“××通道未参与本次检索：…”。
@@ -1230,3 +1230,66 @@ Barry 于 2026-11-19 对 DEVPLAN §4 中整理出的 14 项待批准事项回复
 - 只管数据集文档。日常使用中的文档没有这个入口。
 
 **顺带修改。** D42、D46 的三条运行前检查提示，处理办法从“在空的实验库上重新 import 并处理”改为“运行 reocr 重新识别”（参数未记录的一条两种办法都写）。
+
+
+### D48 前端界面优化：侧栏布局、拖拽上传、检索通道面板与融合分（T24s）
+
+代码：`frontend/src/App.vue`、`styles.css`（新增）、`components/AppIcon.vue`、`components/FileTypeBadge.vue`（新增）、`utils/channels.ts`、`utils/download.ts`、`api/health.ts`（新增）、`views/DocumentsView.vue`、`views/SearchView.vue`、`views/PreviewView.vue`、`views/LoginView.vue`；测试：`frontend/tests/channels.test.ts`（新增）。逐文件记录见 `docs/changes/T24s.md`。来源：Barry 于 2026-11-21 在三套样例方案中选定“B 侧栏布局，检索通道面板放到搜索栏下面，再和 A（精修）、C（通道名次条和融合分）一起做”。
+
+**范围。** 只改前端展示：没有改后端、接口契约、数据契约、附录 A；没有新依赖。检索页新调用的 `GET /health` 是 T01 起就有的公开接口。
+
+**做法。**
+
+- 页面骨架改为左侧导航栏（宽 208px），内容区最宽 1200px、居中；≤768px 时导航栏收成页面顶部的一行。登录页不显示导航栏。
+- 颜色一律引用 Element Plus 的 CSS 变量，公共取值集中在 `styles.css` 的 `--app-*`；主题色保持 Element Plus 默认蓝。检索词高亮统一为 `.app-mark`：浅黄底、文字颜色不变（原来是红字，长段落里不容易读）。
+- 检索页：四个开关对应三个通道，正文和 OCR 同属 text 通道，用 `source_types` 区分；文字通道关闭时不传 `source_types`（传空列表后端返回 422），四个全关时前端直接提示、不发请求。开关写进地址栏 `ch`，旧地址的 `img=1` 仍能打开。检索过之后改动开关自动重新检索，方便同一查询直接对照不同通道。
+- 每条结果右侧显示它在文件名 / 文字 / 图像三个通道的状态：第 N 名 / 未命中 / 未开启 / 不可用，后三种分开显示，否则看不出图像通道是没找到还是没参与（GLOBAL §12）；另显示 RRF 融合分（`hit.score`，保留 4 位小数）。
+- 页面数据加载失败（文件列表加载、自动刷新）用页内提示；删除、下载等操作的结果仍用弹出消息。
+
+**取舍。**
+
+- 上传进度用“逐个文件的状态”（等待上传 / 上传中 / 已上传 / 上传失败及原因）代替百分比进度条：现有请求用 fetch，拿不到上传进度；改 XHR 的收益在本机很小（上传几乎瞬间完成）。
+- 融合分的提示不写死 k=60：k 是后端配置（`search_rrf_k`），接口不返回它的值，写死会和配置不一致。
+- 图标手画 SVG，没装 @element-plus/icons-vue（不新增依赖）。
+
+**局限。** 页面组件仍没有自动化测试，能抽成纯函数的逻辑放进 `utils/channels.ts` 并有 20 项单元测试。浏览器检查只对着临时模拟后端、在 Chrome 内核的内置浏览器里做过；拖拽上传用脚本派发的 drop 事件模拟；没有与真实后端联调（见 `untested.md` T24s）。
+
+
+### D49 只对 pdf.js 资源目录关闭换行符转换（T24t）
+
+代码：仓库根目录 `.gitattributes`（一条规则 `frontend/public/pdfjs/** -text`）。相关：`frontend/tests/pdfjs-assets.test.mjs`（T24m）、`windows任务书.md` W5 第 11.2 节。逐项记录见 `docs/changes/T24t.md`。来源：Barry 于 2026-11-21 批准 W5 第 11.2 节的待定项“根治要靠 `.gitattributes`”。
+
+**问题。** `frontend/public/pdfjs/` 是从 `node_modules/pdfjs-dist` 原样复制来的 202 个文件，T24m 的测试逐个比较两边的 sha256。其中 15 个是文本文件（LICENSE、`.js`）。在 Windows 上，如果 git 设了 `core.autocrlf=true`（Git for Windows 安装时的常见选项），这 15 个文件签出时会被转成 CRLF，sha256 跟着变，测试失败，而代码其实没有问题。
+
+**做法。** 只对这个目录设 `-text`：git 把其中的文件都当二进制处理，签出、提交时都不做换行符转换，不受 `core.autocrlf` 影响。仓库里这些文件本来就是 LF，与 npm 包一致，所以规则生效后不需要改任何文件内容。
+
+**为什么不改全仓库的换行策略**（例如 `* text=auto eol=lf`）：
+
+- 别的文本文件（代码、文档）在 Windows 上签出成 CRLF 不影响运行和测试：Python、Node.js、PowerShell 都能读，提交时 `autocrlf` 又会转回 LF。按字节比对的只有这个目录。
+- 加全局规则后，git 会按新规则重新判断每个文件的换行符。仓库里现在有 7 个 CRLF 文件、3 个 CRLF 与 LF 混用的文件（2026-11-21 用 `git ls-files --eol` 统计，都在 `change-deepseek-v4/` 下，是 Windows 补测的原始记录）。它们会显示为已修改，需要一次规范化提交，等于改动原始记录，影响面远大于要解决的问题。
+- 规则只有一条，作用范围一眼能看清；以后再有按字节比对的目录，照这个写法单独加一条。
+
+**代价与局限。**
+
+- 这个目录里的文件以后在 Windows 上用编辑器打开再保存，如果被改成 CRLF，git 会原样提交进去（不再转换）。这些文件不应手工编辑，要更新就用 `npm run sync:pdfjs`（T24m），所以影响很小。
+- 已经签出成 CRLF 的工作区，拉到这条规则后，这 15 个文件会显示为已修改，要在仓库根目录执行一次 `git checkout -- frontend/public/pdfjs`，才会按新规则重新签出成 LF。这一点在 macOS 上用模拟签出验证过。
+- 只在 macOS 上用 `core.autocrlf=true` 的模拟签出验证过，真实 Windows 签出仍待 W5 第 11.2 节。
+
+### D50 mapping 文件签出、提交都用 LF（T24u）
+
+代码：仓库根目录 `.gitattributes`（新增两条 `text eol=lf`）。相关：`backend/app/modules/experiments/environment.py` 的 `code_versions()`、`windows任务书.md` 第 0.2 节第 4 步。逐项记录见 `docs/changes/T24u.md`。来源：Windows 第一轮核对（`docs/changes/windows-2026-11-21-核对.md` 第 5 节第 1 条），Barry 于 2026-11-21 批准。
+
+**问题。** 实验记录对 `doc_meta.json`、`chunks.json`、`image_vectors.json` 的原始字节算 SHA-256（D32、D38），用来判断两次实验的索引结构是否相同。Windows 上 `core.autocrlf=true` 时这三个文件被签出成 CRLF，第一轮 W3 记下的 hash 与仓库对不上；换成 CRLF 后重算，三个都吻合。内容没问题，但跨机器比较失效。
+
+**做法。** 对这两个目录的 `*.json` 设 `text eol=lf`：不论 `core.autocrlf` 怎么设，签出都是 LF；提交时如果是 CRLF，也会规范成 LF。仓库里这三个文件本来就是 LF，规则生效后不改任何内容，不需要重建索引。
+
+**为什么不用 T24t（D49）的 `-text`。** pdfjs 目录是复制来的第三方文件，不该手工编辑，`-text` 让 git 原样保存。mapping 是项目自己的文件，会被手工修改；用 `-text` 的话，Windows 上编辑后存成 CRLF 会原样进入仓库，hash 又会变。`eol=lf` 两头都管住。
+
+**为什么不改成对解析后的 JSON 算 hash。** 那要改代码，而且以前记下的 hash（Mac 上的实验记录、测试里的期望值）都会变，需要另行说明；而问题只出在签出的换行符上，配置一条规则就能解决。
+
+**代价与局限。**
+
+- 规则生效之前签出的工作区不会自己改正：拉取后文件仍是 CRLF，`git status` 不显示修改（git 按规则规范化后比较，认为内容相同），`git checkout -- <路径>` 也会跳过。必须先删掉文件再签出（macOS 模拟验证过；Windows 上的步骤见任务书第 0.2 节第 4 步）。
+- 同样的原因，工作区里的 mapping 如果被改成 CRLF 而没有提交，`git_dirty` 不会因此变成 true，实验记录里的 hash 却是 CRLF 的。以 hash 本身为准。
+- 只在 macOS 上用 `core.autocrlf=true` 的模拟签出验证过，真实 Windows 签出待任务书第 0.2 节第 4 步。
+

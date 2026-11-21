@@ -220,13 +220,74 @@ def _scan(client: OpenSearchClient, logical_name: str, fields: list[str], sort_f
         after = hits[-1]["sort"]
 
 
+# 字段定义里参与比较的键（T24o 前只有 type、analyzer、enabled）。OpenSearch 的 GET _mapping
+# 只返回显式设置过的键，所以一边有、一边没有就是不一致：例如线上索引被手工加了 search_analyzer，
+# 或版本库的 mapping 加了而索引没有重建
+_FIELD_KEYS = (
+    "type",
+    "analyzer",
+    "search_analyzer",
+    "search_quote_analyzer",
+    "enabled",
+    "index",
+    "doc_values",
+    "norms",
+    "similarity",
+    "ignore_above",
+    "null_value",
+    "format",
+)
+# analysis 里参与比较的部分：分析器和它引用的组件
+_ANALYSIS_SECTIONS = ("analyzer", "tokenizer", "filter", "char_filter", "normalizer")
+
+
+def _normalized(value: Any) -> Any:
+    """GET _settings 把值都返回成字符串（true → "true"、1.2 → "1.2"），比较前统一成字符串。"""
+    if isinstance(value, dict):
+        return {k: _normalized(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_normalized(v) for v in value]
+    if isinstance(value, bool):
+        return str(value).lower()
+    return str(value)
+
+
 def _comparable(field: dict[str, Any]) -> dict[str, Any]:
-    """mapping 里一个字段的可比较部分。OpenSearch 返回的 mapping 与提交的写法基本一致。"""
-    keys = ("type", "analyzer", "enabled")
-    result = {k: field.get(k) for k in keys if k in field}
+    """mapping 里一个字段的可比较部分，值统一成字符串。"""
+    result = {k: _normalized(field[k]) for k in _FIELD_KEYS if k in field}
     if "fields" in field:
         result["fields"] = {name: _comparable(sub) for name, sub in field["fields"].items()}
     return result
+
+
+def _field_difference(actual: dict[str, Any], expected: dict[str, Any]) -> str:
+    """两个字段定义哪里不同，例如“search_analyzer 为 standard，应为（未设置）”。"""
+    parts = []
+    for key in sorted(set(actual) | set(expected)):
+        if actual.get(key) != expected.get(key):
+            if key == "fields":
+                parts.append("子字段不同")
+            else:
+                got = actual.get(key, "（未设置）")
+                want = expected.get(key, "（未设置）")
+                parts.append(f"{key} 为 {got}，应为 {want}")
+    return "；".join(parts)
+
+
+def _analysis_differences(actual: dict[str, Any], expected: dict[str, Any]) -> list[str]:
+    """逐个比较分析器、分词器、过滤器等的定义（T24o 前只比较 docmgr_text 的 type）。"""
+    problems: list[str] = []
+    for section in _ANALYSIS_SECTIONS:
+        got = _normalized(actual.get(section, {}))
+        want = _normalized(expected.get(section, {}))
+        for name in sorted(set(got) | set(want)):
+            if name not in got:
+                problems.append(f"缺少 {section} {name}")
+            elif name not in want:
+                problems.append(f"多出 {section} {name}")
+            elif got[name] != want[name]:
+                problems.append(f"{section} {name} 的定义为 {got[name]}，应为 {want[name]}")
+    return problems
 
 
 def check_structure(client: OpenSearchClient, logical_name: str) -> list[str]:
@@ -246,18 +307,18 @@ def check_structure(client: OpenSearchClient, logical_name: str) -> list[str]:
             problems.append(f"缺少字段 {name}")
         elif name not in expected_props:
             problems.append(f"多出字段 {name}")
-        elif _comparable(actual_props[name]) != _comparable(expected_props[name]):
-            problems.append(f"字段 {name} 的定义不同")
+        else:
+            got = _comparable(actual_props[name])
+            want = _comparable(expected_props[name])
+            if got != want:
+                problems.append(f"字段 {name} 的定义不同：{_field_difference(got, want)}")
 
     settings = next(iter(client.request("GET", f"/{index}/_settings").json().values()))
     actual_index = settings["settings"]["index"]
     expected_index = expected["settings"]["index"]
-    analyzer = actual_index.get("analysis", {}).get("analyzer", {}).get("docmgr_text", {})
-    expected_analyzer = expected["settings"]["analysis"]["analyzer"]["docmgr_text"]
-    if analyzer.get("type") != expected_analyzer["type"]:
-        problems.append(
-            f"分词器 docmgr_text 为 {analyzer.get('type')}，应为 {expected_analyzer['type']}"
-        )
+    problems += _analysis_differences(
+        actual_index.get("analysis", {}), expected["settings"].get("analysis", {})
+    )
     similarity = actual_index.get("similarity", {}).get("default", {})
     for key, value in expected_index["similarity"]["default"].items():
         if str(similarity.get(key)) != str(value):

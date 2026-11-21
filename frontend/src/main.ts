@@ -1,13 +1,12 @@
-import 'element-plus/dist/index.css'
-
-import ElementPlus from 'element-plus'
-import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import { createApp } from 'vue'
 
 import { setUnauthenticatedHandler } from './api/client'
 import App from './App.vue'
 import { logout } from './auth'
+import { installElementPlus } from './element'
 import { router } from './router'
+// 放在 element.ts 之后引入：全局样式引用 Element Plus 的 CSS 变量（T24s）
+import './styles.css'
 
 // 任何请求发现令牌失效时：清掉登录状态，回到登录页
 setUnauthenticatedHandler(() => {
@@ -15,4 +14,7 @@ setUnauthenticatedHandler(() => {
   if (router.currentRoute.value.name !== 'login') void router.push({ name: 'login' })
 })
 
-createApp(App).use(router).use(ElementPlus, { locale: zhCn }).mount('#app')
+// Element Plus 按需注册（T24p，见 element.ts）
+const app = createApp(App).use(router)
+installElementPlus(app)
+app.mount('#app')

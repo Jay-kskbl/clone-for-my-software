@@ -1,0 +1,84 @@
+/*
+ * 全局样式（T24s）。
+ *
+ * 颜色一律引用 Element Plus 自带的 CSS 变量（--el-*），各页面不再写死色值；
+ * 页面里用到的几个公共取值在下面定义成 --app-*，要换主题色或间距只改这里。
+ */
+:root {
+  --app-bg: var(--el-fill-color-light);
+  --app-surface: var(--el-bg-color);
+  --app-border: var(--el-border-color-lighter);
+  --app-text: var(--el-text-color-primary);
+  --app-text-regular: var(--el-text-color-regular);
+  --app-text-secondary: var(--el-text-color-secondary);
+  --app-primary: var(--el-color-primary);
+  --app-primary-soft: var(--el-color-primary-light-9);
+  /* 检索词高亮：浅黄底、文字颜色不变（原来是红字，长段落里不容易读） */
+  --app-mark-bg: var(--el-color-warning-light-7);
+  --app-radius: 8px;
+  --app-radius-lg: 12px;
+  --app-sidebar-width: 208px;
+  --app-content-max: 1200px;
+}
+
+html,
+body {
+  margin: 0;
+}
+
+body {
+  background: var(--app-bg);
+  color: var(--app-text);
+  font-family: var(--el-font-family, 'PingFang SC', 'Microsoft YaHei', sans-serif);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 系统标志：侧栏和登录页共用 */
+.app-logo {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--app-radius);
+  background: var(--app-primary);
+  color: var(--el-color-white);
+}
+
+/* 各页面顶部的标题区 */
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.4;
+  word-break: break-all;
+}
+
+.page-desc {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 0;
+  color: var(--app-text-secondary);
+  font-size: 13px;
+}
+
+/* 检索词高亮。后端摘要和 utils/snippet.ts 只会产生 <em>，这里统一它的样子 */
+.app-mark em {
+  padding: 0 2px;
+  border-radius: 2px;
+  background: var(--app-mark-bg);
+  color: inherit;
+  font-style: normal;
+}

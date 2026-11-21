@@ -12,6 +12,7 @@ from typing import Any, Protocol
 import psycopg
 from psycopg.types.json import Jsonb
 from shared.contracts import Chunk, OCRResult
+from shared.task_queue import connect_kwargs
 
 
 @dataclass(frozen=True)
@@ -42,6 +43,56 @@ class Store(Protocol):
     ) -> bool: ...
 
     def ping(self) -> None: ...
+
+    def schema_problems(self) -> list[str]: ...
+
+
+# T24l：OCR Worker 读写的表和列（documents、ocr_results、document_chunks 见本文件的 SQL，
+# processing_tasks、documents.status/updated_at 见 shared/tasks.py）。ocr 环境里没有 alembic，
+# 不能像通用 Worker 那样比对迁移版本，只能检查这些列在不在。改了这些 SQL 要同步这里
+REQUIRED_COLUMNS: dict[str, frozenset[str]] = {
+    "documents": frozenset(
+        {"id", "parse_version", "deleted_at", "storage_key", "mime_type", "status", "updated_at"}
+    ),
+    "ocr_results": frozenset(
+        {"id", "document_id", "locator", "lines", "model_name", "model_version", "params"}
+    ),
+    "document_chunks": frozenset(
+        {"chunk_id", "document_id", "parse_version", "seq", "source_type", "text", "locator"}
+    ),
+    "processing_tasks": frozenset(
+        {
+            "id",
+            "task_type",
+            "document_id",
+            "payload",
+            "status",
+            "attempts",
+            "max_attempts",
+            "claimed_by",
+            "lease_expires_at",
+            "started_at",
+            "finished_at",
+            "error",
+            "created_at",
+        }
+    ),
+}
+
+_COLUMNS_SQL = """
+SELECT table_name, column_name FROM information_schema.columns
+WHERE table_schema = current_schema() AND table_name = ANY(%(tables)s)
+"""
+
+
+def missing_columns(present: set[tuple[str, str]]) -> list[str]:
+    """REQUIRED_COLUMNS 里数据库没有的“表.列”，已排序。整张表不存在时每一列都算缺。"""
+    return sorted(
+        f"{table}.{column}"
+        for table, columns in REQUIRED_COLUMNS.items()
+        for column in columns
+        if (table, column) not in present
+    )
 
 
 _DOCUMENT_SQL = """
@@ -84,13 +135,17 @@ VALUES
 class PgStore:
     """每个操作自己开一个事务。连接出错后丢弃，下次重新连接。"""
 
-    def __init__(self, database_url: str) -> None:
+    def __init__(self, database_url: str, *, connect_timeout_seconds: int | None = None) -> None:
         self._database_url = database_url
+        self._connect_timeout_seconds = connect_timeout_seconds
         self._conn: psycopg.Connection | None = None
 
     def _connection(self) -> psycopg.Connection:
         if self._conn is None or self._conn.closed:
-            self._conn = psycopg.connect(self._database_url, autocommit=True)
+            # 与任务队列用同一个连接超时（T24k）
+            self._conn = psycopg.connect(
+                self._database_url, autocommit=True, **connect_kwargs(self._connect_timeout_seconds)
+            )
         return self._conn
 
     def reset(self) -> None:
@@ -175,3 +230,10 @@ class PgStore:
     def ping(self) -> None:
         """确认数据库连得上。启动时调用：连不上就报错退出，不进入“看起来在运行”的状态。"""
         self._connection().execute("SELECT 1")
+
+    def schema_problems(self) -> list[str]:
+        """数据库缺少的“表.列”（T24l）。空列表表示 OCR Worker 需要的都在。"""
+        rows = (
+            self._connection().execute(_COLUMNS_SQL, {"tables": list(REQUIRED_COLUMNS)}).fetchall()
+        )
+        return missing_columns({(table, column) for table, column in rows})

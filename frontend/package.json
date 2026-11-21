@@ -9,7 +9,8 @@
     "build": "vue-tsc --noEmit && vite build",
     "typecheck": "vue-tsc --noEmit",
     "test": "vitest run",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "sync:pdfjs": "node scripts/sync-pdfjs.mjs"
   },
   "dependencies": {
     "element-plus": "2.14.8",

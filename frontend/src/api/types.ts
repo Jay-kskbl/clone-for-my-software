@@ -105,6 +105,21 @@ export interface SearchResponse {
   took_ms: number
 }
 
+// ---- 健康检查（GET /health，backend/app/api/health.py）----
+
+export interface ComponentStatus {
+  status: 'ok' | 'unavailable'
+  /** 不可用时只有异常类型，不含内部地址（T24b） */
+  detail: string | null
+}
+
+export interface HealthResponse {
+  status: 'ok' | 'degraded'
+  database: ComponentStatus
+  opensearch: ComponentStatus
+  clip_service: ComponentStatus
+}
+
 // ---- 抽取文本（docs/api.md §5.6）----
 
 export interface TextChunk {

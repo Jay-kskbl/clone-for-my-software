@@ -171,12 +171,13 @@ onBeforeUnmount(() => {
   min-height: 300px;
   overflow: auto;
   text-align: center;
-  background: #f2f3f5;
+  background: var(--el-fill-color);
+  border-radius: var(--app-radius);
   padding: 12px;
 }
 
 canvas {
-  box-shadow: 0 1px 4px rgb(0 0 0 / 15%);
-  background: #fff;
+  box-shadow: var(--el-box-shadow-light);
+  background: var(--el-bg-color);
 }
 </style>

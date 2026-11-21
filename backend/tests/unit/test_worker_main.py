@@ -33,6 +33,7 @@ def fake_settings(database_url: str) -> SimpleNamespace:
         worker_heartbeat_seconds=15.0,
         worker_task_timeout_seconds=600.0,
         worker_memory_limit_mb=None,
+        worker_db_connect_timeout_seconds=10,
     )
 
 
@@ -47,6 +48,8 @@ def run_worker_calls(monkeypatch: pytest.MonkeyPatch) -> list[object]:
 
     monkeypatch.setattr(worker_main, "run_worker", fake_run_worker)
     monkeypatch.setattr(worker_main.signal, "signal", lambda *_args: None)
+    # 结构检查默认通过；需要检查失败的测试自己再替换
+    monkeypatch.setattr(worker_main, "check_schema", lambda *_args, **_kwargs: None)
     return calls
 
 
@@ -98,6 +101,26 @@ def test_reachable_database_enters_the_loop_with_the_same_queue(
     assert queue.resets == 1  # 退出时释放连接
 
 
+def test_connect_timeout_from_settings_is_passed_to_the_queue(
+    monkeypatch: pytest.MonkeyPatch, run_worker_calls: list[object]
+) -> None:
+    # T24k：主机不可达时启动检查在配置的时间内报错，而不是等操作系统的 TCP 超时
+    created: list[dict[str, object]] = []
+    queue = FakeQueue()
+
+    def fake_queue(*_args, **kwargs):
+        created.append(kwargs)
+        return queue
+
+    settings = fake_settings("postgresql://x")
+    settings.worker_db_connect_timeout_seconds = 4
+    monkeypatch.setattr(worker_main, "load_settings", lambda: settings)
+    monkeypatch.setattr(worker_main, "PgTaskQueue", fake_queue)
+
+    assert worker_main.main() == 0
+    assert created[0]["connect_timeout_seconds"] == 4
+
+
 def test_any_database_error_at_startup_exits_1(
     monkeypatch: pytest.MonkeyPatch, run_worker_calls: list[object]
 ) -> None:
@@ -109,6 +132,46 @@ def test_any_database_error_at_startup_exits_1(
     assert worker_main.main() == 1
     assert run_worker_calls == []
     assert queue.resets == 1
+
+
+def test_unmigrated_database_exits_1_with_the_upgrade_hint(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    run_worker_calls: list[object],
+) -> None:
+    # T24l：连得上，但数据库没有迁移到代码要求的版本
+    queue = FakeQueue()
+    monkeypatch.setattr(worker_main, "load_settings", lambda: fake_settings("postgresql://x"))
+    monkeypatch.setattr(worker_main, "PgTaskQueue", lambda *_args, **_kwargs: queue)
+    monkeypatch.setattr(
+        worker_main,
+        "check_schema",
+        lambda *_a, **_k: "数据库还没有建表，先运行 alembic upgrade head",
+    )
+
+    assert worker_main.main() == 1
+    assert run_worker_calls == []
+    assert queue.resets == 1
+    assert "Worker 无法启动：数据库还没有建表" in capsys.readouterr().err
+
+
+def test_database_error_during_the_schema_check_is_a_connection_error(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    run_worker_calls: list[object],
+) -> None:
+    queue = FakeQueue()
+
+    def broken(*_args, **_kwargs):
+        raise psycopg.OperationalError("connection lost")
+
+    monkeypatch.setattr(worker_main, "load_settings", lambda: fake_settings("postgresql://x"))
+    monkeypatch.setattr(worker_main, "PgTaskQueue", lambda *_args, **_kwargs: queue)
+    monkeypatch.setattr(worker_main, "check_schema", broken)
+
+    assert worker_main.main() == 1
+    assert run_worker_calls == []
+    assert "Worker 无法连接数据库（OperationalError）" in capsys.readouterr().err
 
 
 def test_ping_on_the_real_queue_raises_when_nothing_listens() -> None:

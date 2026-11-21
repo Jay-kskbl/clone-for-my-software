@@ -7,6 +7,7 @@ import { useRoute, useRouter } from 'vue-router'
 import * as authApi from '../api/auth'
 import { errorMessage } from '../api/client'
 import { login } from '../auth'
+import AppIcon from '../components/AppIcon.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -64,7 +65,12 @@ async function onSubmit() {
 
 <template>
   <div class="login">
-    <el-card class="login-card">
+    <div class="login-brand">
+      <span class="app-logo login-logo"><AppIcon name="docs" :size="26" /></span>
+      <h1 class="login-title">智能文档管理系统</h1>
+      <p class="login-desc">多格式文档管理 · 全文检索 · OCR 文字检索 · 图文语义检索</p>
+    </div>
+    <el-card class="login-card" shadow="never">
       <template #header>{{ mode === 'login' ? '登录' : '注册新用户' }}</template>
       <el-form
         ref="formRef"
@@ -100,12 +106,41 @@ async function onSubmit() {
 <style scoped>
 .login {
   display: flex;
-  justify-content: center;
-  padding-top: 80px;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 72px 16px 24px;
 }
 
+.login-brand {
+  text-align: center;
+}
+
+.login-logo {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--app-radius-lg);
+}
+
+.login-title {
+  margin: 12px 0 4px;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.login-desc {
+  margin: 0;
+  color: var(--app-text-secondary);
+  font-size: 13px;
+}
+
+/* 窄屏时不超出屏幕宽度 */
 .login-card {
-  width: 380px;
+  width: 100%;
+  max-width: 380px;
+  border-radius: var(--app-radius-lg);
 }
 
 .login-submit {

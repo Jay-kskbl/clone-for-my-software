@@ -82,7 +82,7 @@ onMounted(async () => {
         <template v-if="chunk.source_type !== 'body'">（{{ SOURCE_TYPE_LABEL[chunk.source_type] }}）</template>
       </div>
       <!-- highlightText 先转义全文，再只插入 <em>（utils/snippet.ts） -->
-      <div class="chunk-text" v-html="highlightText(chunk.text, terms)" />
+      <div class="chunk-text app-mark" v-html="highlightText(chunk.text, terms)" />
     </div>
     <el-pagination
       v-if="textTotal > TEXT_PAGE_SIZE"
@@ -107,25 +107,21 @@ onMounted(async () => {
 }
 
 .chunk.target {
-  background: #fdf6ec;
-  border-left-color: #e6a23c;
+  background: var(--el-color-warning-light-9);
+  border-left-color: var(--el-color-warning);
 }
 
 .chunk-meta {
-  color: #909399;
+  color: var(--app-text-secondary);
   font-size: 12px;
   margin-bottom: 4px;
 }
 
+/* 检索词高亮的样式在 styles.css 的 .app-mark（T24s） */
 .chunk-text {
   white-space: pre-wrap;
   word-break: break-all;
   line-height: 1.7;
-}
-
-.chunk-text :deep(em) {
-  color: #f56c6c;
-  font-style: normal;
 }
 
 .pagination {
