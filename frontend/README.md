@@ -38,7 +38,7 @@ src/
 │                 SearchView（检索：结果、命中通道、图片缩略图、图像检索开关与降级提示）、PreviewView（预览；PDF、图片分“原文件 / 抽取文本”两个标签页，T24f）
 ├── components/   ShareDialog（共享）、PdfViewer（PDF 显示）
 └── utils/        格式化、来源定位与通道说明、摘要清洗、缩略图加载（thumbnails.ts）
-tests/            单元测试（接口封装、格式化、来源定位、摘要、缩略图、pdf.js 资源一致性）
+tests/            单元测试（接口封装、格式化、来源定位、摘要、缩略图、pdf.js 资源一致性、Element Plus 注册）
 scripts/          pdfjs-assets.mjs（资源比较）、sync-pdfjs.mjs（复制资源）
 public/pdfjs/     pdf.js 的 CMap、标准字体、WASM 解码器、ICC 配置，PdfViewer 运行时按需加载（中文 PDF 需要 CMap）
 ```
@@ -46,4 +46,5 @@ public/pdfjs/     pdf.js 的 CMap、标准字体、WASM 解码器、ICC 配置�
 ## 说明
 
 - 页面上的登录判断和按钮显隐只决定“显示什么”，不是权限控制；权限由后端每个接口校验。
+- Element Plus 按需引入（T24p）：新页面用到新的 `<el-xxx>` 组件时，在 `src/element.ts` 加它的样式，在 `src/element-components.ts` 加 import 和清单项；漏了的话 `npm test` 会失败。
 - 上传时选择文件的类型过滤只是方便用户，真正的类型检查在后端按文件内容进行。
