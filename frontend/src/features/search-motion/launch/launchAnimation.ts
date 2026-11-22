@@ -1,5 +1,9 @@
 // 启动动画（动画 2）核心，框架无关；由 useLaunchAnimation 懒加载（不进首屏脚本）。
 //
+// 图形与待机动画相同：星尘光球（shared/stardust.ts；Barry 2026-11-22 决定两者用同一个动画）。
+// 0 – 0.8 s 光球核心在检索框中央闪亮两下 → 0.8 – 1.7 s 星尘从四周聚拢成光球（两颗亮星拖着星尘尾巴绕核心转）
+// → 2.1 – 2.9 s 转速放慢，星尘向外铺到胶囊形检索框的轮廓上，核心淡出 → 描边、图标淡入 → 逐字打出占位文字。
+//
 // 对齐（指南 §5.2）：开始时读真实搜索框的 getBoundingClientRect 和计算样式——胶囊的位置、宽高、
 // 圆角、背景、描边色，占位文字的字体、颜色和起始 x，前缀放大镜图标的位置和颜色——全部照它画，
 // 不写死尺寸。Canvas 固定定位盖在整个视口上（粒子从四周飞来），pointer-events: none。
@@ -10,7 +14,20 @@ import { addFrame, createCanvasSurface } from '../shared/canvas'
 import { lerp } from '../shared/easing'
 import { onReducedMotionChange } from '../shared/reducedMotion'
 import { onThemeChange, readTokens, type MotionTokens } from '../shared/tokens'
-import { LAUNCH_TIMING, launchFrame, PARTICLE_COUNT, pointOnOutline, RING_RADIUS, type Box } from './timeline'
+import {
+  ARMS,
+  DUST,
+  drawCore,
+  drawDust,
+  drawHead,
+  dustAlpha,
+  dustPose,
+  dustRadius,
+  headPose,
+  type Pose,
+  type StardustView,
+} from '../shared/stardust'
+import { LAUNCH_TIMING, launchFrame, pointOnOutline, type Box } from './timeline'
 
 export interface LaunchTarget {
   /** 画胶囊用：Element Plus 的 .el-input__wrapper */
@@ -35,13 +52,14 @@ export interface LaunchHandle {
 /** 动画期间 <html> 上的标记；有它时真实输入框隐藏（launch.css）。 */
 export const LAUNCH_ATTR = 'smLaunch'
 
-const ROTATE_SPEED = Math.PI // 光环转速：每秒半圈
+const ROTATE_SPEED = Math.PI * 0.7 // 光球转速：每秒 0.35 圈，与待机动画相同
+/** 光球半径：与待机动画（120 px 画布 × 0.4）一样大 */
+const ORB_R = 48
 
 interface Particle {
+  /** 飞来的起点 */
   sx: number
   sy: number
-  angle: number
-  size: number
   /** 展开后在轮廓上的位置（周长比例） */
   s: number
 }
@@ -151,25 +169,21 @@ export function playLaunch(target: LaunchTarget, options: LaunchOptions): Launch
   // 放大镜直接取真实图标里的 path（24×24 视框），保证结束时完全重合
   const iconPaths = Array.from(target.icon?.querySelectorAll('path') ?? [], (path) => new Path2D(path.getAttribute('d') ?? ''))
 
-  // 粒子从四周（离中心 120–280 px 的随机位置）飞来，落到光环上等间距的角度
-  const particles: Particle[] = []
-  const rotationAtEnd = rotation(LAUNCH_TIMING.expandEnd)
-  for (let i = 0; i < PARTICLE_COUNT; i++) {
+  const view = (t: number): StardustView => ({ cx: geo.cx, cy: geo.cy, R: ORB_R, rotation: rotation(t), time: t / 1000, scale: 1 })
+
+  // 星尘和两颗亮星从四周（离中心 120–280 px 的随机位置）飞来；
+  // 展开时按它在展开结束那一刻相对中心的方向，分配到轮廓上（从右侧中点顺时针，与 pointOnOutline 一致），不会交叉
+  const atEnd = view(LAUNCH_TIMING.expandEnd)
+  const toParticle = (pose: Pose): Particle => {
     const a = Math.random() * Math.PI * 2
     const d = 120 + Math.random() * 160
-    const angle = (i / PARTICLE_COUNT) * Math.PI * 2
-    // 按展开结束时的角度分配轮廓位置：从右侧中点顺时针，与 pointOnOutline 的起点、方向一致
-    const final = (((angle + rotationAtEnd) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)
-    particles.push({
-      sx: geo.cx + Math.cos(a) * d,
-      sy: geo.cy + Math.sin(a) * d,
-      angle,
-      size: 1.2 + Math.random() * 1,
-      s: final / (Math.PI * 2),
-    })
+    const dir = (Math.atan2(pose.y - geo.cy, pose.x - geo.cx) + Math.PI * 2) % (Math.PI * 2)
+    return { sx: geo.cx + Math.cos(a) * d, sy: geo.cy + Math.sin(a) * d, s: dir / (Math.PI * 2) }
   }
+  const dust = DUST.map((d) => toParticle(dustPose(d, atEnd)))
+  const heads = Array.from({ length: ARMS }, (_, arm) => toParticle(headPose(arm, atEnd)))
 
-  /** 光环转过的角度：聚拢开始后匀速，展开期间平滑减速到停。 */
+  /** 光球转过的角度：聚拢开始后匀速，展开期间平滑减速到停。 */
   function rotation(t: number): number {
     const T = LAUNCH_TIMING
     const steady = (Math.max(0, Math.min(t, T.expandStart) - T.gatherStart) / 1000) * ROTATE_SPEED
@@ -207,34 +221,39 @@ export function playLaunch(target: LaunchTarget, options: LaunchOptions): Launch
       }
     }
 
-    // 粒子：聚拢 → 光环 → 展开到轮廓；描边出现后淡出
+    const v = view(elapsed)
+
+    // 光球核心：先闪亮两下，聚拢时常亮，展开时淡出
+    const coreAlpha = Math.max(f.cursor, f.gather) * (1 - f.expand)
+    if (coreAlpha > 0) drawCore(ctx, v, tokens, coreAlpha)
+
+    // 星尘：从四周聚拢到光球上的位置 → 展开到胶囊轮廓；描边出现后淡出。
+    // 展开时闪烁和星芒逐渐收掉，粒子变成大小一致的小点排在轮廓上
     const particleAlpha = f.gather * (1 - f.stroke)
     if (particleAlpha > 0) {
-      const rot = rotation(elapsed)
-      ctx.fillStyle = tokens.primary
-      ctx.globalAlpha = particleAlpha
-      for (const p of particles) {
-        const a = p.angle + rot
-        const rx = geo.cx + Math.cos(a) * RING_RADIUS
-        const ry = geo.cy + Math.sin(a) * RING_RADIUS
-        let x = lerp(p.sx, rx, f.gather)
-        let y = lerp(p.sy, ry, f.gather)
+      ctx.fillStyle = tokens.primaryStrong
+      const glint = 1 - f.expand
+      const place = (p: Particle, pose: Pose) => {
         if (f.expand > 0) {
           const o = pointOnOutline(geo.box, p.s)
-          x = lerp(rx, o.x, f.expand)
-          y = lerp(ry, o.y, f.expand)
+          return { x: lerp(pose.x, o.x, f.expand), y: lerp(pose.y, o.y, f.expand) }
         }
-        ctx.beginPath()
-        ctx.arc(x, y, lerp(p.size, 1.2, f.expand), 0, Math.PI * 2)
-        ctx.fill()
+        return { x: lerp(p.sx, pose.x, f.gather), y: lerp(p.sy, pose.y, f.gather) }
       }
-    }
-
-    // 中心光标闪烁两次
-    if (f.cursor > 0) {
-      ctx.globalAlpha = f.cursor
-      ctx.fillStyle = tokens.primary
-      ctx.fillRect(geo.cx - 1, geo.cy - geo.caretHeight / 2, 2, geo.caretHeight)
+      DUST.forEach((d, i) => {
+        const pose = dustPose(d, v)
+        const a = particleAlpha * lerp(dustAlpha(d, pose, v.time), 0.85, f.expand)
+        if (a <= 0.01) return
+        const { x, y } = place(dust[i], pose)
+        ctx.globalAlpha = a
+        drawDust(ctx, d, x, y, lerp(dustRadius(d, pose, v), 1.1, f.expand), v, glint)
+      })
+      heads.forEach((p, arm) => {
+        const pose = headPose(arm, v)
+        const { x, y } = place(p, pose)
+        ctx.globalAlpha = particleAlpha * (0.7 + 0.3 * pose.depth)
+        drawHead(ctx, arm, x, y, v, glint)
+      })
     }
 
     // 逐字打出占位文字，裁到输入框内容区内

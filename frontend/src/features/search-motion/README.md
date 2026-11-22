@@ -1,6 +1,6 @@
 # search-motion：搜索动效
 
-三个搜索动效：动画 1 待机转动、动画 2 启动、动画 3 扫描加载。设计与验收要求见根目录 `SEARCH_MOTION_DEV_GUIDE.md`（下称“指南”），修改记录与验证情况见 `docs/changes/search-motion.md`。
+三个搜索动效：动画 1 待机、动画 2 启动（这两个用同一个图形：星尘光球）、动画 3 扫描加载。设计与验收要求见根目录 `SEARCH_MOTION_DEV_GUIDE.md`（下称“指南”），修改记录与验证情况见 `docs/changes/search-motion.md`。
 
 只在克隆库 `feat/search-motion` 里，属于增强功能（GLOBAL.md §2 P4），没有进入 DEVPLAN。没有引入任何依赖。
 
@@ -8,11 +8,11 @@
 
 | 目录 / 文件 | 作用 |
 |---|---|
-| `shared/` | 公共层：`easing`（缓动）、`reducedMotion`（减少动效，可订阅变化）、`tokens`（从 `--app-*` / `--el-*` 读颜色、监听主题）、`canvas`（全页唯一的 rAF 循环、高清屏画布）、`timers`（定时器集中清理） |
+| `shared/` | 公共层：`easing`（缓动）、`reducedMotion`（减少动效，可订阅变化）、`tokens`（从 `--app-*` / `--el-*` 读颜色、监听主题）、`canvas`（全页唯一的 rAF 循环、高清屏画布）、`timers`（定时器集中清理）、`stardust`（星尘光球：粒子位置与画法，待机和启动共用） |
 | `messages.ts` | 动效文案（项目没有 i18n 库，集中在这里） |
 | `scan-loader/` | 动画 3：`machine`（纯函数状态机）、`scanLoader.ts/.css`（框架无关核心）、`searchSession`（请求与动画对接：取消、丢弃旧返回、30 s 超时）、`handle`、`ScanLoader.vue` |
 | `launch/` | 动画 2：`timeline`（纯函数时间轴、胶囊轮廓取点）、`loop`（没有输入时循环播放）、`launchAnimation`（Canvas 核心，懒加载）、`launch.css`、`useLaunchAnimation`（Vue 适配） |
-| `idle-spinner/` | 动画 1：`idleTracker`（待机计时）、`draw`（射线 / 星尘光球绘制）、`idleSpinner`（核心）、`IdleSpinner.vue` |
+| `idle-spinner/` | 动画 1：`idleTracker`（待机计时）、`idleSpinner`（核心）、`IdleSpinner.vue` |
 | `lab/` | 演示页 `/motion-lab`（`MotionLabView.vue`、`IdleLabPanel.vue`），模拟请求，自测和设计走查用 |
 
 每个动效都分成“框架无关的核心 + 很薄的 Vue 适配层”，核心可以脱离 Vue 单独测试。单元测试在 `frontend/tests/search-motion/`。
@@ -36,7 +36,7 @@
 
 **待机动画（`IdleSpinner.vue`）**
 
-- props：`idleAfter`（默认 8000 ms）、`switchEvery`（默认 30000 ms）、`spinnerStyle`（`auto` / `rays` / `orb`）、`size`（默认 120 px）
+- props：`idleAfter`（默认 8000 ms）、`size`（默认 120 px）；只有星尘光球一种样式，减少动效时显示一帧静止画面
 - 事件：`idle`、`active`；ref 方法：`show()`、`hide()`
 
 ## 在页面里怎么用
@@ -71,4 +71,4 @@ cd frontend
 npx vite --host 127.0.0.1 --port 5174
 ```
 
-然后打开 `http://127.0.0.1:5174/motion-lab`（不需要登录和后端）。页面上可以切换快速 / 慢速 / 报错 / 超时 / 连续搜索、暗色、减少动效（强制开关），重播启动动画，用“快速走查”参数（2 s 待机 / 5 s 切换）看待机动画，并显示 rAF 登记数用来检查残留。
+然后打开 `http://127.0.0.1:5174/motion-lab`（不需要登录和后端）。页面上可以切换快速 / 慢速 / 报错 / 超时 / 连续搜索、暗色、减少动效（强制开关），重播启动动画，用“快速走查”参数（2 s 进入待机）看待机动画，并显示 rAF 登记数用来检查残留。

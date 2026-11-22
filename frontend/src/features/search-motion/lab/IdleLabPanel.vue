@@ -1,29 +1,21 @@
 <script setup lang="ts">
-// 演示页的待机动画面板：默认参数（8 s 待机、30 s 切换）与快速走查参数（2 s / 5 s）可切换，
-// 样式可选自动轮换 / 固定射线 / 固定光球，也可以手动 show / hide（指南 §4.2 的调试接口）。
+// 演示页的待机动画面板：默认参数（8 s 进入待机）与快速走查参数（2 s）可切换，
+// 也可以手动 show / hide（指南 §4.2 的调试接口）。
 import { computed, ref } from 'vue'
 
 import IdleSpinner from '../idle-spinner/IdleSpinner.vue'
-import type { IdleStyle } from '../idle-spinner/idleSpinner'
 
 const emit = defineEmits<{ log: [text: string] }>()
 
 const fast = ref(false)
-const spinnerStyle = ref<IdleStyle>('auto')
 const idleAfter = computed(() => (fast.value ? 2000 : 8000))
-const switchEvery = computed(() => (fast.value ? 5000 : 30_000))
 const spinner = ref<{ show(): void; hide(): void } | null>(null)
 </script>
 
 <template>
   <section class="idle-lab">
     <div class="idle-tools">
-      <el-radio-group v-model="spinnerStyle" size="small">
-        <el-radio-button value="auto">自动轮换</el-radio-button>
-        <el-radio-button value="rays">固定射线</el-radio-button>
-        <el-radio-button value="orb">固定光球</el-radio-button>
-      </el-radio-group>
-      <el-checkbox v-model="fast" size="small" border>快速走查（{{ idleAfter / 1000 }} s 待机 / {{ switchEvery / 1000 }} s 切换）</el-checkbox>
+      <el-checkbox v-model="fast" size="small" border>快速走查（{{ idleAfter / 1000 }} s 进入待机）</el-checkbox>
       <el-button size="small" @click="spinner?.show()">show()</el-button>
       <el-button size="small" @click="spinner?.hide()">hide()</el-button>
     </div>
@@ -35,8 +27,6 @@ const spinner = ref<{ show(): void; hide(): void } | null>(null)
       <IdleSpinner
         ref="spinner"
         :idle-after="idleAfter"
-        :switch-every="switchEvery"
-        :spinner-style="spinnerStyle"
         data-test="idle"
         @idle="emit('log', '待机：进入')"
         @active="emit('log', '待机：退出')"

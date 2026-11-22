@@ -1,27 +1,21 @@
-// 待机转动动画（动画 1）核心，框架无关。
+// 待机动画（动画 1）核心，框架无关。画的是星尘光球（shared/stardust.ts），与启动动画同一个图形
+// （Barry 2026-11-22 决定；取代指南 §4.3、§4.4 的“射线 / 光球两种样式互相切换”）。
 //
-// active ──(idleAfter 无操作)──▶ idle:rays ──(switchEvery)──▶ morphing ──▶ idle:orb ──▶ …
-//    ▲                                                                              │
-//    └─────────────────────────(任意操作：淡出 0.4 秒)─────────────────────────────────┘
+// active ──(idleAfter 无操作)──▶ idle（星尘光球淡入并略微放大）
+//    ▲                                │
+//    └──(任意操作：淡出 0.4 秒)────────┘
 //
-// 淡入淡出和样式切换都是“从当前值出发”的补间：切换到一半时用户有操作，直接从当前画面整体淡出。
+// 淡入淡出是“从当前值出发”的补间：淡入到一半时用户有操作，直接从当前画面淡出。
 import { addFrame, createCanvasSurface } from '../shared/canvas'
-import { easeInOutCubic, easeOutCubic, lerp, progress } from '../shared/easing'
+import { easeOutCubic, lerp, progress } from '../shared/easing'
 import { onReducedMotionChange, prefersReducedMotion } from '../shared/reducedMotion'
-import { TimerGroup } from '../shared/timers'
+import { drawStardust } from '../shared/stardust'
 import { onThemeChange, readTokens } from '../shared/tokens'
-import { drawIdle } from './draw'
 import { createIdleTracker } from './idleTracker'
-
-export type IdleStyle = 'auto' | 'rays' | 'orb'
 
 export interface IdleSpinnerOptions {
   /** 进入待机的等待时间，默认 8000 ms */
   idleAfter?: number
-  /** 两种样式自动互换的间隔，默认 30000 ms */
-  switchEvery?: number
-  /** 'auto' 自动轮换；'rays' / 'orb' 固定（如 AI 语音页固定光球） */
-  style?: IdleStyle
   onIdle?: () => void
   onActive?: () => void
 }
@@ -36,7 +30,6 @@ export interface IdleSpinner {
 }
 
 const FADE_MS = 400
-const MORPH_MS = 800
 const TURNS_PER_SECOND = 0.35
 
 interface Tween {
@@ -52,8 +45,6 @@ function tweenValue(tween: Tween, t: number): number {
 }
 
 export function createIdleSpinner(canvas: HTMLCanvasElement, options: IdleSpinnerOptions = {}): IdleSpinner {
-  const style = options.style ?? 'auto'
-  const switchEvery = options.switchEvery ?? 30_000
   const surface = createCanvasSurface(canvas, {
     observe: canvas.parentElement ?? canvas,
     onResize: () => {
@@ -62,32 +53,29 @@ export function createIdleSpinner(canvas: HTMLCanvasElement, options: IdleSpinne
   })
   canvas.style.pointerEvents = 'none'
 
-  const timers = new TimerGroup()
   let tokens = readTokens()
   let reduced = prefersReducedMotion()
   let visible = false
   let looping = false
   let offFrame: (() => void) | null = null
 
-  // 动画时间（毫秒），只在循环运行时前进；rotation 跨样式共用、不重置
+  // 动画时间（毫秒），只在循环运行时前进；旋转角跨多次出现累计、不重置
   let clock = 0
   let rotation = 0
   let fade: Tween = { from: 0, to: 0, start: 0, duration: FADE_MS, ease: easeOutCubic }
-  let morph: Tween = { from: 0, to: 0, start: 0, duration: MORPH_MS, ease: easeInOutCubic }
 
   function paint(): void {
     const size = Math.min(surface.width, surface.height)
+    surface.clear()
+    const view = { cx: size / 2, cy: size / 2, R: size * 0.4 }
     if (reduced) {
-      // 减少动效：不轮换、不转动，只显示静止的射线
-      drawIdle(surface.ctx, size, tokens, { rotation: -Math.PI / 2, time: Math.PI / 6, morph: 0, alpha: visible ? 1 : 0 })
+      // 减少动效：不转动、不闪烁，只显示一帧静止的星尘光球
+      if (visible) drawStardust(surface.ctx, tokens, { ...view, rotation: -Math.PI / 4, time: 0, scale: 1 }, 1)
       return
     }
-    drawIdle(surface.ctx, size, tokens, {
-      rotation,
-      time: clock / 1000,
-      morph: tweenValue(morph, clock),
-      alpha: tweenValue(fade, clock),
-    })
+    const alpha = tweenValue(fade, clock)
+    // 出现时从 80% 放大到原大，消失时反过来
+    drawStardust(surface.ctx, tokens, { ...view, rotation, time: clock / 1000, scale: 0.8 + 0.2 * alpha }, alpha)
   }
 
   function startLoop(): void {
@@ -109,37 +97,21 @@ export function createIdleSpinner(canvas: HTMLCanvasElement, options: IdleSpinne
     surface.clear()
   }
 
-  function scheduleSwitch(): void {
-    if (style !== 'auto' || reduced) return
-    timers.after(switchEvery, () => {
-      const current = tweenValue(morph, clock)
-      morph = { ...morph, from: current, to: morph.to === 0 ? 1 : 0, start: clock }
-      scheduleSwitch()
-    })
-  }
-
   function show(): void {
     if (visible) return
     visible = true
-    timers.clear()
-    // 完全隐藏后再出现：从初始样式开始；淡出到一半又被叫回来：保持当前画面，避免跳变
-    if (reduced || tweenValue(fade, clock) === 0) {
-      const initial = style === 'orb' ? 1 : 0
-      morph = { ...morph, from: initial, to: initial, start: clock }
-    }
     if (reduced) {
       paint()
       return
     }
+    // 淡出到一半又被叫回来：从当前透明度接着淡入，避免跳变
     fade = { ...fade, from: tweenValue(fade, clock), to: 1, start: clock }
     startLoop()
-    scheduleSwitch()
   }
 
   function hide(): void {
     if (!visible) return
     visible = false
-    timers.clear()
     // 页面在后台时直接清掉，不留到回前台再播淡出
     if (reduced || document.hidden) {
       stopLoop()
@@ -171,7 +143,6 @@ export function createIdleSpinner(canvas: HTMLCanvasElement, options: IdleSpinne
     const wasVisible = visible
     // 按新模式重新进入当前状态
     visible = false
-    timers.clear()
     stopLoop()
     reduced = value
     fade = { ...fade, from: 0, to: 0, start: clock }
@@ -189,7 +160,6 @@ export function createIdleSpinner(canvas: HTMLCanvasElement, options: IdleSpinne
     },
     destroy() {
       tracker.destroy()
-      timers.clear()
       stopLoop()
       offTheme()
       offReduced()

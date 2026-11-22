@@ -1,11 +1,11 @@
 // 启动动画（动画 2）的时间轴（指南 §5.1），纯函数：给定时间，算出每一层的进度。
 //
-// 0 – 0.8 s    中心光标闪烁两次
-// 0.8 – 1.7 s  约 60 个粒子从四周聚拢成半径 24 px 的旋转光环
-// 2.1 – 2.9 s  光环展开，粒子排到胶囊形搜索框轮廓上
+// 0 – 0.8 s    中心闪亮两次（原指南为光标闪烁；现为星尘光球的核心，见 launchAnimation.ts）
+// 0.8 – 1.7 s  星尘从四周聚拢成旋转的光球（原指南为约 60 个粒子聚成半径 24 px 的光环）
+// 2.1 – 2.9 s  光球展开，星尘排到胶囊形搜索框轮廓上
 // 2.8 – 3.2 s  描边和放大镜图标淡入
 // 3.1 s 起     逐字打出占位文字（每秒 10 字）
-// 结束         切换到真实输入框并聚焦
+// 结束         切换到真实输入框（用户跳过时聚焦）
 import { easeInOutCubic, easeOutCubic, progress } from '../shared/easing'
 
 export const LAUNCH_TIMING = {
@@ -22,11 +22,8 @@ export const LAUNCH_TIMING = {
   hold: 250,
 }
 
-export const PARTICLE_COUNT = 60
-export const RING_RADIUS = 24
-
 export interface LaunchFrame {
-  /** 光标透明度 0–1（只在 0–0.8 s） */
+  /** 中心闪亮的透明度 0–1（只在 0–0.8 s） */
   cursor: number
   /** 聚拢进度（已缓出） */
   gather: number
