@@ -18,6 +18,7 @@ import { controlsFrom, type ScanLoaderHandle } from '../features/search-motion/s
 import type { ScanPhase } from '../features/search-motion/scan-loader/machine'
 import ScanLoader from '../features/search-motion/scan-loader/ScanLoader.vue'
 import { createSearchSession, SearchTimeoutError } from '../features/search-motion/scan-loader/searchSession'
+import { m } from '../i18n'
 import {
   buildSearchRequest,
   cellText,
@@ -43,12 +44,13 @@ const route = useRoute()
 const router = useRouter()
 
 const query = ref(typeof route.query.q === 'string' ? route.query.q : '')
-// 占位文字保持简短：启动动画逐字打出（每秒 10 字），太长会拖长动画；各通道的说明在下方引导区
-const PLACEHOLDER = '输入关键词，或描述想找的图片'
+// 占位文字保持简短：启动动画逐字打出（每秒 10 字），太长会拖长动画；各通道的说明在下方引导区。
+// 随界面语言变化；启动动画每一轮开播时取当前语言的文字
+const placeholder = () => m().search.placeholder
 
 // 启动动画（search-motion）：会话内第一次进检索页时播放；地址栏带着检索词进来时不播
 const searchInput = ref<{ $el?: unknown } | null>(null)
-useLaunchAnimation(searchInput, { placeholder: PLACEHOLDER, hasValue: () => query.value !== '' })
+useLaunchAnimation(searchInput, { placeholder, hasValue: () => query.value !== '' })
 // 四个开关、三个通道（utils/channels.ts）。图像通道默认关闭（与后端配置一致，D36）；
 // 开关放进地址栏，刷新后保持
 const selection = reactive(selectionFromQuery(route.query))
@@ -69,12 +71,6 @@ const degraded = computed(() => channels.value.filter((c) => c.status === 'unava
 
 type ClipState = 'checking' | 'ok' | 'unavailable' | 'unknown'
 
-const CLIP_TEXT: Record<ClipState, string> = {
-  checking: 'CLIP 服务：检查中',
-  ok: 'CLIP 服务在线',
-  unavailable: 'CLIP 服务不可用，图像通道会被跳过',
-  unknown: 'CLIP 服务状态未知',
-}
 
 const clip = ref<ClipState>('checking')
 
@@ -206,8 +202,8 @@ onBeforeUnmount(() => {
 <template>
   <div class="page-head">
     <div>
-      <h1 class="page-title">检索</h1>
-      <p class="page-desc">在文件名、正文、OCR 文字和图片内容中查找你有权访问的文件</p>
+      <h1 class="page-title">{{ m().search.title }}</h1>
+      <p class="page-desc">{{ m().search.desc }}</p>
     </div>
   </div>
 
@@ -219,45 +215,45 @@ onBeforeUnmount(() => {
         class="sm-launch-target search-input"
         size="large"
         clearable
-        :placeholder="PLACEHOLDER"
+        :placeholder="placeholder()"
         maxlength="256"
       >
         <template #prefix><AppIcon name="search" /></template>
       </el-input>
-      <el-button type="primary" size="large" round native-type="submit" :loading="loading">检索</el-button>
+      <el-button type="primary" size="large" round native-type="submit" :loading="loading">{{ m().search.submit }}</el-button>
     </form>
 
-    <div class="channels" role="group" aria-label="检索通道">
+    <div class="channels" role="group" :aria-label="m().search.channelsAria">
       <div class="channel-group">
-        <span class="group-label">文件名通道</span>
+        <span class="group-label">{{ m().search.groupMeta }}</span>
         <div class="group-items">
-          <el-checkbox v-model="selection.meta" border>文件名/标签</el-checkbox>
+          <el-checkbox v-model="selection.meta" border>{{ m().search.optMeta }}</el-checkbox>
         </div>
       </div>
       <div class="channel-group">
-        <span class="group-label">文字通道</span>
+        <span class="group-label">{{ m().search.groupText }}</span>
         <div class="group-items">
-          <el-checkbox v-model="selection.body" border>正文</el-checkbox>
-          <el-checkbox v-model="selection.ocr" border>OCR 文字</el-checkbox>
+          <el-checkbox v-model="selection.body" border>{{ m().search.optBody }}</el-checkbox>
+          <el-checkbox v-model="selection.ocr" border>{{ m().search.optOcr }}</el-checkbox>
         </div>
       </div>
       <div class="channel-group">
-        <span class="group-label">图像通道</span>
+        <span class="group-label">{{ m().search.groupImage }}</span>
         <div class="group-items">
-          <el-checkbox v-model="selection.image" border>图像语义（CLIP）</el-checkbox>
-          <span class="clip-state" :class="`clip-${clip}`">{{ CLIP_TEXT[clip] }}</span>
+          <el-checkbox v-model="selection.image" border>{{ m().search.optImage }}</el-checkbox>
+          <span class="clip-state" :class="`clip-${clip}`">{{ m().search.clip[clip] }}</span>
         </div>
       </div>
     </div>
-    <p v-if="noChannel" class="channels-error">至少选择一个检索通道</p>
-    <p v-else class="channels-hint">开启的通道各自检索，再按 RRF 合并成一个排序；检索过之后改动开关会自动重新检索。</p>
+    <p v-if="noChannel" class="channels-error">{{ m().search.noChannel }}</p>
+    <p v-else class="channels-hint">{{ m().search.channelsHint }}</p>
   </el-card>
 
   <el-alert
     v-if="failure"
     :type="failure.unavailable ? 'error' : 'warning'"
-    :title="failure.unavailable ? '检索服务暂时不可用' : '检索失败'"
-    :description="failure.unavailable ? '这不是“没有搜到”：检索服务出了故障，请稍后重试。' : failure.message"
+    :title="failure.unavailable ? m().search.unavailableTitle : m().search.failedTitle"
+    :description="failure.unavailable ? m().search.unavailableDesc : failure.message"
     show-icon
     :closable="false"
     class="notice"
@@ -278,14 +274,11 @@ onBeforeUnmount(() => {
 
     <div v-if="hits === null && failure === null && !loading" class="guide">
       <div class="guide-text">
-        <p class="guide-title">输入关键词开始检索</p>
+        <p class="guide-title">{{ m().search.guideTitle }}</p>
         <ul class="guide-list">
-          <li>文件名/标签：匹配文件名和上传时填写的标签</li>
-          <li>正文：Word、PDF、Excel 里抽取出的文字</li>
-          <li>OCR 文字：扫描页和图片里识别出的文字</li>
-          <li>图像语义（CLIP）：用一句话描述画面，能找到图上没有文字的图片，例如“机房里的机柜”</li>
+          <li v-for="line in m().search.guide" :key="line">{{ line }}</li>
         </ul>
-        <p class="guide-foot">每条结果右侧会显示它在各通道的名次和 RRF 融合分。</p>
+        <p class="guide-foot">{{ m().search.guideFoot }}</p>
       </div>
       <!-- 待机动画（search-motion）：8 秒无操作时出现在引导区右侧空白处，任意操作淡出 -->
       <IdleSpinner class="guide-idle" />
@@ -293,23 +286,23 @@ onBeforeUnmount(() => {
 
     <template v-else-if="hits !== null">
       <p class="summary">
-        <span>共 {{ hits.length }} 个文件，用时 {{ tookMs }} 毫秒</span>
+        <span>{{ m().search.summary(hits.length, tookMs) }}</span>
         <span v-for="c in channels" :key="c.channel">{{ CHANNEL_LABEL[c.channel] }}：{{ channelStatusText(c) }}</span>
       </p>
-      <el-empty v-if="hits.length === 0" description="没有找到匹配的文件。换个关键词，或打开更多检索通道试试" />
+      <el-empty v-if="hits.length === 0" :description="m().search.empty" />
       <ul v-else class="hits">
         <li v-for="(hit, index) in hits" :key="hit.document.id" class="hit">
           <span class="hit-rank">{{ index + 1 }}</span>
           <div
             v-if="thumbnails[hit.document.id]"
             class="hit-thumb"
-            :title="`打开 ${hit.document.filename}`"
+            :title="m().search.open(hit.document.filename)"
             @click="open(hit)"
           >
             <img v-if="thumbUrl(hit.document.id)" :src="thumbUrl(hit.document.id)" :alt="hit.document.filename" />
-            <span v-else-if="thumbnails[hit.document.id].status === 'loading'" class="thumb-note">加载中</span>
-            <span v-else-if="thumbnails[hit.document.id].status === 'skipped'" class="thumb-note">图片较大<br />点击查看</span>
-            <span v-else class="thumb-note">无法显示</span>
+            <span v-else-if="thumbnails[hit.document.id].status === 'loading'" class="thumb-note">{{ m().search.thumbLoading }}</span>
+            <span v-else-if="thumbnails[hit.document.id].status === 'skipped'" class="thumb-note">{{ m().search.thumbLarge1 }}<br />{{ m().search.thumbLarge2 }}</span>
+            <span v-else class="thumb-note">{{ m().search.thumbError }}</span>
           </div>
           <FileTypeBadge v-else :mime-type="hit.document.mime_type" size="large" class="hit-badge" @click="open(hit)" />
 
@@ -340,8 +333,8 @@ onBeforeUnmount(() => {
                 <span class="cell-value">{{ cellText(cell) }}</span>
               </div>
             </div>
-            <div class="fused" title="RRF 融合分：命中的各通道 1/(k + 名次) 之和，k 的取值见后端配置">
-              融合分<strong>{{ formatScore(hit.score) }}</strong>
+            <div class="fused" :title="m().search.fusedTitle">
+              {{ m().search.fused }}<strong>{{ formatScore(hit.score) }}</strong>
             </div>
           </div>
         </li>

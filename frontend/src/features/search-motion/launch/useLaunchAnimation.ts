@@ -13,7 +13,8 @@ import { createLaunchLoop, type LaunchLoop } from './loop'
 import './launch.css'
 
 export interface UseLaunchOptions {
-  placeholder: string
+  /** 逐字打出的占位文字；传函数时每一轮开播前取一次（界面语言切换后下一轮就用新语言） */
+  placeholder: string | (() => string)
   /** 输入框有内容（用户输入了，或从地址栏恢复了检索词）时不播 */
   hasValue?: () => boolean
   onFinish?: (reason: LaunchEndReason) => void
@@ -49,7 +50,7 @@ export function useLaunchAnimation(inputRef: Ref<{ $el?: unknown } | null>, opti
       const current = createLaunchLoop({
         play: (onEnd) =>
           playLaunch(target, {
-            placeholder: options.placeholder,
+            placeholder: typeof options.placeholder === 'function' ? options.placeholder() : options.placeholder,
             onFinish: (reason) => {
               onEnd(reason)
               options.onFinish?.(reason)

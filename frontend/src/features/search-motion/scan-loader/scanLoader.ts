@@ -216,6 +216,8 @@ export function createScanLoader<T>(host: HTMLElement, options: ScanLoaderOption
       list.classList.add('is-dim')
       dispatch({ type: 'error' })
       setStatus(message ?? SCAN_TEXT.failed)
+      // 每次出错时重新取文字：界面语言可能在创建之后切换过
+      retry.textContent = SCAN_TEXT.retry
       errorBox.hidden = !options.onRetry
     },
     cancel() {

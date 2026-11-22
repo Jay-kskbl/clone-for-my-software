@@ -6,6 +6,7 @@
 // 动效的 Canvas 通过 tokens.ts 的 MutationObserver 监听 <html> 的 class / style，换主题后自动重新读色。
 //
 // 选择保存在本机浏览器（localStorage，读写失败就用默认值，不报错），只影响这个浏览器。
+import { m } from '../../i18n'
 
 export type ThemeMode = 'light' | 'dark' | 'system'
 
@@ -16,7 +17,8 @@ export interface ThemeSettings {
 }
 
 export interface ThemePreset {
-  id: string
+  id: 'blue' | 'teal' | 'violet' | 'orange' | 'rose' | 'green'
+  /** 中文名（备查）；界面上显示的名字按当前语言取：m().theme.presets[id] */
   name: string
   primary: string
 }
@@ -98,9 +100,9 @@ export function paletteFor(primary: string, dark: boolean): Record<string, strin
 export function contrastWarning(primary: string, dark: boolean): string | null {
   const vars = paletteFor(primary, dark)
   const strong = contrast(vars['--el-color-primary-dark-2'], dark ? DARK_BG : WHITE)
-  if (strong < 3) return `这个颜色在${dark ? '深色' : '浅色'}底上太淡（对比度 ${strong.toFixed(1)}:1，低于 3:1），图形可能看不清`
+  if (strong < 3) return m().theme.warnFaint(dark, strong.toFixed(1))
   const onPrimary = contrast(WHITE, primary)
-  if (onPrimary < 2.5) return `按钮上的白字看不清（对比度 ${onPrimary.toFixed(1)}:1），建议选深一点的颜色`
+  if (onPrimary < 2.5) return m().theme.warnWhite(onPrimary.toFixed(1))
   return null
 }
 

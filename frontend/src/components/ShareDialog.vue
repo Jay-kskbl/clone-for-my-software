@@ -5,6 +5,7 @@ import { ref, watch } from 'vue'
 import { errorMessage } from '../api/client'
 import { addShare, listShares, removeShare } from '../api/documents'
 import type { DocumentItem, Share } from '../api/types'
+import { m } from '../i18n'
 import { formatTime } from '../utils/format'
 
 const props = defineProps<{ document: DocumentItem | null }>()
@@ -44,7 +45,7 @@ async function onAdd() {
   try {
     await addShare(props.document.id, name)
     username.value = ''
-    ElMessage.success(`已共享给 ${name}`)
+    ElMessage.success(m().share.added(name))
     await load(props.document.id)
   } catch (error) {
     ElMessage.error(errorMessage(error))
@@ -57,7 +58,7 @@ async function onRemove(share: Share) {
   if (!props.document) return
   try {
     await removeShare(props.document.id, share.user.id)
-    ElMessage.success(`已取消对 ${share.user.username} 的共享`)
+    ElMessage.success(m().share.removed(share.user.username))
     await load(props.document.id)
   } catch (error) {
     ElMessage.error(errorMessage(error))
@@ -68,25 +69,25 @@ async function onRemove(share: Share) {
 <template>
   <el-dialog
     :model-value="document !== null"
-    :title="document ? `共享：${document.filename}` : ''"
+    :title="document ? m().share.title(document.filename) : ''"
     width="min(520px, 92vw)"
     @close="emit('close')"
   >
-    <p class="share-hint">被共享的用户可以查看、下载和检索这个文件，不能删除或再共享给别人。</p>
+    <p class="share-hint">{{ m().share.hint }}</p>
     <el-form class="share-add" @submit.prevent="onAdd">
-      <el-input v-model="username" placeholder="输入对方的用户名" />
+      <el-input v-model="username" :placeholder="m().share.placeholder" />
       <el-button type="primary" native-type="submit" :loading="adding" :disabled="!username.trim()">
-        共享
+        {{ m().share.submit }}
       </el-button>
     </el-form>
-    <el-table v-loading="loading" :data="shares" empty-text="还没有共享给任何人">
-      <el-table-column label="用户" prop="user.username" />
-      <el-table-column label="共享时间">
+    <el-table v-loading="loading" :data="shares" :empty-text="m().share.empty">
+      <el-table-column :label="m().share.colUser" prop="user.username" />
+      <el-table-column :label="m().share.colTime">
         <template #default="{ row }: { row: Share }">{{ formatTime(row.created_at) }}</template>
       </el-table-column>
-      <el-table-column label="操作" width="100">
+      <el-table-column :label="m().share.colActions" width="100">
         <template #default="{ row }: { row: Share }">
-          <el-button link type="danger" @click="onRemove(row)">取消共享</el-button>
+          <el-button link type="danger" @click="onRemove(row)">{{ m().share.remove }}</el-button>
         </template>
       </el-table-column>
     </el-table>

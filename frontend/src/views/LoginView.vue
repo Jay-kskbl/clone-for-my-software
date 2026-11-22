@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import * as authApi from '../api/auth'
 import { errorMessage } from '../api/client'
 import { login } from '../auth'
 import StardustLogo from '../features/search-motion/logo/StardustLogo.vue'
+import { m } from '../i18n'
 
 const router = useRouter()
 const route = useRoute()
@@ -19,24 +20,25 @@ const form = reactive({ username: '', password: '' })
 
 // 注册时的规则与后端一致（docs/api.md §4.2）。这里只是为了尽早提示，后端仍会再校验一次。
 // 登录时不检查格式：不对就是登录失败。
-const registerRules: FormRules = {
+// 提示文字随界面语言，所以写成 computed
+const registerRules = computed<FormRules>(() => ({
   username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { required: true, message: m().login.usernameRequired, trigger: 'blur' },
     {
       pattern: /^[A-Za-z0-9_.-]{3,32}$/,
-      message: '3–32 个字符，只能包含英文字母、数字、下划线、点、连字符',
+      message: m().login.usernamePattern,
       trigger: 'blur',
     },
   ],
   password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 8, max: 128, message: '8–128 个字符', trigger: 'blur' },
+    { required: true, message: m().login.passwordRequired, trigger: 'blur' },
+    { min: 8, max: 128, message: m().login.passwordLength, trigger: 'blur' },
   ],
-}
-const loginRules: FormRules = {
-  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
-}
+}))
+const loginRules = computed<FormRules>(() => ({
+  username: [{ required: true, message: m().login.usernameRequired, trigger: 'blur' }],
+  password: [{ required: true, message: m().login.passwordRequired, trigger: 'blur' }],
+}))
 
 function switchMode() {
   mode.value = mode.value === 'login' ? 'register' : 'login'
@@ -49,7 +51,7 @@ async function onSubmit() {
   try {
     if (mode.value === 'register') {
       await authApi.register(form.username, form.password)
-      ElMessage.success('注册成功，已自动登录')
+      ElMessage.success(m().login.registered)
     }
     await login(form.username, form.password)
     const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
@@ -68,22 +70,23 @@ async function onSubmit() {
     <div class="login-brand">
       <!-- logo：星尘光球中间放文档图标（search-motion），一直转动 -->
       <StardustLogo class="login-logo" />
-      <h1 class="login-title">智能文档管理系统</h1>
-      <p class="login-desc">多格式文档管理 · 全文检索 · OCR 文字检索 · 图文语义检索</p>
+      <h1 class="login-title">{{ m().app.title }}</h1>
+      <p class="login-desc">{{ m().login.desc }}</p>
     </div>
     <el-card class="login-card" shadow="never">
-      <template #header>{{ mode === 'login' ? '登录' : '注册新用户' }}</template>
+      <template #header>{{ mode === 'login' ? m().login.loginTitle : m().login.registerTitle }}</template>
       <el-form
         ref="formRef"
         :model="form"
         :rules="mode === 'login' ? loginRules : registerRules"
+        :validate-on-rule-change="false"
         label-position="top"
         @submit.prevent="onSubmit"
       >
-        <el-form-item label="用户名" prop="username">
+        <el-form-item :label="m().login.username" prop="username">
           <el-input v-model.trim="form.username" autocomplete="username" />
         </el-form-item>
-        <el-form-item label="密码" prop="password">
+        <el-form-item :label="m().login.password" prop="password">
           <el-input
             v-model="form.password"
             type="password"
@@ -92,12 +95,12 @@ async function onSubmit() {
           />
         </el-form-item>
         <el-button type="primary" native-type="submit" :loading="submitting" class="login-submit">
-          {{ mode === 'login' ? '登录' : '注册并登录' }}
+          {{ mode === 'login' ? m().login.submitLogin : m().login.submitRegister }}
         </el-button>
       </el-form>
       <div class="login-switch">
         <el-button link type="primary" @click="switchMode">
-          {{ mode === 'login' ? '没有账号？注册' : '已有账号？登录' }}
+          {{ mode === 'login' ? m().login.toRegister : m().login.toLogin }}
         </el-button>
       </div>
     </el-card>

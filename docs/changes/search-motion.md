@@ -18,7 +18,8 @@
 - 登录页 logo 的光圈 10 秒一张一缩，单独一个提交（`f4e4c46`），见第 14 节
 - 光圈缩放幅度加大，单独一个提交（`70c93c7`），见第 15 节
 - 系统整体配色调节，单独一个提交（`91a82e1`），见第 16 节
-- 光圈放大时向左右拉长，单独一个提交，见第 17 节
+- 光圈放大时向左右拉长，单独一个提交（`2a3f4a6`），见第 17 节
+- 界面语言切换（中文 / English），单独一个提交，见第 18 节
 
 ------------------------------------------------------------------------
 
@@ -425,3 +426,54 @@ Barry 要求：放大缩小的程度不变，左右比例的变化更大，左�
 验证：
 - `vue-tsc --noEmit` 通过。
 - 浏览器打开 `/login`，在约 2.3 s、4.7 s、9.5 s 截图：分别是中间状态、最大（宽椭圆，左右铺开）、最小（贴住中间的圆）；循环正常。
+
+## 18. 界面语言切换：中文 / English（2026-11-22）
+
+Barry 要求增加一个切换语言的模块，一个英语、一个中文，放在配色按钮旁边。
+
+做法：项目里没有 i18n 库，按“不安装新依赖”的规定，自己写了一个最小实现。
+- `locale` 是一个 ref，`m()` 返回当前语言的文字表。模板和 computed 里调用 `m()`，语言一变就自动刷新。
+- 原来写成常量表的标签（如 `STATUS_LABEL`）用 `translated()` 包一层，取值时才按当前语言生成，调用方的写法不用改。
+
+### 新增
+
+| 文件 | 内容 |
+|---|---|
+| `src/i18n/messages.ts` | 中文 `zh` 与英文 `en` 两套文字，共约 200 条，按页面分组：app、login、documents、preview、share、pdf、format、locator、channels、search、scan、api、theme、locale。`en` 的类型就是 `zh` 的结构，少一条或参数对不上，类型检查都会报错 |
+| `src/i18n/index.ts` | `locale`、`m()`、`translated()`、`loadLocale` / `saveLocale`（localStorage，读写失败一律用中文），以及 `initLocale()`：同步 `<html lang>` 和页面标题，切换时保存 |
+| `src/features/theme/LocaleSwitch.vue` | 右下角“中 \| EN”胶囊按钮，点一下立即切换，当前语言高亮（主色） |
+| `tests/i18n.test.ts`（5 项） | 两套文字的键、类型、数组长度完全一致；英文里没有漏下的中文；`m()` / `translated()` 随语言切换；状态、位置、名次、扫描文案跟着切换；保存读取（含非法值、存储抛异常） |
+
+### 修改
+
+| 文件 | 修改 |
+|---|---|
+| `App.vue` | 侧栏标题、导航、管理员标签、退出登录改用 `m()`；右下角新增 `.floating-tools` 容器，放语言切换和配色按钮 |
+| `views/LoginView.vue` | 全部文字；校验规则改成 computed；表单加 `:validate-on-rule-change="false"`，否则切换语言时会把空表单当场校验一遍，冒出一排红字（浏览器实测发现后修复） |
+| `views/DocumentsView.vue`、`views/PreviewView.vue`、`views/SearchView.vue`、`components/ShareDialog.vue`、`components/PdfViewer.vue` | 全部界面文字 |
+| `utils/format.ts`、`utils/locator.ts`、`utils/channels.ts` | 状态、来源、类型、位置、通道、名次等文字改为按当前语言生成 |
+| `api/client.ts` | 前端自己生成的错误提示（连不上服务器、HTTP 错误等） |
+| `features/search-motion/messages.ts` | 扫描动画、超时文案改为从 i18n 取 |
+| `features/search-motion/scan-loader/scanLoader.ts` | “重试”按钮文字在每次出错时重新取 |
+| `features/search-motion/launch/useLaunchAnimation.ts` | `placeholder` 可以传函数，每一轮开播前取一次，切换语言后下一轮就打新语言的占位文字 |
+| `features/theme/theme.ts`、`ThemePicker.vue` | 配色面板文字、预设色名、对比度提示；面板改为相对按钮定位（位置由 App.vue 的容器决定） |
+| `element.ts` | Element Plus 的全局语言改为 computed（`zh-cn` / `en`），分页、确认框按钮、空表格等自带文字跟着切换（用的是已安装的 element-plus 自带的语言包，没有新增依赖） |
+| `main.ts` | 挂载前调用 `initLocale()` |
+
+### 没有翻译的部分
+
+- **后端返回的错误信息**（如登录失败的原因）：来自后端，仍是中文。
+- **演示页 `/motion-lab` 自己的按钮和说明**：自测用，仍是中文；页面里的扫描动画、启动动画文字会跟着切换。
+- **代码注释**：不翻译。
+
+### 验证
+
+- `vue-tsc --noEmit` 通过；`vitest` 16 个文件 145 项通过；`npm run build` 成功。
+- 浏览器实测：
+  - `/login` 在中文和英文之间来回切换，标题、说明、表单、按钮、页面标题（浏览器标签）都正确，没有多余的校验红字；
+  - 配色面板英文显示正常；
+  - `/motion-lab` 在英文下，扫描状态依次显示 “Opening files…”“Reading file 1 of 6”……；`<html lang>` 为 `en`；
+  - 刷新后语言保留；
+  - 演示完已清掉浏览器面板里保存的语言。
+- 登录后的页面（文件列表、检索、预览、共享对话框、PDF 查看器）的英文显示需要后端，**未测试（Not Tested）**。只做了代码复核和类型检查：英文文字表的结构由类型检查保证完整，模板中的中文已全部替换（只剩注释）。
+- 英文长度比中文长，表格列宽、按钮等可能出现换行或截断，同样需要登录后实际查看。

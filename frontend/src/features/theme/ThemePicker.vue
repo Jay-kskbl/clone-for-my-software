@@ -1,9 +1,10 @@
 <script setup lang="ts">
 // 配色面板（Barry 2026-11-22，演示用）：页面右下角一个圆形按钮，点开选主色（预设或自定义）和浅色 / 深色 / 跟随系统。
-// 所有页面都有（App.vue），包括登录页。点面板外面或按 Esc 关闭。
+// 所有页面都有（App.vue 右下角，与语言切换放在一起），包括登录页。点面板外面或按 Esc 关闭。
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import AppIcon from '../../components/AppIcon.vue'
+import { m } from '../../i18n'
 import { theme } from './store'
 import { contrastWarning, DEFAULT_THEME, resolveDark, THEME_PRESETS } from './theme'
 
@@ -12,6 +13,10 @@ const root = ref<HTMLElement | null>(null)
 
 const warning = computed(() => contrastWarning(theme.primary, resolveDark(theme.mode)))
 const isPreset = computed(() => THEME_PRESETS.some((p) => p.primary === theme.primary))
+const currentName = computed(() => {
+  const preset = THEME_PRESETS.find((p) => p.primary === theme.primary)
+  return preset ? m().theme.presets[preset.id] : m().theme.customName(theme.primary)
+})
 
 function reset() {
   theme.primary = DEFAULT_THEME.primary
@@ -38,10 +43,10 @@ onBeforeUnmount(() => {
 
 <template>
   <div ref="root" class="theme-picker">
-    <div v-if="open" id="theme-panel" class="panel" role="dialog" aria-label="系统配色">
-      <p class="panel-title">系统配色</p>
+    <div v-if="open" id="theme-panel" class="panel" role="dialog" :aria-label="m().theme.title">
+      <p class="panel-title">{{ m().theme.title }}</p>
 
-      <p class="label">主色</p>
+      <p class="label">{{ m().theme.primary }}</p>
       <div class="swatches">
         <button
           v-for="preset in THEME_PRESETS"
@@ -50,31 +55,31 @@ onBeforeUnmount(() => {
           class="swatch"
           :class="{ active: theme.primary === preset.primary }"
           :style="{ background: preset.primary }"
-          :title="preset.name"
-          :aria-label="preset.name"
+          :title="m().theme.presets[preset.id]"
+          :aria-label="m().theme.presets[preset.id]"
           :aria-pressed="theme.primary === preset.primary"
           @click="theme.primary = preset.primary"
         />
-        <label class="swatch custom" :class="{ active: !isPreset }" title="自定义颜色">
-          <input v-model="theme.primary" type="color" aria-label="自定义主色" />
+        <label class="swatch custom" :class="{ active: !isPreset }" :title="m().theme.custom">
+          <input v-model="theme.primary" type="color" :aria-label="m().theme.customAria" />
         </label>
       </div>
       <p class="names">
-        {{ THEME_PRESETS.find((p) => p.primary === theme.primary)?.name ?? `自定义 ${theme.primary}` }}
+        {{ currentName }}
       </p>
 
-      <p class="label">明暗</p>
+      <p class="label">{{ m().theme.mode }}</p>
       <el-radio-group v-model="theme.mode" size="small">
-        <el-radio-button value="light">浅色</el-radio-button>
-        <el-radio-button value="dark">深色</el-radio-button>
-        <el-radio-button value="system">跟随系统</el-radio-button>
+        <el-radio-button value="light">{{ m().theme.light }}</el-radio-button>
+        <el-radio-button value="dark">{{ m().theme.dark }}</el-radio-button>
+        <el-radio-button value="system">{{ m().theme.system }}</el-radio-button>
       </el-radio-group>
 
       <p v-if="warning" class="warning">{{ warning }}</p>
 
       <div class="foot">
-        <span class="hint">只保存在这个浏览器</span>
-        <el-button link type="primary" size="small" @click="reset">恢复默认</el-button>
+        <span class="hint">{{ m().theme.hint }}</span>
+        <el-button link type="primary" size="small" @click="reset">{{ m().theme.reset }}</el-button>
       </div>
     </div>
 
@@ -83,8 +88,8 @@ onBeforeUnmount(() => {
       class="toggle"
       :aria-expanded="open"
       aria-controls="theme-panel"
-      title="系统配色"
-      aria-label="系统配色"
+      :title="m().theme.title"
+      :aria-label="m().theme.title"
       @click="open = !open"
     >
       <AppIcon name="palette" :size="20" />
@@ -94,14 +99,14 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .theme-picker {
-  position: fixed;
-  right: 20px;
-  bottom: 20px;
-  z-index: 2000;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 10px;
+  position: relative;
+}
+
+/* 面板在按钮上方、右对齐（按钮在 App.vue 右下角的 .floating-tools 里） */
+.panel {
+  position: absolute;
+  right: 0;
+  bottom: 54px;
 }
 
 .toggle {
@@ -222,10 +227,4 @@ onBeforeUnmount(() => {
   font-size: 12px;
 }
 
-@media (max-width: 600px) {
-  .theme-picker {
-    right: 12px;
-    bottom: 12px;
-  }
-}
 </style>

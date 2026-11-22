@@ -1,4 +1,5 @@
 import type { Access, Status } from '../api/types'
+import { m, translated } from '../i18n'
 
 export function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
@@ -24,45 +25,39 @@ export function formatTime(iso: string): string {
 
 type TagType = 'info' | 'warning' | 'success' | 'danger'
 
-// 处理状态的中文说明与标签颜色（docs/api.md §5.1）
-export const STATUS_LABEL: Record<Status, { text: string; type: TagType }> = {
-  pending: { text: '等待处理', type: 'info' },
-  processing: { text: '处理中', type: 'warning' },
-  succeeded: { text: '处理成功', type: 'success' },
-  failed: { text: '处理失败', type: 'danger' },
-}
+// 处理状态的说明与标签颜色（docs/api.md §5.1）；文字随界面语言（src/i18n）
+export const STATUS_LABEL: Record<Status, { text: string; type: TagType }> = translated((msg) => ({
+  pending: { text: msg.format.status.pending, type: 'info' },
+  processing: { text: msg.format.status.processing, type: 'warning' },
+  succeeded: { text: msg.format.status.succeeded, type: 'success' },
+  failed: { text: msg.format.status.failed, type: 'danger' },
+}))
 
-export const ACCESS_LABEL: Record<Access, string> = {
-  owner: '我上传的',
-  shared: '共享给我的',
-  admin: '管理员可见',
-}
-
-const TYPE_LABEL: Record<string, string> = {
-  'application/pdf': 'PDF',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'Word',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'Excel',
-  'image/png': '图片（PNG）',
-  'image/jpeg': '图片（JPEG）',
-}
+export const ACCESS_LABEL: Record<Access, string> = translated((msg) => ({ ...msg.format.access }))
 
 export function formatType(mimeType: string): string {
-  return TYPE_LABEL[mimeType] ?? mimeType
+  const labels: Record<string, string> = {
+    'application/pdf': 'PDF',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'Word',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'Excel',
+    'image/png': m().format.typePng,
+    'image/jpeg': m().format.typeJpeg,
+  }
+  return labels[mimeType] ?? mimeType
 }
 
 export type BadgeTone = 'danger' | 'primary' | 'success' | 'warning' | 'info'
 
 // 文件类型色块上的短文字和颜色（components/FileTypeBadge.vue，T24s）
-const TYPE_BADGE: Record<string, { text: string; tone: BadgeTone }> = {
-  'application/pdf': { text: 'PDF', tone: 'danger' },
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': { text: 'DOC', tone: 'primary' },
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': { text: 'XLS', tone: 'success' },
-  'image/png': { text: '图片', tone: 'warning' },
-  'image/jpeg': { text: '图片', tone: 'warning' },
-}
-
 export function typeBadge(mimeType: string): { text: string; tone: BadgeTone } {
-  return TYPE_BADGE[mimeType] ?? { text: '文件', tone: 'info' }
+  const badges: Record<string, { text: string; tone: BadgeTone }> = {
+    'application/pdf': { text: 'PDF', tone: 'danger' },
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': { text: 'DOC', tone: 'primary' },
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': { text: 'XLS', tone: 'success' },
+    'image/png': { text: m().format.badgeImage, tone: 'warning' },
+    'image/jpeg': { text: m().format.badgeImage, tone: 'warning' },
+  }
+  return badges[mimeType] ?? { text: m().format.badgeFile, tone: 'info' }
 }
 
 /** 还没有处理完的文档：列表需要继续刷新它们的状态。 */

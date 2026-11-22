@@ -5,6 +5,7 @@ import App from './App.vue'
 import { logout } from './auth'
 import { installElementPlus } from './element'
 import { initTheme } from './features/theme/store'
+import { initLocale } from './i18n'
 import { router } from './router'
 // Element Plus 的暗色变量（只在 html.dark 时生效），系统配色的“深色”用它
 import 'element-plus/theme-chalk/dark/css-vars.css'
@@ -19,6 +20,8 @@ setUnauthenticatedHandler(() => {
 
 // 系统配色：挂载前先写到 <html> 上，首屏就是保存过的配色
 initTheme()
+// 界面语言：同步 <html lang> 和页面标题，之后切换时保存
+initLocale()
 
 // Element Plus 按需注册（T24p，见 element.ts）
 const app = createApp(App).use(router)

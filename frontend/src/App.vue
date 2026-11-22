@@ -6,7 +6,9 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { auth, logout } from './auth'
 import AppIcon from './components/AppIcon.vue'
+import LocaleSwitch from './features/theme/LocaleSwitch.vue'
 import ThemePicker from './features/theme/ThemePicker.vue'
+import { m } from './i18n'
 
 const route = useRoute()
 const router = useRouter()
@@ -27,27 +29,27 @@ function onLogout() {
     <aside class="sidebar">
       <div class="brand">
         <span class="app-logo"><AppIcon name="docs" :size="20" /></span>
-        <span class="brand-text">智能文档管理系统</span>
+        <span class="brand-text">{{ m().app.title }}</span>
       </div>
       <nav class="nav">
         <router-link :to="{ name: 'documents' }" class="nav-item" :class="{ active: activeNav === 'documents' }">
           <AppIcon name="folder" />
-          文件
+          {{ m().app.nav.documents }}
         </router-link>
         <router-link :to="{ name: 'search' }" class="nav-item" :class="{ active: activeNav === 'search' }">
           <AppIcon name="search" />
-          检索
+          {{ m().app.nav.search }}
         </router-link>
       </nav>
       <div class="user">
         <div class="user-name">
           <span class="avatar">{{ initial }}</span>
           <span class="user-text" :title="auth.user?.username">{{ auth.user?.username }}</span>
-          <el-tag v-if="auth.user?.role === 'admin'" size="small" type="warning">管理员</el-tag>
+          <el-tag v-if="auth.user?.role === 'admin'" size="small" type="warning">{{ m().app.admin }}</el-tag>
         </div>
         <el-button link class="logout" @click="onLogout">
           <AppIcon name="logout" :size="16" />
-          退出登录
+          {{ m().app.logout }}
         </el-button>
       </div>
     </aside>
@@ -58,11 +60,31 @@ function onLogout() {
     </main>
   </div>
   <router-view v-else />
-  <!-- 系统配色面板（演示用），所有页面都有 -->
-  <ThemePicker />
+  <!-- 右下角的演示工具：语言切换 + 系统配色面板，所有页面都有 -->
+  <div class="floating-tools">
+    <LocaleSwitch />
+    <ThemePicker />
+  </div>
 </template>
 
 <style scoped>
+.floating-tools {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 2000;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+@media (max-width: 600px) {
+  .floating-tools {
+    right: 12px;
+    bottom: 12px;
+  }
+}
+
 .shell {
   display: grid;
   grid-template-columns: var(--app-sidebar-width) minmax(0, 1fr);

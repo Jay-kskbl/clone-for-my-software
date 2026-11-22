@@ -15,6 +15,7 @@
 | `idle-spinner/` | 动画 1：`idleTracker`（待机计时）、`idleSpinner`（核心）、`IdleSpinner.vue` |
 | `logo/` | `StardustLogo.vue`：登录页 logo，星尘光球中间放文档图标，一直转动 |
 | （不在本目录）`src/features/theme/` | 系统配色：预设主色、浅色 / 深色 / 跟随系统、自定义颜色；右下角面板 `ThemePicker.vue`。动效颜色跟着变 |
+| （不在本目录）`src/i18n/` + `src/features/theme/LocaleSwitch.vue` | 界面语言切换（中文 / English），右下角与配色按钮放在一起；动效文字（`messages.ts`）从这里取 |
 | `lab/` | 演示页 `/motion-lab`（`MotionLabView.vue`、`IdleLabPanel.vue`），模拟请求，自测和设计走查用 |
 
 每个动效都分成“框架无关的核心 + 很薄的 Vue 适配层”，核心可以脱离 Vue 单独测试。单元测试在 `frontend/tests/search-motion/`。
