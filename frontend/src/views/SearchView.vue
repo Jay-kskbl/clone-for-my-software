@@ -43,8 +43,8 @@ const route = useRoute()
 const router = useRouter()
 
 const query = ref(typeof route.query.q === 'string' ? route.query.q : '')
-const PLACEHOLDER =
-  '输入关键词，检索文件名、标签、正文和图片中识别出的文字；开启图像语义检索后也可以描述图片内容'
+// 占位文字保持简短：启动动画逐字打出（每秒 10 字），太长会拖长动画；各通道的说明在下方引导区
+const PLACEHOLDER = '输入关键词，或描述想找的图片'
 
 // 启动动画（search-motion）：会话内第一次进检索页时播放；地址栏带着检索词进来时不播
 const searchInput = ref<{ $el?: unknown } | null>(null)
@@ -146,7 +146,11 @@ const session = createSearchSession<SearchResponse>(controlsFrom(() => scan.valu
 
 function onSearch() {
   const text = query.value.trim()
-  if (!text || noChannel.value) return
+  if (!text || noChannel.value) {
+    // 检索进行中把通道全部关掉（或清空检索词后重查）：取消正在进行的请求和扫描动画，旧请求的结果不再显示
+    if (loading.value) session.cancel()
+    return
+  }
   // 检索词和通道开关放进地址栏：刷新页面或从预览页返回时结果还在
   const ch = selectionToQuery(selection)
   if (route.query.q !== text || route.query.ch !== ch || route.query.img !== undefined) {

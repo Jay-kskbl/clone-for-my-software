@@ -30,7 +30,7 @@ const LAB_TIMEOUT_MS = 8000
 
 const mode = ref<Mode>('fast')
 const query = ref('')
-const PLACEHOLDER = '输入关键词，检索文件名、标签、正文和图片中识别出的文字'
+const PLACEHOLDER = '输入关键词，或描述想找的图片'
 const input = ref<{ $el?: unknown } | null>(null)
 useLaunchAnimation(input, {
   placeholder: PLACEHOLDER,
