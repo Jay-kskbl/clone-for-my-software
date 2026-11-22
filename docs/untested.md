@@ -146,13 +146,14 @@ T24p 完成时 DEVPLAN §5 写了这一项未测试，但当时没有登记到�
 | 用鼠标从系统文件管理器真实拖入文件 | 本次是用脚本派发 drop 事件模拟的；真实拖放时浏览器给出的 `dataTransfer.files`、拖到子元素上时的 dragleave 没有实际看过 | 已复核：`onDrop` 取 `event.dataTransfer.files` 交给与点击选择相同的上传队列；dragenter、dragover 都 `preventDefault`（否则浏览器会直接打开文件）；dragleave 只在真正离开拖放区时取消高亮 |
 | Chrome 以外的浏览器 | 只在内置浏览器（Chrome 内核）里看过；Safari、Edge、Firefox 的显示效果没有看过 | 已复核：样式里用到的较新特性只有 `min()`、`:focus-visible`、flex 的 `gap` 和 CSS 变量，当前版本的这几种浏览器都支持；没有用 `:has()`、`color-mix()`、容器查询。要留意一处：`onDragLeave` 靠 `relatedTarget` 判断是否真正离开拖放区，有的浏览器（例如部分 Safari 版本）拖动事件的 `relatedTarget` 可能为 null，那样拖过区内文字时高亮会闪一下，不影响放下文件后的上传 |
 
-### 登录页结构优化 L1–L7（克隆库 `feat/search-motion`，2026-11-22 登记，见 `docs/changes/login-page.md`）
+### 登录页结构优化 L1–L8（克隆库 `feat/search-motion`，2026-11-22 登记，见 `docs/changes/login-page.md`）
 
-只在克隆库里做，不在 DEVPLAN 中。已执行并通过：类型检查；前端 21 个文件 239 项单元测试（新增 69 项）；生产构建；浏览器检查（开发服务器 + 一个临时写的模拟后端，只应答 `/api/auth/*`、`/health`、`/api/documents`，没有提交）。模拟后端上走通了：登录后回到原页面、令牌过期后带原地址回登录页、连不上时保留令牌并在恢复后点“重试”直接进入、注册成功但登录失败、连续提交只发一次、表单内错误提示与中英文切换、窄屏布局。
+只在克隆库里做，不在 DEVPLAN 中。已执行并通过：类型检查；前端 22 个文件 255 项单元测试（新增 85 项）；生产构建；浏览器检查（开发服务器 + 一个临时写的模拟后端，只应答 `/api/auth/*`、`/health`、`/api/documents`，没有提交）。模拟后端上走通了：登录后回到原页面、令牌过期后带原地址回登录页、连不上时保留令牌并在恢复后点“重试”直接进入、注册成功但登录失败、连续提交只发一次、表单内错误提示与中英文切换、窄屏布局、打开登录页时的服务状态提示（后端连不上、数据库不可用、恢复后重新检查）。
 
 | 项目 | 说明 | 代码复核 |
 |---|---|---|
 | 与真实后端联调 | 本机没有 PostgreSQL，以上流程只对着模拟后端走过。模拟后端按 `docs/api.md` §4 的结构应答，但不是项目代码；真实后端的错误码、状态码与模拟是否完全一致没有核对 | 已复核：用到的错误码（`INVALID_CREDENTIALS`、`USERNAME_TAKEN`、`UNAUTHENTICATED`、`DATABASE_UNAVAILABLE`、`VALIDATION_ERROR`、`INTERNAL_ERROR`）与 `backend/app/core/errors.py`、`backend/app/api/errors.py` 逐个对照过 |
+| L8 对着真实后端的 `/health` | 只对着模拟后端和“没有后端”两种情况看过；真实后端在数据库停掉时 `/health` 要等连接超时（`health_check_timeout_seconds`）才返回，提示会晚一点出现，这个时长没有实测 | 已复核：检查在页面挂载后异步进行，不阻塞表单；`database.status` 的取值与 `backend/app/api/health.py` 一致 |
 | 真机手机浏览器 | 窄屏布局只在内置浏览器里模拟 375×600、375×812、640×560 看过 | 已复核：只加了一条 `max-width: 720px` 的底部内边距 |
 | 读屏软件 | 表单内提示用 `el-alert`（`role="alert"`）、卡片标题改为 `h2`，只检查了 DOM 属性，没有用 VoiceOver 等实际听过 | — |
 

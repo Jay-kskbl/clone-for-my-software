@@ -27,6 +27,11 @@ export const zh = {
     registeredNotSignedIn: (reason: string) => `账号已创建，但自动登录没有成功（${reason}）。已切换到登录，请再点一次“登录”。`,
     unreachable: '暂时连不上服务器，登录状态已保留。服务恢复后点“重试”即可继续。',
     retry: '重试',
+    service: {
+      backendDown: '连不上后端服务，现在无法登录。请确认后端已启动，再点“重新检查”。',
+      databaseDown: '后端已启动，但数据库不可用，现在无法登录。请确认数据库已启动，再点“重新检查”。',
+      recheck: '重新检查',
+    },
     errors: {
       invalidCredentials: '用户名或密码错误',
       usernameTaken: '这个用户名已被注册。换一个用户名，或切换到登录',
@@ -239,6 +244,11 @@ export const en: Messages = {
     registeredNotSignedIn: (reason: string) => `Account created, but signing in failed (${reason}). Switched to sign-in; click "Sign in" again.`,
     unreachable: 'Cannot reach the server right now. Your sign-in is kept; click Retry once the service is back.',
     retry: 'Retry',
+    service: {
+      backendDown: 'Cannot reach the backend, so signing in will not work right now. Make sure the backend is running, then click Check again.',
+      databaseDown: 'The backend is running but the database is unavailable, so signing in will not work right now. Make sure the database is running, then click Check again.',
+      recheck: 'Check again',
+    },
     errors: {
       invalidCredentials: 'Incorrect username or password',
       usernameTaken: 'This username is already taken. Choose another one, or switch to sign in',
