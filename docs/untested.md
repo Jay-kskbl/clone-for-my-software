@@ -153,6 +153,7 @@ T24p 完成时 DEVPLAN §5 写了这一项未测试，但当时没有登记到�
 | 项目 | 说明 | 代码复核 |
 |---|---|---|
 | T24v 与真实后端联调 | 令牌过期后带原地址回登录页、已登录打开登录页按 `redirect` 返回，只对着模拟后端走过（模拟方式是让模拟后端的令牌全部失效）。真实后端的 401 `UNAUTHENTICATED`、令牌按 `ACCESS_TOKEN_EXPIRE_SECONDS` 真正过期没有试过；补测时可以把这个值临时调成 60 秒 | 已复核：失效回调只在 `status === 401 && code === 'UNAUTHENTICATED'` 时调用（`api/client.ts`），与 `backend/app/core/errors.py` 的 `UNAUTHENTICATED` 一致；登录接口自己的 401（`INVALID_CREDENTIALS`）不触发 |
+| T24w 与真实后端联调 | 注册、注册后自动登录、“已注册但登录失败”、连按回车只发一次，只对着模拟后端走过（“登录失败”是让模拟后端在注册后的第一次登录返回 503 造出来的）。真实后端的 409 `USERNAME_TAKEN`、422 `VALIDATION_ERROR` 的应答没有试过 | 已复核：`register` / `login` 的请求体与 `docs/api.md` §4 一致；表单规则的边界（用户名 3–32、`[A-Za-z0-9_.-]`，密码 8–128 个字符）与 api.md §4.2 一致 |
 
 ### T24e 文本预览排序（2026-11-19 登记，见 `decisions.md` D44）
 
