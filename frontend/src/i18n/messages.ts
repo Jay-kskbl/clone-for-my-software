@@ -27,6 +27,13 @@ export const zh = {
     registeredNotSignedIn: (reason: string) => `账号已创建，但自动登录没有成功（${reason}）。已切换到登录，请再点一次“登录”。`,
     unreachable: '暂时连不上服务器，登录状态已保留。服务恢复后点“重试”即可继续。',
     retry: '重试',
+    errors: {
+      invalidCredentials: '用户名或密码错误',
+      usernameTaken: '这个用户名已被注册。换一个用户名，或切换到登录',
+      validation: '用户名或密码不符合要求：用户名 3–32 个字符，密码 8–128 个字符',
+      databaseUnavailable: '数据库暂时不可用，请稍后再试',
+      internal: '服务器内部错误，请稍后再试',
+    },
   },
   documents: {
     title: '文件',
@@ -232,6 +239,13 @@ export const en: Messages = {
     registeredNotSignedIn: (reason: string) => `Account created, but signing in failed (${reason}). Switched to sign-in; click "Sign in" again.`,
     unreachable: 'Cannot reach the server right now. Your sign-in is kept; click Retry once the service is back.',
     retry: 'Retry',
+    errors: {
+      invalidCredentials: 'Incorrect username or password',
+      usernameTaken: 'This username is already taken. Choose another one, or switch to sign in',
+      validation: 'Username or password does not meet the requirements: username 3–32 characters, password 8–128 characters',
+      databaseUnavailable: 'The database is temporarily unavailable. Try again later',
+      internal: 'Internal server error. Try again later',
+    },
   },
   documents: {
     title: 'Files',
