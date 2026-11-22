@@ -8,6 +8,7 @@ import * as authApi from '../api/auth'
 import { errorMessage } from '../api/client'
 import { login } from '../auth'
 import AppIcon from '../components/AppIcon.vue'
+import IdleSpinner from '../features/search-motion/idle-spinner/IdleSpinner.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -100,6 +101,9 @@ async function onSubmit() {
         </el-button>
       </div>
     </el-card>
+    <!-- 待机动画（search-motion，与检索页同一个星尘光球）：8 秒无操作时出现在登录框下方，任意操作淡出。
+         画布始终占位，出现、消失时页面不跳动 -->
+    <IdleSpinner class="login-idle" />
   </div>
 </template>
 
