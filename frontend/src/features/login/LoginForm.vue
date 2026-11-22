@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // 登录 / 注册卡片（T24w，从 LoginView.vue 拆出）：表单、模式切换、提交。
 // 不管登录后去哪里：登录成功后调用 afterSignIn，由页面决定跳转（等它完成才结束“提交中”，避免按钮闪一下又能点）。
+// 默认插槽放在表单上方，页面用它显示“连不上服务器”之类的提示（T24x）。
 // 提交流程（先注册再登录、注册成功但登录失败）在 submit.ts，表单规则在 rules.ts，都有单元测试。
 import type { FormInstance } from 'element-plus'
 import { ElMessage } from 'element-plus'
@@ -66,6 +67,8 @@ const onSubmit = singleFlight(async () => {
     <template #header>
       <h2 class="login-card-title">{{ mode === 'login' ? '登录' : '注册新用户' }}</h2>
     </template>
+    <!-- 表单上方的提示，由页面传入（“连不上服务器，登录状态已保留”等） -->
+    <slot />
     <!--
       切换登录 / 注册时 rules 会换一套。Element Plus 默认在 rules 变化后把整个表单校验一遍，
       空表单一切到“注册”就冒出两行红字（原来就有这个问题），所以关掉；各字段仍在失去焦点和提交时校验
