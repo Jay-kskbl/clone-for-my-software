@@ -2,6 +2,7 @@
 // 登录 / 注册卡片（登录页结构优化 L4，从 LoginView.vue 拆出）：表单、模式切换、提交。
 // 不管登录后去哪里：登录成功后调用 afterSignIn，由页面决定跳转（等它完成才结束“提交中”，避免按钮闪一下又能点）。
 // 默认插槽放在表单上方，页面用它显示“连不上服务器”之类的提示。
+// 提交流程（先注册再登录、注册成功但登录失败）在 submit.ts（L5），有单元测试。
 import type { FormInstance } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { reactive, ref } from 'vue'
@@ -11,38 +12,53 @@ import { errorMessage } from '../../api/client'
 import { login } from '../../auth'
 import { m } from '../../i18n'
 import { LOGIN_RULES, REGISTER_RULES } from './rules'
+import { singleFlight, submitCredentials, type Mode } from './submit'
 
 const props = defineProps<{
   /** 登录成功之后做什么（通常是跳回原页面） */
   afterSignIn: () => Promise<unknown>
 }>()
 
-const mode = ref<'login' | 'register'>('login')
+const mode = ref<Mode>('login')
 const submitting = ref(false)
 const formRef = ref<FormInstance>()
 const form = reactive({ username: '', password: '' })
 
-function switchMode() {
-  mode.value = mode.value === 'login' ? 'register' : 'login'
+function setMode(value: Mode) {
+  mode.value = value
   formRef.value?.clearValidate()
 }
 
-async function onSubmit() {
+function switchMode() {
+  setMode(mode.value === 'login' ? 'register' : 'login')
+}
+
+// singleFlight：校验结束前连按两次回车，原来会发两次请求（L5 实测）
+const onSubmit = singleFlight(async () => {
   if (!(await formRef.value?.validate().catch(() => false))) return
   submitting.value = true
   try {
-    if (mode.value === 'register') {
-      await authApi.register(form.username, form.password)
-      ElMessage.success(m().login.registered)
+    const result = await submitCredentials(mode.value, form, { register: authApi.register, login })
+    if (result.kind === 'failed') {
+      ElMessage.error(errorMessage(result.error))
+      return
     }
-    await login(form.username, form.password)
+    if (result.kind === 'registered-not-signed-in') {
+      // 账号已经建好：切回登录模式，用户名和密码都保留，再点一次“登录”即可（问题 A3）
+      setMode('login')
+      ElMessage.warning(m().login.registeredNotSignedIn(errorMessage(result.error)))
+      return
+    }
+    // 原来在注册成功、还没登录时就提示“已自动登录”，登录失败时提示是错的；现在登录成功后才提示
+    if (result.registered) ElMessage.success(m().login.registered)
     await props.afterSignIn()
   } catch (error) {
+    // afterSignIn（跳转）失败等意外情况
     ElMessage.error(errorMessage(error))
   } finally {
     submitting.value = false
   }
-}
+})
 </script>
 
 <template>
