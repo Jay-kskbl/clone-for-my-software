@@ -86,6 +86,8 @@ export interface StardustView {
   scale: number
   /** 只缩放轨道（星尘和亮星离核心的距离），不改粒子和核心的大小；默认 1。登录页 logo 用它让光圈一张一缩 */
   orbitScale?: number
+  /** 轨道在长轴方向（倾斜前的水平方向）再拉长的倍数，默认 1。登录页 logo 用它让光圈放大时主要往左右展开 */
+  orbitStretch?: number
 }
 
 export interface Pose {
@@ -98,7 +100,7 @@ export interface Pose {
 /** 轨道角 angle、径向偏移 offset（以 R 为单位）→ 画布坐标 */
 function place(v: StardustView, angle: number, offset: number): Pose {
   const r = v.R * ORBIT * v.scale * (v.orbitScale ?? 1) * (1 + offset)
-  const ex = Math.cos(angle) * r
+  const ex = Math.cos(angle) * r * (v.orbitStretch ?? 1)
   const ey = Math.sin(angle) * r * SQUASH
   const cos = Math.cos(TILT)
   const sin = Math.sin(TILT)
