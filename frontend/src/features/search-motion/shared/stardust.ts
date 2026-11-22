@@ -18,7 +18,7 @@ const DUST_PER_ARM = 90
 const TAIL_SWEEP = Math.PI * 1.15
 /** 轨道是压扁的椭圆（y 方向 × 0.6），再整体倾斜，看起来像斜着看一个环 */
 const SQUASH = 0.6
-const TILT = -0.42
+export const TILT = -0.42
 /** 轨道半径占 R 的比例 */
 const ORBIT = 0.92
 
@@ -88,6 +88,8 @@ export interface StardustView {
   orbitScale?: number
   /** 轨道在长轴方向（倾斜前的水平方向）再拉长的倍数，默认 1。登录页 logo 用它让光圈放大时主要往左右展开 */
   orbitStretch?: number
+  /** 轨道倾斜角（弧度，画布 y 轴向下，正值顺时针），默认 TILT。登录页 logo 用它让光圈在两条对角线之间来回摆 */
+  tilt?: number
 }
 
 export interface Pose {
@@ -102,8 +104,9 @@ function place(v: StardustView, angle: number, offset: number): Pose {
   const r = v.R * ORBIT * v.scale * (v.orbitScale ?? 1) * (1 + offset)
   const ex = Math.cos(angle) * r * (v.orbitStretch ?? 1)
   const ey = Math.sin(angle) * r * SQUASH
-  const cos = Math.cos(TILT)
-  const sin = Math.sin(TILT)
+  const tilt = v.tilt ?? TILT
+  const cos = Math.cos(tilt)
+  const sin = Math.sin(tilt)
   return { x: v.cx + ex * cos - ey * sin, y: v.cy + ex * sin + ey * cos, depth: (Math.sin(angle) + 1) / 2 }
 }
 

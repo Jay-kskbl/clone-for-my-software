@@ -8,12 +8,15 @@
 // 放大的同时，轨道沿长轴（左右方向）再拉长到 1.9 倍，缩小时回到 1 倍：左右的变化比上下明显得多
 // （Barry 第三次要求：缩放程度不变，左右比变化加大，左右不要太空）。
 // 画布 240 × 160：最大时最外侧的星芒离左右边缘约 3 px、离上下边缘约 10 px，不会被裁掉，左右也不空。
+// 光圈的倾斜方向以 15 秒为一个周期来回摆：0 s 为“左上—右下”，7.5 s 为“右上—左下”，15 s 回到“左上—右下”
+// （余弦曲线，在两条对角线附近停留得久一些，中间经过水平；Barry 2026-11-22）。倾斜幅度 ±0.42 rad（约 24°）
+// 与原来的固定倾斜相同，所以最大时也不会出画布。缩放仍是 10 秒一个循环，两者各走各的节奏，每 30 秒重合一次。
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 import AppIcon from '../../../components/AppIcon.vue'
 import { addFrame, createCanvasSurface } from '../shared/canvas'
 import { onReducedMotionChange, prefersReducedMotion } from '../shared/reducedMotion'
-import { drawStardust } from '../shared/stardust'
+import { drawStardust, TILT } from '../shared/stardust'
 import { onThemeChange, readTokens } from '../shared/tokens'
 
 const props = withDefaults(defineProps<{ width?: number; height?: number }>(), { width: 240, height: 160 })
@@ -22,6 +25,13 @@ const TURNS_PER_SECOND = 0.35
 const PULSE_MS = 10_000
 const ORBIT_MIN = 0.45
 const STRETCH_MAX = 1.9
+const SWING_MS = 15_000
+const SWING = Math.abs(TILT)
+
+/** 倾斜角：t = 0 时 +SWING（左上—右下，画布 y 轴向下时正值顺时针），7.5 秒时 −SWING（右上—左下） */
+function swing(clockMs: number): number {
+  return SWING * Math.cos(((clockMs % SWING_MS) / SWING_MS) * Math.PI * 2)
+}
 
 /** 缩放进度 0～1：t = 0 时 0（最小），5 秒时 1（最大），10 秒回到 0（余弦曲线，两端和顶点都是平滑的） */
 function pulse(clockMs: number): number {
@@ -59,6 +69,8 @@ onMounted(() => {
       scale: 1,
       orbitScale: ORBIT_MIN + (1 - ORBIT_MIN) * k,
       orbitStretch: 1 + (STRETCH_MAX - 1) * k,
+      // 减少动效时停在原来的固定倾斜
+      tilt: reduced ? TILT : swing(clock),
     }
     drawStardust(surface.ctx, tokens, view, 1, { coreRadius: size * CORE })
   }
