@@ -36,7 +36,7 @@
 
 **待机动画（`IdleSpinner.vue`）**
 
-- props：`idleAfter`（默认 8000 ms）、`switchEvery`（默认 30000 ms）、`spinnerStyle`（`auto` / `rays` / `orb`）、`size`（默认 72 px）
+- props：`idleAfter`（默认 8000 ms）、`switchEvery`（默认 30000 ms）、`spinnerStyle`（`auto` / `rays` / `orb`）、`size`（默认 120 px）
 - 事件：`idle`、`active`；ref 方法：`show()`、`hide()`
 
 ## 在页面里怎么用

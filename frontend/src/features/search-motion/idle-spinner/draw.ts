@@ -197,13 +197,15 @@ export function drawIdle(ctx: CanvasRenderingContext2D, size: number, tokens: Mo
   const rayAlpha = frame.alpha * (1 - orb)
   if (rayAlpha > 0) {
     const inner = R * 0.3
+    // 线宽封顶 4.5 px：画布放大到 120 px 时，射线按比例放大会显得太粗
+    const rayWidth = Math.min(R * 0.15, 4.5)
     ctx.globalAlpha = rayAlpha
     ctx.strokeStyle = tokens.primaryStrong
     ctx.lineCap = 'round'
     for (let i = 0; i < RAYS; i++) {
       const wave = (Math.sin(frame.time * 3 - i * PHASE) + 1) / 2
       const length = R * 0.7 * (0.45 + 0.55 * wave) * (1 - m)
-      const width = R * 0.15 * (0.65 + 0.35 * wave) * (1 - 0.5 * m)
+      const width = rayWidth * (0.65 + 0.35 * wave) * (1 - 0.5 * m)
       const a = frame.rotation + i * PHASE
       const cos = Math.cos(a)
       const sin = Math.sin(a)

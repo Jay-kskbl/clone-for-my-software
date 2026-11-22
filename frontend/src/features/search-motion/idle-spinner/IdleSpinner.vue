@@ -8,7 +8,8 @@ const props = withDefaults(defineProps<{ idleAfter?: number; switchEvery?: numbe
   idleAfter: 8000,
   switchEvery: 30_000,
   spinnerStyle: 'auto',
-  size: 72,
+  // 120 px：星尘光球的细节（闪烁、星芒、拖尾）在 72 px 下看不清（Barry 2026-11-22 决定放大）
+  size: 120,
 })
 const emit = defineEmits<{ idle: []; active: [] }>()
 
