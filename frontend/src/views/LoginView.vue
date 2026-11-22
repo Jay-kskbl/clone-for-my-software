@@ -59,6 +59,17 @@ async function onRetry() {
   padding: 24px 16px 24px;
 }
 
+/*
+ * 右下角浮动的“语言 / 配色”按钮（App.vue，高 44 px，离底边 12–20 px，宽 144 px）在窄屏上会盖住卡片底部的
+ * “没有账号？注册”（L7 实测 375 px 宽时盖住约 21×11 px，英文更多）。窗口宽于约 708 px 时按钮在卡片右边，
+ * 不会重叠；更窄时页面底部多留出按钮的高度，滚到底时注册链接一定在按钮上方。不改 App.vue 的按钮。
+ */
+@media (max-width: 720px) {
+  .login {
+    padding-bottom: 72px;
+  }
+}
+
 .login-unreachable {
   margin-bottom: 16px;
 }
