@@ -24,6 +24,8 @@ export const zh = {
     passwordRequired: '请输入密码',
     passwordLength: '8–128 个字符',
     registered: '注册成功，已自动登录',
+    unreachable: '暂时连不上服务器，登录状态已保留。服务恢复后点“重试”即可继续。',
+    retry: '重试',
   },
   documents: {
     title: '文件',
@@ -226,6 +228,8 @@ export const en: Messages = {
     passwordRequired: 'Enter a password',
     passwordLength: '8–128 characters',
     registered: 'Account created. You are signed in.',
+    unreachable: 'Cannot reach the server right now. Your sign-in is kept; click Retry once the service is back.',
+    retry: 'Retry',
   },
   documents: {
     title: 'Files',

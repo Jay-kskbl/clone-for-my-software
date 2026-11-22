@@ -153,6 +153,7 @@ T24p 完成时 DEVPLAN §5 写了这一项未测试，但当时没有登记到�
 | 项目 | 说明 | 代码复核 |
 |---|---|---|
 | L1 登录成功后的跳转 | 需要真实后端登录成功；`redirect` 参数的判断（`safeRedirect`）已由 23 项单元测试覆盖 | 已复核：`LoginView.vue` 只剩 `router.push(safeRedirect(route.query.redirect))` 一行 |
+| L2 服务恢复后点“重试”直接进入 | 只在没有后端时看过“连不上”的提示和重试；恢复后的分支需要后端 | 已复核：`onRetry` 调 `restoreSession()`，`auth.user` 有值才跳转；逻辑由 `auth.test.ts` 覆盖 |
 
 ### T24e 文本预览排序（2026-11-19 登记，见 `decisions.md` D44）
 

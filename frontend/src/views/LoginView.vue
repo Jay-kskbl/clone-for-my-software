@@ -6,7 +6,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import * as authApi from '../api/auth'
 import { errorMessage } from '../api/client'
-import { login } from '../auth'
+import { auth, login, restoreSession } from '../auth'
 import { safeRedirect } from '../features/login/redirect'
 import { LOGIN_RULES, REGISTER_RULES } from '../features/login/rules'
 import StardustLogo from '../features/search-motion/logo/StardustLogo.vue'
@@ -42,6 +42,19 @@ async function onSubmit() {
     submitting.value = false
   }
 }
+
+// 打开页面时连不上服务器（L2）：本地令牌还在，服务恢复后点“重试”重新确认，成功就直接进入，不用再输密码
+const retrying = ref(false)
+
+async function onRetry() {
+  retrying.value = true
+  try {
+    await restoreSession()
+    if (auth.user) await router.push(safeRedirect(route.query.redirect))
+  } finally {
+    retrying.value = false
+  }
+}
 </script>
 
 <template>
@@ -54,6 +67,10 @@ async function onSubmit() {
     </div>
     <el-card class="login-card" shadow="never">
       <template #header>{{ mode === 'login' ? m().login.loginTitle : m().login.registerTitle }}</template>
+      <el-alert v-if="auth.unreachable" type="warning" :closable="false" show-icon class="login-unreachable">
+        <template #title>{{ m().login.unreachable }}</template>
+        <el-button size="small" :loading="retrying" class="login-retry" @click="onRetry">{{ m().login.retry }}</el-button>
+      </el-alert>
       <el-form
         ref="formRef"
         :model="form"
@@ -126,6 +143,14 @@ async function onSubmit() {
 
 .login-submit {
   width: 100%;
+}
+
+.login-unreachable {
+  margin-bottom: 16px;
+}
+
+.login-retry {
+  margin-top: 8px;
 }
 
 .login-switch {
