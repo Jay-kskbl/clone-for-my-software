@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import type { FormInstance, FormRules } from 'element-plus'
+import type { FormInstance } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import { computed, reactive, ref } from 'vue'
+import { reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import * as authApi from '../api/auth'
 import { errorMessage } from '../api/client'
 import { login } from '../auth'
+import { safeRedirect } from '../features/login/redirect'
+import { LOGIN_RULES, REGISTER_RULES } from '../features/login/rules'
 import StardustLogo from '../features/search-motion/logo/StardustLogo.vue'
 import { m } from '../i18n'
 
@@ -17,28 +19,6 @@ const mode = ref<'login' | 'register'>('login')
 const submitting = ref(false)
 const formRef = ref<FormInstance>()
 const form = reactive({ username: '', password: '' })
-
-// 注册时的规则与后端一致（docs/api.md §4.2）。这里只是为了尽早提示，后端仍会再校验一次。
-// 登录时不检查格式：不对就是登录失败。
-// 提示文字随界面语言，所以写成 computed
-const registerRules = computed<FormRules>(() => ({
-  username: [
-    { required: true, message: m().login.usernameRequired, trigger: 'blur' },
-    {
-      pattern: /^[A-Za-z0-9_.-]{3,32}$/,
-      message: m().login.usernamePattern,
-      trigger: 'blur',
-    },
-  ],
-  password: [
-    { required: true, message: m().login.passwordRequired, trigger: 'blur' },
-    { min: 8, max: 128, message: m().login.passwordLength, trigger: 'blur' },
-  ],
-}))
-const loginRules = computed<FormRules>(() => ({
-  username: [{ required: true, message: m().login.usernameRequired, trigger: 'blur' }],
-  password: [{ required: true, message: m().login.passwordRequired, trigger: 'blur' }],
-}))
 
 function switchMode() {
   mode.value = mode.value === 'login' ? 'register' : 'login'
@@ -54,9 +34,8 @@ async function onSubmit() {
       ElMessage.success(m().login.registered)
     }
     await login(form.username, form.password)
-    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
-    // 只接受站内路径，避免被构造的链接带到别的网站
-    await router.push(redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/')
+    // 只接受站内路径，避免被构造的链接带到别的网站（features/login/redirect.ts）
+    await router.push(safeRedirect(route.query.redirect))
   } catch (error) {
     ElMessage.error(errorMessage(error))
   } finally {
@@ -78,7 +57,7 @@ async function onSubmit() {
       <el-form
         ref="formRef"
         :model="form"
-        :rules="mode === 'login' ? loginRules : registerRules"
+        :rules="mode === 'login' ? LOGIN_RULES : REGISTER_RULES"
         :validate-on-rule-change="false"
         label-position="top"
         @submit.prevent="onSubmit"

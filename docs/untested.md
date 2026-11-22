@@ -146,6 +146,14 @@ T24p 完成时 DEVPLAN §5 写了这一项未测试，但当时没有登记到�
 | 用鼠标从系统文件管理器真实拖入文件 | 本次是用脚本派发 drop 事件模拟的；真实拖放时浏览器给出的 `dataTransfer.files`、拖到子元素上时的 dragleave 没有实际看过 | 已复核：`onDrop` 取 `event.dataTransfer.files` 交给与点击选择相同的上传队列；dragenter、dragover 都 `preventDefault`（否则浏览器会直接打开文件）；dragleave 只在真正离开拖放区时取消高亮 |
 | Chrome 以外的浏览器 | 只在内置浏览器（Chrome 内核）里看过；Safari、Edge、Firefox 的显示效果没有看过 | 已复核：样式里用到的较新特性只有 `min()`、`:focus-visible`、flex 的 `gap` 和 CSS 变量，当前版本的这几种浏览器都支持；没有用 `:has()`、`color-mix()`、容器查询。要留意一处：`onDragLeave` 靠 `relatedTarget` 判断是否真正离开拖放区，有的浏览器（例如部分 Safari 版本）拖动事件的 `relatedTarget` 可能为 null，那样拖过区内文字时高亮会闪一下，不影响放下文件后的上传 |
 
+### 登录页结构优化 L1–L7（克隆库 `feat/search-motion`，2026-11-22 登记，见 `docs/changes/login-page.md`）
+
+只在克隆库里做，不在 DEVPLAN 中。单元测试、类型检查、构建都已执行；浏览器检查用的是开发服务器（没有后端）。
+
+| 项目 | 说明 | 代码复核 |
+|---|---|---|
+| L1 登录成功后的跳转 | 需要真实后端登录成功；`redirect` 参数的判断（`safeRedirect`）已由 23 项单元测试覆盖 | 已复核：`LoginView.vue` 只剩 `router.push(safeRedirect(route.query.redirect))` 一行 |
+
 ### T24e 文本预览排序（2026-11-19 登记，见 `decisions.md` D44）
 
 | 项目 | 说明 | 代码复核 |
