@@ -153,7 +153,7 @@ T24p 完成时 DEVPLAN §5 写了这一项未测试，但当时没有登记到�
 | 项目 | 说明 | 代码复核 |
 |---|---|---|
 | 与真实后端联调 | 本机没有 PostgreSQL，以上流程只对着模拟后端走过。模拟后端按 `docs/api.md` §4 的结构应答，但不是项目代码；真实后端的错误码、状态码与模拟是否完全一致没有核对 | 已复核：用到的错误码（`INVALID_CREDENTIALS`、`USERNAME_TAKEN`、`UNAUTHENTICATED`、`DATABASE_UNAVAILABLE`、`VALIDATION_ERROR`、`INTERNAL_ERROR`）与 `backend/app/core/errors.py`、`backend/app/api/errors.py` 逐个对照过 |
-| L8 对着真实后端的 `/health` | 只对着模拟后端和“没有后端”两种情况看过；真实后端在数据库停掉时 `/health` 要等连接超时（`health_check_timeout_seconds`）才返回，提示会晚一点出现，这个时长没有实测 | 已复核：检查在页面挂载后异步进行，不阻塞表单；`database.status` 的取值与 `backend/app/api/health.py` 一致 |
+| L8 对着真实后端的 `/health` | 只对着模拟后端和“没有后端”两种情况看过；数据库直接拒绝连接时 `/health` 应当很快返回；数据库主机连不上（不应答）时要等连接超时（`health_check_timeout_seconds`）才返回，提示会晚一点出现。两种情况的实际耗时都没有测 | 已复核：检查在页面挂载后异步进行，不阻塞表单；`database.status` 的取值与 `backend/app/api/health.py` 一致 |
 | 真机手机浏览器 | 窄屏布局只在内置浏览器里模拟 375×600、375×812、640×560 看过 | 已复核：只加了一条 `max-width: 720px` 的底部内边距 |
 | 读屏软件 | 表单内提示用 `el-alert`（`role="alert"`）、卡片标题改为 `h2`，只检查了 DOM 属性，没有用 VoiceOver 等实际听过 | — |
 
