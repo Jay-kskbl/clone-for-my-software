@@ -8,6 +8,7 @@ import * as authApi from '../api/auth'
 import { errorMessage } from '../api/client'
 import { login } from '../auth'
 import AppIcon from '../components/AppIcon.vue'
+import { safeRedirect } from '../features/login/redirect'
 
 const router = useRouter()
 const route = useRoute()
@@ -52,9 +53,8 @@ async function onSubmit() {
       ElMessage.success('注册成功，已自动登录')
     }
     await login(form.username, form.password)
-    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
-    // 只接受站内路径，避免被构造的链接带到别的网站
-    await router.push(redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/')
+    // 只接受站内路径，避免被构造的链接带到别的网站（规则见 features/login/redirect.ts）
+    await router.push(safeRedirect(route.query.redirect))
   } catch (error) {
     ElMessage.error(errorMessage(error))
   } finally {

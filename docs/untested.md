@@ -146,6 +146,14 @@ T24p 完成时 DEVPLAN §5 写了这一项未测试，但当时没有登记到�
 | 用鼠标从系统文件管理器真实拖入文件 | 本次是用脚本派发 drop 事件模拟的；真实拖放时浏览器给出的 `dataTransfer.files`、拖到子元素上时的 dragleave 没有实际看过 | 已复核：`onDrop` 取 `event.dataTransfer.files` 交给与点击选择相同的上传队列；dragenter、dragover 都 `preventDefault`（否则浏览器会直接打开文件）；dragleave 只在真正离开拖放区时取消高亮 |
 | Chrome 以外的浏览器 | 只在内置浏览器（Chrome 内核）里看过；Safari、Edge、Firefox 的显示效果没有看过 | 已复核：样式里用到的较新特性只有 `min()`、`:focus-visible`、flex 的 `gap` 和 CSS 变量，当前版本的这几种浏览器都支持；没有用 `:has()`、`color-mix()`、容器查询。要留意一处：`onDragLeave` 靠 `relatedTarget` 判断是否真正离开拖放区，有的浏览器（例如部分 Safari 版本）拖动事件的 `relatedTarget` 可能为 null，那样拖过区内文字时高亮会闪一下，不影响放下文件后的上传 |
 
+### T24v–T24z 登录页修复移植（2026-11-22 登记，见 `docs/changes/T24v.md` 起）
+
+从克隆库 `feat/search-motion` 的登录页结构优化 L1–L8 移植，只改前端。每个任务都执行了类型检查、单元测试、生产构建，并对着临时模拟后端（scratchpad 里的 Node 脚本，按 `docs/api.md` 应答，不在仓库里）在内置浏览器里检查过。以下没有验证：
+
+| 项目 | 说明 | 代码复核 |
+|---|---|---|
+| T24v 与真实后端联调 | 令牌过期后带原地址回登录页、已登录打开登录页按 `redirect` 返回，只对着模拟后端走过（模拟方式是让模拟后端的令牌全部失效）。真实后端的 401 `UNAUTHENTICATED`、令牌按 `ACCESS_TOKEN_EXPIRE_SECONDS` 真正过期没有试过；补测时可以把这个值临时调成 60 秒 | 已复核：失效回调只在 `status === 401 && code === 'UNAUTHENTICATED'` 时调用（`api/client.ts`），与 `backend/app/core/errors.py` 的 `UNAUTHENTICATED` 一致；登录接口自己的 401（`INVALID_CREDENTIALS`）不触发 |
+
 ### T24e 文本预览排序（2026-11-19 登记，见 `decisions.md` D44）
 
 | 项目 | 说明 | 代码复核 |
