@@ -150,6 +150,14 @@ T17 不再从网络下载模型。下面两个目录是 2026-11-13 T00 环境实
 
 T05 至 T17：Python 包约 154 MB（main 环境约 84 MB，ocr 环境 T17 新增约 70 MB），Node.js 约 222 MB，npm 包约 248 MB（T10 约 183 MB，T16 约 65 MB），共约 624 MB；另有从本机缓存复制的 OCR 模型约 21 MB。T20 新增：clip 环境 Python 包约 13 MB，从本机复制的 CLIP 权重约 718 MB。
 
+### 2.8 图标路径数据（搜索动效克隆库，2026-11-22）
+
+没有下载文件，也没有安装包：只是从网页读取 SVG 源码，把其中的路径数据抄进源码。按 CLAUDE.md 的规定，网络来源的内容同样登记在这里。
+
+| # | 时间 | 内容 | 版本 | 来源 | 位置 | 大小 | 许可 | 用途 | 批准 |
+|---|---|---|---|---|---|---|---|---|---|
+| 39 | 2026-11-22 | Lucide 图标 `file-text` 的 5 条 SVG 路径 | lucide-static v1.77.0（该图标最后一次改动在 0.552.0） | https://unpkg.com/lucide-static@1.77.0/icons/file-text.svg ，图标页 https://lucide.dev/icons/file-text | `frontend/src/components/AppIcon.vue` 的 `file-text`（克隆库 `feat/search-motion` 分支） | 约 0.3 KB 文本 | ISC，Copyright (c) 2026 Lucide Icons and Contributors；该图标不在 Feather 衍生（MIT）的名单里 | 登录页星尘光球 logo 中间的文档图标 | Barry 于 2026-11-22 批准 |
+
 ## 3. 没有下载、但曾经考虑过的
 
 | 内容 | 原因 | 结论 |

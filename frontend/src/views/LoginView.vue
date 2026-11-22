@@ -7,8 +7,7 @@ import { useRoute, useRouter } from 'vue-router'
 import * as authApi from '../api/auth'
 import { errorMessage } from '../api/client'
 import { login } from '../auth'
-import AppIcon from '../components/AppIcon.vue'
-import IdleSpinner from '../features/search-motion/idle-spinner/IdleSpinner.vue'
+import StardustLogo from '../features/search-motion/logo/StardustLogo.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -67,7 +66,8 @@ async function onSubmit() {
 <template>
   <div class="login">
     <div class="login-brand">
-      <span class="app-logo login-logo"><AppIcon name="docs" :size="26" /></span>
+      <!-- logo：星尘光球中间放文档图标（search-motion），一直转动 -->
+      <StardustLogo class="login-logo" />
       <h1 class="login-title">智能文档管理系统</h1>
       <p class="login-desc">多格式文档管理 · 全文检索 · OCR 文字检索 · 图文语义检索</p>
     </div>
@@ -101,9 +101,6 @@ async function onSubmit() {
         </el-button>
       </div>
     </el-card>
-    <!-- 待机动画（search-motion，与检索页同一个星尘光球）：8 秒无操作时出现在登录框下方，任意操作淡出。
-         画布始终占位，出现、消失时页面不跳动 -->
-    <IdleSpinner class="login-idle" />
   </div>
 </template>
 
@@ -115,7 +112,7 @@ async function onSubmit() {
   gap: 24px;
   box-sizing: border-box;
   min-height: 100vh;
-  padding: 72px 16px 24px;
+  padding: 40px 16px 24px;
 }
 
 .login-brand {
@@ -123,13 +120,11 @@ async function onSubmit() {
 }
 
 .login-logo {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--app-radius-lg);
+  margin: 0 auto;
 }
 
 .login-title {
-  margin: 12px 0 4px;
+  margin: 4px 0 4px;
   font-size: 22px;
   font-weight: 600;
 }

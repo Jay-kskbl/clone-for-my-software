@@ -151,10 +151,22 @@ export function drawGlint(ctx: CanvasRenderingContext2D, x: number, y: number, l
   ctx.fill()
 }
 
+export interface StardustOptions {
+  /** 实心核的半径（px）；不给时为 R × 0.1。登录页 logo 把它放大，好在中间放文档图标 */
+  coreRadius?: number
+}
+
 /** 中心核心：径向渐变柔光 + 呼吸的实心核（4 秒一个周期）。画完 fillStyle 为 primaryStrong。 */
-export function drawCore(ctx: CanvasRenderingContext2D, v: StardustView, tokens: MotionTokens, alpha: number): void {
+export function drawCore(
+  ctx: CanvasRenderingContext2D,
+  v: StardustView,
+  tokens: MotionTokens,
+  alpha: number,
+  options: StardustOptions = {},
+): void {
   const breath = 1 + 0.08 * Math.sin((v.time / 4) * Math.PI * 2)
-  const glowR = v.R * 0.5 * v.scale * breath
+  const coreR = (options.coreRadius ?? v.R * 0.1) * v.scale * breath
+  const glowR = Math.max(v.R * 0.5 * v.scale * breath, coreR * 1.7)
   ctx.fillStyle = tokens.primaryStrong
   if (alpha > 0 && glowR > 0) {
     const glow = ctx.createRadialGradient(v.cx, v.cy, 0, v.cx, v.cy, glowR)
@@ -168,7 +180,7 @@ export function drawCore(ctx: CanvasRenderingContext2D, v: StardustView, tokens:
     ctx.fill()
     ctx.fillStyle = tokens.primaryStrong
     ctx.beginPath()
-    ctx.arc(v.cx, v.cy, v.R * 0.1 * v.scale * breath, 0, Math.PI * 2)
+    ctx.arc(v.cx, v.cy, coreR, 0, Math.PI * 2)
     ctx.fill()
   }
 }
@@ -195,9 +207,15 @@ export function drawHead(ctx: CanvasRenderingContext2D, arm: number, x: number, 
 }
 
 /** 整幅星尘光球（待机动画用），alpha 为整体透明度 */
-export function drawStardust(ctx: CanvasRenderingContext2D, tokens: MotionTokens, v: StardustView, alpha: number): void {
+export function drawStardust(
+  ctx: CanvasRenderingContext2D,
+  tokens: MotionTokens,
+  v: StardustView,
+  alpha: number,
+  options: StardustOptions = {},
+): void {
   if (alpha <= 0) return
-  drawCore(ctx, v, tokens, alpha)
+  drawCore(ctx, v, tokens, alpha, options)
   for (const d of DUST) {
     const pose = dustPose(d, v)
     const a = alpha * dustAlpha(d, pose, v.time)
