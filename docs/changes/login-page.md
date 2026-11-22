@@ -64,3 +64,29 @@
 
 - 连不上时，打开一个需要登录的页面会请求两次 `/api/auth/me`：一次在原页面的导航，一次在跳到登录页的导航（`ready` 为 `false`，每次导航都再确认）。只在连不上时发生，没有处理
 - 后端长时间不在时令牌一直留在本机；令牌 1 小时后过期，下次连上时会收到 401 并删除
+
+------------------------------------------------------------------------
+
+## L3 令牌失效后回到原页面（修 A2、A4）
+
+### 修改的文件
+
+| 文件 | 改了什么 | 为什么 |
+|---|---|---|
+| `frontend/src/features/login/redirect.ts` | 新增三个纯函数：`loginRoute(fullPath)`（去登录页，原地址合格才带 `redirect`）；`guardTarget(to, signedIn)`（路由守卫的决定）；`afterUnauthenticated(wasSignedIn, current)`（收到 401 后去哪里） | 原来这些规则分散在 `router.ts` 和 `main.ts`，没有测试 |
+| `frontend/src/main.ts` | 401 回调改为：原来是登录状态时，带上当前地址去登录页；原来就没登录（页面加载时确认令牌收到的 401）时不跳，交给路由守卫 | 使用中令牌过期后，重新登录回不到原页面（问题 A2） |
+| `frontend/src/router.ts` | 守卫改为 `return guardTarget(to, auth.user !== null)`；已登录打开登录页时按 `redirect` 回去 | 原来一律去文件页（问题 A4） |
+| `frontend/tests/login/redirect.test.ts` | 新增 15 项：`loginRoute` 5 项、`guardTarget` 6 项、`afterUnauthenticated` 4 项 | — |
+
+### 验证
+
+- `npm run typecheck` 通过；`npm test` 19 个文件 221 项通过（新增 15 项）；`npm run build` 通过
+- 浏览器 + 临时模拟后端（Node 自带的 `http` 写的，只应答 `/api/auth/*`、`/health`、`/api/documents`，放在会话临时目录，没有提交；没有安装任何东西）：
+  - 未登录打开 `/search?q=合同` → 登录页带 `redirect` → 登录后回到 `/search?q=合同`
+  - 登录后让模拟后端的令牌全部失效，在检索页点检索 → 收到 401 → 跳到 `/login?redirect=/search?q=合同`，本地令牌已删除（问题 A2 修复）
+  - 本地放一个已失效的令牌，直接打开 `/documents/abc?view=text` → `/login?redirect=/documents/abc?view=text`
+  - 已登录打开 `/login?redirect=/search` → `/search`（问题 A4 修复）；`/login?redirect=//evil.com` → `/`
+
+### 更正
+
+做 L3 时我原以为还有一个问题：页面加载时确认令牌收到 401，401 回调的跳转（不带 `redirect`）会抢在路由守卫前面，丢掉要去的页面。临时换回原来的 `main.ts` 实测：本地放失效令牌打开 `/documents/abc?view=text`，最后仍停在 `/login?redirect=/documents/abc?view=text`，原地址**没有丢**（守卫的跳转后开始，覆盖了回调的跳转）。所以这一处不是缺陷。新代码在这种情况下不再跳转，只是少一次多余的导航，不依赖两次导航的先后；代码注释和测试名已按实测结果写。
