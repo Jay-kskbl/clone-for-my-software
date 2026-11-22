@@ -92,3 +92,24 @@
 ### 更正
 
 做 L3 时我原以为还有一个问题：页面加载时确认令牌收到 401，401 回调的跳转（不带 `redirect`）会抢在路由守卫前面，丢掉要去的页面。临时换回原来的 `main.ts` 实测：本地放失效令牌打开 `/documents/abc?view=text`，最后仍停在 `/login?redirect=/documents/abc?view=text`，原地址**没有丢**（守卫的跳转后开始，覆盖了回调的跳转）。所以这一处不是缺陷。新代码在这种情况下不再跳转，只是少一次多余的导航，不依赖两次导航的先后；代码注释和测试名已按实测结果写。
+
+------------------------------------------------------------------------
+
+## L4 拆分组件（行为不变；修 B3、C4）
+
+### 修改的文件
+
+| 文件 | 改了什么 | 为什么 |
+|---|---|---|
+| `frontend/src/features/login/LoginBrand.vue`（新增） | 品牌区：logo、系统名（`h1`）、一句话说明。logo 是具名插槽 `logo`，不传时显示侧栏同款静态图标（`.app-logo` + `docs` 图标） | 登录页原来直接引用 P4 动效的 `StardustLogo.vue`，没有替代（问题 B3） |
+| `frontend/src/features/login/LoginForm.vue`（新增） | 登录 / 注册卡片：表单、规则、模式切换、提交。登录成功后调用属性 `afterSignIn`（等它完成才结束“提交中”）；默认插槽放在表单上方。卡片标题改为 `h2`，样式 `font: inherit; margin: 0`，看起来与原来相同 | 表单不再关心登录后去哪里；读屏软件按标题跳转时能找到表单（问题 C4） |
+| `frontend/src/views/LoginView.vue` | 只剩组装：`LoginBrand`（插槽传入 `StardustLogo`）、`LoginForm`（`after-sign-in` 传 `goBack`，插槽里放 L2 的“连不上”提示）、重试；156 行 → 69 行（其中样式 18 行） | — |
+
+提交流程、错误提示（仍是顶部 `ElMessage`）在这一步原样搬进 `LoginForm.vue`，L5、L6 再改。
+
+### 验证
+
+- `npm run typecheck`、`npm test`（221 项）、`npm run build` 通过；没有新增测试（只是搬代码，项目没有组件测试工具）
+- 浏览器（1024×768）：拆分前后量了 9 个元素的位置和尺寸（logo、标题、说明、卡片、卡片标题、两个输入框、登录按钮、注册链接），**完全相同**；卡片标题现在是 `h2`，字号 16 px、字重 400 与原来一致
+- 浏览器 + 临时模拟后端：在 `/login?redirect=/search` 登录，进入 `/search`
+- 静态 logo：临时删掉 `LoginView.vue` 里传 `StardustLogo` 的那一行，登录页显示静态图标、没有画布；检查完已恢复原文件

@@ -1,46 +1,22 @@
 <script setup lang="ts">
-import type { FormInstance } from 'element-plus'
-import { ElMessage } from 'element-plus'
-import { reactive, ref } from 'vue'
+// 登录页：只负责布局和组装（登录页结构优化 L4）。
+// 品牌区、登录卡片在 features/login/，跳转规则在 features/login/redirect.ts，表单规则在 rules.ts。
+import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import * as authApi from '../api/auth'
-import { errorMessage } from '../api/client'
-import { auth, login, restoreSession } from '../auth'
+import { auth, restoreSession } from '../auth'
+import LoginBrand from '../features/login/LoginBrand.vue'
+import LoginForm from '../features/login/LoginForm.vue'
 import { safeRedirect } from '../features/login/redirect'
-import { LOGIN_RULES, REGISTER_RULES } from '../features/login/rules'
 import StardustLogo from '../features/search-motion/logo/StardustLogo.vue'
 import { m } from '../i18n'
 
 const router = useRouter()
 const route = useRoute()
 
-const mode = ref<'login' | 'register'>('login')
-const submitting = ref(false)
-const formRef = ref<FormInstance>()
-const form = reactive({ username: '', password: '' })
-
-function switchMode() {
-  mode.value = mode.value === 'login' ? 'register' : 'login'
-  formRef.value?.clearValidate()
-}
-
-async function onSubmit() {
-  if (!(await formRef.value?.validate().catch(() => false))) return
-  submitting.value = true
-  try {
-    if (mode.value === 'register') {
-      await authApi.register(form.username, form.password)
-      ElMessage.success(m().login.registered)
-    }
-    await login(form.username, form.password)
-    // 只接受站内路径，避免被构造的链接带到别的网站（features/login/redirect.ts）
-    await router.push(safeRedirect(route.query.redirect))
-  } catch (error) {
-    ElMessage.error(errorMessage(error))
-  } finally {
-    submitting.value = false
-  }
+/** 回到登录前要去的页面；只接受站内路径，避免被构造的链接带到别的网站 */
+function goBack() {
+  return router.push(safeRedirect(route.query.redirect))
 }
 
 // 打开页面时连不上服务器（L2）：本地令牌还在，服务恢复后点“重试”重新确认，成功就直接进入，不用再输密码
@@ -50,7 +26,7 @@ async function onRetry() {
   retrying.value = true
   try {
     await restoreSession()
-    if (auth.user) await router.push(safeRedirect(route.query.redirect))
+    if (auth.user) await goBack()
   } finally {
     retrying.value = false
   }
@@ -59,47 +35,16 @@ async function onRetry() {
 
 <template>
   <div class="login">
-    <div class="login-brand">
-      <!-- logo：星尘光球中间放文档图标（search-motion），一直转动 -->
-      <StardustLogo class="login-logo" />
-      <h1 class="login-title">{{ m().app.title }}</h1>
-      <p class="login-desc">{{ m().login.desc }}</p>
-    </div>
-    <el-card class="login-card" shadow="never">
-      <template #header>{{ mode === 'login' ? m().login.loginTitle : m().login.registerTitle }}</template>
+    <LoginBrand>
+      <!-- 克隆库专用：星尘光球中间放文档图标（search-motion），一直转动。去掉这一段就显示静态图标 -->
+      <template #logo><StardustLogo /></template>
+    </LoginBrand>
+    <LoginForm :after-sign-in="goBack">
       <el-alert v-if="auth.unreachable" type="warning" :closable="false" show-icon class="login-unreachable">
         <template #title>{{ m().login.unreachable }}</template>
         <el-button size="small" :loading="retrying" class="login-retry" @click="onRetry">{{ m().login.retry }}</el-button>
       </el-alert>
-      <el-form
-        ref="formRef"
-        :model="form"
-        :rules="mode === 'login' ? LOGIN_RULES : REGISTER_RULES"
-        :validate-on-rule-change="false"
-        label-position="top"
-        @submit.prevent="onSubmit"
-      >
-        <el-form-item :label="m().login.username" prop="username">
-          <el-input v-model.trim="form.username" autocomplete="username" />
-        </el-form-item>
-        <el-form-item :label="m().login.password" prop="password">
-          <el-input
-            v-model="form.password"
-            type="password"
-            show-password
-            :autocomplete="mode === 'login' ? 'current-password' : 'new-password'"
-          />
-        </el-form-item>
-        <el-button type="primary" native-type="submit" :loading="submitting" class="login-submit">
-          {{ mode === 'login' ? m().login.submitLogin : m().login.submitRegister }}
-        </el-button>
-      </el-form>
-      <div class="login-switch">
-        <el-button link type="primary" @click="switchMode">
-          {{ mode === 'login' ? m().login.toRegister : m().login.toLogin }}
-        </el-button>
-      </div>
-    </el-card>
+    </LoginForm>
   </div>
 </template>
 
@@ -114,47 +59,11 @@ async function onRetry() {
   padding: 24px 16px 24px;
 }
 
-.login-brand {
-  text-align: center;
-}
-
-.login-logo {
-  margin: 0 auto;
-}
-
-.login-title {
-  margin: 4px 0 4px;
-  font-size: 22px;
-  font-weight: 600;
-}
-
-.login-desc {
-  margin: 0;
-  color: var(--app-text-secondary);
-  font-size: 13px;
-}
-
-/* 窄屏时不超出屏幕宽度 */
-.login-card {
-  width: 100%;
-  max-width: 380px;
-  border-radius: var(--app-radius-lg);
-}
-
-.login-submit {
-  width: 100%;
-}
-
 .login-unreachable {
   margin-bottom: 16px;
 }
 
 .login-retry {
   margin-top: 8px;
-}
-
-.login-switch {
-  margin-top: 12px;
-  text-align: center;
 }
 </style>
