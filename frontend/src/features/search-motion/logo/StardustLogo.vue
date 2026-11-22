@@ -3,14 +3,15 @@
 // （Barry 2026-11-22 决定，取代原来蓝色方块里的文档图标）。
 // 一直转动，不等待机；全页共用一个 rAF 循环，页面切到后台时自动暂停；减少动效时只画一帧静止画面。
 // 实心核（半径约 23 px）中间用 HTML 盖一个文档图标（约 24 px），颜色取页面底色，在主色实心核上保持清晰。
-// 光圈（星尘轨道）以 10 秒为一个周期，先变大再变小：从 45% 平滑放大到原大，再缩回 45%（Barry 2026-11-22，
+// 光圈（星尘轨道）以 15 秒为一个周期（原为 10 秒，Barry 要求与摆动同步），先变大再变小：从 45% 平滑放大到原大，再缩回 45%（Barry 2026-11-22，
 // 第二次要求加大幅度）。只缩轨道，核心和图标大小不变。
 // 放大的同时，轨道沿长轴（左右方向）再拉长到 1.9 倍，缩小时回到 1 倍：左右的变化比上下明显得多
 // （Barry 第三次要求：缩放程度不变，左右比变化加大，左右不要太空）。
 // 画布 240 × 160：最大时最外侧的星芒离左右边缘约 3 px、离上下边缘约 10 px，不会被裁掉，左右也不空。
 // 光圈的倾斜方向以 15 秒为一个周期来回摆：0 s 为“左上—右下”，7.5 s 为“右上—左下”，15 s 回到“左上—右下”
 // （余弦曲线，在两条对角线附近停留得久一些，中间经过水平；Barry 2026-11-22）。倾斜幅度 ±0.42 rad（约 24°）
-// 与原来的固定倾斜相同，所以最大时也不会出画布。缩放仍是 10 秒一个循环，两者各走各的节奏，每 30 秒重合一次。
+// 与原来的固定倾斜相同，所以最大时也不会出画布。缩放与摆动同为 15 秒、同时起步：0 s 最小且“左上—右下”，
+// 7.5 s 最大且“右上—左下”，15 s 回到最小且“左上—右下”。
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 import AppIcon from '../../../components/AppIcon.vue'
@@ -22,7 +23,7 @@ import { onThemeChange, readTokens } from '../shared/tokens'
 const props = withDefaults(defineProps<{ width?: number; height?: number }>(), { width: 240, height: 160 })
 
 const TURNS_PER_SECOND = 0.35
-const PULSE_MS = 10_000
+const PULSE_MS = 15_000
 const ORBIT_MIN = 0.45
 const STRETCH_MAX = 1.9
 const SWING_MS = 15_000
@@ -33,7 +34,7 @@ function swing(clockMs: number): number {
   return SWING * Math.cos(((clockMs % SWING_MS) / SWING_MS) * Math.PI * 2)
 }
 
-/** 缩放进度 0～1：t = 0 时 0（最小），5 秒时 1（最大），10 秒回到 0（余弦曲线，两端和顶点都是平滑的） */
+/** 缩放进度 0～1：t = 0 时 0（最小），7.5 秒时 1（最大），15 秒回到 0（余弦曲线，两端和顶点都是平滑的） */
 function pulse(clockMs: number): number {
   const phase = (clockMs % PULSE_MS) / PULSE_MS
   return 0.5 - 0.5 * Math.cos(phase * Math.PI * 2)
