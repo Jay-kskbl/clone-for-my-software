@@ -2,9 +2,9 @@
 // 登录页的 logo：星尘光球（与待机、启动动画同一个图形，shared/stardust.ts）中间放文档图标
 // （Barry 2026-11-22 决定，取代原来蓝色方块里的文档图标）。
 // 一直转动，不等待机；全页共用一个 rAF 循环，页面切到后台时自动暂停；减少动效时只画一帧静止画面。
-// 实心核放大到画布的 19%，图标用 HTML 盖在中间，颜色取页面底色，在主色实心核上保持清晰。
-// 光圈（星尘轨道）以 10 秒为一个周期，先变大再变小：从 72% 平滑放大到原大，再缩回 72%（Barry 2026-11-22）。
-// 只缩轨道，核心和图标大小不变；原大时最外侧的星芒离画布边缘还有约 5 px，不会被裁掉。
+// 实心核（半径约 23 px）中间用 HTML 盖一个文档图标（约 24 px），颜色取页面底色，在主色实心核上保持清晰。
+// 光圈（星尘轨道）以 10 秒为一个周期，先变大再变小：从 45% 平滑放大到原大，再缩回 45%（Barry 2026-11-22，
+// 第二次要求加大幅度）。只缩轨道，核心和图标大小不变。画布 160 px 给最大时的光圈留出空间，最外侧的星芒不会被裁掉。
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 import AppIcon from '../../../components/AppIcon.vue'
@@ -13,19 +13,19 @@ import { onReducedMotionChange, prefersReducedMotion } from '../shared/reducedMo
 import { drawStardust } from '../shared/stardust'
 import { onThemeChange, readTokens } from '../shared/tokens'
 
-const props = withDefaults(defineProps<{ size?: number }>(), { size: 120 })
+const props = withDefaults(defineProps<{ size?: number }>(), { size: 160 })
 
 const TURNS_PER_SECOND = 0.35
 const PULSE_MS = 10_000
-const ORBIT_MIN = 0.72
+const ORBIT_MIN = 0.45
 
 /** 光圈大小：t = 0 时最小，5 秒时最大，10 秒回到最小（余弦曲线，两端和顶点都是平滑的） */
 function orbitScale(clockMs: number): number {
   const phase = (clockMs % PULSE_MS) / PULSE_MS
   return ORBIT_MIN + (1 - ORBIT_MIN) * (0.5 - 0.5 * Math.cos(phase * Math.PI * 2))
 }
-const CORE = 0.19
-const ICON = 0.2
+const CORE = 0.145
+const ICON = 0.15
 
 const canvas = ref<HTMLCanvasElement | null>(null)
 const cleanups: (() => void)[] = []

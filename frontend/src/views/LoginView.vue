@@ -112,7 +112,7 @@ async function onSubmit() {
   gap: 24px;
   box-sizing: border-box;
   min-height: 100vh;
-  padding: 40px 16px 24px;
+  padding: 24px 16px 24px;
 }
 
 .login-brand {
