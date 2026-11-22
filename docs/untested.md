@@ -148,12 +148,13 @@ T24p 完成时 DEVPLAN §5 写了这一项未测试，但当时没有登记到�
 
 ### 登录页结构优化 L1–L7（克隆库 `feat/search-motion`，2026-11-22 登记，见 `docs/changes/login-page.md`）
 
-只在克隆库里做，不在 DEVPLAN 中。单元测试、类型检查、构建都已执行；浏览器检查用的是开发服务器（没有后端）。
+只在克隆库里做，不在 DEVPLAN 中。已执行并通过：类型检查；前端 21 个文件 239 项单元测试（新增 69 项）；生产构建；浏览器检查（开发服务器 + 一个临时写的模拟后端，只应答 `/api/auth/*`、`/health`、`/api/documents`，没有提交）。模拟后端上走通了：登录后回到原页面、令牌过期后带原地址回登录页、连不上时保留令牌并在恢复后点“重试”直接进入、注册成功但登录失败、连续提交只发一次、表单内错误提示与中英文切换、窄屏布局。
 
 | 项目 | 说明 | 代码复核 |
 |---|---|---|
-| L1 登录成功后的跳转 | 需要真实后端登录成功；`redirect` 参数的判断（`safeRedirect`）已由 23 项单元测试覆盖 | 已复核：`LoginView.vue` 只剩 `router.push(safeRedirect(route.query.redirect))` 一行 |
-| L2 服务恢复后点“重试”直接进入 | 只在没有后端时看过“连不上”的提示和重试；恢复后的分支需要后端 | 已复核：`onRetry` 调 `restoreSession()`，`auth.user` 有值才跳转；逻辑由 `auth.test.ts` 覆盖 |
+| 与真实后端联调 | 本机没有 PostgreSQL，以上流程只对着模拟后端走过。模拟后端按 `docs/api.md` §4 的结构应答，但不是项目代码；真实后端的错误码、状态码与模拟是否完全一致没有核对 | 已复核：用到的错误码（`INVALID_CREDENTIALS`、`USERNAME_TAKEN`、`UNAUTHENTICATED`、`DATABASE_UNAVAILABLE`、`VALIDATION_ERROR`、`INTERNAL_ERROR`）与 `backend/app/core/errors.py`、`backend/app/api/errors.py` 逐个对照过 |
+| 真机手机浏览器 | 窄屏布局只在内置浏览器里模拟 375×600、375×812、640×560 看过 | 已复核：只加了一条 `max-width: 720px` 的底部内边距 |
+| 读屏软件 | 表单内提示用 `el-alert`（`role="alert"`）、卡片标题改为 `h2`，只检查了 DOM 属性，没有用 VoiceOver 等实际听过 | — |
 
 ### T24e 文本预览排序（2026-11-19 登记，见 `decisions.md` D44）
 
