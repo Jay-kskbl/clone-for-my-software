@@ -1,9 +1,8 @@
 <script setup lang="ts">
 // 动效演示页（/motion-lab，只在克隆库里，不需要登录和后端）：用模拟的搜索请求走一遍
 // 快速返回、慢速返回、报错、超时、连续搜索，供自测和设计走查。不是正式功能。
-import 'element-plus/theme-chalk/dark/css-vars.css'
 
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import { controlsFrom, type ScanLoaderHandle } from '../scan-loader/handle'
 import AppIcon from '../../../components/AppIcon.vue'
@@ -15,6 +14,8 @@ import type { ScanPhase } from '../scan-loader/machine'
 import { SEARCH_TEXT } from '../messages'
 import { activeFrameCount } from '../shared/canvas'
 import { prefersReducedMotion, setReducedMotionOverride } from '../shared/reducedMotion'
+import { theme } from '../../theme/store'
+import { resolveDark } from '../../theme/theme'
 
 interface MockHit {
   title: string
@@ -42,7 +43,8 @@ const phase = ref<ScanPhase>('idle')
 const log = ref<string[]>([])
 const frames = ref(0)
 const reducedChoice = ref<'system' | 'on' | 'off'>('system')
-const dark = ref(document.documentElement.classList.contains('dark'))
+// 暗色开关与右下角的系统配色面板共用同一个状态
+const dark = computed(() => resolveDark(theme.mode))
 
 function note(text: string) {
   const time = new Date().toLocaleTimeString('zh-CN', { hour12: false })
@@ -122,8 +124,7 @@ function replayLaunch() {
 }
 
 function toggleDark() {
-  dark.value = !dark.value
-  document.documentElement.classList.toggle('dark', dark.value)
+  theme.mode = dark.value ? 'light' : 'dark'
 }
 
 let poll: ReturnType<typeof setInterval> | undefined

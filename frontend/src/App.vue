@@ -6,6 +6,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { auth, logout } from './auth'
 import AppIcon from './components/AppIcon.vue'
+import ThemePicker from './features/theme/ThemePicker.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -57,6 +58,8 @@ function onLogout() {
     </main>
   </div>
   <router-view v-else />
+  <!-- 系统配色面板（演示用），所有页面都有 -->
+  <ThemePicker />
 </template>
 
 <style scoped>
