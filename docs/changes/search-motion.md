@@ -8,7 +8,8 @@
   - `4658130` 启动动画（动画 2），接入演示页
   - `d53fed7` 待机转动动画（动画 1），三个动效接入检索页
 - 本文件与 `frontend/src/features/search-motion/README.md` 在上述 3 个提交之后单独提交（`fed3743`）
-- 之后按 Barry 的决定做了三项小修改，单独一个提交，见第 7 节
+- 之后按 Barry 的决定做了三项小修改，单独一个提交（`1717a4d`），见第 7 节
+- 再之后启动动画改为“没有输入时循环播放”，单独一个提交，见第 8 节
 
 ------------------------------------------------------------------------
 
@@ -78,7 +79,7 @@
 | 文件 | 内容 | 原因与影响 |
 |---|---|---|
 | `timeline.ts` | 纯函数时间轴 `launchFrame(t, chars)`、`launchDuration(chars)`：0–0.8 s 光标闪两次；0.8–1.7 s 60 个粒子聚拢成半径 24 px 的旋转光环；2.1–2.9 s 展开到胶囊轮廓；2.8–3.2 s 描边和图标淡入；3.1 s 起每秒打 10 字；打完停 250 ms。`pointOnOutline(box, s)` 按周长比例在胶囊轮廓上取点 | 指南 §5.1；单元测试直接测 |
-| `playOnce.ts` | `hasPlayedLaunch` / `markLaunchPlayed` / `resetLaunchPlayed`，用 `sessionStorage` 记标记；读写异常（隐私模式）时一律 try/catch，按“没播过”处理 | 指南 §5.3：会话内只播一次，最坏情况是刷新后再播一次，不会报错 |
+| `playOnce.ts`（第 8 节已删除） | `hasPlayedLaunch` / `markLaunchPlayed` / `resetLaunchPlayed`，用 `sessionStorage` 记标记；读写异常（隐私模式）时一律 try/catch，按“没播过”处理 | 指南 §5.3：会话内只播一次，最坏情况是刷新后再播一次，不会报错 |
 | `launchAnimation.ts` | 核心 `playLaunch(target, options)`，返回 `skip()`、`destroy()`。开始时读真实输入框的位置、宽高、圆角、背景、描边色、占位文字字体与颜色、前缀图标位置与 path，全部照它画；只打到输入框能显示的宽度为止。时间用累计 `dt`，切到后台暂停。任意按键 / 点击跳过（捕获阶段，不阻止默认行为，按下的字符进入输入框）；窗口尺寸或滚动变化直接跳到结束；减少动效打开时立即结束。结束时同一帧内显示真实输入框 → 移除 Canvas → `focus({ preventScroll: true })` | 指南 §5.2–§5.4：最容易出问题的是与真实搜索框对齐，所以不写死任何尺寸 |
 | `launch.css` | `html[data-sm-launch] .sm-launch-target { visibility: hidden }`；Canvas 固定定位盖满视口、`pointer-events: none` | 随适配层同步加载：首帧就隐藏真实输入框，不闪；只是看不见、仍占位，布局不跳 |
 | `useLaunchAnimation.ts` | Vue 适配层 `useLaunchAnimation(inputRef, { placeholder, hasValue, onFinish })`。在 setup 阶段（首帧前）决定播不播：减少动效、本会话播过、输入框已有内容时什么都不做；要播就给 `<html>` 打标记。挂载后才 `import('./launchAnimation')` 懒加载，找不到输入框或加载失败直接显示输入框 | 动画脚本不进首屏；el-input 上要加 `class="sm-launch-target"` |
@@ -173,3 +174,32 @@
 | `src/features/search-motion/lab/MotionLabView.vue` | 演示页占位文字与检索页保持一致 | 演示页用来预览启动动画，时长要与检索页相同 |
 
 验证：`npm run typecheck` 通过；`npm test` 14 个文件 123 项通过；`npm run build` 成功；演示页实测扫描状态行依次显示“正在打开文件…”“正在阅读第 1–6 / 6 个文件”“正在整理答案…”，输入框占位文字为新文案。检索页里“关掉全部通道即取消”需要后端，**未测试（Not Tested）**，只做了代码复核：`session.cancel()` 会中断请求、让 `id` 失效，旧返回在 `run()` 里被丢弃，扫描动画回到 idle。
+
+## 8. 启动动画改为循环播放（2026-11-22）
+
+Barry 在演示页看过后决定：启动动画“在未输入时循环播放，输入后停止”。这取代了指南 §5.3 的“会话内只播一次”和之前确认的“会话内第一次进 `/search` 时播放”。
+
+| 文件 | 修改 | 原因与影响 |
+|---|---|---|
+| `launch/loop.ts`（新增） | `createLaunchLoop({ play, canPlay, gap?, target? })`，返回 `start` / `wake` / `running` / `destroy`。一轮结束后停 `LAUNCH_LOOP_GAP`（3000 ms）再播下一轮，等待期间有 `pointerdown` / `keydown` / `wheel` / `touchstart` 就重新计时；开播前问 `canPlay()`，不满足就停下，等 `wake()` 再排；因减少动效或卸载而结束的不再排下一轮 | 循环规则与“画一轮”分开，可以用假定时器单独测试 |
+| `launch/launchAnimation.ts` | 开播时自己给 `<html>` 打 `data-sm-launch`（第一轮仍由适配层在首帧前打）；结束时只在 `skip`（用户按键 / 点击）时聚焦输入框，自然播完不再聚焦 | 后续几轮也要隐藏真实输入框；自然播完就聚焦的话，“输入框有焦点”会让循环立刻停下 |
+| `launch/useLaunchAnimation.ts` | 去掉 sessionStorage 判断；第一轮条件改为“没开减少动效且输入框为空”；挂载后创建循环，`canPlay` = 没开减少动效 && 输入框为空 && 输入框没有焦点；输入框失焦、减少动效关闭时 `wake()`；卸载时停循环、移除监听、显示输入框 | 用户点进输入框准备输入时不再播，避免输入框被藏起来；输入后清空、离开输入框，3 秒后重新开始循环 |
+| `launch/playOnce.ts`（删除） | 不再需要“会话内只播一次” | 不留无用模块 |
+| `lab/MotionLabView.vue` | 去掉 `resetLaunchPlayed`，“重播启动动画（刷新）”只刷新页面 | 循环本来就会重播，刷新用来从第一轮看起 |
+| `tests/search-motion/launch.test.ts` | 删掉“会话内只播一次”的 2 项，新增“没有输入时循环播放”6 项：播完停 3 秒再播、等待期间操作重新计时、有内容或有焦点时停止且 `wake` 后恢复、开始就有内容不播、减少动效结束不再排、`destroy` 清干净 | — |
+| `src/features/search-motion/README.md` | 启动动画的说明改为循环规则 | — |
+
+检索页 `SearchView.vue` 不用改：`hasValue` 本来就是“检索词不为空”。所以从地址栏带着检索词进来不播；把检索词清空并离开输入框后，3 秒后开始循环。
+
+验证：
+- `npm run typecheck` 通过；`npm test` 14 个文件 127 项通过；`npm run build` 成功，懒加载的启动动画 chunk 为 2.46 KB（gzip）。
+- 演示页实测：
+  - 不操作时一轮约 4.6 s、间隔约 3.1 s，连续循环；
+  - 点进输入框并输入“机房”、离开输入框后 9 s 内没有再播；
+  - 清空后，只要还停在输入框里就不播，离开输入框 3.0 s 后恢复循环；
+  - 控制台没有报错。
+- 检索页实机**未测试（Not Tested）**，原因同第 5.4 节（需要登录和后端），已做代码复核。
+
+注意：
+- 页面空着的时候动画会一直循环。待机动画（8 秒无操作后出现）会和它同时在页面上动，是否需要让两者互斥，可以在设计走查时看。
+- 循环期间点击页面上任何地方都会立即结束当前这一轮并聚焦输入框（沿用指南的“任意点击跳过”）。

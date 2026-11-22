@@ -4,7 +4,8 @@
 // 圆角、背景、描边色，占位文字的字体、颜色和起始 x，前缀放大镜图标的位置和颜色——全部照它画，
 // 不写死尺寸。Canvas 固定定位盖在整个视口上（粒子从四周飞来），pointer-events: none。
 // 动画期间真实输入框 visibility: hidden（由 <html data-sm-launch> 控制，见 launch.css）。
-// 结束时同一帧内：显示真实输入框 → 移除 Canvas → input.focus({ preventScroll: true })。
+// 结束时同一帧内：显示真实输入框 → 移除 Canvas；用户按键 / 点击跳过时再 input.focus({ preventScroll: true })。
+// 这里只管一轮；循环播放由 loop.ts 控制。
 import { addFrame, createCanvasSurface } from '../shared/canvas'
 import { lerp } from '../shared/easing'
 import { onReducedMotionChange } from '../shared/reducedMotion'
@@ -136,6 +137,8 @@ function roundRectPath(ctx: CanvasRenderingContext2D, box: Box): void {
 }
 
 export function playLaunch(target: LaunchTarget, options: LaunchOptions): LaunchHandle {
+  // 第一轮由适配层在首帧前就打好标记；循环的后续几轮在这里打
+  document.documentElement.dataset[LAUNCH_ATTR] = 'playing'
   const canvas = document.createElement('canvas')
   canvas.className = 'sm-launch-canvas'
   document.body.append(canvas)
@@ -291,11 +294,12 @@ export function playLaunch(target: LaunchTarget, options: LaunchOptions): Launch
     window.removeEventListener('pointerdown', onPointer, true)
     window.removeEventListener('resize', onLayout)
     window.removeEventListener('scroll', onLayout, { capture: true })
-    // 同一帧内：显示真实输入框 → 移除 Canvas → 聚焦
+    // 同一帧内：显示真实输入框 → 移除 Canvas →（用户按键或点击跳过时）聚焦。
+    // 自然播完不聚焦：动画会循环播放，聚焦后“输入框有焦点”会让循环停下（loop.ts）
     delete document.documentElement.dataset[LAUNCH_ATTR]
     surface.destroy()
     canvas.remove()
-    if (reason !== 'destroy') target.input.focus({ preventScroll: true })
+    if (reason === 'skip') target.input.focus({ preventScroll: true })
     options.onFinish?.(reason)
   }
 

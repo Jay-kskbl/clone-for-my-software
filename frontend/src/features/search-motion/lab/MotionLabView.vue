@@ -7,7 +7,6 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 import { controlsFrom, type ScanLoaderHandle } from '../scan-loader/handle'
 import AppIcon from '../../../components/AppIcon.vue'
-import { resetLaunchPlayed } from '../launch/playOnce'
 import { useLaunchAnimation } from '../launch/useLaunchAnimation'
 import IdleLabPanel from './IdleLabPanel.vue'
 import ScanLoader from '../scan-loader/ScanLoader.vue'
@@ -117,8 +116,8 @@ function setReduced(value: 'system' | 'on' | 'off') {
   setReducedMotionOverride(value === 'system' ? null : value === 'on')
 }
 
+// 检索框为空时启动动画本来就会循环；这里刷新页面，从第一轮重新看
 function replayLaunch() {
-  resetLaunchPlayed()
   location.reload()
 }
 

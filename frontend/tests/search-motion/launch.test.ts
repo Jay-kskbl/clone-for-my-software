@@ -1,7 +1,8 @@
-// 启动动画的纯逻辑：时间轴（指南 §5.1）、胶囊轮廓取点、会话内只播一次（§5.3）。
-import { describe, expect, it } from 'vitest'
+// 启动动画的纯逻辑：时间轴（指南 §5.1）、胶囊轮廓取点、没有输入时循环播放（loop.ts）。
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { hasPlayedLaunch, markLaunchPlayed, resetLaunchPlayed } from '../../src/features/search-motion/launch/playOnce'
+import type { LaunchEndReason } from '../../src/features/search-motion/launch/launchAnimation'
+import { createLaunchLoop } from '../../src/features/search-motion/launch/loop'
 import {
   LAUNCH_TIMING,
   launchDuration,
@@ -84,40 +85,102 @@ describe('胶囊轮廓取点', () => {
   })
 })
 
-describe('会话内只播一次', () => {
-  function memoryStorage() {
-    const data = new Map<string, string>()
-    return {
-      getItem: (k: string) => data.get(k) ?? null,
-      setItem: (k: string, v: string) => void data.set(k, v),
-      removeItem: (k: string) => void data.delete(k),
-    }
-  }
-
-  it('记标记后不再播，清掉后可以再播', () => {
-    const storage = memoryStorage()
-    expect(hasPlayedLaunch(storage)).toBe(false)
-    markLaunchPlayed(storage)
-    expect(hasPlayedLaunch(storage)).toBe(true)
-    resetLaunchPlayed(storage)
-    expect(hasPlayedLaunch(storage)).toBe(false)
+describe('没有输入时循环播放', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
   })
 
-  it('存储读写抛异常（隐私模式）时不报错，按没播过处理', () => {
-    const broken = {
-      getItem: () => {
-        throw new Error('SecurityError')
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  function setup(gap = 3000) {
+    const target = new EventTarget()
+    const state = { empty: true, focused: false, reduced: false }
+    const runs: { end(reason: LaunchEndReason): void; destroyed: boolean }[] = []
+    const loop = createLaunchLoop({
+      gap,
+      target,
+      canPlay: () => state.empty && !state.focused && !state.reduced,
+      play: (onEnd) => {
+        const run = { end: (reason: LaunchEndReason) => onEnd(reason), destroyed: false }
+        runs.push(run)
+        return { skip: () => onEnd('skip'), destroy: () => ((run.destroyed = true), onEnd('destroy')) }
       },
-      setItem: () => {
-        throw new Error('QuotaExceededError')
-      },
-      removeItem: () => {
-        throw new Error('SecurityError')
-      },
-    }
-    expect(hasPlayedLaunch(broken)).toBe(false)
-    expect(() => markLaunchPlayed(broken)).not.toThrow()
-    expect(() => resetLaunchPlayed(broken)).not.toThrow()
-    expect(hasPlayedLaunch(null)).toBe(false)
+    })
+    const fire = (type: string) => target.dispatchEvent(new Event(type))
+    return { loop, state, runs, fire }
+  }
+
+  it('播完一轮停 3 秒再播下一轮，一直循环', () => {
+    const { loop, runs } = setup()
+    expect(loop.start()).toBe(true)
+    expect(runs).toHaveLength(1)
+    runs[0].end('end')
+    expect(loop.running).toBe(false)
+    vi.advanceTimersByTime(2999)
+    expect(runs).toHaveLength(1)
+    vi.advanceTimersByTime(1)
+    expect(runs).toHaveLength(2)
+    runs[1].end('end')
+    vi.advanceTimersByTime(3000)
+    expect(runs).toHaveLength(3)
+  })
+
+  it('等下一轮期间有操作就重新计时', () => {
+    const { loop, runs, fire } = setup()
+    loop.start()
+    runs[0].end('end')
+    vi.advanceTimersByTime(2000)
+    fire('pointerdown')
+    vi.advanceTimersByTime(2000)
+    expect(runs).toHaveLength(1)
+    vi.advanceTimersByTime(1000)
+    expect(runs).toHaveLength(2)
+  })
+
+  it('输入框有内容或有焦点时停止循环，失焦且为空后 wake 重新开始', () => {
+    const { loop, runs, state } = setup()
+    loop.start()
+    state.focused = true
+    runs[0].end('skip')
+    vi.advanceTimersByTime(60_000)
+    expect(runs).toHaveLength(1)
+    state.empty = false
+    state.focused = false
+    loop.wake()
+    vi.advanceTimersByTime(60_000)
+    expect(runs).toHaveLength(1)
+    state.empty = true
+    loop.wake()
+    vi.advanceTimersByTime(3000)
+    expect(runs).toHaveLength(2)
+  })
+
+  it('一开始就有内容时 start 不播', () => {
+    const { loop, runs, state } = setup()
+    state.empty = false
+    expect(loop.start()).toBe(false)
+    expect(runs).toHaveLength(0)
+  })
+
+  it('减少动效打开导致的结束不再排下一轮', () => {
+    const { loop, runs } = setup()
+    loop.start()
+    runs[0].end('reduced')
+    vi.advanceTimersByTime(60_000)
+    expect(runs).toHaveLength(1)
+  })
+
+  it('destroy：停掉正在播的一轮，清掉定时器，不再响应操作', () => {
+    const { loop, runs, fire } = setup()
+    loop.start()
+    loop.destroy()
+    expect(runs[0].destroyed).toBe(true)
+    fire('keydown')
+    loop.wake()
+    vi.advanceTimersByTime(60_000)
+    expect(runs).toHaveLength(1)
+    expect(vi.getTimerCount()).toBe(0)
   })
 })

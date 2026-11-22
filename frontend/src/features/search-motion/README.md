@@ -11,7 +11,7 @@
 | `shared/` | 公共层：`easing`（缓动）、`reducedMotion`（减少动效，可订阅变化）、`tokens`（从 `--app-*` / `--el-*` 读颜色、监听主题）、`canvas`（全页唯一的 rAF 循环、高清屏画布）、`timers`（定时器集中清理） |
 | `messages.ts` | 动效文案（项目没有 i18n 库，集中在这里） |
 | `scan-loader/` | 动画 3：`machine`（纯函数状态机）、`scanLoader.ts/.css`（框架无关核心）、`searchSession`（请求与动画对接：取消、丢弃旧返回、30 s 超时）、`handle`、`ScanLoader.vue` |
-| `launch/` | 动画 2：`timeline`（纯函数时间轴、胶囊轮廓取点）、`playOnce`（会话内只播一次）、`launchAnimation`（Canvas 核心，懒加载）、`launch.css`、`useLaunchAnimation`（Vue 适配） |
+| `launch/` | 动画 2：`timeline`（纯函数时间轴、胶囊轮廓取点）、`loop`（没有输入时循环播放）、`launchAnimation`（Canvas 核心，懒加载）、`launch.css`、`useLaunchAnimation`（Vue 适配） |
 | `idle-spinner/` | 动画 1：`idleTracker`（待机计时）、`draw`（射线 / 光球绘制）、`idleSpinner`（核心）、`IdleSpinner.vue` |
 | `lab/` | 演示页 `/motion-lab`（`MotionLabView.vue`、`IdleLabPanel.vue`），模拟请求，自测和设计走查用 |
 
@@ -30,8 +30,9 @@
 
 - `useLaunchAnimation(inputRef, { placeholder, hasValue?, onFinish? })`，在 `setup` 里调用（首帧前要决定是否隐藏输入框）
 - `inputRef` 是 `el-input` 的组件 ref；`el-input` 上要加 `class="sm-launch-target"`，前缀图标（svg）会被照着画
-- 减少动效、本会话播过、`hasValue()` 为真时不播；`onFinish(reason)` 的 reason 为 `end` / `skip` / `layout` / `reduced` / `destroy`
-- `resetLaunchPlayed()`（`launch/playOnce.ts`）清掉“已播过”标记
+- 检索框为空时循环播放：一轮播完停 3 秒（期间有点击、按键、滚轮、触摸就重新计时）再播下一轮；输入框有内容或有焦点时停止，失焦且为空后重新开始。减少动效打开时不播
+- 用户按键或点击会立即结束当前这一轮并聚焦输入框（按下的字符进入输入框）；自然播完不聚焦
+- `onFinish(reason)` 每轮结束都会调用，reason 为 `end` / `skip` / `layout` / `reduced` / `destroy`
 
 **待机动画（`IdleSpinner.vue`）**
 
