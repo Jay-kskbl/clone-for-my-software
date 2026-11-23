@@ -49,6 +49,24 @@ class CtrlCEngine(EchoEngine):
         return super().recognize(image)
 
 
+class HeartbeatEngine(EchoEngine):
+    """识别时每 0.05 秒写一个字节，最多 60 秒：文件停止变长就说明子进程已经不在了。"""
+
+    def __init__(self, path: str) -> None:
+        self._path = path
+
+    def recognize(self, image: RenderedImage) -> list[RecognizedLine]:
+        with open(self._path, "ab", buffering=0) as f:
+            for _ in range(1200):
+                f.write(b".")
+                time.sleep(0.05)
+        return []
+
+
+def heartbeat_engine(path: str) -> HeartbeatEngine:
+    return HeartbeatEngine(path)
+
+
 def echo_engine() -> EchoEngine:
     return EchoEngine()
 

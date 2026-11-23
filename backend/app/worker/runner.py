@@ -14,6 +14,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from multiprocessing.connection import Connection
 
+from shared.parent_watch import exit_when_parent_dies
 from shared.tasks import Task
 
 try:
@@ -73,6 +74,8 @@ def _child_main(
     # 文件白白记一次失败。所以这里忽略它，由父进程决定何时结束（与 OCR 识别子进程相同，
     # D34；T24aa 补上）
     signal.signal(signal.SIGINT, signal.SIG_IGN)
+    # 父进程被强制结束时跟着退出，不留下没有超时、没有续租的孤儿（T24ab）
+    exit_when_parent_dies()
     try:
         if memory_limit_mb is not None:
             _limit_memory(memory_limit_mb)

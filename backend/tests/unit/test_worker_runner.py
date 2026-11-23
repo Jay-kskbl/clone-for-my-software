@@ -5,9 +5,11 @@
 
 import os
 import signal
+import subprocess
 import sys
 import time
 import uuid
+from pathlib import Path
 
 import pytest
 from shared.tasks import Task
@@ -67,6 +69,14 @@ def handler_hard_crash(_task: Task) -> None:
 
 def handler_out_of_memory(_task: Task) -> None:
     raise MemoryError()
+
+
+def handler_heartbeat(task: Task) -> None:
+    # 每 0.05 秒写一个字节，最多 60 秒：文件停止变长就说明子进程已经不在了
+    with open(os.path.join(task.payload["marker_dir"], "beat"), "ab", buffering=0) as f:
+        for _ in range(1200):
+            f.write(b".")
+            time.sleep(0.05)
 
 
 def handler_gets_ctrl_c(task: Task) -> None:
@@ -255,3 +265,45 @@ def test_interrupted_wait_in_the_parent_still_finishes_the_task(tmp_path, monkey
     assert result.ok is True, result.error
     assert wrapped[0].interrupted == 1
     assert (tmp_path / "ran").exists()
+
+
+# ---- T24ab：父进程被强制结束时，子进程跟着退出 ----
+
+
+def _size(path: Path) -> int:
+    return path.stat().st_size if path.exists() else 0
+
+
+def _wait_until(condition, seconds: float) -> bool:
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        if condition():
+            return True
+        time.sleep(0.05)
+    return condition()
+
+
+def test_child_exits_when_the_parent_is_killed(tmp_path):
+    # 另起一个进程当 Worker 父进程，这样可以真的把它强制结束（kill：POSIX 上是 SIGKILL，
+    # Windows 上是 TerminateProcess，等同于 Stop-Process -Force），不影响 pytest 自己
+    code = (
+        "import dataclasses, sys\n"
+        "import test_worker_runner as t\n"
+        "task = dataclasses.replace(t.TASK, payload={'marker_dir': sys.argv[1]})\n"
+        "t.run_in_subprocess(t.handler_heartbeat, task, timeout_seconds=60)\n"
+    )
+    beat = tmp_path / "beat"
+    parent = subprocess.Popen(
+        [sys.executable, "-c", code, str(tmp_path)],
+        env={**os.environ, "PYTHONPATH": os.pathsep.join(p for p in sys.path if p)},
+    )
+    try:
+        assert _wait_until(lambda: _size(beat) > 0, 30), "子进程没有开始运行"
+    finally:
+        parent.kill()
+        parent.wait(10)
+
+    time.sleep(1.0)  # 给子进程退出的时间
+    size = _size(beat)
+    time.sleep(1.0)
+    assert _size(beat) == size, "父进程已被强制结束，子进程还在运行"

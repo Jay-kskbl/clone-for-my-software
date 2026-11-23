@@ -20,6 +20,7 @@ from typing import Any
 
 from pydantic import TypeAdapter
 from shared.contracts import OcrLocator
+from shared.parent_watch import exit_when_parent_dies
 
 from ocr_worker.engine import Engine, RecognizedLine
 from ocr_worker.rendering import render
@@ -94,6 +95,8 @@ def _child_main(
     # 后退出”；本进程若也响应，正在识别的这一页会被打断并记成一次失败。所以这里忽略它，
     # 由父进程决定何时结束（关闭管道或直接 kill）
     signal.signal(signal.SIGINT, signal.SIG_IGN)
+    # 父进程被强制结束时跟着退出，不留下没有超时、占着约 3 GB 内存的孤儿（T24ab）
+    exit_when_parent_dies()
     try:
         _limit_memory(memory_limit_mb)
         engine = factory()

@@ -3,9 +3,12 @@
 用假引擎（tests/fakes.py）在真实的 spawn 子进程里运行，不需要 PaddleOCR。
 """
 
+import os
+import subprocess
 import sys
 import time
 import uuid
+from pathlib import Path
 
 import fakes
 import pymupdf
@@ -231,3 +234,48 @@ def test_interrupted_wait_in_the_parent_still_returns_the_page(image_job):
         assert process.running
     finally:
         process.close()
+
+
+# ---- T24ab：父进程被强制结束时，识别子进程跟着退出 ----
+
+
+def _size(path: Path) -> int:
+    return path.stat().st_size if path.exists() else 0
+
+
+def _wait_until(condition, seconds: float) -> bool:
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        if condition():
+            return True
+        time.sleep(0.05)
+    return condition()
+
+
+def test_child_exits_when_the_parent_is_killed(image_job, tmp_path):
+    # 另起一个进程当 OCR Worker 父进程，这样可以真的把它强制结束，不影响 pytest 自己
+    code = (
+        "import functools, sys\n"
+        "import fakes\n"
+        "from ocr_worker.engine_process import EngineProcess, Job\n"
+        "job = Job(path=sys.argv[1], locator={'type': 'image', 'image_id': sys.argv[2]},"
+        " dpi=200, max_pixels=10**8)\n"
+        "factory = functools.partial(fakes.heartbeat_engine, sys.argv[3])\n"
+        "process = EngineProcess(factory, load_timeout_seconds=30.0)\n"
+        "process.run(job, timeout_seconds=60, tick_seconds=0.1)\n"
+    )
+    beat = tmp_path / "beat"
+    parent = subprocess.Popen(
+        [sys.executable, "-c", code, image_job.path, IMAGE_ID, str(beat)],
+        env={**os.environ, "PYTHONPATH": os.pathsep.join(p for p in sys.path if p)},
+    )
+    try:
+        assert _wait_until(lambda: _size(beat) > 0, 30), "识别子进程没有开始运行"
+    finally:
+        parent.kill()
+        parent.wait(10)
+
+    time.sleep(1.0)  # 给子进程退出的时间
+    size = _size(beat)
+    time.sleep(1.0)
+    assert _size(beat) == size, "父进程已被强制结束，识别子进程还在运行"

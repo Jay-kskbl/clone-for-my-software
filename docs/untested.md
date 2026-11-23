@@ -495,6 +495,8 @@ cd <项目目录> && docker compose --env-file .env -f deploy/docker-compose.yml
 | 8 项符号链接测试 | 仍因 WinError 1314 失败（同第 7.1 节） | `windows任务书.md` 第 17.9 节，由 Barry 本人运行 |
 | OCR Worker 按 Ctrl+C 打断当前任务（Windows） | `services/ocr_worker/ocr_worker/engine_process.py` 的等待循环在主线程调用 `Connection.poll()`；Windows 上这个调用等待时会同时等 Ctrl+C 事件，收到后直接抛 `InterruptedError`，循环没有捕获。W6 12.7 实测：任务被记一次失败、放回队列，Worker 退出码 1 | T24aa（D52）已修复，有单元测试；Windows 上按任务书第 17.5 节重测后删除本行 |
 | 通用 Worker 按 Ctrl+C 打断当前任务（未实测） | `backend/app/worker/runner.py` 有同样的 `poll()` 等待；而且子进程没有忽略 SIGINT（D34 只改了 OCR 子进程），任何系统上按 Ctrl+C，子进程都会收到 `KeyboardInterrupt`，被当作一次可重试的失败。代码复核发现，没有实际按过 | T24aa（D52）已修复（子进程忽略 SIGINT，等待被打断时接着等），有单元测试；Windows 上按任务书第 17.5 节 B 实测后删除本行 |
+| Worker 被强制结束后子进程继续跑 | W6 12.5 的日志里，被强杀的 Worker 的子进程照常跑完任务才报 `BrokenPipeError`。T24ab（D53）已修，强杀父进程的测试在 macOS 上通过；Windows 上、真实 Worker 上没有验证 | 任务书第 17.5 节 C 通过后删除本行 |
+| OCR Worker 在循环里按 Ctrl+C 是否会被重新拉起 | OCR Worker 收到停止信号后返回 0，`CLAUDE.md` 的循环和 `run_ocr_worker_loop.ps1` 把 0 当“重新拉起”。由代码得出，没有实际按过 | 待 Barry 决定（DEVPLAN §4，R5） |
 | 一致性修复后检索排名与修复前不完全相同 | W6 12.4：B2 有 110 / 500 条完整排名变化，指标几乎不变。很可能是 BM25 统计值包含已删除但未合并的文档。原判定标准（逐条相同）不对 | 任务书第 17.4 节按新标准重测 |
 | `repair` 在检索服务不可用时多一行误导提示 | 见第 4 节“`consistency repair` 在检索服务不可用时的提示”一行 | 待 Barry 决定 |
 | 四个开关全关后地址栏残留 `ch` | 全关时 `onSearch` 直接返回，不更新地址栏；刷新会按上一次的开关重查 | 待 Barry 决定是否算问题 |

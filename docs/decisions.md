@@ -1335,3 +1335,21 @@ Barry 于 2026-11-19 对 DEVPLAN §4 中整理出的 14 项待批准事项回复
 - 父进程从子进程管道读结果的 `recv()` 没有包进重试：`poll()` 返回有数据之后才会调用它，数据已经在管道里，Windows 上不会进入需要等待的分支。
 - Windows 上的行为只有单元测试覆盖（用一个第一次 `poll()` 抛 `InterruptedError` 的包装对象模拟）；真实的 Ctrl-C 要按 `windows任务书.md` 第 17.5 节在 Windows 上手动验证。子进程忽略 SIGINT 的测试用 `os.kill(os.getpid(), SIGINT)` 模拟，在 Windows 上跳过（那里的 `os.kill` 会直接结束进程）。
 - 子进程刚启动、还没执行到 `signal.signal` 那一行时按 Ctrl-C，子进程仍会被打断。这段时间很短（OCR 子进程同样如此），出现时任务按可重试的失败处理，下一次会重做。
+
+### D53 Worker 被强制结束时，它的子进程跟着退出（T24ab）
+
+代码：`shared/parent_watch.py`；`backend/app/worker/runner.py`、`services/ocr_worker/ocr_worker/engine_process.py` 的 `_child_main` 开头调用。逐项记录见 `docs/changes/T24ab.md`。来源：`docs/changes/2026-11-23-代码复核建议.md` R1，Barry 于 2026-11-23 批准（“先修 R1”）。
+
+**问题。** 两个 Worker 都把任务放在 `daemon=True` 的子进程里执行，超时和续租由父进程负责。daemon 子进程只在父进程**正常退出**时才会被结束；父进程被强制结束（`kill -9`、`Stop-Process -Force`、内存不足被系统杀掉）时，子进程照常跑下去。W6 12.5 的日志里能看到：被强杀的 Worker 的子进程跑完之后，往断开的管道写结果才报 `BrokenPipeError`。这段时间没有超时、没有续租；租约到期后任务被别的 Worker 重新领取，两边可能同时写同一个文档。
+
+**决定。**
+
+- 子进程入口启动一个后台线程，等父进程的 sentinel，父进程一消失就 `os._exit(1)`。sentinel 在 POSIX 上是管道读端（父进程持有写端），Windows 上是父进程的句柄，都是标准库自带的，不需要轮询，也不受 pid 被复用的影响。
+- 用 `os._exit` 而不是抛异常：线程里抛异常影响不到主线程，主线程可能正卡在解析库里。未提交的事务随连接断开回滚；已经提交的部分由重新领取的任务按确定性 ID 覆盖（附录 A7）。
+- 放在 `shared/`，两个 Worker 共用。与 D52 的 `_poll` 各写一份不同：这里没有各自的变化点，而且 `shared` 本来就装在两个环境里。
+
+**局限。**
+
+- 主线程里的原生代码如果长时间不释放 GIL，看门狗线程要等它释放之后才能运行，退出会延迟。
+- 父进程**卡死但没有消失**时不起作用，仍然依靠租约到期后由别的 Worker 回收。
+- Windows 上的实际效果待 `windows任务书.md` 第 17.5 节 C 验证；自动化测试只在 macOS 上运行过。

@@ -1471,6 +1471,7 @@ Copy-Item experiments\docvqa\datasets\document_map.csv "$out\missed\document_map
 | W6 12.3 符号链接 | 执行方没有权限 | 第 17.9 节，Barry 本人 |
 | W6 12.4 第 10 步 | 排名与 W3 不完全相同；原判定标准（逐条相同）定错了 | 第 17.4 节按新标准重测，并补交结果目录 |
 | W6 12.7 OCR Ctrl+C | **未通过**：Windows 上正在识别的任务被打断 | 已由 T24aa 修复（2026-11-23，D52），按第 17.5 节重测，并加测通用 Worker |
+| W6 12.5 强制结束 Worker | 数据正确；但日志显示被强杀的 Worker 的子进程还在继续跑 | 已由 T24ab 修复（2026-11-23，D53），按第 17.5 节 C 验证 |
 | W6 12.9、12.10 真实文件 | 没有样本 | 第 17.10 节放宽样本的来源说明，由 Barry 自己制作 |
 | 第 0.2 节第 4 步的 `mapping-eol.txt` | 没交 | 第 17.2 节补交 |
 | W7 13.2 内存 | 合计峰值少算了 OCR 识别子进程（采样脚本的问题，Claude 已按原始数据重算为 5732.8 MB） | 不重测；以后的采样改用第 17.2 节的新脚本 |
@@ -1490,7 +1491,7 @@ Copy-Item experiments\docvqa\datasets\document_map.csv "$out\missed\document_map
 | 5 | 第 17.6 节：登录页与停机刷新 | GPT | 2 | 1 小时 |
 | 6 | 第 17.8 节：300 秒超时的文档 | GPT | 1 | 40 分钟 |
 | 7 | 第 17.7、17.9、17.10、17.11 节 | **Barry 本人** | 1 | 共约 2 小时，可以分几次做 |
-| 8 | 第 17.5 节：Ctrl+C 重测 | GPT | 1（拉到的提交包含 T24aa） | 30 分钟 |
+| 8 | 第 17.5 节：Ctrl+C 重测、强制结束后的子进程 | GPT | 1（拉到的提交包含 T24aa、T24ab） | 45 分钟 |
 | 9 | 按第 14.1 节整理 `output/windows-w9/`、提交；Barry 推送，大文件另交 | GPT、Barry | 全部 | 30 分钟 |
 
 ### 17.2 基线、公用脚本、新的内存采样脚本
@@ -1643,6 +1644,22 @@ echo exit=%ERRORLEVEL%
 
 **预期：** 日志出现停止提示（OCR Worker 是“收到信号 2，处理完当前任务后退出”，通用 Worker 是“收到信号 SIGINT，完成当前任务后退出”）；当前任务**照常做完**：`succeeded`、`attempts = 1`、`error` 为空；Worker 在这之后退出，不再领新任务；日志里没有 `InterruptedError`、`KeyboardInterrupt`。退出码：OCR Worker 0，通用 Worker 130（两者 `__main__.py` 的约定不同，`scripts/windows/run_ocr_worker_loop.ps1` 也把 130 当正常退出）。修复任务如果改了这两个约定，以修复任务的说明为准。
 
+**C. 强制结束 Worker，子进程应当跟着退出**（T24ab，`docmgr_w6`，2026-11-23 添加）。先确认拉到的提交包含 T24ab；`test_worker_runner.py`、`test_engine_process.py` 里的 `test_child_exits_when_the_parent_is_killed` 各 1 项应当在 Windows 上通过（不跳过）。然后分别对通用 Worker（再上传一次 `big3000.pdf`）和 OCR Worker（`reocr --yes` 之后）做：
+
+1. 启动 Worker，看到“开始任务”（或“开始 OCR 任务”）后，记下主进程 PID、任务 id，并列出它的子进程：
+
+   ```powershell
+   Get-CimInstance Win32_Process -Filter "ParentProcessId = <主进程 PID>" | Select-Object ProcessId, ParentProcessId, CommandLine | Format-List | Out-File -Encoding utf8 "$out\kill-<worker>-children.txt"
+   ```
+
+   虚拟环境里的 `python.exe` 可能是启动器，真正的 Worker 是它的子进程；以日志里领取者标识中的 PID 为准。
+2. `Stop-Process -Id <主进程 PID> -Force`，等 3 秒，再用 `Get-Process -Id <子进程 PID> -ErrorAction SilentlyContinue` 逐个查第 1 步列出的 `spawn_main` 子进程，输出存成 `kill-<worker>-after.txt`（没有输出就写“无”）。
+3. 重新启动一个 Worker，等任务被回收重做，导出这个任务（同 A 的 `Export`，文件名 `kill-<worker>-task.csv`）。
+
+**预期：** 第 2 步 3 秒后子进程都已不在；被杀 Worker 的日志里没有 `BrokenPipeError`；第 3 步任务最终 `succeeded`、`attempts = 2`，同一文档没有重复的 OCR 任务（`SELECT document_id, payload::text, count(*) FROM processing_tasks WHERE task_type = 'ocr' GROUP BY 1, 2 HAVING count(*) > 1` 为 0 行）。
+
+（A、B 两步要像上面那样**直接**运行 Worker，不要套 `run_ocr_worker_loop.ps1`：OCR Worker 停下后返回 0，循环会把它重新拉起，见 DEVPLAN §4 R5。）
+
 ### 17.6 登录页与停机刷新（T24v–T24z、W4 第 10.2 节第 5 项场景①）
 
 **为什么：** T24v–T24z 只对着临时模拟后端检查过（`docs/untested.md` 第 4 节“T24v–T24z”）；W4 场景①在第二轮测的是 T24x 之前的代码。在 W4 的 `docmgr_ui` 上，用 `npm run dev` 的前端做。每一步截图存到 `output/windows-w9/login/`，同时用浏览器开发者工具把这一步的网络请求导出成 HAR（或者至少记下请求地址和状态码）。
@@ -1714,7 +1731,7 @@ echo exit=%ERRORLEVEL%
 - [ ] 17.2：`git-head.txt` 的提交包含 T24z；`mapping-eol.txt` 三行 LF、hash 与 Mac 一致；前端三项命令的输出都在；`sampler-selftest.csv` 相邻采样间隔不超过 3 秒
 - [ ] 17.3：四步耗时与设定值相差不超过 2 秒，都报 `ConnectionTimeout`、退出码 1
 - [ ] 17.4：`index-before.txt`、`index-after.txt`、`git-status-before-runs.txt`、`w9-runs.zip`（8 个目录）都在；R1 与 R2 逐条相同；指标与 W3 相差不超过 0.01
-- [ ] 17.5（修复之后）：A、B 两个任务都是 `succeeded`、`attempts = 1`，退出码分别为 0、130，日志里没有 `InterruptedError`、`KeyboardInterrupt`
+- [ ] 17.5（修复之后）：A、B 两个任务都是 `succeeded`、`attempts = 1`，退出码分别为 0、130，日志里没有 `InterruptedError`、`KeyboardInterrupt`；C 的两个 Worker 强制结束 3 秒后子进程都不在，任务 `succeeded`、`attempts = 2`，没有重复的 OCR 任务
 - [ ] 17.6：11 步都有截图和网络记录（第 11 步的网络记录里能数出登录请求的条数），结果逐条对照了预期
 - [ ] 17.7：三张截图和 `drag.har`
 - [ ] 17.8：15 个 CSV 和 `memory.csv`
