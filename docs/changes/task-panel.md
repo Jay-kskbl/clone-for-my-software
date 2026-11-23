@@ -120,7 +120,7 @@ Worker 把异常原文存进 `processing_tasks.error`，任务接口原样返回
 | `frontend/src/features/tasks/changes.ts`（新增） | 什么时候要重新取文档、有没有新的 OCR 结果（纯函数） |
 | `frontend/src/features/tasks/text.ts` | 加失败提示、进度的文字 |
 | `frontend/src/components/ExtractedText.vue` | 对外提供 `reload()`：重新加载当前页，不滚动 |
-| `frontend/src/i18n/messages.ts` | 新增 `tasks.*` 12 条、`preview.parseFailed`（中英文） |
+| `frontend/src/i18n/messages.ts` | 新增 `tasks.*` 10 条、`preview.parseFailed`（中英文） |
 | `frontend/src/features/tasks/TaskDialog.vue`、`frontend/src/views/DocumentsView.vue` | 提示文字改用正文颜色，原来的橙字、红字对比度不够 |
 | `frontend/README.md`、`docs/untested.md` | 目录说明；登记未测试项 |
 | `frontend/tests/tasks/changes.test.ts`（新增）、`text.test.ts` | 新增 18 项 |
