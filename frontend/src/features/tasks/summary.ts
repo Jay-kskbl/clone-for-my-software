@@ -2,7 +2,7 @@
 //
 // 文档状态只跟随 parse 任务（decisions.md D27），OCR、向量任务失败时文档仍是“成功”，
 // 所以要看任务本身。扫描件一页一个 OCR 任务，可能上百条，按类型汇总后再显示。
-import type { Task, TaskType } from '../../api/types'
+import type { Status, Task, TaskType } from '../../api/types'
 
 export const STEP_ORDER: readonly TaskType[] = ['parse', 'ocr', 'embed', 'cleanup']
 
@@ -83,6 +83,11 @@ export function summarizeTasks(tasks: Task[]): TaskStep[] {
 /** 还有没结束的任务：需要继续刷新 */
 export function hasActive(tasks: Task[]): boolean {
   return tasks.some(isActive)
+}
+
+/** 解析任务的状态，文档状态跟随它（D27）。一个文档只有一个 parse 任务；没有时为 null */
+export function parseStatus(tasks: Task[]): Status | null {
+  return tasks.find((t) => t.task_type === 'parse')?.status ?? null
 }
 
 export function failedTasks(tasks: Task[]): Task[] {

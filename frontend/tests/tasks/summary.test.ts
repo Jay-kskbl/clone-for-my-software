@@ -7,6 +7,7 @@ import {
   failedTasks,
   hasActive,
   isHopeless,
+  parseStatus,
   summarizeTasks,
 } from '../../src/features/tasks/summary'
 import { task } from './fixtures'
@@ -107,6 +108,11 @@ describe('判断', () => {
     expect(hasActive([])).toBe(false)
     expect(hasActive([task('parse', 'succeeded'), task('ocr', 'failed')])).toBe(false)
     expect(hasActive([task('parse', 'succeeded'), task('ocr', 'pending')])).toBe(true)
+  })
+
+  it('解析状态', () => {
+    expect(parseStatus([task('ocr', 'failed'), task('parse', 'succeeded')])).toBe('succeeded')
+    expect(parseStatus([task('cleanup', 'pending')])).toBeNull()
   })
 
   it('失败的任务', () => {
