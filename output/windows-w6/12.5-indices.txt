@@ -1,0 +1,4 @@
+index            docs.count
+w6_doc_meta              60
+w6_image_vectors         60
+w6_chunks               173

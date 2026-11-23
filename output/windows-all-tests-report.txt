@@ -1,0 +1,285 @@
+Windows 全部测试汇总报告
+========================
+
+执行日期：2026-11-21 至 2026-11-23（Asia/Shanghai）
+远端仓库：https://github.com/Jay-kskbl/my-software
+最终基线：fd0b5ebf729cf6602447bf95012a6064a2fe270a
+执行环境：Windows 11、Python 3.14 main 环境、OCR 环境、CLIP 环境
+数据库：PostgreSQL 16.15，127.0.0.1:55432
+搜索：OpenSearch 2.19.1 + analysis-smartcn
+机器：Intel i5-13500H，16 逻辑处理器，15.73 GB 内存
+
+说明
+----
+
+本报告汇总 W1–W8 实际执行结果。未完成的项没有写成通过。
+没有修改任何 .md、业务代码、数据契约、表结构或索引 mapping。
+上传前已移除访问令牌和数据库连接串。
+
+W1：新代码自动化与真实服务
+--------------------------
+
+状态：完成，除 8 项符号链接权限测试外
+
+- backend：932 passed，6 failed，0 skipped
+- shared：103 passed，2 failed
+- OCR Worker main：66 passed，4 skipped
+- OCR Worker 真实模型：4 passed
+- CLIP Service main：39 passed，17 skipped
+- CLIP 真实模型：17 passed
+- 前端：typecheck、67 tests、build 全部通过
+- ruff 和 format 检查全部通过
+- OCR 端到端烟测：PASS
+- 8 个失败全部是 WinError 1314，测试准备阶段无权限创建符号链接
+- 原始 JUnit：output/windows-w1/
+
+W2：DocVQA 下载与转换
+---------------------
+
+状态：通过
+
+- 数据集：vidore/docvqa_test_subsampled
+- 500 行、500 查询、500 不重复 JPEG
+- 169224953 字节
+- 脚本测试 12 passed
+- experiments validate 退出码 0
+- 重复运行下载 0、跳过 500，生成文件 SHA-256 不变
+- manifest、queries、qrels、source_rows 全套齐备
+
+W3：DocVQA 全流程实验
+---------------------
+
+状态：执行方完成，仍有 Claude 核对项
+
+- parse 500 succeeded、embed 500 succeeded、OCR 500 succeeded
+- 10 个配置 × 3 次重复全部退出码 0
+- OCR 首次成功任务平均 53.57 秒、中位 45 秒、P95 131 秒
+- 有 8 次 0xC0000005 崩溃，涉及 4 个文档；受控重试后最终 0 failed
+- reocr 前后 OCR 片段均为 1589，没有叠加
+- reocr 后 B2 复跑退出码 0
+- consistency：issues=[]
+- 主库 documents=0，W3 库 documents=500
+- 结果 zip：docvqa-runs.zip，8071418 字节
+
+W4：T24s 前端真实后端联调
+--------------------------
+
+状态：部分完成，存在 2 个前端偏差和 1 个工具阻塞
+
+通过项：
+
+- 管理员/普通用户侧栏
+- 管理员看他人文件的“管理员可见”
+- 文件页五列、类型/上传者/来源、筛选空态
+- 4 个支持文件上传、5 秒自动刷新为处理成功
+- 共享对话框 400px viewport 下宽 368px，符合 92vw
+- 默认检索无 ch；通道变化更新 ch；旧 img=1 兼容
+- 改开关自动重查
+- 三格名次、RRF 融合分、总耗时和通道耗时与 API 一致
+- CLIP 在线、停服降级、恢复在线
+- 检索预览返回保留查询和开关；新标签预览返回文件页
+- Chrome 157、Edge 158；400px 窄窗布局正常
+- 9 张新截图已生成
+
+偏差：
+
+- 四通道全关时提示正确且不发请求，但 URL 仍残留 ch=image
+- 后端停止后直接刷新文件页会跳转登录页，而不是显示文件列表加载失败
+- “已登录页面自动刷新时后端停止”场景正常显示 HTTP 502 自动刷新提示
+
+未完成：
+
+- 资源管理器到浏览器的真实跨窗口鼠标拖拽。Computer Use drag API
+  只允许目标点位于源窗口边界内，实际返回 outside window bounds。
+  没有用脚本 drop 冒充。
+- Firefox 未安装，Safari 未测试。
+
+W5：T24k/T24l/T24m/T24o/T24p
+-----------------------------
+
+状态：完成，11.5 受网络环境限制
+
+- 11.2：初始 15 个 w/crlf；重新签出后 0 个；PDF.js 测试 3/3
+- 11.3：缺失索引、结构差异、修复、--force 重建全部符合预期
+- 11.4：空库和 0001 落后库均退出码 1 且提示正确；0002 后正常启动
+- 11.5：目标网络立即拒绝，未测到配置秒数；已如实记录
+- 11.6：生产 preview、上传、检索、PDF/图片/Word 预览全部通过
+- 无未解析 <el-...> 组件
+- 控制台仅有 favicon 404 和 PDF 字体提示
+- 详细记录：output/windows-w5/summary.txt
+
+W6：新基线复测与真实环境补测
+-----------------------------
+
+状态：已完成的节点见下；12.3、12.9、12.10 仍需外部人工条件
+
+12.2：
+
+- backend 944 passed，6 个符号链接失败
+- shared 106 passed，2 个符号链接失败
+- collect-only：backend 950、shared 108
+- OCR main 71 passed/4 skipped；真实 OCR 4/4
+- CLIP main 39 passed/17 skipped；真实 CLIP 17/17
+- 前端 93 tests、typecheck、build 全部通过
+- ruff 全部通过
+- OCR 烟测 PASS
+
+12.4：
+
+- 缺失索引、停机、chunks 缺失、向量缺失、孤立文件均能检出并修复
+- 修复后 consistency=[]，OCR chunks=1589，vectors=500
+- B2/B3 均退出码 0
+- 但 B2/B3 排名与旧 W3 不同，不能判定逐条一致
+
+12.5：
+
+- 2 个通用 Worker + 2 个 OCR Worker
+- 强杀一个 parse Worker 和一个 OCR Worker
+- 最终 parse 60、embed 60、OCR 60 全部 succeeded，failed=0
+- 8 份 SQL 全部导出
+- documents=60、chunks=173、ocr_results=60、embeddings=60
+- consistency=[]
+
+12.6：
+
+- 3000 页 PDF，2 秒超时下 parse 三次失败，attempts=3
+- 文档 failed，原文件仍可下载
+- 无超时重试后 succeeded，生成 3000 片段
+
+12.7：
+
+- 单 OCR Worker Ctrl+C 没有按预期等待当前任务完成
+- 实际抛 InterruptedError，任务回到 pending，退出码 1
+- 重启后第 2 次尝试成功，最终 60/60 OCR 成功
+
+12.8：
+
+- 第二个后端 5.0 秒后报端口占用，退出码 3
+- 第二个 CLIP 19.7 秒后报端口占用，退出码 3
+- 原后端和 CLIP health 都保持 200
+
+12.9/12.10：
+
+- 未执行
+- 需要 Barry 提供真实 Office/WPS、Excel、文本 PDF、扫描 PDF、
+  手机照片、截图及人工抄录
+- 不能用生成的样本冒充真实文件
+
+12.11：
+
+- w3-1.csv 至 w3-8.csv 已导出
+- 1589 OCR 片段、500 图像向量、500 meta
+- OCR 参数只有一组、500 条
+- 两文档崩溃日志、重试记录和 w3-logs.zip 已整理
+- 第一轮每秒内存 CSV 未保留，已说明
+
+W7：跨机器 CLIP、内存、负载检索
+---------------------------------
+
+状态：完成
+
+13.1：
+
+- 10 条文本、6 张图片向量
+- cn_clip 1.6.0、torch 2.15.0+cpu
+- 模型版本 cn_clip-1.6.0-5997ef32c50d
+
+13.2：
+
+- 15 分钟、162 个采样时刻
+- 六组均出现；最大采样间隔 5.95 秒
+- 合计工作集峰值 2649.9 MB
+- 最低可用内存 886.6 MB
+
+13.3：
+
+- 负载 200/200 次，image_status=ok
+- 总耗时 P50 200.0 ms、P95 279.1 ms
+- 图像耗时 P50 195.5 ms、P95 275.1 ms
+- 空闲 200/200 次，image_status=ok
+- 总耗时 P50 68.0 ms、P95 177.1 ms
+- 图像耗时 P50 66.0 ms、P95 171.1 ms
+
+W8：第一轮日志引出的补充测试
+-----------------------------
+
+状态：除 16.7B 人工答案外完成
+
+16.3：
+
+- Application 日志最早 2026-09-13，未被覆盖
+- 第一轮时间范围内没有 python.exe 的 1000/1001 崩溃事件
+- 没有 AppCrash_python* WER
+- 判定为当时未生成错误报告
+
+16.4：
+
+- 单 OCR Worker 10 轮、4 OCR Worker 10 轮
+- 20 个 CSV，每轮 4/4 succeeded、attempts=1
+- 未复现 0xC0000005
+- 最低可用内存 7759.3 MB
+- 采样最大间隔 10.33 秒，未满足严格 <=3 秒
+- 结论：第一轮崩溃与当时机器状态有关，原因不明
+
+16.5：
+
+- 40 文件，N=1/2/4/1
+- 四组均 40/40 succeeded，failed=0
+- N=1：1.678 / 2.141 张/分钟
+- N=2：3.083 张/分钟
+- N=4：4.327 张/分钟
+- N=4 吞吐最高，但单任务 P95 和 CPU 争抢最高
+
+16.6：
+
+- smartcn 分析结果 17 行
+
+16.7A：
+
+- ocr-chunks.csv 1589 行
+- document_map.csv 已复制
+
+16.7B：
+
+- 未完成
+- 需要 Barry 从原图人工填写 missed30-answers.tsv
+
+16.8：
+
+- zip 炸弹、文件数炸弹、超大像素图片均被解析前拒绝
+- 三个畸形文件 attempts=1，未产生 OCR/embed
+- worker 峰值 123.6 MB
+- 正常对照 parse 成功
+- 对照 embed 因 CLIP 关闭实际重试 3 次后 failed，与任务书写的 pending 不同
+
+关键偏差汇总
+------------
+
+1. W6 12.4：B2 110/500、B3 99/500 完整排名变化
+2. W6 12.7：Ctrl+C 中断当前 OCR，而不是完成当前任务
+3. W4：四通道全关仍残留 ch=image
+4. W4：后端停机刷新跳登录页，而非文件列表错误
+5. W8 16.8：对照 embed 最终 failed，而非 pending
+6. W8 16.4：内存采样间隔最大 10.33 秒
+7. W5 11.5：网络立即拒绝，无法验证配置超时
+
+仍未完成
+--------
+
+- W6 12.3：8 项符号链接测试，需要 Barry 高权限终端
+- W6 12.9/12.10：需要真实样本、原文件和人工抄录
+- W8 16.7B：需要 Barry 人工 30 条答案
+- W4 10.3：需要支持跨窗口鼠标拖拽的桌面自动化或 Barry 手动操作
+
+原始证据
+--------
+
+- output/windows-w1/
+- output/windows-w3/
+- output/windows-w3-supplement/
+- output/windows-w4/
+- output/windows-w5/
+- output/windows-w6/
+- output/windows-w7/
+- output/windows-w8/
+- docs/screenshots/windows-2026-11-23-t24s/

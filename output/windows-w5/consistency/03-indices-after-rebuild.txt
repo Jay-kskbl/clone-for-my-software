@@ -1,0 +1,4 @@
+index            docs.count creation.date.string
+w5_doc_meta               0 2026-11-22T06:26:21.274Z
+w5_chunks                 0 2026-11-22T06:26:21.435Z
+w5_image_vectors          0 2026-11-22T06:26:21.579Z

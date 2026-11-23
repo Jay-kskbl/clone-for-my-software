@@ -1,0 +1,33 @@
+........................................................................ [ 66%]
+...............................FF...                                     [100%]
+================================== FAILURES ===================================
+____________________ test_symlinked_directory_is_rejected _____________________
+
+tmp_path = WindowsPath('C:/Users/lenovo/Desktop/my-software-main/_gh_upload/storage-smoke/pytest-w6-shared/test_symlinked_directory_is_re0')
+
+    def test_symlinked_directory_is_rejected(tmp_path):
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        root = tmp_path / "root"
+        (root / "2026").mkdir(parents=True)
+>       os.symlink(outside, root / "2026" / str(DOC))
+E       OSError: [WinError 1314] 客户端没有所需的特权。: 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\storage-smoke\\pytest-w6-shared\\test_symlinked_directory_is_re0\\outside' -> 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\storage-smoke\\pytest-w6-shared\\test_symlinked_directory_is_re0\\root\\2026\\abcdef12-2222-4333-8444-555555555555'
+
+tests\test_storage_keys.py:50: OSError
+_______________________ test_symlinked_file_is_rejected _______________________
+
+tmp_path = WindowsPath('C:/Users/lenovo/Desktop/my-software-main/_gh_upload/storage-smoke/pytest-w6-shared/test_symlinked_file_is_rejecte0')
+
+    def test_symlinked_file_is_rejected(tmp_path):
+        target = tmp_path / "secret"
+        target.write_text("x")
+        path = tmp_path / KEY
+        path.parent.mkdir(parents=True)
+>       os.symlink(target, path)
+E       OSError: [WinError 1314] 客户端没有所需的特权。: 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\storage-smoke\\pytest-w6-shared\\test_symlinked_file_is_rejecte0\\secret' -> 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\storage-smoke\\pytest-w6-shared\\test_symlinked_file_is_rejecte0\\2026\\abcdef12-2222-4333-8444-555555555555\\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.pdf'
+
+tests\test_storage_keys.py:61: OSError
+=========================== short test summary info ===========================
+FAILED tests/test_storage_keys.py::test_symlinked_directory_is_rejected - OSE...
+FAILED tests/test_storage_keys.py::test_symlinked_file_is_rejected - OSError:...
+2 failed, 106 passed in 0.96s

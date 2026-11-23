@@ -1,0 +1,20 @@
+run dir: C:\Users\lenovo\Desktop\my-software-main\_gh_upload\storage-smoke\ocr-e2e\20261122-142237
+started api (pid 10424)
+started backend-worker (pid 22496)
+health ok: database=ok, opensearch=ok, clip=ok
+registered and logged in as ocrsmoke_b831a0c8
+uploaded document f7a536e8-c31b-4a55-8976-ed61577bdab5
+parse task succeeded
+OCR task queued: 3253903c-258a-479e-b725-a3ba34feed1c
+started ocr-worker (pid 19008)
+OCR worker exited successfully
+OCR task succeeded
+OCR text stored: '智能文档管理系统\nOCR SMOKE 2026'
+ocr_results.params recorded: {'pdf_dpi': None, 'max_pixels': 100000000, 'min_confidence': 0.0}
+search hit via OCR chunk: f7a536e8-c31b-4a55-8976-ed61577bdab5:c1-m500-o50-8c7eff2e2b4f:1000000000 (snippet='<em>智能</em><em>文档</em><em>管理</em><em>系统</em>\nOCR SMOKE 2026')
+document deleted and OCR chunks removed
+deleted document is no longer searchable
+stopped backend-worker
+stopped api
+removed smoke indices with prefix smokeocr20261122142237
+PASS: real OCR end-to-end chain is working

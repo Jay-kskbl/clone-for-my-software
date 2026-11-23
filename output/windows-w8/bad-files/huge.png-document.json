@@ -1,0 +1,15 @@
+{
+  "id": "bab1f685-6421-4ac6-ac98-67d0fb9a2b5d",
+  "filename": "huge.png",
+  "mime_type": "image/png",
+  "size_bytes": 105052,
+  "status": "failed",
+  "tags": [],
+  "owner": {
+    "id": "a1dd8e5b-007a-4fe3-9968-f2d0ba1d64f0",
+    "username": "bombba8d3eb2"
+  },
+  "access": "owner",
+  "created_at": "2026-11-23T14:05:15.484173+08:00",
+  "updated_at": "2026-11-23T14:05:24.845789+08:00"
+}

@@ -1,0 +1,114 @@
+Windows W6 已完成部分摘要
+========================
+
+执行日期：2026-11-22（Asia/Shanghai）
+代码基线：fd0b5ebf729cf6602447bf95012a6064a2fe270a
+
+12.2 新基线全套复测
+-------------------
+
+- backend：944 passed，6 failed，0 skipped，0 error
+- 6 个失败全部是 WinError 1314 符号链接权限，留待 Barry 的第 12.3 节
+- shared：106 passed，2 failed；两项同为 WinError 1314
+- OCR Worker main：71 passed，4 skipped；真实 OCR：4/4 passed
+- CLIP Service main：39 passed，17 skipped；真实 CLIP：17/17 passed
+- 前端 typecheck、93 项测试、生产构建全部退出码 0
+- 四个目录 ruff check 和 format --check 全部通过
+- backend collect-only：950 tests；shared collect-only：108 tests
+- OCR 端到端烟测 PASS，params={pdf_dpi:null,max_pixels:100000000,min_confidence:0.0}
+
+12.3 符号链接
+-------------
+
+当前 Codex 沙箱账号仍没有 SeCreateSymbolicLinkPrivilege。
+8 项必须由 Barry 在开发人员模式或管理员终端补跑。
+
+12.4 一致性修复链
+-----------------
+
+- 初始 check：issues=[]
+- OpenSearch 停机：check 退出码 1，明确写明索引没有检查
+- repair --fix index --yes：退出码 1，但仍输出“所选类别下没有需要修复的问题”；
+  这会把“服务不可用”与“没有待修项”混在一起，和任务书 D34 预期有措辞差异
+- 删除 D1 的 chunks：deleted=3；check 退出码 2，准确报 chunks_missing_in_index
+- 删除 D2 的 image vector：deleted=1；check 退出码 2，准确报 vector_missing_in_index
+- 人为孤立文件：check 退出码 2，准确报 orphan_file
+- repair 演练退出码 2，列出 3 处；执行退出码 0
+- 修复后 check：issues=[]；OCR chunks=1589，image vectors=500
+- B2、B3 都是退出码 0
+
+12.4 第 10 步数值差异
+---------------------
+
+B2：
+- 旧 nDCG@10=0.338349748670，新 nDCG@10=0.338129617166
+- 完整排名变化 110/500，Top10 变化 35/500
+
+B3：
+- 旧 nDCG@10=0.155653224427，新 nDCG@10=0.155184871896
+- 完整排名变化 99/500，Top10 变化 42/500
+
+因此本项不能判定“与 W3 逐条相同”。原始结果、metrics 和差异文件保留在
+experiments/docvqa/runs 与 output/windows-w6/consistency/10-metric-comparison.txt。
+
+12.11 W1-W3 原始数据补交
+-------------------------
+
+- w3-1.csv 到 w3-8.csv 已导出；第 4、6、7 条为 0 行
+- docvqa_chunks=1589，docvqa_doc_meta=500，docvqa_image_vectors=500
+- OCR chunks 数据库为 1589，索引为 1589
+- consistency：issues=[]
+- OCR params：一种模型、一种参数，共 500 条
+- OCR 两个崩溃任务的日志、时间线、重试记录已整理
+- w3-logs.zip 已生成；连接串/密码/Bearer 扫描 0 个匹配
+- 第一轮每秒内存 CSV 未保留，已写说明
+
+12.5 Worker 崩溃恢复与并发
+--------------------------
+
+- docmgr_w6 已建立并迁移到 0002
+- 60 files / 60 queries 数据集 validate、import 成功
+- 已强杀一个 parse Worker：任务 58f217bd-cd0b-44d6-8aa3-4b96a7f5939f，PID 6728
+- 已强杀一个 OCR Worker：任务 0f9abb4d-4557-44f7-9c27-67738a2d216a，PID 25340
+- 暂停时 parse 60/60 成功，embed 60/60 成功
+- 暂停时 OCR 29 成功、30 pending、1 processing、0 failed
+- 暂停时 processing 任务：3b043dc7-838f-487a-bbe5-760163496fa6
+- 暂停时已停止全部 W6 测试 Worker
+- 2026-11-23 恢复后 OCR 全部成功：60/60，failed=0
+- 真正被强杀后重试成功的 parse 任务为 17a34b97-4a7f-4349-8035-4da478ecb4c7
+- 两个 OCR attempts=2 的任务均 succeeded
+- 8 份 SQL 全部导出，退出码均为 0
+- documents=60、chunks=173、ocr_results=60、embeddings=60
+- OpenSearch w6_doc_meta=60、w6_chunks=173、w6_image_vectors=60
+- 最终 consistency：issues=[]
+- 本节点完成；详细记录见 12.5-completion-record.txt
+
+12.8 端口被占用
+---------------
+
+- 第二个后端在后端已占用 8000 时启动
+- 约 5.0 秒后报 WinError 10048 端口占用，退出码 3
+- 第二个 CLIP 先加载模型，约 19.7 秒后报 WinError 10048 端口占用，退出码 3
+- 原后端 /health 仍为 200
+- 原 CLIP /health 仍为 200
+
+12.6 解析超时
+-------------
+
+- 3000 页、1281634 字节 PDF 已生成并上传
+- WORKER_TASK_TIMEOUT_SECONDS=2 时 parse 三次都在约 2 秒后超时
+- attempts=3，任务和文档均 failed，error 明确写超时
+- 原文件仍可下载，HTTP 200
+- 不设超时后重试，任务和文档均 succeeded
+- 解析产生 3000 个片段，重试耗时约 4.45 秒
+
+12.7 OCR Ctrl+C
+---------------
+
+- reocr 演练和 --yes 均成功，60 个 OCR 任务重新排队
+- Ctrl+C 后日志声称“完成当前任务后退出”
+- 实际任务被 InterruptedError 中断，状态 pending、attempts=1、error 非空
+- Worker 退出码 1
+- 与任务书“当前任务完成后再退出”不符
+- 重启 Worker 后同一任务第 2 次尝试成功，其余 59 个也成功
+- 最终 OCR 60/60 succeeded、failed=0，数据集已恢复完整

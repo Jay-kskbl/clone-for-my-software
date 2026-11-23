@@ -1,0 +1,63 @@
+W6 第 12.7 节记录：OCR Worker 识别中途 Ctrl+C
+============================================
+
+执行时间：2026-11-23（Asia/Shanghai）
+结论：数据已恢复，但 Ctrl+C 行为与任务书预期不符
+
+一、重新排队
+------------
+
+- reocr 演练：将把 60 个文档的 60 个 OCR 任务放回队列
+- 退出码 0，未修改数据
+- reocr --yes：已放回 60 个 OCR 任务
+- 退出码 0
+
+二、Ctrl+C 实际结果
+------------------
+
+启动一个 OCR Worker 后，它开始任务：
+
+- task_id：c2c62a92-b897-4545-802c-7b8c68ad86dd
+- document_id：01eb5270-4708-48ff-b27f-450e534c5906
+- 第 1/3 次尝试
+
+约 8 秒后发送一次 Ctrl+C，Worker 输出：
+
+  收到信号 2，处理完当前任务后退出
+
+但紧接着主进程等待识别子进程时报错：
+
+  InterruptedError: [Errno 4] Interrupted function call
+
+任务最终记录：
+
+- 状态：pending
+- attempts：1
+- claimed_by：空
+- error：InterruptedError: [Errno 4] Interrupted function call
+- Worker：已处理 1 个任务，退出
+- 进程退出码：1
+
+这与任务书预期“当前任务 succeeded、attempts=1、error 为空、完成后再退出”
+不一致。说明 Ctrl+C 中断了父进程在 Windows 上的 multiprocessing `poll()`，
+当前识别任务没有被等待完成。
+
+三、后续恢复
+------------
+
+重新启动一个 OCR Worker 后：
+
+- 同一任务以第 2/3 次尝试成功
+- attempts=2，error 已清空
+- 其余 59 个 OCR 任务全部成功
+- 最终 OCR：59 个 attempts=1、1 个 attempts=2，failed=0
+- 数据集恢复到完整可用状态
+
+四、原始证据
+------------
+
+- reocr-dry-run.txt
+- reocr-yes.txt
+- ocr-finish-remaining.log
+- 12.7-finish-progress.txt
+- 本文件中的 Ctrl+C 输出与数据库状态来自实际运行

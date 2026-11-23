@@ -1,0 +1,15 @@
+{
+  "id": "69891b0b-c90a-4abb-a16d-ed8b922a0f60",
+  "filename": "many.docx",
+  "mime_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "size_bytes": 712104,
+  "status": "failed",
+  "tags": [],
+  "owner": {
+    "id": "a1dd8e5b-007a-4fe3-9968-f2d0ba1d64f0",
+    "username": "bombba8d3eb2"
+  },
+  "access": "owner",
+  "created_at": "2026-11-23T14:05:15.406698+08:00",
+  "updated_at": "2026-11-23T14:05:22.325423+08:00"
+}

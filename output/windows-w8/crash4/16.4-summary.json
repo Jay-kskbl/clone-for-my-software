@@ -1,0 +1,203 @@
+{
+  "task_files": [
+    {
+      "mode": "single",
+      "round": 1,
+      "rows": 4,
+      "succeeded": 4,
+      "failed": 0,
+      "attempts_gt1": 0,
+      "errors": []
+    },
+    {
+      "mode": "single",
+      "round": 2,
+      "rows": 4,
+      "succeeded": 4,
+      "failed": 0,
+      "attempts_gt1": 0,
+      "errors": []
+    },
+    {
+      "mode": "single",
+      "round": 3,
+      "rows": 4,
+      "succeeded": 4,
+      "failed": 0,
+      "attempts_gt1": 0,
+      "errors": []
+    },
+    {
+      "mode": "single",
+      "round": 4,
+      "rows": 4,
+      "succeeded": 4,
+      "failed": 0,
+      "attempts_gt1": 0,
+      "errors": []
+    },
+    {
+      "mode": "single",
+      "round": 5,
+      "rows": 4,
+      "succeeded": 4,
+      "failed": 0,
+      "attempts_gt1": 0,
+      "errors": []
+    },
+    {
+      "mode": "single",
+      "round": 6,
+      "rows": 4,
+      "succeeded": 4,
+      "failed": 0,
+      "attempts_gt1": 0,
+      "errors": []
+    },
+    {
+      "mode": "single",
+      "round": 7,
+      "rows": 4,
+      "succeeded": 4,
+      "failed": 0,
+      "attempts_gt1": 0,
+      "errors": []
+    },
+    {
+      "mode": "single",
+      "round": 8,
+      "rows": 4,
+      "succeeded": 4,
+      "failed": 0,
+      "attempts_gt1": 0,
+      "errors": []
+    },
+    {
+      "mode": "single",
+      "round": 9,
+      "rows": 4,
+      "succeeded": 4,
+      "failed": 0,
+      "attempts_gt1": 0,
+      "errors": []
+    },
+    {
+      "mode": "single",
+      "round": 10,
+      "rows": 4,
+      "succeeded": 4,
+      "failed": 0,
+      "attempts_gt1": 0,
+      "errors": []
+    },
+    {
+      "mode": "multi4",
+      "round": 1,
+      "rows": 4,
+      "succeeded": 4,
+      "failed": 0,
+      "attempts_gt1": 0,
+      "errors": []
+    },
+    {
+      "mode": "multi4",
+      "round": 2,
+      "rows": 4,
+      "succeeded": 4,
+      "failed": 0,
+      "attempts_gt1": 0,
+      "errors": []
+    },
+    {
+      "mode": "multi4",
+      "round": 3,
+      "rows": 4,
+      "succeeded": 4,
+      "failed": 0,
+      "attempts_gt1": 0,
+      "errors": []
+    },
+    {
+      "mode": "multi4",
+      "round": 4,
+      "rows": 4,
+      "succeeded": 4,
+      "failed": 0,
+      "attempts_gt1": 0,
+      "errors": []
+    },
+    {
+      "mode": "multi4",
+      "round": 5,
+      "rows": 4,
+      "succeeded": 4,
+      "failed": 0,
+      "attempts_gt1": 0,
+      "errors": []
+    },
+    {
+      "mode": "multi4",
+      "round": 6,
+      "rows": 4,
+      "succeeded": 4,
+      "failed": 0,
+      "attempts_gt1": 0,
+      "errors": []
+    },
+    {
+      "mode": "multi4",
+      "round": 7,
+      "rows": 4,
+      "succeeded": 4,
+      "failed": 0,
+      "attempts_gt1": 0,
+      "errors": []
+    },
+    {
+      "mode": "multi4",
+      "round": 8,
+      "rows": 4,
+      "succeeded": 4,
+      "failed": 0,
+      "attempts_gt1": 0,
+      "errors": []
+    },
+    {
+      "mode": "multi4",
+      "round": 9,
+      "rows": 4,
+      "succeeded": 4,
+      "failed": 0,
+      "attempts_gt1": 0,
+      "errors": []
+    },
+    {
+      "mode": "multi4",
+      "round": 10,
+      "rows": 4,
+      "succeeded": 4,
+      "failed": 0,
+      "attempts_gt1": 0,
+      "errors": []
+    }
+  ],
+  "single_attempts_gt1": 0,
+  "multi_attempts_gt1": 0,
+  "memory": {
+    "samples": 894,
+    "start": "2026-11-23T13:37:43.8206599+08:00",
+    "end": "2026-11-23T14:02:59.1731838+08:00",
+    "max_gap_s": 10.332629,
+    "min_gap_s": 1.555165,
+    "groups": [
+      "api",
+      "cpu_total_percent",
+      "node",
+      "ocr_worker",
+      "opensearch",
+      "postgresql",
+      "python_other",
+      "system_available"
+    ]
+  }
+}

@@ -1,0 +1,58 @@
+
+> docmgr-frontend@0.1.0 test
+> vitest run tests/pdfjs-assets.test.mjs
+
+
+ RUN  v5.1.0 C:/Users/lenovo/Desktop/my-software-main/_gh_upload/frontend
+
+ ❯ tests/pdfjs-assets.test.mjs (3 tests | 1 failed) 291ms
+   ❯ pdf.js 静态资源与 pdfjs-dist 一致（T24m） (3)
+     × 四个目录逐文件相同，没有缺少、多余或内容不同的文件 238ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/pdfjs-assets.test.mjs > pdf.js 静态资源与 pdfjs-dist 一致（T24m） > 四个目录逐文件相同，没有缺少、多余或内容不同的文件
+AssertionError: public/pdfjs 与 pdfjs-dist 6.5.438 不一致，运行 npm run sync:pdfjs: expected { missing: [], extra: [], …(1) } to deeply equal { missing: [], extra: [], changed: [] }
+
+- Expected
++ Received
+
+  {
+-   "changed": [],
++   "changed": [
++     "cmaps/LICENSE",
++     "standard_fonts/LICENSE_FOXIT",
++     "standard_fonts/LICENSE_LIBERATION",
++     "wasm/jbig2_nowasm_fallback.js",
++     "wasm/LICENSE_JBIG2",
++     "wasm/LICENSE_OPENJPEG",
++     "wasm/LICENSE_PDFJS_JBIG2",
++     "wasm/LICENSE_PDFJS_OPENJPEG",
++     "wasm/LICENSE_PDFJS_QCMS",
++     "wasm/LICENSE_PDFJS_QUICKJS",
++     "wasm/LICENSE_QCMS",
++     "wasm/LICENSE_QUICKJS",
++     "wasm/openjpeg_nowasm_fallback.js",
++     "wasm/quickjs-eval.js",
++     "iccs/LICENSE",
++   ],
+    "extra": [],
+    "missing": [],
+  }
+
+ ❯ tests/pdfjs-assets.test.mjs:15:91
+     13|   it('四个目录逐文件相同，没有缺少、多余或内容不同的文件', () => {
+     14|     const diff = diffAssets()
+     15|     expect(diff, `public/pdfjs 与 pdfjs-dist ${pdfjsVersion()} 不一致，运行 n…
+       |                                                                                           ^
+     16|       missing: [],
+     17|       extra: [],
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 2 passed (3)
+   Start at  20:23:51
+   Duration  564ms (tests 83%, transform 9%, import 6%, worker 2%)
+

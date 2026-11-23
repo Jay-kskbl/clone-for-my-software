@@ -1,0 +1,66 @@
+Creating model: ('PP-OCRv5_mobile_det', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_det', None)
+INFO: Could not find files for the given pattern(s).
+C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddle\utils\cpp_extension\extension_utils.py:712: UserWarning: No ccache found. Please be aware that recompiling all source files may be required. You can download and install ccache from: https://github.com/ccache/ccache/blob/master/doc/INSTALL.md
+  warnings.warn(warning_message)
+Creating model: ('PP-OCRv5_mobile_rec', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_rec', None)
+2026-11-23 13:27:39,218 INFO ocr_worker OCR 模型已加载：PP-OCRv5_mobile_det+PP-OCRv5_mobile_rec，paddleocr-3.7.0/det-afa1820c/rec-2460da90
+2026-11-23 13:27:40,046 INFO ocr_worker.loop 开始 OCR 任务 be33b50a-db52-4b15-b409-048ac74e2e9c（文档 6be8f0f5-814f-4b02-815f-445998a525e1，第 1/3 次尝试）
+2026-11-23 13:27:57,899 INFO httpx HTTP Request: HEAD http://127.0.0.1:9200/w6_doc_meta "HTTP/1.1 200 OK"
+2026-11-23 13:27:57,902 INFO httpx HTTP Request: HEAD http://127.0.0.1:9200/w6_chunks "HTTP/1.1 200 OK"
+2026-11-23 13:27:58,037 INFO httpx HTTP Request: POST http://127.0.0.1:9200/w6_chunks/_delete_by_query?refresh=true&conflicts=proceed "HTTP/1.1 200 OK"
+2026-11-23 13:27:58,105 INFO httpx HTTP Request: POST http://127.0.0.1:9200/_bulk?refresh=true "HTTP/1.1 200 OK"
+2026-11-23 13:27:58,108 INFO ocr_worker.loop 任务 be33b50a-db52-4b15-b409-048ac74e2e9c 完成（processed:22-lines:1-chunks）
+2026-11-23 13:27:58,112 INFO ocr_worker.loop 开始 OCR 任务 e24db036-01e6-4acc-ae00-514855c7a89b（文档 1ba324b3-3b40-480c-9d19-944c89559352，第 1/3 次尝试）
+2026-11-23 13:28:35,565 INFO httpx HTTP Request: HEAD http://127.0.0.1:9200/w6_doc_meta "HTTP/1.1 200 OK"
+2026-11-23 13:28:35,568 INFO httpx HTTP Request: HEAD http://127.0.0.1:9200/w6_chunks "HTTP/1.1 200 OK"
+2026-11-23 13:28:35,642 INFO httpx HTTP Request: POST http://127.0.0.1:9200/w6_chunks/_delete_by_query?refresh=true&conflicts=proceed "HTTP/1.1 200 OK"
+2026-11-23 13:28:35,735 INFO httpx HTTP Request: POST http://127.0.0.1:9200/_bulk?refresh=true "HTTP/1.1 200 OK"
+2026-11-23 13:28:35,737 INFO ocr_worker.loop 任务 e24db036-01e6-4acc-ae00-514855c7a89b 完成（processed:55-lines:3-chunks）
+2026-11-23 13:28:35,740 INFO ocr_worker.loop 开始 OCR 任务 7d484ba2-20d7-4314-92b3-e7852d46bd39（文档 2fa1b784-0be6-4ac3-be46-8bf00770a422，第 1/3 次尝试）
+2026-11-23 13:29:05,293 INFO httpx HTTP Request: HEAD http://127.0.0.1:9200/w6_doc_meta "HTTP/1.1 200 OK"
+2026-11-23 13:29:05,295 INFO httpx HTTP Request: HEAD http://127.0.0.1:9200/w6_chunks "HTTP/1.1 200 OK"
+2026-11-23 13:29:05,395 INFO httpx HTTP Request: POST http://127.0.0.1:9200/w6_chunks/_delete_by_query?refresh=true&conflicts=proceed "HTTP/1.1 200 OK"
+2026-11-23 13:29:05,458 INFO httpx HTTP Request: POST http://127.0.0.1:9200/_bulk?refresh=true "HTTP/1.1 200 OK"
+2026-11-23 13:29:05,461 INFO ocr_worker.loop 任务 7d484ba2-20d7-4314-92b3-e7852d46bd39 完成（processed:25-lines:2-chunks）
+2026-11-23 13:29:05,464 INFO ocr_worker.loop 开始 OCR 任务 8778c1dd-7a82-4fc9-a528-a9de42e25070（文档 a41c3b91-2e6f-406b-93bf-372008b3648a，第 1/3 次尝试）
+2026-11-23 13:29:43,711 INFO httpx HTTP Request: HEAD http://127.0.0.1:9200/w6_doc_meta "HTTP/1.1 200 OK"
+2026-11-23 13:29:43,714 INFO httpx HTTP Request: HEAD http://127.0.0.1:9200/w6_chunks "HTTP/1.1 200 OK"
+2026-11-23 13:29:43,812 INFO httpx HTTP Request: POST http://127.0.0.1:9200/w6_chunks/_delete_by_query?refresh=true&conflicts=proceed "HTTP/1.1 200 OK"
+2026-11-23 13:29:43,896 INFO httpx HTTP Request: POST http://127.0.0.1:9200/_bulk?refresh=true "HTTP/1.1 200 OK"
+2026-11-23 13:29:43,899 INFO ocr_worker.loop 任务 8778c1dd-7a82-4fc9-a528-a9de42e25070 完成（processed:41-lines:3-chunks）
+2026-11-23 13:29:43,902 INFO ocr_worker.loop 开始 OCR 任务 38e8c136-7428-4d50-b03c-918b7de4f094（文档 58d196aa-d3c2-46c4-8762-d7d68c3ea87f，第 1/3 次尝试）
+2026-11-23 13:30:08,215 INFO httpx HTTP Request: HEAD http://127.0.0.1:9200/w6_doc_meta "HTTP/1.1 200 OK"
+2026-11-23 13:30:08,218 INFO httpx HTTP Request: HEAD http://127.0.0.1:9200/w6_chunks "HTTP/1.1 200 OK"
+2026-11-23 13:30:08,310 INFO httpx HTTP Request: POST http://127.0.0.1:9200/w6_chunks/_delete_by_query?refresh=true&conflicts=proceed "HTTP/1.1 200 OK"
+2026-11-23 13:30:08,381 INFO httpx HTTP Request: POST http://127.0.0.1:9200/_bulk?refresh=true "HTTP/1.1 200 OK"
+2026-11-23 13:30:08,384 INFO ocr_worker.loop 任务 38e8c136-7428-4d50-b03c-918b7de4f094 完成（processed:19-lines:2-chunks）
+2026-11-23 13:30:08,388 INFO ocr_worker.loop 开始 OCR 任务 da55e4ba-6429-45e4-8f34-60f942a1cffc（文档 d8f4adbf-71fb-4bf3-b2dd-7cd524b75e59，第 1/3 次尝试）
+2026-11-23 13:31:38,310 INFO httpx HTTP Request: HEAD http://127.0.0.1:9200/w6_doc_meta "HTTP/1.1 200 OK"
+2026-11-23 13:31:38,312 INFO httpx HTTP Request: HEAD http://127.0.0.1:9200/w6_chunks "HTTP/1.1 200 OK"
+2026-11-23 13:31:38,419 INFO httpx HTTP Request: POST http://127.0.0.1:9200/w6_chunks/_delete_by_query?refresh=true&conflicts=proceed "HTTP/1.1 200 OK"
+2026-11-23 13:31:38,494 INFO httpx HTTP Request: POST http://127.0.0.1:9200/_bulk?refresh=true "HTTP/1.1 200 OK"
+2026-11-23 13:31:38,497 INFO ocr_worker.loop 任务 da55e4ba-6429-45e4-8f34-60f942a1cffc 完成（processed:103-lines:6-chunks）
+2026-11-23 13:31:38,501 INFO ocr_worker.loop 开始 OCR 任务 a201ee58-31bc-4fa0-b598-aaf4205f00c7（文档 625bdfa8-2a10-4c77-992a-b71564091f13，第 1/3 次尝试）
+2026-11-23 13:32:06,805 INFO httpx HTTP Request: HEAD http://127.0.0.1:9200/w6_doc_meta "HTTP/1.1 200 OK"
+2026-11-23 13:32:06,807 INFO httpx HTTP Request: HEAD http://127.0.0.1:9200/w6_chunks "HTTP/1.1 200 OK"
+2026-11-23 13:32:06,891 INFO httpx HTTP Request: POST http://127.0.0.1:9200/w6_chunks/_delete_by_query?refresh=true&conflicts=proceed "HTTP/1.1 200 OK"
+2026-11-23 13:32:06,953 INFO httpx HTTP Request: POST http://127.0.0.1:9200/_bulk?refresh=true "HTTP/1.1 200 OK"
+2026-11-23 13:32:06,956 INFO ocr_worker.loop 任务 a201ee58-31bc-4fa0-b598-aaf4205f00c7 完成（processed:40-lines:2-chunks）
+2026-11-23 13:32:06,959 INFO ocr_worker.loop 开始 OCR 任务 d35338d6-782e-41a6-95ce-4bf6f9f0b976（文档 090c7820-274c-4df9-aeab-014512fc5d20，第 1/3 次尝试）
+2026-11-23 13:32:16,932 INFO httpx HTTP Request: HEAD http://127.0.0.1:9200/w6_doc_meta "HTTP/1.1 200 OK"
+2026-11-23 13:32:16,934 INFO httpx HTTP Request: HEAD http://127.0.0.1:9200/w6_chunks "HTTP/1.1 200 OK"
+2026-11-23 13:32:17,024 INFO httpx HTTP Request: POST http://127.0.0.1:9200/w6_chunks/_delete_by_query?refresh=true&conflicts=proceed "HTTP/1.1 200 OK"
+2026-11-23 13:32:17,108 INFO httpx HTTP Request: POST http://127.0.0.1:9200/_bulk?refresh=true "HTTP/1.1 200 OK"
+2026-11-23 13:32:17,110 INFO ocr_worker.loop 任务 d35338d6-782e-41a6-95ce-4bf6f9f0b976 完成（processed:9-lines:1-chunks）
+2026-11-23 13:32:17,113 INFO ocr_worker.loop 开始 OCR 任务 92fd044a-7b56-4bb2-8ca9-caec7d2f4217（文档 3e2c4648-82ba-4d1e-813b-78401cd7e319，第 1/3 次尝试）
+2026-11-23 13:32:44,249 INFO httpx HTTP Request: HEAD http://127.0.0.1:9200/w6_doc_meta "HTTP/1.1 200 OK"
+2026-11-23 13:32:44,251 INFO httpx HTTP Request: HEAD http://127.0.0.1:9200/w6_chunks "HTTP/1.1 200 OK"
+2026-11-23 13:32:44,467 INFO httpx HTTP Request: POST http://127.0.0.1:9200/w6_chunks/_delete_by_query?refresh=true&conflicts=proceed "HTTP/1.1 200 OK"
+2026-11-23 13:32:44,555 INFO httpx HTTP Request: POST http://127.0.0.1:9200/_bulk?refresh=true "HTTP/1.1 200 OK"
+2026-11-23 13:32:44,557 INFO ocr_worker.loop 任务 92fd044a-7b56-4bb2-8ca9-caec7d2f4217 完成（processed:27-lines:2-chunks）
+2026-11-23 13:32:44,561 INFO ocr_worker.loop 开始 OCR 任务 2e05b65f-4795-473b-affd-ea4ecd4fe154（文档 4a17d427-f314-4f90-9a57-749af1963bac，第 1/3 次尝试）
+2026-11-23 13:33:27,965 INFO httpx HTTP Request: HEAD http://127.0.0.1:9200/w6_doc_meta "HTTP/1.1 200 OK"
+2026-11-23 13:33:27,967 INFO httpx HTTP Request: HEAD http://127.0.0.1:9200/w6_chunks "HTTP/1.1 200 OK"
+2026-11-23 13:33:28,047 INFO httpx HTTP Request: POST http://127.0.0.1:9200/w6_chunks/_delete_by_query?refresh=true&conflicts=proceed "HTTP/1.1 200 OK"
+2026-11-23 13:33:28,107 INFO httpx HTTP Request: POST http://127.0.0.1:9200/_bulk?refresh=true "HTTP/1.1 200 OK"
+2026-11-23 13:33:28,109 INFO ocr_worker.loop 任务 2e05b65f-4795-473b-affd-ea4ecd4fe154 完成（processed:103-lines:3-chunks）

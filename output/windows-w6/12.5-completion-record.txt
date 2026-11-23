@@ -1,0 +1,94 @@
+W6 第 12.5 节完成记录
+=====================
+
+完成时间：2026-11-23 12:42（Asia/Shanghai）
+代码基线：fd0b5ebf729cf6602447bf95012a6064a2fe270a
+结论：完成
+
+一、恢复过程
+------------
+
+暂停时遗留的 OCR 任务 3b043dc7-838f-487a-bbe5-760163496fa6
+在系统重启后租约已过期并回到 pending。
+
+2026-11-23 12:26 重新启动一个 OCR Worker 后：
+
+- 该委托首先以第 2/3 次尝试重新领取上述任务
+- 其余 30 个 OCR pending 任务继续处理
+- 全部完成，0 failed
+
+恢复期间首次启动 OCR Worker 时 PostgreSQL 已随旧启动脚本退出，
+Worker 报 ConnectionTimeout；数据库重新启动后再次运行，业务任务没有被记失败。
+
+二、强杀任务核对
+----------------
+
+1. OCR Worker
+
+- 当时记录的任务：0f9abb4d-4557-44f7-9c27-67738a2d216a
+- 实际最终 attempts=2、succeeded
+- 该任务出现在 w6-2.csv
+
+2. 通用 Worker / parse
+
+暂停记录里写的是 58f217bd-cd0b-44d6-8aa3-4b96a7f5939f，
+但最终数据库证据显示该任务在强杀前已经 succeeded、attempts=1。
+
+真正被强杀后由另一个 Worker 重新领取并成功的任务为：
+
+- id：17a34b97-4a7f-4349-8035-4da478ecb4c7
+- document_id：b9e7adf2-219d-4676-b55f-021e4efc049a
+- task_type：parse
+- 最终状态：succeeded
+- attempts：2
+- 最终 claimed_by：Barry-Zou:26836:2c28e785
+
+因此以 w6-2.csv 的数据库原始记录为准，暂停记录中的 parse 任务号作废并在此更正。
+
+三、最终任务状态
+----------------
+
+- parse：attempts=1 有 59 个；attempts=2 有 1 个；全部 succeeded
+- ocr：attempts=1 有 58 个；attempts=2 有 2 个；全部 succeeded
+- embed：attempts=1 有 60 个；全部 succeeded
+- failed：0
+
+四、导出与一致性
+----------------
+
+- w6-1.csv：5 行任务类型/状态/尝试次数汇总
+- w6-2.csv：3 个 attempts>1 的任务
+- w6-3.csv：7 个领取者任务的计数
+- w6-4.csv：0 行，不存在同一文档多个解析版本
+- w6-5.csv：60 行，每个文档的来源片段计数
+- w6-6.csv：0 行，无重复 OCR 结果
+- w6-7.csv：0 行，无重复图片向量
+- w6-8.csv：documents=60、chunks=173、ocr_results=60、embeddings=60
+- 8 条导出命令退出码均为 0
+
+OpenSearch：
+
+- w6_doc_meta：60
+- w6_image_vectors：60
+- w6_chunks：173
+- source_type=ocr：173
+- source_type=body：0
+
+最终 consistency check：
+
+- 退出码 0
+- index_available=true
+- issues=[]
+
+五、原始文件
+------------
+
+- sql/w6-1.csv 至 sql/w6-8.csv
+- sql/w6-1.log 至 sql/w6-8.log
+- 12.5-indices.txt
+- 12.5-chunks-count.txt
+- 12.5-consistency.json
+- 12.5-resume-progress.txt
+- workers-w6/ocr-resume-2.err.log
+- workers-w6/12.5-killed-parse.json
+- workers-w6/12.5-killed-ocr.json

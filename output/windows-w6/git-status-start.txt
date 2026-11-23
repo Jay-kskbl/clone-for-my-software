@@ -1,0 +1,7 @@
+?? output/windows-w5/
+?? output/windows-w6/
+?? output/windows-w8/application-log-info.txt
+?? output/windows-w8/crash-events.txt
+?? output/windows-w8/git-head.txt
+?? output/windows-w8/git-show.txt
+?? output/windows-w8/wer-reports.txt

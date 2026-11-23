@@ -1,0 +1,5 @@
+发现 2 处不一致：
+  index_missing：2
+
+- index_missing 索引 doc_meta 不存在（可修复：--fix rebuild-indices）
+- index_missing 索引 chunks 不存在（可修复：--fix rebuild-indices）

@@ -1,0 +1,30 @@
+[
+  {
+    "name": "backend1",
+    "kind": "backend",
+    "wrapper": 11020,
+    "stop": "C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\output\\windows-w6\\workers-w6\\backend1.stop",
+    "err": "C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\output\\windows-w6\\workers-w6\\backend1.err.log"
+  },
+  {
+    "name": "backend2",
+    "kind": "backend",
+    "wrapper": 27760,
+    "stop": "C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\output\\windows-w6\\workers-w6\\backend2.stop",
+    "err": "C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\output\\windows-w6\\workers-w6\\backend2.err.log"
+  },
+  {
+    "name": "ocr1",
+    "kind": "ocr",
+    "wrapper": 29548,
+    "stop": "C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\output\\windows-w6\\workers-w6\\ocr1.stop",
+    "err": "C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\output\\windows-w6\\workers-w6\\ocr1.err.log"
+  },
+  {
+    "name": "ocr2",
+    "kind": "ocr",
+    "wrapper": 20360,
+    "stop": "C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\output\\windows-w6\\workers-w6\\ocr2.stop",
+    "err": "C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\output\\windows-w6\\workers-w6\\ocr2.err.log"
+  }
+]

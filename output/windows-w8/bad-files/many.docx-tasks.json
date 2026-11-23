@@ -1,0 +1,16 @@
+{
+  "items": [
+    {
+      "id": "afcf76e0-7831-4969-8cbe-dd3691ddf4d1",
+      "document_id": "69891b0b-c90a-4abb-a16d-ed8b922a0f60",
+      "task_type": "parse",
+      "status": "failed",
+      "attempts": 1,
+      "max_attempts": 3,
+      "error": "ParseError: 压缩包内有 6001 个文件，超过上限 5000 个，拒绝解析",
+      "created_at": "2026-11-23T14:05:15.406698+08:00",
+      "started_at": "2026-11-23T14:05:19.684495+08:00",
+      "finished_at": "2026-11-23T14:05:22.325423+08:00"
+    }
+  ]
+}

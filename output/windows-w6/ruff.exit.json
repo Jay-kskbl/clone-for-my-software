@@ -1,0 +1,5 @@
+{
+  "command": "ruff four dirs",
+  "exit_code": 0.0,
+  "elapsed_seconds": 1.728
+}

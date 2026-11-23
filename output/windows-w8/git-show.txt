@@ -1,0 +1,14 @@
+commit fd0b5ebf729cf6602447bf95012a6064a2fe270a
+Author:     Barry <barry@users.noreply.github.com>
+AuthorDate: Sat Nov 21 21:15:45 2026 +0900
+Commit:     Barry <barry@users.noreply.github.com>
+CommitDate: Sat Nov 21 21:15:52 2026 +0900
+
+    Windows 任务书增补 W8：针对第一轮日志的补充测试
+    
+    第 16 节新增 W8：事件日志查 OCR 崩溃、复现崩溃（单 Worker / 4 Worker 各 10 轮）、
+    1/2/4 个 OCR Worker 的吞吐、smartcn 切英文、B2 漏检导出与 30 条人工核对、
+    没有内存上限时的畸形文件防护；第 0.1、0.4、2、8、9、14 节补了对应的行。
+    预先放好 output/windows-w8/missed/ 的两个输入文件；DEVPLAN §4 记下重试间隔的待议。
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>

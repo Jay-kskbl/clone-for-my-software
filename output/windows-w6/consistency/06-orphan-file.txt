@@ -1,0 +1,4 @@
+source=C:\Users\lenovo\Desktop\my-software-main\_gh_upload\experiments\docvqa\datasets\files\docvqa\ffhv0228.jpg
+dir=aba6ef43-a77d-40f6-9c40-604aee1de945
+file=c3bc9caf5295121b6da3db41d0fcb03448a8869926c8b04a2f7c7037e0b966d3.jpg
+path=C:\Users\lenovo\Desktop\my-software-main\_gh_upload\storage\w3-docvqa\2026\aba6ef43-a77d-40f6-9c40-604aee1de945\c3bc9caf5295121b6da3db41d0fcb03448a8869926c8b04a2f7c7037e0b966d3.jpg

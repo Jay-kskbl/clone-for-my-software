@@ -1,0 +1,13 @@
+{
+  "files": 60,
+  "files_by_type": {
+    "image": 60
+  },
+  "queries": 60,
+  "queries_by_type": {
+    "text": 60
+  },
+  "qrels": 60,
+  "relevant_pairs": 60,
+  "queries_without_relevant": []
+}

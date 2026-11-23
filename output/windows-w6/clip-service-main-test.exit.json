@@ -1,0 +1,5 @@
+{
+  "command": "clip service main pytest",
+  "exit_code": 0,
+  "elapsed_seconds": 2.037
+}

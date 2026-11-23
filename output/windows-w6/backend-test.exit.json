@@ -1,0 +1,7 @@
+{
+  "command": "backend pytest",
+  "exit_code": 1,
+  "started_at": "2026-11-22T14:09:09.2147628+08:00",
+  "finished_at": "2026-11-22T14:20:27.7673865+08:00",
+  "elapsed_seconds": 678.553
+}
