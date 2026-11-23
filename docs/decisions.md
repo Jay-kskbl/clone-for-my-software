@@ -1353,3 +1353,13 @@ Barry 于 2026-11-19 对 DEVPLAN §4 中整理出的 14 项待批准事项回复
 - 主线程里的原生代码如果长时间不释放 GIL，看门狗线程要等它释放之后才能运行，退出会延迟。
 - 父进程**卡死但没有消失**时不起作用，仍然依靠租约到期后由别的 Worker 回收。
 - Windows 上的实际效果待 `windows任务书.md` 第 17.5 节 C 验证；自动化测试只在 macOS 上运行过。
+
+### D54 OCR Worker 收到停止信号时以 130 退出（T24ac）
+
+代码：`services/ocr_worker/ocr_worker/__main__.py`。逐项记录见 `docs/changes/T24ac.md`。来源：`docs/changes/2026-11-23-代码复核建议.md` R5，Barry 于 2026-11-23 批准（“修 R5”）。
+
+**问题。** 长期运行的写法是 `while true; do … -m ocr_worker || break; done`，退出码 0 表示“做满任务数，请重新拉起”（附录 A3 的定期重启）。OCR Worker 收到 SIGINT / SIGTERM、做完当前任务后也返回 0，循环会把它重新拉起。用真实信号实测（macOS，模型与数据库换成假的）：bash 里按一次 Ctrl+C 后被重新启动、循环没有停；zsh 里循环能停，因为 zsh 自己会被 Ctrl+C 中断。
+
+**决定。** 收到停止信号返回 130，与通用 Worker 一致；做满任务数返回 0，配置、模型、数据库有问题返回 1，都不变。两者同时发生（最后一个任务途中收到信号）时以停止信号为准。D52 中“OCR Worker 返回 0”描述的是当时的情况，以本条为准。
+
+**影响。** `CLAUDE.md` 的循环不用改（非 0 即停）；`scripts/windows/run_ocr_worker_loop.ps1` 本来就把 130 当作停止；`scripts/smoke/ocr_e2e.py` 用 `OCR_WORKER_MAX_TASKS=1` 做满退出，仍是 0。

@@ -1491,7 +1491,7 @@ Copy-Item experiments\docvqa\datasets\document_map.csv "$out\missed\document_map
 | 5 | 第 17.6 节：登录页与停机刷新 | GPT | 2 | 1 小时 |
 | 6 | 第 17.8 节：300 秒超时的文档 | GPT | 1 | 40 分钟 |
 | 7 | 第 17.7、17.9、17.10、17.11 节 | **Barry 本人** | 1 | 共约 2 小时，可以分几次做 |
-| 8 | 第 17.5 节：Ctrl+C 重测、强制结束后的子进程 | GPT | 1（拉到的提交包含 T24aa、T24ab） | 45 分钟 |
+| 8 | 第 17.5 节：Ctrl+C 重测、强制结束后的子进程、循环脚本 | GPT | 1（拉到的提交包含 T24aa、T24ab、T24ac） | 50 分钟 |
 | 9 | 按第 14.1 节整理 `output/windows-w9/`、提交；Barry 推送，大文件另交 | GPT、Barry | 全部 | 30 分钟 |
 
 ### 17.2 基线、公用脚本、新的内存采样脚本
@@ -1642,7 +1642,7 @@ echo exit=%ERRORLEVEL%
 
 日志出现这个文档的“开始任务”后按一次 Ctrl+C，同样记下退出码、导出任务。
 
-**预期：** 日志出现停止提示（OCR Worker 是“收到信号 2，处理完当前任务后退出”，通用 Worker 是“收到信号 SIGINT，完成当前任务后退出”）；当前任务**照常做完**：`succeeded`、`attempts = 1`、`error` 为空；Worker 在这之后退出，不再领新任务；日志里没有 `InterruptedError`、`KeyboardInterrupt`。退出码：OCR Worker 0，通用 Worker 130（两者 `__main__.py` 的约定不同，`scripts/windows/run_ocr_worker_loop.ps1` 也把 130 当正常退出）。修复任务如果改了这两个约定，以修复任务的说明为准。
+**预期：** 日志出现停止提示（OCR Worker 是“收到信号 2，处理完当前任务后退出”，通用 Worker 是“收到信号 SIGINT，完成当前任务后退出”）；当前任务**照常做完**：`succeeded`、`attempts = 1`、`error` 为空；Worker 在这之后退出，不再领新任务；日志里没有 `InterruptedError`、`KeyboardInterrupt`。退出码：两个 Worker 都是 130（OCR Worker 原来是 0，T24ac 改为 130，D54）。第二轮 12.7 记录的退出码 1 不能由代码解释，这次如果又看到 130 以外的值，照实记录，并写明是怎么启动的。
 
 **C. 强制结束 Worker，子进程应当跟着退出**（T24ab，`docmgr_w6`，2026-11-23 添加）。先确认拉到的提交包含 T24ab；`test_worker_runner.py`、`test_engine_process.py` 里的 `test_child_exits_when_the_parent_is_killed` 各 1 项应当在 Windows 上通过（不跳过）。然后分别对通用 Worker（再上传一次 `big3000.pdf`）和 OCR Worker（`reocr --yes` 之后）做：
 
@@ -1658,7 +1658,7 @@ echo exit=%ERRORLEVEL%
 
 **预期：** 第 2 步 3 秒后子进程都已不在；被杀 Worker 的日志里没有 `BrokenPipeError`；第 3 步任务最终 `succeeded`、`attempts = 2`，同一文档没有重复的 OCR 任务（`SELECT document_id, payload::text, count(*) FROM processing_tasks WHERE task_type = 'ocr' GROUP BY 1, 2 HAVING count(*) > 1` 为 0 行）。
 
-（A、B 两步要像上面那样**直接**运行 Worker，不要套 `run_ocr_worker_loop.ps1`：OCR Worker 停下后返回 0，循环会把它重新拉起，见 DEVPLAN §4 R5。）
+**D. 在循环脚本里按 Ctrl+C**（T24ac，2026-11-23 添加）。A、B 两步直接运行 Worker，不套循环；这一步专门验证循环。在 `services\ocr_worker` 下用 `run_ocr_worker_loop.ps1` 启动（`-StopFile` 指向一个不存在的文件），看到“OCR 模型已加载”后按一次 Ctrl+C，等 60 秒。**预期：** Worker 打印“收到信号 2……”后退出，循环随之结束，60 秒内没有再出现“OCR 模型已加载”，也没有残留的 `-m ocr_worker` 进程（`Get-CimInstance Win32_Process | Where-Object CommandLine -match '-m ocr_worker'`）。窗口输出存成 `ctrlc-loop.txt`。
 
 ### 17.6 登录页与停机刷新（T24v–T24z、W4 第 10.2 节第 5 项场景①）
 
@@ -1731,7 +1731,7 @@ echo exit=%ERRORLEVEL%
 - [ ] 17.2：`git-head.txt` 的提交包含 T24z；`mapping-eol.txt` 三行 LF、hash 与 Mac 一致；前端三项命令的输出都在；`sampler-selftest.csv` 相邻采样间隔不超过 3 秒
 - [ ] 17.3：四步耗时与设定值相差不超过 2 秒，都报 `ConnectionTimeout`、退出码 1
 - [ ] 17.4：`index-before.txt`、`index-after.txt`、`git-status-before-runs.txt`、`w9-runs.zip`（8 个目录）都在；R1 与 R2 逐条相同；指标与 W3 相差不超过 0.01
-- [ ] 17.5（修复之后）：A、B 两个任务都是 `succeeded`、`attempts = 1`，退出码分别为 0、130，日志里没有 `InterruptedError`、`KeyboardInterrupt`；C 的两个 Worker 强制结束 3 秒后子进程都不在，任务 `succeeded`、`attempts = 2`，没有重复的 OCR 任务
+- [ ] 17.5（修复之后）：A、B 两个任务都是 `succeeded`、`attempts = 1`，退出码都是 130，日志里没有 `InterruptedError`、`KeyboardInterrupt`；C 的两个 Worker 强制结束 3 秒后子进程都不在，任务 `succeeded`、`attempts = 2`，没有重复的 OCR 任务；D 的循环在按 Ctrl+C 后结束、没有重新拉起
 - [ ] 17.6：11 步都有截图和网络记录（第 11 步的网络记录里能数出登录请求的条数），结果逐条对照了预期
 - [ ] 17.7：三张截图和 `drag.har`
 - [ ] 17.8：15 个 CSV 和 `memory.csv`
