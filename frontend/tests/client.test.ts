@@ -13,6 +13,7 @@ import {
   setUnauthenticatedHandler,
 } from '../src/api/client'
 import { listDocuments, uploadDocument } from '../src/api/documents'
+import { listDocumentTasks, retryTask } from '../src/api/tasks'
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -207,5 +208,30 @@ describe('登录状态失效', () => {
     await expect(request('/api/documents/x')).rejects.toMatchObject({ status: 403 })
 
     expect(handler).not.toHaveBeenCalled()
+  })
+})
+
+describe('任务接口（任务状态与重试 P2）', () => {
+  it('列出文档的任务：取出 items', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { items: [{ id: 't1' }] }))
+    const controller = new AbortController()
+    expect(await listDocumentTasks('d1', controller.signal)).toEqual([{ id: 't1' }])
+    expect(lastCall().url).toBe('/api/documents/d1/tasks')
+    expect(lastCall().init.signal).toBe(controller.signal)
+  })
+
+  it('重试：POST，没有请求体', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { id: 't1', status: 'pending' }))
+    await retryTask('t1')
+    expect(lastCall().url).toBe('/api/tasks/t1/retry')
+    expect(lastCall().init.method).toBe('POST')
+    expect(lastCall().init.body).toBeUndefined()
+  })
+
+  it('409 的错误码原样带出来，批量重试靠它区分“跳过”', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse(409, { error: { code: 'TASK_NOT_RETRYABLE', message: '只有失败的任务可以重试' } }),
+    )
+    await expect(retryTask('t1')).rejects.toMatchObject({ status: 409, code: 'TASK_NOT_RETRYABLE' })
   })
 })

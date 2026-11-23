@@ -8,7 +8,7 @@
 | 编号 | 内容 | 状态 | 提交 |
 |---|---|---|---|
 | P1 | 后端清理任务失败原因，原文只给管理员看 | 完成 | `5409181` |
-| P2 | 前端任务逻辑（汇总、重试、轮询）与单元测试 | 未开始 | — |
+| P2 | 前端任务逻辑（汇总、重试、轮询）与单元测试 | 完成 | 待补 |
 | P3 | 处理详情对话框，接入文件列表 | 未开始 | — |
 | P4 | 预览页提示条与自动刷新 | 未开始 | — |
 | P5（未批准） | 任务接口增加 `locator`，显示具体失败页码 | — | — |
@@ -51,3 +51,30 @@ Worker 把异常原文存进 `processing_tasks.error`，任务接口原样返回
 - 变异检查：把 `to_task_out` 改成总是返回原文，`test_ordinary_user_gets_the_cleaned_reason` 失败
 - `ruff check`、`ruff format --check` 通过
 - **未测试（Not Tested）：** 新增的集成测试，本机没有 PostgreSQL
+
+------------------------------------------------------------------------
+
+## P2 前端任务逻辑与单元测试
+
+### 修改的文件
+
+| 文件 | 内容 |
+|---|---|
+| `frontend/src/api/types.ts` | 新增 `TaskType`、`Task` |
+| `frontend/src/api/tasks.ts`（新增） | `listDocumentTasks`、`retryTask` |
+| `frontend/src/features/tasks/summary.ts`（新增） | 按类型汇总成步骤：状态、计数、失败原因合并、等待重试、用时 |
+| `frontend/src/features/tasks/retry.ts`（新增） | 批量重试：最多同时 4 个；409 `TASK_NOT_RETRYABLE` 算跳过；网络不通、401、403、5xx 时停下，不再一个个失败下去 |
+| `frontend/src/features/tasks/watcher.ts`（新增） | 有没结束的任务就每 3 秒刷新；换文档、刷新、停止时取消旧请求，迟到的响应丢弃 |
+| `frontend/tests/tasks/`（新增 3 个文件 + 公共数据） | 43 项 |
+| `frontend/tests/client.test.ts` | 新增 3 项（两个接口的地址、方法、错误码） |
+
+### 关键设计
+
+- 逻辑都是纯 TypeScript，不依赖 Vue，项目里没有组件测试工具也能测。
+- 一个文档只在上传时建一个 parse 任务（核对过 `documents/service.py`、`worker/handlers/parse.py`），重试用的是同一条记录，所以不需要处理“旧的失败、新的成功”。
+- “失败但次数没用完”等于后端判定重试无用（`retryable=False`），用来给出提示；次数恰好用完时分不出来，按可以再试处理。
+- 轮询出错时，只要上一次还有没结束的任务就继续试；第一次就失败则停下，由用户点刷新。
+
+### 验证
+
+类型检查通过；前端 25 个文件 301 项测试通过（原 22 个文件 255 项）。
