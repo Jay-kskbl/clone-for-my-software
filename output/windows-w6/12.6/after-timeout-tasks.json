@@ -1,0 +1,16 @@
+{
+  "items": [
+    {
+      "id": "053624a0-d658-4820-81e2-8f5e88f2d5e7",
+      "document_id": "757bf2a7-1341-4056-b0de-cd78f7d57359",
+      "task_type": "parse",
+      "status": "failed",
+      "attempts": 3,
+      "max_attempts": 3,
+      "error": "处理超时（超过 2 秒），已终止",
+      "created_at": "2026-11-23T12:44:24.050115+08:00",
+      "started_at": "2026-11-23T12:44:28.843274+08:00",
+      "finished_at": "2026-11-23T12:44:30.879975+08:00"
+    }
+  ]
+}

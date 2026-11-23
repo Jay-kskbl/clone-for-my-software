@@ -1,0 +1,4 @@
+发现 1 处不一致：
+  index_structure_mismatch：1
+
+- index_structure_mismatch 索引 chunks 的结构与版本库里的 mapping 不一致：字段 text 的定义不同：search_analyzer 为 standard，应为 （未设置）（可修复：--fix rebuild-indices）

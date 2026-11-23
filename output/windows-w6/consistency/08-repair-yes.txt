@@ -1,0 +1,8 @@
+将要修复 3 处：
+- index：chunks_missing_in_index [3d0f07a0-5548-4402-88cd-88f78e416d66] 数据库里有 3 个片段不在 chunks 索引里，这部分内容搜不到
+- index：vector_missing_in_index [ec0b7fd4-3d29-42a4-a5dc-a68b89aa6685] 图片 ec0b7fd4-3d29-42a4-a5dc-a68b89aa6685 已有向量，但不在向量索引里，图像检索搜不到它
+- orphan-files：orphan_file 磁盘上的文件在数据库里没有记录：2026/aba6ef43-a77d-40f6-9c40-604aee1de945/c3bc9caf5295121b6da3db41d0fcb03448a8869926c8b04a2f7c7037e0b966d3.jpg
+
+已完成：索引：按数据库重建了文档 3d0f07a0-5548-4402-88cd-88f78e416d66（3 个片段，1 个图片向量）
+已完成：索引：按数据库重建了文档 ec0b7fd4-3d29-42a4-a5dc-a68b89aa6685（3 个片段，1 个图片向量）
+已完成：磁盘：删除了没有记录的文件 2026/aba6ef43-a77d-40f6-9c40-604aee1de945/c3bc9caf5295121b6da3db41d0fcb03448a8869926c8b04a2f7c7037e0b966d3.jpg

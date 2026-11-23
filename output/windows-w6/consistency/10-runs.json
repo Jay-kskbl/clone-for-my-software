@@ -1,0 +1,14 @@
+[
+  {
+    "config": "B2",
+    "exit_code": 0,
+    "elapsed_seconds": 61.577,
+    "run_dir": "20261122T105621.715980Z_B2_bca3b6"
+  },
+  {
+    "config": "B3",
+    "exit_code": 0,
+    "elapsed_seconds": 115.918,
+    "run_dir": "20261122T105723.742460Z_B3_e0a936"
+  }
+]

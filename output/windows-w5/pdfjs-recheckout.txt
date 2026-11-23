@@ -1,0 +1,17 @@
+removed_count=15
+frontend/public/pdfjs/cmaps/LICENSE
+frontend/public/pdfjs/iccs/LICENSE
+frontend/public/pdfjs/standard_fonts/LICENSE_FOXIT
+frontend/public/pdfjs/standard_fonts/LICENSE_LIBERATION
+frontend/public/pdfjs/wasm/LICENSE_JBIG2
+frontend/public/pdfjs/wasm/LICENSE_OPENJPEG
+frontend/public/pdfjs/wasm/LICENSE_PDFJS_JBIG2
+frontend/public/pdfjs/wasm/LICENSE_PDFJS_OPENJPEG
+frontend/public/pdfjs/wasm/LICENSE_PDFJS_QCMS
+frontend/public/pdfjs/wasm/LICENSE_PDFJS_QUICKJS
+frontend/public/pdfjs/wasm/LICENSE_QCMS
+frontend/public/pdfjs/wasm/LICENSE_QUICKJS
+frontend/public/pdfjs/wasm/jbig2_nowasm_fallback.js
+frontend/public/pdfjs/wasm/openjpeg_nowasm_fallback.js
+frontend/public/pdfjs/wasm/quickjs-eval.js
+git_checkout_exit=0

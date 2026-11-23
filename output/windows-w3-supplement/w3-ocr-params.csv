@@ -1,0 +1,2 @@
+model_name,model_version,params,count
+PP-OCRv5_mobile_det+PP-OCRv5_mobile_rec,paddleocr-3.7.0/det-afa1820c/rec-2460da90,"{""pdf_dpi"": null, ""max_pixels"": 100000000, ""min_confidence"": 0.0}",500

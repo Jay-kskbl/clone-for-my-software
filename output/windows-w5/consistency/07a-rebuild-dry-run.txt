@@ -1,0 +1,6 @@
+将要修复 1 处：
+- rebuild-indices：index_structure_mismatch 索引 chunks 的结构与版本库里的 mapping 不一致：字段 text 的定义不同：search_analyzer 为 standard，应为 （未设置）
+
+注意：重建索引前请先停掉通用 Worker 和 OCR Worker，重建期间检索结果不完整。
+
+这是演练，没有改动任何东西。确认无误后加上 --yes 执行。

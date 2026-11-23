@@ -1,0 +1,202 @@
+[2026-11-22T18:53:46,359][INFO ][o.o.n.Node               ] [BARRY-ZOU] version[2.19.1], pid[23012], build[zip/2e4741fb45d1b150aaeeadf66d41445b23ff5982/2025-02-27T01:30:51.732081Z], OS[Windows 11/10.0/amd64], JVM[Eclipse Adoptium/OpenJDK 64-Bit Server VM/21.0.6/21.0.6+7-LTS]
+[2026-11-22T18:53:46,364][INFO ][o.o.n.Node               ] [BARRY-ZOU] JVM home [C:\Users\lenovo\Desktop\my-software-main\_gh_upload\.tools\opensearch-2.19.1\opensearch-2.19.1\jdk], using bundled JDK/JRE [true]
+[2026-11-22T18:53:46,365][INFO ][o.o.n.Node               ] [BARRY-ZOU] JVM arguments [-Dopensearch.networkaddress.cache.ttl=60, -Dopensearch.networkaddress.cache.negative.ttl=10, -XX:+AlwaysPreTouch, -Xss1m, -Djava.awt.headless=true, -Dfile.encoding=UTF-8, -Djna.nosys=true, -XX:-OmitStackTraceInFastThrow, -XX:+ShowCodeDetailsInExceptionMessages, -Dio.netty.noUnsafe=true, -Dio.netty.noKeySetOptimization=true, -Dio.netty.recycler.maxCapacityPerThread=0, -Dio.netty.allocator.numDirectArenas=0, -Dlog4j.shutdownHookEnabled=false, -Dlog4j2.disable.jmx=true, -Djava.security.manager=allow, -Djava.locale.providers=SPI,COMPAT, -Xms1g, -Xmx1g, -XX:+UseG1GC, -XX:G1ReservePercent=25, -XX:InitiatingHeapOccupancyPercent=30, -Djava.io.tmpdir=C:\Users\lenovo\AppData\Local\Temp\opensearch, -XX:+HeapDumpOnOutOfMemoryError, -XX:HeapDumpPath=data, -XX:ErrorFile=logs/hs_err_pid%p.log, -Xlog:gc*,gc+age=trace,safepoint:file=logs/gc.log:utctime,pid,tags:filecount=32,filesize=64m, -Djava.security.manager=allow, --add-modules=jdk.incubator.vector, -Djava.util.concurrent.ForkJoinPool.common.threadFactory=org.opensearch.secure_sm.SecuredForkJoinWorkerThreadFactory, -XX:MaxDirectMemorySize=536870912, -Dopensearch, -Dopensearch.path.home=C:\Users\lenovo\Desktop\my-software-main\_gh_upload\.tools\opensearch-2.19.1\opensearch-2.19.1, -Dopensearch.path.conf=C:\Users\lenovo\Desktop\my-software-main\_gh_upload\.tools\opensearch-2.19.1\opensearch-2.19.1\config, -Dopensearch.distribution.type=zip, -Dopensearch.bundled_jdk=true]
+[2026-11-22T18:53:47,239][INFO ][o.a.l.i.v.PanamaVectorizationProvider] [BARRY-ZOU] Java vector incubator API enabled; uses preferredBitSize=256; FMA enabled
+[2026-11-22T18:53:49,367][INFO ][o.o.s.s.t.SSLConfig      ] [BARRY-ZOU] SSL dual mode is disabled
+[2026-11-22T18:53:49,368][WARN ][o.o.s.OpenSearchSecurityPlugin] [BARRY-ZOU] OpenSearch Security plugin installed but disabled. This can expose your configuration (including passwords) to the public.
+[2026-11-22T18:53:55,114][INFO ][o.o.i.r.ReindexPlugin    ] [BARRY-ZOU] ReindexPlugin reloadSPI called
+[2026-11-22T18:53:55,129][INFO ][o.o.i.r.ReindexPlugin    ] [BARRY-ZOU] Unable to find any implementation for RemoteReindexExtension
+[2026-11-22T18:53:55,274][INFO ][o.o.j.JobSchedulerPlugin ] [BARRY-ZOU] Loaded scheduler extension: opensearch_time_series_analytics, index: .opendistro-anomaly-detector-jobs
+[2026-11-22T18:53:55,398][INFO ][o.o.j.JobSchedulerPlugin ] [BARRY-ZOU] Loaded scheduler extension: reports-scheduler, index: .opendistro-reports-definitions
+[2026-11-22T18:53:55,404][INFO ][o.o.j.JobSchedulerPlugin ] [BARRY-ZOU] Loaded scheduler extension: opendistro-index-management, index: .opendistro-ism-config
+[2026-11-22T18:53:55,411][INFO ][o.o.j.JobSchedulerPlugin ] [BARRY-ZOU] Loaded scheduler extension: checkBatchJobTaskStatus, index: .ml_commons_task_polling_job
+[2026-11-22T18:53:55,414][INFO ][o.o.j.JobSchedulerPlugin ] [BARRY-ZOU] Loaded scheduler extension: scheduler_geospatial_ip2geo_datasource, index: .scheduler-geospatial-ip2geo-datasource
+[2026-11-22T18:53:55,420][INFO ][o.o.j.JobSchedulerPlugin ] [BARRY-ZOU] Loaded scheduler extension: opensearch_sap_job, index: .opensearch-sap--job
+[2026-11-22T18:53:55,429][INFO ][o.o.j.JobSchedulerPlugin ] [BARRY-ZOU] Loaded scheduler extension: async-query-scheduler, index: .async-query-scheduler
+[2026-11-22T18:53:55,528][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded module [aggs-matrix-stats]
+[2026-11-22T18:53:55,530][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded module [analysis-common]
+[2026-11-22T18:53:55,531][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded module [cache-common]
+[2026-11-22T18:53:55,532][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded module [geo]
+[2026-11-22T18:53:55,532][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded module [ingest-common]
+[2026-11-22T18:53:55,533][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded module [ingest-geoip]
+[2026-11-22T18:53:55,533][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded module [ingest-user-agent]
+[2026-11-22T18:53:55,534][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded module [lang-expression]
+[2026-11-22T18:53:55,534][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded module [lang-mustache]
+[2026-11-22T18:53:55,536][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded module [lang-painless]
+[2026-11-22T18:53:55,538][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded module [mapper-extras]
+[2026-11-22T18:53:55,539][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded module [opensearch-dashboards]
+[2026-11-22T18:53:55,540][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded module [parent-join]
+[2026-11-22T18:53:55,541][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded module [percolator]
+[2026-11-22T18:53:55,542][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded module [rank-eval]
+[2026-11-22T18:53:55,543][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded module [reindex]
+[2026-11-22T18:53:55,544][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded module [repository-url]
+[2026-11-22T18:53:55,546][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded module [search-pipeline-common]
+[2026-11-22T18:53:55,546][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded module [transport-netty4]
+[2026-11-22T18:53:55,548][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded plugin [analysis-smartcn]
+[2026-11-22T18:53:55,550][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded plugin [opensearch-alerting]
+[2026-11-22T18:53:55,551][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded plugin [opensearch-anomaly-detection]
+[2026-11-22T18:53:55,552][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded plugin [opensearch-asynchronous-search]
+[2026-11-22T18:53:55,554][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded plugin [opensearch-cross-cluster-replication]
+[2026-11-22T18:53:55,555][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded plugin [opensearch-custom-codecs]
+[2026-11-22T18:53:55,558][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded plugin [opensearch-flow-framework]
+[2026-11-22T18:53:55,559][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded plugin [opensearch-geospatial]
+[2026-11-22T18:53:55,560][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded plugin [opensearch-index-management]
+[2026-11-22T18:53:55,562][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded plugin [opensearch-job-scheduler]
+[2026-11-22T18:53:55,563][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded plugin [opensearch-knn]
+[2026-11-22T18:53:55,565][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded plugin [opensearch-ltr]
+[2026-11-22T18:53:55,566][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded plugin [opensearch-ml]
+[2026-11-22T18:53:55,569][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded plugin [opensearch-neural-search]
+[2026-11-22T18:53:55,570][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded plugin [opensearch-notifications]
+[2026-11-22T18:53:55,571][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded plugin [opensearch-notifications-core]
+[2026-11-22T18:53:55,572][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded plugin [opensearch-observability]
+[2026-11-22T18:53:55,573][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded plugin [opensearch-reports-scheduler]
+[2026-11-22T18:53:55,574][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded plugin [opensearch-security]
+[2026-11-22T18:53:55,576][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded plugin [opensearch-security-analytics]
+[2026-11-22T18:53:55,577][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded plugin [opensearch-skills]
+[2026-11-22T18:53:55,579][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded plugin [opensearch-sql]
+[2026-11-22T18:53:55,580][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded plugin [opensearch-system-templates]
+[2026-11-22T18:53:55,581][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] loaded plugin [query-insights]
+[2026-11-22T18:53:55,809][INFO ][o.a.l.s.MemorySegmentIndexInputProvider] [BARRY-ZOU] Using MemorySegmentIndexInput with Java 21 or later; to disable start with -Dorg.apache.lucene.store.MMapDirectory.enableMemorySegments=false
+[2026-11-22T18:53:55,880][INFO ][o.o.e.NodeEnvironment    ] [BARRY-ZOU] using [1] data paths, mounts [[Windows-SSD (C:)]], net usable_space [72.7gb], net total_space [315.2gb], types [NTFS]
+[2026-11-22T18:53:55,882][INFO ][o.o.e.NodeEnvironment    ] [BARRY-ZOU] heap size [1gb], compressed ordinary object pointers [true]
+[2026-11-22T18:53:57,110][INFO ][o.o.n.Node               ] [BARRY-ZOU] node name [BARRY-ZOU], node ID [YUHjb2Z-Sf2_ei9u2QgRkg], cluster name [opensearch], roles [ingest, remote_cluster_client, data, cluster_manager]
+[2026-11-22T18:53:57,323][INFO ][o.o.e.ExtensionsManager  ] [BARRY-ZOU] ExtensionsManager initialized
+[2026-11-22T18:54:06,606][INFO ][o.o.n.p.NeuralSearch     ] [BARRY-ZOU] Registering hybrid query phase searcher with feature flag [plugins.neural_search.hybrid_search_disabled]
+[2026-11-22T18:54:11,383][INFO ][o.o.l.b.LTRCircuitBreakerService] [BARRY-ZOU] Registered memory breaker.
+[2026-11-22T18:54:11,872][INFO ][o.o.t.b.CircuitBreakerService] [BARRY-ZOU] Registered memory breaker.
+[2026-11-22T18:54:13,006][INFO ][o.o.r.m.c.i.SdkClientFactory] [BARRY-ZOU] Using local opensearch cluster as metadata store.
+[2026-11-22T18:54:13,625][INFO ][o.o.r.m.c.i.SdkClientFactory] [BARRY-ZOU] Using local opensearch cluster as metadata store.
+[2026-11-22T18:54:13,700][INFO ][o.o.m.b.MLCircuitBreakerService] [BARRY-ZOU] Registered ML memory breaker.
+[2026-11-22T18:54:13,703][INFO ][o.o.m.b.MLCircuitBreakerService] [BARRY-ZOU] Registered ML disk breaker.
+[2026-11-22T18:54:13,705][INFO ][o.o.m.b.MLCircuitBreakerService] [BARRY-ZOU] Registered ML native memory breaker.
+[2026-11-22T18:54:14,033][INFO ][o.r.Reflections          ] [BARRY-ZOU] Reflections took 165 ms to scan 1 urls, producing 27 keys and 67 values 
+[2026-11-22T18:54:14,115][INFO ][o.r.Reflections          ] [BARRY-ZOU] Reflections took 7 ms to scan 1 urls, producing 3 keys and 5 values 
+[2026-11-22T18:54:14,823][WARN ][o.o.s.p.SQLPlugin        ] [BARRY-ZOU] Master key is a required config for using create and update datasource APIs. Please set plugins.query.datasources.encryption.masterkey config in opensearch.yml in all the cluster nodes. More details can be found here: https://github.com/opensearch-project/sql/blob/main/docs/user/ppl/admin/datasources.rst#master-key-config-for-encrypting-credential-information
+[2026-11-22T18:54:17,463][INFO ][o.o.t.NettyAllocator     ] [BARRY-ZOU] creating NettyAllocator with the following configs: [name=unpooled, suggested_max_allocation_size=256kb, factors={opensearch.unsafe.use_unpooled_allocator=null, g1gc_enabled=true, g1gc_region_size=1mb, heap_size=1gb}]
+[2026-11-22T18:54:17,839][INFO ][o.o.d.DiscoveryModule    ] [BARRY-ZOU] using discovery type [single-node] and seed hosts providers [settings]
+[2026-11-22T18:54:19,839][WARN ][o.o.g.DanglingIndicesState] [BARRY-ZOU] gateway.auto_import_dangling_indices is disabled, dangling indices will not be automatically detected or imported and must be managed manually
+[2026-11-22T18:54:22,509][INFO ][o.o.n.Node               ] [BARRY-ZOU] initialized
+[2026-11-22T18:54:22,512][INFO ][o.o.n.Node               ] [BARRY-ZOU] starting ...
+[2026-11-22T18:54:22,656][INFO ][o.o.s.l.BuiltinLogTypeLoader] [BARRY-ZOU] Loaded [windows_logtype.json] log type
+[2026-11-22T18:54:22,660][INFO ][o.o.s.l.BuiltinLogTypeLoader] [BARRY-ZOU] Loaded [waf_logtype.json] log type
+[2026-11-22T18:54:22,666][INFO ][o.o.s.l.BuiltinLogTypeLoader] [BARRY-ZOU] Loaded [vpcflow_logtype.json] log type
+[2026-11-22T18:54:22,671][INFO ][o.o.s.l.BuiltinLogTypeLoader] [BARRY-ZOU] Loaded [test_windows_logtype.json] log type
+[2026-11-22T18:54:22,677][INFO ][o.o.s.l.BuiltinLogTypeLoader] [BARRY-ZOU] Loaded [s3_logtype.json] log type
+[2026-11-22T18:54:22,681][INFO ][o.o.s.l.BuiltinLogTypeLoader] [BARRY-ZOU] Loaded [others_web_logtype.json] log type
+[2026-11-22T18:54:22,686][INFO ][o.o.s.l.BuiltinLogTypeLoader] [BARRY-ZOU] Loaded [others_proxy_logtype.json] log type
+[2026-11-22T18:54:22,690][INFO ][o.o.s.l.BuiltinLogTypeLoader] [BARRY-ZOU] Loaded [others_macos_logtype.json] log type
+[2026-11-22T18:54:22,695][INFO ][o.o.s.l.BuiltinLogTypeLoader] [BARRY-ZOU] Loaded [others_compliance_logtype.json] log type
+[2026-11-22T18:54:22,700][INFO ][o.o.s.l.BuiltinLogTypeLoader] [BARRY-ZOU] Loaded [others_cloud_logtype.json] log type
+[2026-11-22T18:54:22,706][INFO ][o.o.s.l.BuiltinLogTypeLoader] [BARRY-ZOU] Loaded [others_apt_logtype.json] log type
+[2026-11-22T18:54:22,710][INFO ][o.o.s.l.BuiltinLogTypeLoader] [BARRY-ZOU] Loaded [others_application_logtype.json] log type
+[2026-11-22T18:54:22,714][INFO ][o.o.s.l.BuiltinLogTypeLoader] [BARRY-ZOU] Loaded [okta_logtype.json] log type
+[2026-11-22T18:54:22,717][INFO ][o.o.s.l.BuiltinLogTypeLoader] [BARRY-ZOU] Loaded [network_logtype.json] log type
+[2026-11-22T18:54:22,722][INFO ][o.o.s.l.BuiltinLogTypeLoader] [BARRY-ZOU] Loaded [netflow_logtype.json] log type
+[2026-11-22T18:54:22,726][INFO ][o.o.s.l.BuiltinLogTypeLoader] [BARRY-ZOU] Loaded [m365_logtype.json] log type
+[2026-11-22T18:54:22,730][INFO ][o.o.s.l.BuiltinLogTypeLoader] [BARRY-ZOU] Loaded [linux_logtype.json] log type
+[2026-11-22T18:54:22,735][INFO ][o.o.s.l.BuiltinLogTypeLoader] [BARRY-ZOU] Loaded [gworkspace_logtype.json] log type
+[2026-11-22T18:54:22,740][INFO ][o.o.s.l.BuiltinLogTypeLoader] [BARRY-ZOU] Loaded [github_logtype.json] log type
+[2026-11-22T18:54:22,745][INFO ][o.o.s.l.BuiltinLogTypeLoader] [BARRY-ZOU] Loaded [dns_logtype.json] log type
+[2026-11-22T18:54:22,750][INFO ][o.o.s.l.BuiltinLogTypeLoader] [BARRY-ZOU] Loaded [cloudtrail_logtype.json] log type
+[2026-11-22T18:54:22,756][INFO ][o.o.s.l.BuiltinLogTypeLoader] [BARRY-ZOU] Loaded [azure_logtype.json] log type
+[2026-11-22T18:54:22,760][INFO ][o.o.s.l.BuiltinLogTypeLoader] [BARRY-ZOU] Loaded [apache_access_logtype.json] log type
+[2026-11-22T18:54:22,765][INFO ][o.o.s.l.BuiltinLogTypeLoader] [BARRY-ZOU] Loaded [ad_ldap_logtype.json] log type
+[2026-11-22T18:54:23,376][INFO ][o.o.t.TransportService   ] [BARRY-ZOU] publish_address {127.0.0.1:9300}, bound_addresses {127.0.0.1:9300}
+[2026-11-22T18:54:23,384][INFO ][o.o.t.TransportService   ] [BARRY-ZOU] Remote clusters initialized successfully.
+[2026-11-22T18:54:24,363][INFO ][o.o.c.c.Coordinator      ] [BARRY-ZOU] cluster UUID [jUlQcJYGQCOOhQMJJAAthQ]
+[2026-11-22T18:54:24,624][INFO ][o.o.c.s.MasterService    ] [BARRY-ZOU] Tasks batched with key: org.opensearch.cluster.coordination.JoinHelper, count:3 and sample tasks: elected-as-cluster-manager ([1] nodes joined)[{BARRY-ZOU}{YUHjb2Z-Sf2_ei9u2QgRkg}{TnjBpJAXS6KOS3TCT2dpRA}{127.0.0.1}{127.0.0.1:9300}{dimr}{shard_indexing_pressure_enabled=true} elect leader, _BECOME_CLUSTER_MANAGER_TASK_, _FINISH_ELECTION_], term: 7, version: 903, delta: cluster-manager node changed {previous [], current [{BARRY-ZOU}{YUHjb2Z-Sf2_ei9u2QgRkg}{TnjBpJAXS6KOS3TCT2dpRA}{127.0.0.1}{127.0.0.1:9300}{dimr}{shard_indexing_pressure_enabled=true}]}
+[2026-11-22T18:54:24,873][INFO ][o.o.c.s.ClusterApplierService] [BARRY-ZOU] cluster-manager node changed {previous [], current [{BARRY-ZOU}{YUHjb2Z-Sf2_ei9u2QgRkg}{TnjBpJAXS6KOS3TCT2dpRA}{127.0.0.1}{127.0.0.1:9300}{dimr}{shard_indexing_pressure_enabled=true}]}, term: 7, version: 903, reason: Publication{term=7, version=903}
+[2026-11-22T18:54:24,904][INFO ][o.o.t.i.IndexManagement  ] [BARRY-ZOU] Candidate custom result indices are empty.
+[2026-11-22T18:54:24,906][INFO ][o.o.t.i.IndexManagement  ] [BARRY-ZOU] Candidate custom result indices are empty.
+[2026-11-22T18:54:24,907][INFO ][o.o.t.c.ClusterEventListener] [BARRY-ZOU] Cluster is not recovered yet.
+[2026-11-22T18:54:25,017][INFO ][o.o.i.i.ManagedIndexCoordinator] [BARRY-ZOU] Cache cluster manager node onClusterManager time: 1795344865017
+[2026-11-22T18:54:25,073][INFO ][o.o.d.PeerFinder         ] [BARRY-ZOU] setting findPeersInterval to [1s] as node commission status = [true] for local node [{BARRY-ZOU}{YUHjb2Z-Sf2_ei9u2QgRkg}{TnjBpJAXS6KOS3TCT2dpRA}{127.0.0.1}{127.0.0.1:9300}{dimr}{shard_indexing_pressure_enabled=true}]
+[2026-11-22T18:54:25,089][WARN ][o.o.c.r.a.AllocationService] [BARRY-ZOU] Falling back to single shard assignment since batch mode disable or multiple custom allocators set
+[2026-11-22T18:54:25,095][INFO ][o.o.h.AbstractHttpServerTransport] [BARRY-ZOU] publish_address {127.0.0.1:9200}, bound_addresses {127.0.0.1:9200}
+[2026-11-22T18:54:25,097][INFO ][o.o.n.Node               ] [BARRY-ZOU] started
+[2026-11-22T18:54:25,100][INFO ][o.o.s.OpenSearchSecurityPlugin] [BARRY-ZOU] 0 OpenSearch Security modules loaded so far: []
+[2026-11-22T18:54:25,140][WARN ][o.o.c.r.a.AllocationService] [BARRY-ZOU] Falling back to single shard assignment since batch mode disable or multiple custom allocators set
+[2026-11-22T18:54:25,256][INFO ][o.o.c.s.ClusterSettings  ] [BARRY-ZOU] updating [plugins.index_state_management.template_migration.control] from [0] to [-1]
+[2026-11-22T18:54:25,623][INFO ][o.o.t.c.HashRing         ] [BARRY-ZOU] Node added: [YUHjb2Z-Sf2_ei9u2QgRkg]
+[2026-11-22T18:54:25,640][INFO ][o.o.t.c.HashRing         ] [BARRY-ZOU] Add data node to version hash ring: YUHjb2Z-Sf2_ei9u2QgRkg
+[2026-11-22T18:54:25,646][INFO ][o.o.t.c.HashRing         ] [BARRY-ZOU] All nodes with known version: {YUHjb2Z-Sf2_ei9u2QgRkg=ADNodeInfo{version=2.19.1, isEligibleDataNode=true}}
+[2026-11-22T18:54:25,648][INFO ][o.o.t.c.HashRing         ] [BARRY-ZOU] Rebuild hash ring for realtime with cooldown, nodeChangeEvents size 0
+[2026-11-22T18:54:25,651][INFO ][o.o.t.c.HashRing         ] [BARRY-ZOU] Build version hash ring successfully
+[2026-11-22T18:54:25,653][INFO ][o.o.t.c.ADDataMigrator   ] [BARRY-ZOU] Start migrating AD data
+[2026-11-22T18:54:25,655][INFO ][o.o.t.c.ADDataMigrator   ] [BARRY-ZOU] AD job index doesn't exist, no need to migrate
+[2026-11-22T18:54:25,657][INFO ][o.o.t.c.ClusterEventListener] [BARRY-ZOU] Init version hash ring successfully
+[2026-11-22T18:54:25,709][INFO ][o.o.g.GatewayService     ] [BARRY-ZOU] recovered [16] indices into cluster_state
+[2026-11-22T18:54:25,722][INFO ][o.o.s.l.LogTypeService   ] [BARRY-ZOU] Loading builtin types!
+[2026-11-22T18:54:25,734][INFO ][o.o.s.l.LogTypeService   ] [BARRY-ZOU] Indexing [432] fieldMappingDocs from logTypes: 24
+[2026-11-22T18:54:25,846][WARN ][o.o.o.i.ObservabilityIndex] [BARRY-ZOU] message: index [.opensearch-observability/w-bc0ASYQBOEKHDNsU4fiQ] already exists
+[2026-11-22T18:54:25,847][WARN ][o.o.c.r.a.AllocationService] [BARRY-ZOU] Falling back to single shard assignment since batch mode disable or multiple custom allocators set
+[2026-11-22T18:54:25,928][WARN ][o.o.s.SecurityAnalyticsPlugin] [BARRY-ZOU] Failed to initialize LogType config index and builtin log types
+[2026-11-22T18:54:26,069][INFO ][o.o.s.l.LogTypeService   ] [BARRY-ZOU] Loading builtin types!
+[2026-11-22T18:54:26,073][INFO ][o.o.s.l.LogTypeService   ] [BARRY-ZOU] Indexing [432] fieldMappingDocs from logTypes: 24
+[2026-11-22T18:54:26,082][INFO ][o.o.s.l.LogTypeService   ] [BARRY-ZOU] Loading builtin types!
+[2026-11-22T18:54:26,086][INFO ][o.o.s.l.LogTypeService   ] [BARRY-ZOU] Indexing [432] fieldMappingDocs from logTypes: 24
+[2026-11-22T18:54:26,094][INFO ][o.o.s.i.DetectorIndexManagementService] [BARRY-ZOU] info deleteOldIndices
+[2026-11-22T18:54:26,123][INFO ][o.o.s.i.DetectorIndexManagementService] [BARRY-ZOU] No Old Correlation Indices to delete
+[2026-11-22T18:54:26,132][INFO ][o.o.s.i.DetectorIndexManagementService] [BARRY-ZOU] info deleteOldIndices
+[2026-11-22T18:54:26,133][INFO ][o.o.s.i.DetectorIndexManagementService] [BARRY-ZOU] No Old IOC Findings Indices to delete
+[2026-11-22T18:54:26,194][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] PluginService:onIndexModule index:[w5_chunks/54Qt8YWCQwa1kTC9-3b3mg]
+[2026-11-22T18:54:27,085][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] PluginService:onIndexModule index:[.plugins-ml-config/fKXXV43CSKmFz6wW2PkR_A]
+[2026-11-22T18:54:27,125][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] PluginService:onIndexModule index:[w5_image_vectors/WxDpqRrHRSSo5KFL8cZFkA]
+[2026-11-22T18:54:27,190][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] PluginService:onIndexModule index:[.opensearch-observability/w-bc0ASYQBOEKHDNsU4fiQ]
+[2026-11-22T18:54:28,235][WARN ][o.o.c.r.a.AllocationService] [BARRY-ZOU] Falling back to single shard assignment since batch mode disable or multiple custom allocators set
+[2026-11-22T18:54:28,500][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] PluginService:onIndexModule index:[w5_doc_meta/IvFCA5HNRUaNYin4fEJKxw]
+[2026-11-22T18:54:28,516][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] PluginService:onIndexModule index:[docvqa_image_vectors/FJgrA6pNQGGKwHGnN7O15A]
+[2026-11-22T18:54:28,530][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] PluginService:onIndexModule index:[smokeocr20261122142237image_vectors/j4GHg6ZVQHayG3k-dR-yJw]
+[2026-11-22T18:54:28,547][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] PluginService:onIndexModule index:[top_queries-2026.11.22-89314/KJOlOG2OSC-ElM08XWwsdw]
+[2026-11-22T18:54:28,929][WARN ][o.o.c.r.a.AllocationService] [BARRY-ZOU] Falling back to single shard assignment since batch mode disable or multiple custom allocators set
+[2026-11-22T18:54:29,047][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] PluginService:onIndexModule index:[docvqa_chunks/7-2Kj0dtT-OKCQ2jZCqByg]
+[2026-11-22T18:54:29,583][WARN ][o.o.c.r.a.AllocationService] [BARRY-ZOU] Falling back to single shard assignment since batch mode disable or multiple custom allocators set
+[2026-11-22T18:54:29,870][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] PluginService:onIndexModule index:[top_queries-2026.11.21-89313/8pMOqc3zQa2Ndz6dndRmCw]
+[2026-11-22T18:54:29,910][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] PluginService:onIndexModule index:[chunks/wZdvvnu-QAC9vFRNy6NiiA]
+[2026-11-22T18:54:29,928][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] PluginService:onIndexModule index:[docvqa_doc_meta/V5I0QpOISsaI-D8VM5zgQQ]
+[2026-11-22T18:54:29,941][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] PluginService:onIndexModule index:[image_vectors/pn84BDA7TMGEBSqI7reWbw]
+[2026-11-22T18:54:30,736][WARN ][o.o.c.r.a.AllocationService] [BARRY-ZOU] Falling back to single shard assignment since batch mode disable or multiple custom allocators set
+[2026-11-22T18:54:31,013][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] PluginService:onIndexModule index:[doc_meta/2tG5hXx6Rs-AmE3CUpVSIQ]
+[2026-11-22T18:54:31,028][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] PluginService:onIndexModule index:[.opensearch-sap-log-types-config/SDPtPKcHSdWBXvhB70EK-w]
+[2026-11-22T18:54:31,050][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] PluginService:onIndexModule index:[top_queries-2026.11.19-89290/_5cwDwkcQzygLsJtqiE36g]
+[2026-11-22T18:54:31,521][INFO ][o.o.c.r.a.AllocationService] [BARRY-ZOU] Cluster health status changed from [RED] to [YELLOW] (reason: [shards started [[doc_meta][0], [.opensearch-sap-log-types-config][0]]]).
+[2026-11-22T18:54:31,661][WARN ][o.o.c.r.a.AllocationService] [BARRY-ZOU] Falling back to single shard assignment since batch mode disable or multiple custom allocators set
+[2026-11-22T18:54:35,051][INFO ][o.o.m.a.MLModelAutoReDeployer] [BARRY-ZOU] Index not found, not performing auto reloading!
+[2026-11-22T18:54:35,057][INFO ][o.o.m.c.MLCommonsClusterManagerEventListener] [BARRY-ZOU] Starting ML sync up job...
+[2026-11-22T18:54:45,128][INFO ][o.o.m.c.MLSyncUpCron     ] [BARRY-ZOU] ML configuration already initialized, no action needed
+[2026-11-22T18:54:46,923][WARN ][o.o.w.QueryGroupTask     ] [BARRY-ZOU] QueryGroup _id can't be null, It should be set before accessing it. This is abnormal behaviour 
+[2026-11-22T18:55:04,382][WARN ][o.o.w.QueryGroupTask     ] [BARRY-ZOU] QueryGroup _id can't be null, It should be set before accessing it. This is abnormal behaviour 
+[2026-11-22T18:55:25,032][INFO ][o.o.i.i.ManagedIndexCoordinator] [BARRY-ZOU] Performing move cluster state metadata.
+[2026-11-22T18:55:25,035][INFO ][o.o.i.i.MetadataService  ] [BARRY-ZOU] ISM config index not exist, so we cancel the metadata migration job.
+[2026-11-22T18:55:49,773][WARN ][o.o.w.QueryGroupTask     ] [BARRY-ZOU] QueryGroup _id can't be null, It should be set before accessing it. This is abnormal behaviour 
+[2026-11-22T18:55:50,216][WARN ][o.o.w.QueryGroupTask     ] [BARRY-ZOU] QueryGroup _id can't be null, It should be set before accessing it. This is abnormal behaviour 
+[2026-11-22T18:56:25,039][INFO ][o.o.i.i.ManagedIndexCoordinator] [BARRY-ZOU] Cancel background move metadata process.
+[2026-11-22T18:56:25,046][INFO ][o.o.i.i.ManagedIndexCoordinator] [BARRY-ZOU] Performing move cluster state metadata.
+[2026-11-22T18:56:25,048][INFO ][o.o.i.i.MetadataService  ] [BARRY-ZOU] Move metadata has finished.
+[2026-11-22T18:59:24,372][INFO ][o.o.j.s.JobSweeper       ] [BARRY-ZOU] Running full sweep
+[2026-11-22T18:59:25,026][INFO ][o.o.i.i.PluginVersionSweepCoordinator] [BARRY-ZOU] Canceling sweep ism plugin version job
+[2026-11-22T19:03:18,393][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] PluginService:onIndexModule index:[w6_doc_meta/ieoXJIN-TQqXWHRxfuWVgA]
+[2026-11-22T19:03:18,415][INFO ][o.o.c.m.MetadataCreateIndexService] [BARRY-ZOU] [w6_doc_meta] creating index, cause [api], templates [], shards [1]/[0]
+[2026-11-22T19:03:18,419][WARN ][o.o.c.r.a.AllocationService] [BARRY-ZOU] Falling back to single shard assignment since batch mode disable or multiple custom allocators set
+[2026-11-22T19:03:18,580][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] PluginService:onIndexModule index:[w6_doc_meta/ieoXJIN-TQqXWHRxfuWVgA]
+[2026-11-22T19:03:18,686][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] PluginService:onIndexModule index:[w6_chunks/28EDtp_eTCumilGAwqNmOg]
+[2026-11-22T19:03:18,693][INFO ][o.o.c.m.MetadataCreateIndexService] [BARRY-ZOU] [w6_chunks] creating index, cause [api], templates [], shards [1]/[0]
+[2026-11-22T19:03:18,695][WARN ][o.o.c.r.a.AllocationService] [BARRY-ZOU] Falling back to single shard assignment since batch mode disable or multiple custom allocators set
+[2026-11-22T19:03:18,830][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] PluginService:onIndexModule index:[w6_chunks/28EDtp_eTCumilGAwqNmOg]
+[2026-11-22T19:03:19,079][WARN ][o.o.c.r.a.AllocationService] [BARRY-ZOU] Falling back to single shard assignment since batch mode disable or multiple custom allocators set
+[2026-11-22T19:03:19,279][WARN ][o.o.c.r.a.AllocationService] [BARRY-ZOU] Falling back to single shard assignment since batch mode disable or multiple custom allocators set
+[2026-11-22T19:04:24,380][INFO ][o.o.j.s.JobSweeper       ] [BARRY-ZOU] Running full sweep
+[2026-11-22T19:05:58,785][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] PluginService:onIndexModule index:[w6_image_vectors/ex8eRgBoThKC-SwaL18AEQ]
+[2026-11-22T19:05:58,793][INFO ][o.o.c.m.MetadataCreateIndexService] [BARRY-ZOU] [w6_image_vectors] creating index, cause [api], templates [], shards [1]/[0]
+[2026-11-22T19:05:58,795][WARN ][o.o.c.r.a.AllocationService] [BARRY-ZOU] Falling back to single shard assignment since batch mode disable or multiple custom allocators set
+[2026-11-22T19:05:58,886][INFO ][o.o.p.PluginsService     ] [BARRY-ZOU] PluginService:onIndexModule index:[w6_image_vectors/ex8eRgBoThKC-SwaL18AEQ]
+[2026-11-22T19:05:59,249][WARN ][o.o.c.r.a.AllocationService] [BARRY-ZOU] Falling back to single shard assignment since batch mode disable or multiple custom allocators set
+[2026-11-22T19:09:24,396][INFO ][o.o.j.s.JobSweeper       ] [BARRY-ZOU] Running full sweep
+[2026-11-22T19:09:25,034][INFO ][o.o.s.s.c.FlintStreamingJobHouseKeeperTask] [BARRY-ZOU] Starting housekeeping task for auto refresh streaming jobs.
+[2026-11-22T19:09:25,059][INFO ][o.o.s.s.c.FlintStreamingJobHouseKeeperTask] [BARRY-ZOU] Finished housekeeping task for auto refresh streaming jobs.
+[2026-11-22T19:14:24,412][INFO ][o.o.j.s.JobSweeper       ] [BARRY-ZOU] Running full sweep
+[2026-11-22T19:19:24,425][INFO ][o.o.j.s.JobSweeper       ] [BARRY-ZOU] Running full sweep
+[2026-11-22T19:24:37,484][INFO ][o.o.j.s.JobSweeper       ] [BARRY-ZOU] Running full sweep
+[2026-11-22T19:24:37,485][INFO ][o.o.s.s.c.FlintStreamingJobHouseKeeperTask] [BARRY-ZOU] Starting housekeeping task for auto refresh streaming jobs.
+[2026-11-22T19:24:37,486][INFO ][o.o.s.s.c.FlintStreamingJobHouseKeeperTask] [BARRY-ZOU] Finished housekeeping task for auto refresh streaming jobs.
+[2026-11-22T19:29:37,489][INFO ][o.o.j.s.JobSweeper       ] [BARRY-ZOU] Running full sweep

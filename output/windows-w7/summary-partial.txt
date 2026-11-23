@@ -1,0 +1,60 @@
+Windows W7 已完成部分摘要
+========================
+
+13.1 跨机器 CLIP 向量一致性
+---------------------------
+
+- clip-vectors.json 已生成
+- 10 条文本向量、6 张图片向量齐全
+- 模型版本：cn_clip-1.6.0-5997ef32c50d
+- 环境：torch 2.15.0+cpu，cn_clip 1.6.0，Windows-11-10.0.22621-SP0
+- 任务书中的 cn_clip.__version__ 在当前包不存在，改用 importlib.metadata.version('cn_clip')
+- 13.2、13.3 已完成
+
+13.2 同时运行内存
+-----------------
+
+- 机器内存：15.73 GB，16 个逻辑处理器
+- 采样开始：2026-11-23T13:12:14.9349196+08:00
+- 采样结束：2026-11-23T13:27:10.9913808+08:00
+- 采样时刻：162 个
+- 采样间隔：最短 5.311 秒，最长 5.945 秒
+- 六组进程都出现：postgresql、opensearch、api、worker、ocr_worker、clip_service
+- 负载期间 OCR 从 3 个成功增长到 28 个成功，完成 25 个
+
+各组工作集峰值：
+
+- PostgreSQL：148.4 MB
+- OpenSearch：1070.0 MB
+- API：106.0 MB
+- 通用 Worker：126.7 MB
+- OCR Worker：75.8 MB
+- CLIP 服务：1134.2 MB
+- 六组合计峰值：2649.9 MB
+- 最低系统可用内存：886.6 MB
+
+13.3 负载与空闲检索
+------------------
+
+负载下 200 次：
+
+- 总耗时 P50 200.0 ms，P95 279.1 ms
+- 图像通道 P50 195.5 ms，P95 275.1 ms
+- image_status=ok：200/200
+- unavailable：0
+
+空闲 200 次：
+
+- 总耗时 P50 68.0 ms，P95 177.1 ms
+- 图像通道 P50 66.0 ms，P95 171.1 ms
+- image_status=ok：200/200
+- unavailable：0
+
+原始文件：
+
+- memory.csv、summary.json
+- search-under-load.csv、search-idle.csv
+- search-sample.json
+- 13.2-reocr.txt
+- 13.2-ocr-completion-progress.txt
+- clip-under-load.log、worker-under-load.log、ocr-under-load.log

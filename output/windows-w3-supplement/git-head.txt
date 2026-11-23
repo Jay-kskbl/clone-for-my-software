@@ -1,0 +1,32 @@
+HEAD fd0b5ebf729cf6602447bf95012a6064a2fe270a
+STATUS_BEGIN
+?? .playwright-cli/
+?? docs/screenshots/windows-2026-11-23-t24s/
+?? output/windows-remaining-work.txt
+?? output/windows-w3-supplement/
+?? output/windows-w4/
+?? output/windows-w5/
+?? output/windows-w6/
+?? output/windows-w7/
+?? output/windows-w8/16.4-alembic.txt
+?? output/windows-w8/16.4-import.txt
+?? output/windows-w8/16.4-make-subset.txt
+?? output/windows-w8/16.4-record.txt
+?? output/windows-w8/16.4-validate.txt
+?? output/windows-w8/16.8-alembic.txt
+?? output/windows-w8/analyze/
+?? output/windows-w8/application-log-info.txt
+?? output/windows-w8/bad-files/
+?? output/windows-w8/crash-events.txt
+?? output/windows-w8/crash4/
+?? output/windows-w8/git-head.txt
+?? output/windows-w8/git-show.txt
+?? output/windows-w8/logs/
+?? output/windows-w8/missed/document_map.csv
+?? output/windows-w8/missed/ocr-chunks-export.log
+?? output/windows-w8/missed/ocr-chunks.csv
+?? output/windows-w8/scale/
+?? output/windows-w8/summary-partial.txt
+?? output/windows-w8/wer-reports.txt
+?? scripts/windows/start_all.ps1
+STATUS_END

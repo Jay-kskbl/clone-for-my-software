@@ -1,0 +1,1 @@
+Worker 无法启动：数据库还没有建表（没有 alembic_version），先在 backend/ 目录运行 alembic upgrade head

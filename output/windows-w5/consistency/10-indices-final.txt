@@ -1,0 +1,16 @@
+index                               docs.count creation.date.string
+docvqa_chunks                             1589 2026-11-21T05:21:00.593Z
+w5_doc_meta                                  0 2026-11-22T06:27:09.116Z
+top_queries-2026.11.19-89290                71 2026-11-19T07:35:04.985Z
+chunks                                      10 2026-11-19T08:24:19.190Z
+doc_meta                                     5 2026-11-19T08:24:18.832Z
+image_vectors                                2 2026-11-19T08:24:40.847Z
+docvqa_image_vectors                       500 2026-11-21T05:52:27.394Z
+.opensearch-observability                    0 2026-11-19T07:31:19.904Z
+.plugins-ml-config                           1 2026-11-19T07:31:39.758Z
+smokeocr20261122142237image_vectors          0 2026-11-22T06:22:46.934Z
+w5_chunks                                    0 2026-11-22T06:27:09.280Z
+top_queries-2026.11.21-89313               829 2026-11-21T04:45:02.739Z
+w5_image_vectors                             0 2026-11-22T06:27:09.456Z
+top_queries-2026.11.22-89314                21 2026-11-22T05:45:00.893Z
+docvqa_doc_meta                            500 2026-11-21T05:20:59.992Z

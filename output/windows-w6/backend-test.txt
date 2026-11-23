@@ -1,0 +1,197 @@
+........................................................................ [  7%]
+........................................................................ [ 15%]
+........................................................................ [ 22%]
+........................................................................ [ 30%]
+........................................................................ [ 37%]
+...............F........................................................ [ 45%]
+........................................................................ [ 53%]
+........................................................................ [ 60%]
+........................................................................ [ 68%]
+........................................................................ [ 75%]
+........................................................................ [ 83%]
+..........................FFFFF......................................... [ 90%]
+........................................................................ [ 98%]
+..............                                                           [100%]
+================================== FAILURES ===================================
+_______________ test_symlinks_are_never_treated_as_stored_files _______________
+
+tmp_path = WindowsPath('C:/Users/lenovo/Desktop/my-software-main/_gh_upload/storage-smoke/pytest-w6-backend-clean2/test_symlinks_are_never_treate0')
+
+    def test_symlinks_are_never_treated_as_stored_files(tmp_path):
+        root = tmp_path / "storage"
+        LocalStorage(root)
+        outside = tmp_path / "secret"
+        outside.write_text("x")
+        link = root / "2026" / str(uuid.uuid4()) / ("e" * 64 + ".pdf")
+        link.parent.mkdir(parents=True)
+>       os.symlink(outside, link)
+E       OSError: [WinError 1314] 客户端没有所需的特权。: 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\storage-smoke\\pytest-w6-backend-clean2\\test_symlinks_are_never_treate0\\secret' -> 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\storage-smoke\\pytest-w6-backend-clean2\\test_symlinks_are_never_treate0\\storage\\2026\\81b69e3e-2020-4e3e-8136-6ca2b3b30910\\eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee.pdf'
+
+tests\unit\test_consistency.py:387: OSError
+_________________ test_file_symlink_pointing_outside_rejected _________________
+
+storage = <app.modules.storage.local.LocalStorage object at 0x0000029F0D1F73B0>
+root = WindowsPath('C:/Users/lenovo/Desktop/my-software-main/_gh_upload/storage-smoke/pytest-w6-backend-clean2/test_file_symlink_pointing_out0/storage')
+tmp_path = WindowsPath('C:/Users/lenovo/Desktop/my-software-main/_gh_upload/storage-smoke/pytest-w6-backend-clean2/test_file_symlink_pointing_out0')
+
+    def test_file_symlink_pointing_outside_rejected(storage, root, tmp_path):
+        secret = tmp_path / "secret.pdf"
+        secret.write_bytes(b"outside the storage root")
+        key = f"{YEAR}/{DOC_ID}/{VALID_SHA}.pdf"
+        (root / key).parent.mkdir(parents=True)
+>       (root / key).symlink_to(secret)
+
+tests\unit\test_storage.py:254: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = WindowsPath('C:/Users/lenovo/Desktop/my-software-main/_gh_upload/storage-smoke/pytest-w6-backend-clean2/test_file_syml...torage/2026/11111111-2222-4333-8444-555555555555/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.pdf')
+target = WindowsPath('C:/Users/lenovo/Desktop/my-software-main/_gh_upload/storage-smoke/pytest-w6-backend-clean2/test_file_symlink_pointing_out0/secret.pdf')
+target_is_directory = False
+
+    def symlink_to(self, target, target_is_directory=False):
+        """
+        Make this path a symlink pointing to the target path.
+        Note the order of arguments (link, target) is the reverse of os.symlink.
+        """
+>       os.symlink(target, self, target_is_directory)
+E       OSError: [WinError 1314] 客户端没有所需的特权。: 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\storage-smoke\\pytest-w6-backend-clean2\\test_file_symlink_pointing_out0\\secret.pdf' -> 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\storage-smoke\\pytest-w6-backend-clean2\\test_file_symlink_pointing_out0\\storage\\2026\\11111111-2222-4333-8444-555555555555\\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.pdf'
+
+..\..\..\..\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1218: OSError
+___________ test_directory_symlink_pointing_outside_rejected[year] ____________
+
+storage = <app.modules.storage.local.LocalStorage object at 0x0000029F117C34D0>
+root = WindowsPath('C:/Users/lenovo/Desktop/my-software-main/_gh_upload/storage-smoke/pytest-w6-backend-clean2/test_directory_symlink_pointin0/storage')
+tmp_path = WindowsPath('C:/Users/lenovo/Desktop/my-software-main/_gh_upload/storage-smoke/pytest-w6-backend-clean2/test_directory_symlink_pointin0')
+level = 'year'
+
+    @pytest.mark.parametrize("level", ["year", "document"])
+    def test_directory_symlink_pointing_outside_rejected(storage, root, tmp_path, level):
+        outside = tmp_path / "outside"
+        key = f"{YEAR}/{DOC_ID}/{VALID_SHA}.pdf"
+        if level == "year":
+            (outside / str(DOC_ID)).mkdir(parents=True)
+            victim = outside / str(DOC_ID) / f"{VALID_SHA}.pdf"
+>           (root / YEAR).symlink_to(outside, target_is_directory=True)
+
+tests\unit\test_storage.py:271: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = WindowsPath('C:/Users/lenovo/Desktop/my-software-main/_gh_upload/storage-smoke/pytest-w6-backend-clean2/test_directory_symlink_pointin0/storage/2026')
+target = WindowsPath('C:/Users/lenovo/Desktop/my-software-main/_gh_upload/storage-smoke/pytest-w6-backend-clean2/test_directory_symlink_pointin0/outside')
+target_is_directory = True
+
+    def symlink_to(self, target, target_is_directory=False):
+        """
+        Make this path a symlink pointing to the target path.
+        Note the order of arguments (link, target) is the reverse of os.symlink.
+        """
+>       os.symlink(target, self, target_is_directory)
+E       OSError: [WinError 1314] 客户端没有所需的特权。: 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\storage-smoke\\pytest-w6-backend-clean2\\test_directory_symlink_pointin0\\outside' -> 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\storage-smoke\\pytest-w6-backend-clean2\\test_directory_symlink_pointin0\\storage\\2026'
+
+..\..\..\..\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1218: OSError
+_________ test_directory_symlink_pointing_outside_rejected[document] __________
+
+storage = <app.modules.storage.local.LocalStorage object at 0x0000029F11901370>
+root = WindowsPath('C:/Users/lenovo/Desktop/my-software-main/_gh_upload/storage-smoke/pytest-w6-backend-clean2/test_directory_symlink_pointin1/storage')
+tmp_path = WindowsPath('C:/Users/lenovo/Desktop/my-software-main/_gh_upload/storage-smoke/pytest-w6-backend-clean2/test_directory_symlink_pointin1')
+level = 'document'
+
+    @pytest.mark.parametrize("level", ["year", "document"])
+    def test_directory_symlink_pointing_outside_rejected(storage, root, tmp_path, level):
+        outside = tmp_path / "outside"
+        key = f"{YEAR}/{DOC_ID}/{VALID_SHA}.pdf"
+        if level == "year":
+            (outside / str(DOC_ID)).mkdir(parents=True)
+            victim = outside / str(DOC_ID) / f"{VALID_SHA}.pdf"
+            (root / YEAR).symlink_to(outside, target_is_directory=True)
+        else:
+            outside.mkdir()
+            victim = outside / f"{VALID_SHA}.pdf"
+            (root / YEAR).mkdir()
+>           (root / YEAR / str(DOC_ID)).symlink_to(outside, target_is_directory=True)
+
+tests\unit\test_storage.py:276: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = WindowsPath('C:/Users/lenovo/Desktop/my-software-main/_gh_upload/storage-smoke/pytest-w6-backend-clean2/test_directory_symlink_pointin1/storage/2026/11111111-2222-4333-8444-555555555555')
+target = WindowsPath('C:/Users/lenovo/Desktop/my-software-main/_gh_upload/storage-smoke/pytest-w6-backend-clean2/test_directory_symlink_pointin1/outside')
+target_is_directory = True
+
+    def symlink_to(self, target, target_is_directory=False):
+        """
+        Make this path a symlink pointing to the target path.
+        Note the order of arguments (link, target) is the reverse of os.symlink.
+        """
+>       os.symlink(target, self, target_is_directory)
+E       OSError: [WinError 1314] 客户端没有所需的特权。: 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\storage-smoke\\pytest-w6-backend-clean2\\test_directory_symlink_pointin1\\outside' -> 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\storage-smoke\\pytest-w6-backend-clean2\\test_directory_symlink_pointin1\\storage\\2026\\11111111-2222-4333-8444-555555555555'
+
+..\..\..\..\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1218: OSError
+_____________ test_put_refuses_to_write_through_directory_symlink _____________
+
+storage = <app.modules.storage.local.LocalStorage object at 0x0000029F11903D70>
+root = WindowsPath('C:/Users/lenovo/Desktop/my-software-main/_gh_upload/storage-smoke/pytest-w6-backend-clean2/test_put_refuses_to_write_thro0/storage')
+tmp_path = WindowsPath('C:/Users/lenovo/Desktop/my-software-main/_gh_upload/storage-smoke/pytest-w6-backend-clean2/test_put_refuses_to_write_thro0')
+
+    def test_put_refuses_to_write_through_directory_symlink(storage, root, tmp_path):
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        year = str(datetime.now(UTC).year)
+>       (root / year).symlink_to(outside, target_is_directory=True)
+
+tests\unit\test_storage.py:291: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = WindowsPath('C:/Users/lenovo/Desktop/my-software-main/_gh_upload/storage-smoke/pytest-w6-backend-clean2/test_put_refuses_to_write_thro0/storage/2026')
+target = WindowsPath('C:/Users/lenovo/Desktop/my-software-main/_gh_upload/storage-smoke/pytest-w6-backend-clean2/test_put_refuses_to_write_thro0/outside')
+target_is_directory = True
+
+    def symlink_to(self, target, target_is_directory=False):
+        """
+        Make this path a symlink pointing to the target path.
+        Note the order of arguments (link, target) is the reverse of os.symlink.
+        """
+>       os.symlink(target, self, target_is_directory)
+E       OSError: [WinError 1314] 客户端没有所需的特权。: 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\storage-smoke\\pytest-w6-backend-clean2\\test_put_refuses_to_write_thro0\\outside' -> 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\storage-smoke\\pytest-w6-backend-clean2\\test_put_refuses_to_write_thro0\\storage\\2026'
+
+..\..\..\..\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1218: OSError
+______________ test_symlinked_temp_directory_refused_at_startup _______________
+
+tmp_path = WindowsPath('C:/Users/lenovo/Desktop/my-software-main/_gh_upload/storage-smoke/pytest-w6-backend-clean2/test_symlinked_temp_directory_0')
+
+    def test_symlinked_temp_directory_refused_at_startup(tmp_path):
+        root = tmp_path / "storage"
+        outside = tmp_path / "outside"
+        root.mkdir()
+        outside.mkdir()
+>       (root / ".tmp").symlink_to(outside, target_is_directory=True)
+
+tests\unit\test_storage.py:305: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = WindowsPath('C:/Users/lenovo/Desktop/my-software-main/_gh_upload/storage-smoke/pytest-w6-backend-clean2/test_symlinked_temp_directory_0/storage/.tmp')
+target = WindowsPath('C:/Users/lenovo/Desktop/my-software-main/_gh_upload/storage-smoke/pytest-w6-backend-clean2/test_symlinked_temp_directory_0/outside')
+target_is_directory = True
+
+    def symlink_to(self, target, target_is_directory=False):
+        """
+        Make this path a symlink pointing to the target path.
+        Note the order of arguments (link, target) is the reverse of os.symlink.
+        """
+>       os.symlink(target, self, target_is_directory)
+E       OSError: [WinError 1314] 客户端没有所需的特权。: 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\storage-smoke\\pytest-w6-backend-clean2\\test_symlinked_temp_directory_0\\outside' -> 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\storage-smoke\\pytest-w6-backend-clean2\\test_symlinked_temp_directory_0\\storage\\.tmp'
+
+..\..\..\..\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1218: OSError
+============================== warnings summary ===============================
+..\.venv-main\Lib\site-packages\fastapi\testclient.py:1
+  C:\Users\lenovo\Desktop\my-software-main\_gh_upload\.venv-main\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/unit/test_consistency.py::test_symlinks_are_never_treated_as_stored_files
+FAILED tests/unit/test_storage.py::test_file_symlink_pointing_outside_rejected
+FAILED tests/unit/test_storage.py::test_directory_symlink_pointing_outside_rejected[year]
+FAILED tests/unit/test_storage.py::test_directory_symlink_pointing_outside_rejected[document]
+FAILED tests/unit/test_storage.py::test_put_refuses_to_write_through_directory_symlink
+FAILED tests/unit/test_storage.py::test_symlinked_temp_directory_refused_at_startup
+6 failed, 944 passed, 1 warning in 676.11s (0:11:16)

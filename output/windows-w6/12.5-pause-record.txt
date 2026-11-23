@@ -1,0 +1,83 @@
+W6 第 12.5 节暂停记录
+=====================
+
+记录时间：2026-11-22 19:30（Asia/Shanghai）
+代码基线：fd0b5ebf729cf6602447bf95012a6064a2fe270a
+任务状态：未完成，按 Barry 要求暂停
+
+一、已完成的准备
+----------------
+
+- 独立数据库 docmgr_w6 已创建并迁移到 0002
+- 独立存储目录 storage/w6-20261122 已创建
+- 索引前缀 w6_
+- 数据集目录：C:\Users\lenovo\Desktop\my-software-main\w6-data\docvqa60-20261122
+- 数据集 validate：60 files、60 queries、60 qrels，退出码 0
+- import：60 个文件，退出码 0
+
+二、并发与强杀
+--------------
+
+最初同时启动：
+
+- backend1：Wrapper PID 11020，实际 Worker PID 26836
+- backend2：Wrapper PID 27760，实际 Worker PID 6728
+- ocr1：Wrapper PID 29548，实际 OCR Worker PID 25340
+- ocr2：Wrapper PID 20360，实际 OCR Worker PID 9044
+
+按任务书强制结束：
+
+- parse Worker：backend2，实际 PID 6728
+- 当时持有的 parse 任务：58f217bd-cd0b-44d6-8aa3-4b96a7f5939f
+- OCR Worker：ocr1，实际 PID 25340
+- 当时持有的 OCR 任务：0f9abb4d-4557-44f7-9c27-67738a2d216a
+
+原始记录：
+
+- workers-w6/12.5-killed-parse.json
+- workers-w6/12.5-killed-ocr.json
+- workers-w6/*.err.log
+
+三、暂停时数据库状态
+--------------------
+
+- parse：succeeded 60
+- embed：succeeded 60
+- OCR：succeeded 29、pending 30、processing 1
+- documents：60
+- ocr_results：29
+- failed 任务：0
+
+暂停时仍在 processing 的 OCR 任务：
+
+- task_id：3b043dc7-838f-487a-bbe5-760163496fa6
+- document_id：6c072209-c5d1-4906-8981-03e27aa64e5b
+- claimed_by：ocr-Barry-Zou-9044-02af29
+- started_at：2026-11-22 19:28:52.35758+08
+- lease_expires_at：2026-11-22 19:30:07.365351+08
+
+暂停时已停止全部 W6 测试 Worker（Wrapper 11020/20360 及实际 Worker 26836/9044）。
+因为没有仍在运行的 Worker，任务 3b043dc7… 在租约到期后不会被自动回收，
+会保持 processing，直到下次恢复测试并重新启动 Worker。
+
+四、未完成的部分
+----------------
+
+- OCR 还有 30 个 pending，1 个 processing
+- 8 份 w6-1.csv 至 w6-8.csv 尚未导出
+- 12.5 的最终 consistency check 尚未执行
+- 未开始 12.6、12.7、12.9、12.10
+
+本节点不能记为“通过”或“完成”。
+
+五、服务与环境状态
+------------------
+
+暂停后保留：
+
+- 主后端 /health：ok
+- PostgreSQL：ok
+- OpenSearch：ok，yellow
+- CLIP 服务：ok
+
+没有删除 docmgr_w6、60 文件数据集、W6 存储或任何测试日志。

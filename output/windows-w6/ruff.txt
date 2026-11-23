@@ -1,0 +1,24 @@
+=== backend : ruff check ===
+All checks passed!
+exit=0
+=== backend : ruff format --check ===
+128 files already formatted
+exit=0
+=== shared : ruff check ===
+All checks passed!
+exit=0
+=== shared : ruff format --check ===
+24 files already formatted
+exit=0
+=== services\ocr_worker : ruff check ===
+All checks passed!
+exit=0
+=== services\ocr_worker : ruff format --check ===
+20 files already formatted
+exit=0
+=== services\clip_service : ruff check ===
+All checks passed!
+exit=0
+=== services\clip_service : ruff format --check ===
+11 files already formatted
+exit=0

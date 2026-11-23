@@ -1,0 +1,13 @@
+{
+  "index_available": true,
+  "index_error": null,
+  "issues": [
+    {
+      "kind": "chunks_missing_in_index",
+      "document_id": "3d0f07a0-5548-4402-88cd-88f78e416d66",
+      "detail": "数据库里有 3 个片段不在 chunks 索引里，这部分内容搜不到",
+      "repair": "index",
+      "target": null
+    }
+  ]
+}
