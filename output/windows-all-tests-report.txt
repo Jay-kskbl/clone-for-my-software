@@ -138,7 +138,7 @@ W6：新基线复测与真实环境补测
 - 最终 parse 60、embed 60、OCR 60 全部 succeeded，failed=0
 - 8 份 SQL 全部导出
 - documents=60、chunks=173、ocr_results=60、embeddings=60
-- consistency=[] 
+- consistency=[]
 
 12.6：
 
