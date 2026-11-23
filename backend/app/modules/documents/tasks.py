@@ -9,6 +9,16 @@ from sqlalchemy.orm import Session
 from app.core.errors import ForbiddenError, NotFoundError, TaskNotRetryableError
 from app.db.models import Document, ProcessingTask, User
 from app.modules.auth.permissions import ADMIN_ROLE
+from app.modules.documents.schemas import TaskOut
+from app.modules.documents.task_errors import public_task_error
+
+
+def to_task_out(user: User, task: ProcessingTask) -> TaskOut:
+    """对外的任务信息。失败原因的原文只给管理员看，其他人看清理过的（task_errors.py）。"""
+    out = TaskOut.model_validate(task)
+    if user.role == ADMIN_ROLE:
+        return out
+    return out.model_copy(update={"error": public_task_error(out.error)})
 
 
 def list_document_tasks(session: Session, document: Document) -> list[ProcessingTask]:

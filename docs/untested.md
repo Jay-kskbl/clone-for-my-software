@@ -157,6 +157,14 @@ T24p 完成时 DEVPLAN §5 写了这一项未测试，但当时没有登记到�
 | 真机手机浏览器 | 窄屏布局只在内置浏览器里模拟 375×600、375×812、640×560 看过 | 已复核：只加了一条 `max-width: 720px` 的底部内边距 |
 | 读屏软件 | 表单内提示用 `el-alert`（`role="alert"`）、卡片标题改为 `h2`，只检查了 DOM 属性，没有用 VoiceOver 等实际听过 | — |
 
+### 任务状态与重试 P1–P4（克隆库 `feat/search-motion`，2026-11-23 登记，见 `docs/changes/task-panel.md`）
+
+只在克隆库里做，不在 DEVPLAN 中，也不计入第 1 节的合计。
+
+| 项目 | 说明 | 代码复核 |
+|---|---|---|
+| P1 集成测试 `test_documents.py::test_only_admin_sees_the_raw_failure_reason` | 1 项，**未运行**：本机没有 PostgreSQL。本机 backend 因此跳过 230 项（229 + 这 1 项） | 已复核：三个任务接口都只经过 `to_task_out`，该函数有单元测试（已通过）；被共享者走 `list_document_tasks` 同一路径 |
+
 ### T24e 文本预览排序（2026-11-19 登记，见 `decisions.md` D44）
 
 | 项目 | 说明 | 代码复核 |
