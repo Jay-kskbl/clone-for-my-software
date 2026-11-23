@@ -156,6 +156,7 @@ T24p 完成时 DEVPLAN §5 写了这一项未测试，但当时没有登记到�
 | T24w 与真实后端联调 | 注册、注册后自动登录、“已注册但登录失败”、连按回车只发一次，只对着模拟后端走过（“登录失败”是让模拟后端在注册后的第一次登录返回 503 造出来的）。真实后端的 409 `USERNAME_TAKEN`、422 `VALIDATION_ERROR` 的应答没有试过 | 已复核：`register` / `login` 的请求体与 `docs/api.md` §4 一致；表单规则的边界（用户名 3–32、`[A-Za-z0-9_.-]`，密码 8–128 个字符）与 api.md §4.2 一致 |
 | T24x 与真实后端联调 | “连不上时保留令牌、恢复后点重试直接进入”只对着模拟后端走过（真正停掉模拟后端时 Vite 开发代理返回 502，模拟后端恢复后令牌仍在其内存里）。真实后端重启（它签发的令牌在重启后仍然有效，取决于 `JWT_SECRET` 不变）、数据库不可用时 `/api/auth/me` 的 503、网络“发出去没有应答”时切换页面要等多久，都没有试过 | 已复核：`cannotConfirm` 只看 `ApiError.status`（0 或 ≥ 500），与 `api/client.ts` 对网络错误（status 0）、502–504（`UNAVAILABLE`）、后端错误结构（503 `DATABASE_UNAVAILABLE`、500 `INTERNAL_ERROR`）的转换一致；401 仍删令牌 |
 | T24y 与真实后端联调、读屏软件 | 表单内的错误提示只对着模拟后端看过（409、422、502、503 都是模拟后端造的）；`el-alert` 的 `role="alert"` 只检查了 DOM 属性，没有用 VoiceOver 等实际听过 | 已复核：5 个错误码与 `backend/app/core/errors.py`、`backend/app/api/errors.py` 一致；没列出的错误码显示后端原文，不会显示空白 |
+| T24z 对着真实后端的 `/health` | 只对着模拟后端（正常、数据库不可用、真正停掉）看过。数据库直接拒绝连接时 `/health` 应当很快返回；数据库主机连不上（不应答）时要等连接超时（`health_check_timeout_seconds`，默认 2 秒）才返回，提示会晚一点出现。两种情况的实际耗时都没有测 | 已复核：检查在页面挂载后异步进行，不阻塞表单，检查完之前不显示提示；`database.status` 的取值（`ok` / `unavailable`）与 `backend/app/api/health.py` 一致 |
 
 ### T24e 文本预览排序（2026-11-19 登记，见 `decisions.md` D44）
 
