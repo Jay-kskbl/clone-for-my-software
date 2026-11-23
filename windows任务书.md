@@ -1659,6 +1659,7 @@ echo exit=%ERRORLEVEL%
 | 8 | 新开一个窗口设 `$env:ACCESS_TOKEN_EXPIRE_SECONDS = "60"`，在这个窗口重启后端；登录，打开 `/search?q=合同` 并检索一次，等 70 秒后再点“检索” | 回到登录页，地址带 `redirect=/search?q=合同`（编码后），本地令牌已清除；重新登录后回到检索页，检索框里是“合同”。做完关掉这个窗口，用原来的设置重启后端 |
 | 9 | 已登录时直接打开 `/login?redirect=/search` | 直接进入 `/search`，不停在登录页 |
 | 10 | 未登录时打开 `/login?redirect=/\evil.com`，登录 | 登录后回到首页 `/`，地址栏不出现 `evil.com` |
+| 11 | 退出登录。开发者工具 → Network 勾选 Preserve log，限速选 Slow 3G（或 Slow 4G）；在登录页填好正确的用户名和密码，光标留在密码框，**快速连按两次回车**；登录完成后把限速改回 No throttling（2026-11-23 添加，T24w） | Network 里 `POST /api/auth/login` **只有一条**；进入文件页。如果两次回车之间页面已经跳走，加大限速再试一次 |
 
 **Claude 怎么判断：** 对照截图和网络记录逐条看；第 3 步的耗时作为 T24z“数据库连不上时提示晚一点出现”的实测数据。全部符合，才从 `docs/untested.md` 删掉“T24v–T24z”一节的对应行，以及第 4 节“前端与真实后端的联调”里登录页的部分。
 
@@ -1714,7 +1715,7 @@ echo exit=%ERRORLEVEL%
 - [ ] 17.3：四步耗时与设定值相差不超过 2 秒，都报 `ConnectionTimeout`、退出码 1
 - [ ] 17.4：`index-before.txt`、`index-after.txt`、`git-status-before-runs.txt`、`w9-runs.zip`（8 个目录）都在；R1 与 R2 逐条相同；指标与 W3 相差不超过 0.01
 - [ ] 17.5（修复之后）：A、B 两个任务都是 `succeeded`、`attempts = 1`，退出码分别为 0、130，日志里没有 `InterruptedError`、`KeyboardInterrupt`
-- [ ] 17.6：10 步都有截图和网络记录，结果逐条对照了预期
+- [ ] 17.6：11 步都有截图和网络记录（第 11 步的网络记录里能数出登录请求的条数），结果逐条对照了预期
 - [ ] 17.7：三张截图和 `drag.har`
 - [ ] 17.8：15 个 CSV 和 `memory.csv`
 - [ ] 17.9：backend 6 passed、shared 2 passed，`symlink-priv.txt` 在
