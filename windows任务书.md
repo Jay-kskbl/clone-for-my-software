@@ -1470,7 +1470,7 @@ Copy-Item experiments\docvqa\datasets\document_map.csv "$out\missed\document_map
 | W5 11.5 连接超时 | 网络立刻回绝，测不到超时 | 第 17.3 节改用本地监听 |
 | W6 12.3 符号链接 | 执行方没有权限 | 第 17.9 节，Barry 本人 |
 | W6 12.4 第 10 步 | 排名与 W3 不完全相同；原判定标准（逐条相同）定错了 | 第 17.4 节按新标准重测，并补交结果目录 |
-| W6 12.7 OCR Ctrl+C | **未通过**：Windows 上正在识别的任务被打断 | 等修复任务完成后，按第 17.5 节重测，并加测通用 Worker |
+| W6 12.7 OCR Ctrl+C | **未通过**：Windows 上正在识别的任务被打断 | 已由 T24aa 修复（2026-11-23，D52），按第 17.5 节重测，并加测通用 Worker |
 | W6 12.9、12.10 真实文件 | 没有样本 | 第 17.10 节放宽样本的来源说明，由 Barry 自己制作 |
 | 第 0.2 节第 4 步的 `mapping-eol.txt` | 没交 | 第 17.2 节补交 |
 | W7 13.2 内存 | 合计峰值少算了 OCR 识别子进程（采样脚本的问题，Claude 已按原始数据重算为 5732.8 MB） | 不重测；以后的采样改用第 17.2 节的新脚本 |
@@ -1490,7 +1490,7 @@ Copy-Item experiments\docvqa\datasets\document_map.csv "$out\missed\document_map
 | 5 | 第 17.6 节：登录页与停机刷新 | GPT | 2 | 1 小时 |
 | 6 | 第 17.8 节：300 秒超时的文档 | GPT | 1 | 40 分钟 |
 | 7 | 第 17.7、17.9、17.10、17.11 节 | **Barry 本人** | 1 | 共约 2 小时，可以分几次做 |
-| 8 | 第 17.5 节：Ctrl+C 重测 | GPT | 修复任务已提交并推送 | 30 分钟 |
+| 8 | 第 17.5 节：Ctrl+C 重测 | GPT | 1（拉到的提交包含 T24aa） | 30 分钟 |
 | 9 | 按第 14.1 节整理 `output/windows-w9/`、提交；Barry 推送，大文件另交 | GPT、Barry | 全部 | 30 分钟 |
 
 ### 17.2 基线、公用脚本、新的内存采样脚本
@@ -1617,9 +1617,9 @@ Copy-Item experiments\docvqa\datasets\document_map.csv "$out\missed\document_map
 
 **Claude 怎么判断：** 逐条比较排名；对排名变了的查询，从 `results.jsonl` 取换位的两个文档在通道内的分数，算相对差。如果换位都发生在分数相对差很小（例如小于 1%）的地方，就确认“已删除文档影响统计值”这个解释成立。同时核对 8 个目录 `config.json` 里三个 mapping 的 SHA-256（应为第 17.2 节第 2 步的 LF 版本）和 `git_dirty`（对照 `git-status-before-runs.txt` 解释）。
 
-### 17.5 Ctrl+C 重测（等修复任务完成后再做）
+### 17.5 Ctrl+C 重测（T24aa 修复之后）
 
-**为什么：** 第二轮 12.7 发现，Windows 上 OCR Worker 识别途中按 Ctrl+C，主进程等待识别子进程时抛 `InterruptedError`，当前任务被记成一次失败、放回队列，Worker 以退出码 1 结束，不符合 D34“处理完当前任务后退出”。Claude 复核代码时又发现，通用 Worker 有同样的等待写法，而且它的子进程没有忽略 Ctrl+C，在任何系统上都会把正在解析的文件记成一次失败。修复要 Barry 批准后另排任务（DEVPLAN §4），**修复提交推送之前不要做这一节**，免得重复测出同样的结果。
+**为什么：** 第二轮 12.7 发现，Windows 上 OCR Worker 识别途中按 Ctrl+C，主进程等待识别子进程时抛 `InterruptedError`，当前任务被记成一次失败、放回队列，Worker 以退出码 1 结束，不符合 D34“处理完当前任务后退出”。Claude 复核代码时又发现，通用 Worker 有同样的等待写法，而且它的子进程没有忽略 Ctrl+C，在任何系统上都会把正在解析的文件记成一次失败。这两处已由 **T24aa**（2026-11-23，D52）修复：等待被打断时接着等，通用 Worker 的子进程也忽略 Ctrl+C。先确认拉到的提交包含 T24aa（`git log --oneline | Select-String T24aa`），并按第 17.2 节第 3 步重跑 backend、shared、OCR Worker 的测试（backend 应多出 `test_worker_runner.py` 的 4 项，其中 1 项在 Windows 上跳过；OCR Worker 应多出 `test_engine_process.py` 的 4 项，其中 1 项跳过），再做这一节。
 
 **为了留下原始输出，Worker 改在 `cmd` 窗口里运行**，把日志重定向到文件（PowerShell 的管道会干扰 Ctrl+C）：
 

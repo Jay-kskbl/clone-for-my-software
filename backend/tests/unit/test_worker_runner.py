@@ -4,11 +4,15 @@
 """
 
 import os
+import signal
+import sys
 import time
 import uuid
 
+import pytest
 from shared.tasks import Task
 
+from app.worker import runner
 from app.worker.runner import run_in_subprocess
 
 TASK = Task(
@@ -63,6 +67,13 @@ def handler_hard_crash(_task: Task) -> None:
 
 def handler_out_of_memory(_task: Task) -> None:
     raise MemoryError()
+
+
+def handler_gets_ctrl_c(task: Task) -> None:
+    # 模拟在终端里按 Ctrl-C：信号也会发到子进程。子进程应当忽略它，把任务做完
+    os.kill(os.getpid(), signal.SIGINT)
+    time.sleep(0.2)
+    handler_ok(task)
 
 
 def test_successful_handler_runs_in_another_process(tmp_path):
@@ -163,3 +174,84 @@ def test_on_tick_not_needed_for_fast_task():
 
     assert result.ok is True
     assert calls == []
+
+
+# ---- T24aa：Ctrl-C 不打断当前任务 ----
+
+
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="Windows 上 os.kill(pid, SIGINT) 会直接结束进程，模拟不了终端里的 Ctrl-C；"
+    "Windows 的情况按 windows任务书.md 第 17.5 节手动验证",
+)
+def test_ctrl_c_reaching_the_child_does_not_fail_the_task(tmp_path):
+    task = Task(**{**TASK.__dict__, "payload": {"marker_dir": str(tmp_path)}})
+
+    result = run_in_subprocess(handler_gets_ctrl_c, task, timeout_seconds=30)
+
+    assert result.ok is True, result.error
+    assert (tmp_path / "ran").exists()
+
+
+class _InterruptedOnce:
+    """第一次 poll() 抛 InterruptedError，模拟 Windows 上等待时按下 Ctrl-C；之后照常。"""
+
+    def __init__(self, conn) -> None:
+        self._conn = conn
+        self.interrupted = 0
+
+    def poll(self, timeout: float) -> bool:
+        if self.interrupted == 0:
+            self.interrupted = 1
+            raise InterruptedError(4, "Interrupted function call")
+        return self._conn.poll(timeout)
+
+    def __getattr__(self, name):
+        return getattr(self._conn, name)
+
+
+def test_poll_keeps_waiting_after_an_interruption():
+    class Conn:
+        calls = 0
+
+        def poll(self, timeout: float) -> bool:
+            Conn.calls += 1
+            if Conn.calls == 1:
+                raise InterruptedError(4, "Interrupted function call")
+            return True
+
+    assert runner._poll(Conn(), 5.0) is True
+    assert Conn.calls == 2
+
+
+def test_poll_gives_up_at_the_deadline_even_if_interrupted():
+    class Conn:
+        def poll(self, timeout: float) -> bool:
+            raise InterruptedError(4, "Interrupted function call")
+
+    started = time.monotonic()
+    assert runner._poll(Conn(), 0.05) is False
+    assert time.monotonic() - started < 5
+
+
+def test_interrupted_wait_in_the_parent_still_finishes_the_task(tmp_path, monkeypatch):
+    task = Task(**{**TASK.__dict__, "payload": {"marker_dir": str(tmp_path)}})
+    real_mp = runner._mp
+    wrapped = []
+
+    class Context:
+        def Pipe(self, duplex: bool = True):  # noqa: N802 —— 与 multiprocessing 的名字一致
+            parent, child = real_mp.Pipe(duplex=duplex)
+            wrapped.append(_InterruptedOnce(parent))
+            return wrapped[-1], child
+
+        def __getattr__(self, name):
+            return getattr(real_mp, name)
+
+    monkeypatch.setattr(runner, "_mp", Context())
+
+    result = run_in_subprocess(handler_ok, task, timeout_seconds=30, tick_seconds=0.2)
+
+    assert result.ok is True, result.error
+    assert wrapped[0].interrupted == 1
+    assert (tmp_path / "ran").exists()

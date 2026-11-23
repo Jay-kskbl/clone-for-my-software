@@ -1312,3 +1312,26 @@ Barry 于 2026-11-19 对 DEVPLAN §4 中整理出的 14 项待批准事项回复
 - 连不上期间每次切换页面都会多一次 `/api/auth/me` 请求。经开发代理访问时，后端没启动会立即得到 502，不会卡住；如果网络是“请求发出去没有应答”，切换页面要等浏览器的请求超时才继续。没有另加超时，需要时再议。
 - 后端自身的 500（`INTERNAL_ERROR`）也按“暂时确认不了”处理、保留令牌。这时令牌是否有效确实不知道，保留比删除更稳妥。
 - 只对着模拟后端验证过（真正停掉模拟后端时，Vite 开发代理返回 502），没有和真实后端联调。
+
+### D52 Ctrl-C 时两个 Worker 都把当前任务做完再退出（T24aa）
+
+代码：`backend/app/worker/runner.py` 的 `_child_main`、`_poll`；`services/ocr_worker/ocr_worker/engine_process.py` 的 `_poll`。逐项记录见 `docs/changes/T24aa.md`。来源：Windows 第四轮核对（`docs/changes/windows-2026-11-23-核对.md` §2 第 1、2 条），Barry 于 2026-11-23 批准（“先修 Ctrl+C”）。
+
+**问题。** 两个 Worker 的约定都是“收到 Ctrl-C 或 SIGTERM 后，完成当前任务再退出”（D34 为 OCR Worker 写明，通用 Worker 的 `__main__.py` 同样这样提示）。实际有两处做不到：
+
+1. **Windows 上父进程的等待会被打断。** 父进程在主线程里用 `Connection.poll()` 等子进程的结果。Windows 上这个调用等待时会同时等 Ctrl-C 事件，收到后直接抛 `InterruptedError`；PEP 475 规定的“信号处理函数返回后自动重试”不覆盖这条路径。原来的循环没有捕获，异常一路抛到任务循环，当前任务被记成一次失败、放回队列，Worker 以退出码 1 结束（W6 12.7 在 Windows 上实测到）。macOS、Linux 上 `poll()` 底层是 `select`，信号处理函数返回后系统会自动接着等，所以本机测不出来。
+2. **通用 Worker 的子进程没有忽略 SIGINT。** 在终端里按 Ctrl-C 时，信号发给整个前台进程组，子进程也会收到。OCR 的识别子进程早在 D34 就忽略了它，通用 Worker 的子进程没有：它会收到 `KeyboardInterrupt`，被 `_child_main` 的 `except BaseException` 当作一次可重试的失败报告给父进程。这一条在任何系统上都会发生（Windows 第四轮核对时复核代码发现，没有实测过）。
+
+**决定。**
+
+- 两个模块各加一个 `_poll(conn, timeout)`：调用 `conn.poll()`，遇到 `InterruptedError` 就按剩余时间接着等，到期返回 `False`。父进程等结果、OCR 等模型加载的三处 `poll()` 都改用它。此时信号处理函数已经运行过、记下了“处理完当前任务后退出”，接着等就是约定要的行为。
+- 通用 Worker 的子进程入口第一行 `signal.signal(signal.SIGINT, signal.SIG_IGN)`，与 OCR 识别子进程相同。子进程什么时候结束由父进程决定（正常返回，或超时、租约丢失时 kill）。
+- 两处各写一份 `_poll`，没有放进 `shared/`：只有十几行，放进 `shared` 反而让两个 Worker 多一处共同依赖，以后改一边要顾及另一边。
+
+**不变的部分。** SIGTERM 的处理、退出码（通用 Worker 收到停止信号后返回 130，OCR Worker 返回 0）、超时与租约的判断都没有改。
+
+**局限。**
+
+- 父进程从子进程管道读结果的 `recv()` 没有包进重试：`poll()` 返回有数据之后才会调用它，数据已经在管道里，Windows 上不会进入需要等待的分支。
+- Windows 上的行为只有单元测试覆盖（用一个第一次 `poll()` 抛 `InterruptedError` 的包装对象模拟）；真实的 Ctrl-C 要按 `windows任务书.md` 第 17.5 节在 Windows 上手动验证。子进程忽略 SIGINT 的测试用 `os.kill(os.getpid(), SIGINT)` 模拟，在 Windows 上跳过（那里的 `os.kill` 会直接结束进程）。
+- 子进程刚启动、还没执行到 `signal.signal` 那一行时按 Ctrl-C，子进程仍会被打断。这段时间很短（OCR 子进程同样如此），出现时任务按可重试的失败处理，下一次会重做。

@@ -86,7 +86,7 @@ T20 的测试都在本机实际运行过（接口测试 39 项，真实模型测
 |---|---|---|
 | `consistency repair` 在检索服务不可用时的提示 | **退出码已验证（2026-11-23 Windows 第四轮，W4–W8，基线 `fd0b5eb`，核对见 `docs/changes/windows-2026-11-23-核对.md`）：** W6 12.4 第 3 步退出码 1，并提示“没有检查索引，index、rebuild-indices 两类这次不会修复”。但后面还多打了一行“所选类别下没有需要修复的问题”，与 D34 的意图相反，待 Barry 决定是否修改（第 7.4 节） | 已复核 |
 | `consistency repair --fix index`、`rebuild-indices` 给解析失败的文档写回 `doc_meta` | 完整路径需要 PostgreSQL；`reindex_document` 本身有单元测试（已通过） | 已复核 |
-| OCR Worker 按 Ctrl-C 时完成当前任务再退出 | **未通过（2026-11-23 Windows 第四轮，W4–W8，基线 `fd0b5eb`，核对见 `docs/changes/windows-2026-11-23-核对.md`）：** W6 12.7 在 Windows 上按 Ctrl+C，主进程等待识别子进程时抛 `InterruptedError`，当前任务被记一次失败并放回队列，Worker 退出码 1。原因与修复建议见第 7.4 节；修复后按 `windows任务书.md` 第 17.5 节重测。macOS 上没有实际按过 | 已复核；代码问题见第 7.4 节 |
+| OCR Worker 按 Ctrl-C 时完成当前任务再退出 | **已修复（T24aa，D52），Windows 上待重测。** 原来：**未通过（2026-11-23 Windows 第四轮，W4–W8，基线 `fd0b5eb`，核对见 `docs/changes/windows-2026-11-23-核对.md`）：** W6 12.7 在 Windows 上按 Ctrl+C，主进程等待识别子进程时抛 `InterruptedError`，当前任务被记一次失败并放回队列，Worker 退出码 1。T24aa 让等待循环遇到 `InterruptedError` 时接着等，有单元测试（模拟被打断，已通过）；真实按键按 `windows任务书.md` 第 17.5 节重测。macOS 上没有对着真实 Worker 按过（本机没有 PostgreSQL） | 已复核 |
 | PDF 预览的绘制排队 | 只对着临时模拟接口、用一份 5 页的测试 PDF 检查过；没有自动化测试 | 已复核 |
 
 ### T21 图片向量与向量索引（2026-11-19 登记，见 `decisions.md` D35）
@@ -493,8 +493,8 @@ cd <项目目录> && docker compose --env-file .env -f deploy/docker-compose.yml
 | 项目 | 说明 | 后续 |
 |---|---|---|
 | 8 项符号链接测试 | 仍因 WinError 1314 失败（同第 7.1 节） | `windows任务书.md` 第 17.9 节，由 Barry 本人运行 |
-| OCR Worker 按 Ctrl+C 打断当前任务（Windows） | `services/ocr_worker/ocr_worker/engine_process.py` 的等待循环在主线程调用 `Connection.poll()`；Windows 上这个调用等待时会同时等 Ctrl+C 事件，收到后直接抛 `InterruptedError`，循环没有捕获。W6 12.7 实测：任务被记一次失败、放回队列，Worker 退出码 1 | 修复要 Barry 批准（DEVPLAN §4）；修复后按任务书第 17.5 节重测 |
-| 通用 Worker 按 Ctrl+C 打断当前任务（未实测） | `backend/app/worker/runner.py` 有同样的 `poll()` 等待；而且子进程没有忽略 SIGINT（D34 只改了 OCR 子进程），任何系统上按 Ctrl+C，子进程都会收到 `KeyboardInterrupt`，被当作一次可重试的失败。代码复核发现，没有实际按过 | 同上，与上一条一起修 |
+| OCR Worker 按 Ctrl+C 打断当前任务（Windows） | `services/ocr_worker/ocr_worker/engine_process.py` 的等待循环在主线程调用 `Connection.poll()`；Windows 上这个调用等待时会同时等 Ctrl+C 事件，收到后直接抛 `InterruptedError`，循环没有捕获。W6 12.7 实测：任务被记一次失败、放回队列，Worker 退出码 1 | T24aa（D52）已修复，有单元测试；Windows 上按任务书第 17.5 节重测后删除本行 |
+| 通用 Worker 按 Ctrl+C 打断当前任务（未实测） | `backend/app/worker/runner.py` 有同样的 `poll()` 等待；而且子进程没有忽略 SIGINT（D34 只改了 OCR 子进程），任何系统上按 Ctrl+C，子进程都会收到 `KeyboardInterrupt`，被当作一次可重试的失败。代码复核发现，没有实际按过 | T24aa（D52）已修复（子进程忽略 SIGINT，等待被打断时接着等），有单元测试；Windows 上按任务书第 17.5 节 B 实测后删除本行 |
 | 一致性修复后检索排名与修复前不完全相同 | W6 12.4：B2 有 110 / 500 条完整排名变化，指标几乎不变。很可能是 BM25 统计值包含已删除但未合并的文档。原判定标准（逐条相同）不对 | 任务书第 17.4 节按新标准重测 |
 | `repair` 在检索服务不可用时多一行误导提示 | 见第 4 节“`consistency repair` 在检索服务不可用时的提示”一行 | 待 Barry 决定 |
 | 四个开关全关后地址栏残留 `ch` | 全关时 `onSearch` 直接返回，不更新地址栏；刷新会按上一次的开关重查 | 待 Barry 决定是否算问题 |
