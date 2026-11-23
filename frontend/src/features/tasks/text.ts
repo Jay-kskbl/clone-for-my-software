@@ -77,3 +77,29 @@ export function retryMessage(result: RetryResult): { type: 'success' | 'warning'
   const type = unsuccessful === 0 ? 'success' : result.queued > 0 ? 'warning' : 'error'
   return { type, text: parts.join(text.join) }
 }
+
+/** 预览页顶部的提示：每个有失败任务的步骤一句，说明后果。没有失败时为空 */
+export function failureNotices(steps: TaskStep[]): string[] {
+  const text = m().tasks
+  const notices: string[] = []
+  for (const step of steps) {
+    if (step.failed.length === 0) continue
+    if (step.type === 'parse') notices.push(text.noticeParse)
+    else if (step.type === 'ocr') {
+      notices.push(step.total === 1 ? text.noticeOcrOne : text.noticeOcrMany(step.failed.length, step.total))
+    } else if (step.type === 'embed') notices.push(text.noticeEmbed)
+  }
+  return notices
+}
+
+/** 标题旁的进度：文档已经“已解析”，OCR、向量可能还在后台进行。都结束了为空字符串 */
+export function progressText(steps: TaskStep[]): string {
+  const text = m().tasks
+  return steps
+    .filter((step) => step.active > 0)
+    .map((step) => {
+      const name = stepName(step.type)
+      return step.total === 1 ? text.progressOne(name) : text.progress(name, step.total - step.active, step.total)
+    })
+    .join(text.join)
+}

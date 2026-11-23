@@ -139,7 +139,7 @@ const errorTitle = computed(() => (props.source.error?.silent ? m().tasks.staleE
 }
 
 .warn {
-  color: var(--el-color-warning-dark-2);
+  color: var(--app-text);
 }
 
 .foot {

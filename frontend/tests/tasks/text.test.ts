@@ -5,8 +5,10 @@ import { ApiError } from '../../src/api/client'
 import type { Task, TaskType } from '../../src/api/types'
 import { summarizeTasks } from '../../src/features/tasks/summary'
 import {
+  failureNotices,
   formatDuration,
   hopelessNotice,
+  progressText,
   retryLabel,
   retryMessage,
   stateTag,
@@ -101,6 +103,45 @@ describe('名称与按钮', () => {
     [125_000, '2 分 5 秒'],
   ])('%d 毫秒 → %s', (ms, expected) => {
     expect(formatDuration(ms)).toBe(expected)
+  })
+})
+
+describe('预览页的提示', () => {
+  const notices = (...tasks: Task[]) => failureNotices(summarizeTasks(tasks))
+
+  it('没有失败就没有提示；清理任务不在预览页提示', () => {
+    expect(notices(task('parse', 'succeeded'), task('ocr', 'processing'))).toEqual([])
+    expect(notices(task('cleanup', 'failed'))).toEqual([])
+  })
+  it('每个失败的步骤一句，按处理顺序', () => {
+    const lines = notices(task('embed', 'failed'), task('ocr', 'failed'), task('parse', 'succeeded'))
+    expect(lines).toEqual([
+      'OCR 识别失败，对应的文字暂时搜不到。',
+      '图像向量生成失败，图像语义检索暂时搜不到这张图片。',
+    ])
+  })
+  it('多项 OCR 写明几项失败', () => {
+    expect(notices(task('ocr', 'failed'), task('ocr', 'succeeded'), task('ocr', 'failed'))).toEqual([
+      '3 项 OCR 识别中有 2 项失败，对应的文字暂时搜不到。',
+    ])
+  })
+  it('解析失败', () => {
+    expect(notices(task('parse', 'failed'))).toEqual(['文件解析失败，内容暂时搜不到。'])
+  })
+})
+
+describe('进度', () => {
+  const progress = (...tasks: Task[]) => progressText(summarizeTasks(tasks))
+  it('都结束了为空', () => {
+    expect(progress(task('parse', 'succeeded'), task('ocr', 'failed'))).toBe('')
+  })
+  it('失败的也算结束，计入进度', () => {
+    expect(progress(task('ocr', 'succeeded'), task('ocr', 'failed'), task('ocr', 'pending'))).toBe(
+      'OCR 识别进行中：2/3',
+    )
+  })
+  it('几个步骤同时进行', () => {
+    expect(progress(task('ocr', 'processing'), task('embed', 'pending'))).toBe('OCR 识别进行中；图像向量进行中')
   })
 })
 

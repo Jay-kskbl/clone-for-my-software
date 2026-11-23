@@ -60,6 +60,9 @@ function onTextPageChange(page: number) {
   void loadText({ page })
 }
 
+// 重新加载当前这一页，不滚动：文件刚解析完、OCR 有新结果时由预览页调用
+defineExpose({ reload: () => loadText({ page: textPage.value }) })
+
 onMounted(async () => {
   await loadText({ chunkId: props.targetChunk })
   await scrollToTarget()

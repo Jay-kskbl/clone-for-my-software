@@ -539,7 +539,7 @@ onBeforeUnmount(() => clearTimeout(refreshTimer))
 
 .status-more {
   padding-left: 2px;
-  color: var(--el-color-danger);
+  color: var(--app-text-regular);
   font-size: 12px;
   text-decoration: underline;
 }
