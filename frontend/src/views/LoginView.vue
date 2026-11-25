@@ -11,6 +11,7 @@ import LoginForm from '../features/login/LoginForm.vue'
 import { safeRedirect } from '../features/login/redirect'
 import { checkLoginService, type ServiceStatus } from '../features/login/serviceStatus'
 import { singleFlight } from '../features/login/submit'
+import StardustLogo from '../features/search-motion/logo/StardustLogo.vue'
 import { m } from '../i18n'
 
 const router = useRouter()
@@ -66,7 +67,10 @@ async function onRetry() {
 
 <template>
   <div class="login">
-    <LoginBrand />
+    <LoginBrand>
+      <!-- 星尘光球中间放文档图标（T24be），一直转动。去掉这一段就显示静态标志 -->
+      <template #logo><StardustLogo /></template>
+    </LoginBrand>
     <LoginForm :after-sign-in="goBack">
       <!-- 两条提示只显示一条：本地有令牌但连不上（T24x）时，“登录状态已保留”更要紧，它的“重试”也会更新服务状态 -->
       <el-alert v-if="auth.unreachable" type="warning" :closable="false" show-icon class="login-status">

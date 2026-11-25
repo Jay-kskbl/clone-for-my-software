@@ -223,6 +223,14 @@ export const zh = {
     thumbError: '无法显示',
     fusedTitle: 'RRF 融合分：命中的各通道 1/(k + 名次) 之和，k 的取值见后端配置',
     fused: '融合分',
+    timeout: (seconds: number) => `检索超时（${seconds} 秒内没有返回），请稍后重试`,
+  },
+  scan: {
+    opening: '正在打开文件…',
+    reading: (index: number, total: number) => `正在阅读第 ${index} / ${total} 个文件`,
+    summarizing: '正在整理答案…',
+    failed: '检索失败',
+    retry: '重试',
   },
   api: {
     unavailable: (status: number) => `服务暂时不可用（HTTP ${status}），请确认后端已启动`,
@@ -480,6 +488,14 @@ export const en: Messages = {
     thumbError: 'Cannot display',
     fusedTitle: 'RRF fusion score: the sum of 1/(k + rank) over the channels that hit; k is set in the backend config',
     fused: 'Score',
+    timeout: (seconds: number) => `Search timed out (no response within ${seconds} s). Please try again later.`,
+  },
+  scan: {
+    opening: 'Opening files…',
+    reading: (index: number, total: number) => `Reading file ${index} of ${total}`,
+    summarizing: 'Putting the answer together…',
+    failed: 'Search failed',
+    retry: 'Retry',
   },
   api: {
     unavailable: (status: number) => `Service temporarily unavailable (HTTP ${status}). Make sure the backend is running.`,

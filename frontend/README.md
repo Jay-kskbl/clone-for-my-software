@@ -41,6 +41,7 @@ src/
 │                 PreviewView（预览；PDF、图片分“原文件 / 抽取文本”两个标签页，T24f）
 ├── i18n/         界面语言（T24bc）：index.ts（locale、m()、translated()）、messages.ts（中英文两套文字）
 ├── features/theme/  系统配色与语言按钮（T24bc）：theme.ts（颜色计算、保存）、store.ts、ThemePicker、LocaleSwitch
+├── features/search-motion/  检索动效（T24be）：扫描加载、启动、待机、登录页 logo，目录和接口见其中的 README.md
 ├── features/tasks/  处理任务（T24bd）：TaskDialog（处理详情）、useDocumentTasks（加载、自动刷新、重试）；summary / retry / watcher / refresher / text / changes 是有单元测试的纯逻辑
 ├── components/   ShareDialog（共享）、PdfViewer（PDF 显示）、ExtractedText（抽取文本列表）、AppIcon（线条图标）、FileTypeBadge（文件类型色块）
 └── utils/        格式化、来源定位与通道说明、摘要清洗、缩略图加载（thumbnails.ts）、预览默认标签页（preview.ts）、检索通道开关与名次（channels.ts）、保存下载文件（download.ts）、只认最后一次（latestRun.ts）

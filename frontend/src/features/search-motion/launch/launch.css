@@ -1,0 +1,13 @@
+/* 启动动画（动画 2）。这一小段随适配层同步加载：首帧渲染时就要能隐藏真实输入框，避免闪一下。 */
+
+/* 动画期间真实输入框只是看不见，仍占位，布局不跳 */
+html[data-sm-launch] .sm-launch-target {
+  visibility: hidden;
+}
+
+.sm-launch-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}

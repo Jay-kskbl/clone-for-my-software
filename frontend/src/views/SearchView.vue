@@ -8,8 +8,16 @@ import { ApiError, errorMessage } from '../api/client'
 import { downloadDocument } from '../api/documents'
 import { fetchHealth } from '../api/health'
 import { search } from '../api/search'
-import type { ChannelStatus, SearchHit } from '../api/types'
+import type { ChannelStatus, SearchHit, SearchResponse } from '../api/types'
+import AppIcon from '../components/AppIcon.vue'
 import FileTypeBadge from '../components/FileTypeBadge.vue'
+import IdleSpinner from '../features/search-motion/idle-spinner/IdleSpinner.vue'
+import { useLaunchAnimation } from '../features/search-motion/launch/useLaunchAnimation'
+import { SEARCH_TEXT } from '../features/search-motion/messages'
+import { controlsFrom, type ScanLoaderHandle } from '../features/search-motion/scan-loader/handle'
+import type { ScanPhase } from '../features/search-motion/scan-loader/machine'
+import ScanLoader from '../features/search-motion/scan-loader/ScanLoader.vue'
+import { createSearchSession, SearchTimeoutError } from '../features/search-motion/scan-loader/searchSession'
 import { m } from '../i18n'
 import {
   buildSearchRequest,
@@ -36,11 +44,20 @@ const route = useRoute()
 const router = useRouter()
 
 const query = ref(typeof route.query.q === 'string' ? route.query.q : '')
+// 占位文字保持简短：启动动画逐字打出（每秒 10 字），太长会拖长动画；各通道的说明在下方引导区。
+// 随界面语言变化；启动动画每一轮开播时取当前语言的文字
+const placeholder = () => m().search.placeholder
+
+// 启动动画（search-motion）：会话内第一次进检索页时播放；地址栏带着检索词进来时不播
+const searchInput = ref<{ $el?: unknown } | null>(null)
+useLaunchAnimation(searchInput, { placeholder, hasValue: () => query.value !== '' })
 // 四个开关、三个通道（utils/channels.ts）。图像通道默认关闭（与后端配置一致，D36）；
 // 开关放进地址栏，刷新后保持
 const selection = reactive(selectionFromQuery(route.query))
 const noChannel = computed(() => isEmptySelection(selection))
-const loading = ref(false)
+// 扫描加载动画的状态（search-motion）；扫描和整理期间算“检索中”
+const scanPhase = ref<ScanPhase>('idle')
+const loading = computed(() => scanPhase.value === 'scanning' || scanPhase.value === 'summarizing')
 // 三种结果要分开显示：还没搜、搜到了（可能为空）、检索服务出错
 const hits = ref<SearchHit[] | null>(null)
 const channels = ref<ChannelStatus[]>([])
@@ -53,6 +70,7 @@ const degraded = computed(() => channels.value.filter((c) => c.status === 'unava
 // ---- CLIP 服务状态：进入页面时查一次 /health，图像通道检索成功时也说明它在线 ----
 
 type ClipState = 'checking' | 'ok' | 'unavailable' | 'unknown'
+
 
 const clip = ref<ClipState>('checking')
 
@@ -103,52 +121,67 @@ function loadThumbnails(results: SearchHit[]) {
 }
 
 // ---- 检索 ----
+// 请求经 searchSession 发出（search-motion 指南 §6.3）：它负责扫描动画的开始 / 成功 / 失败 / 取消，
+// 新的检索会取消旧请求并丢弃旧请求的返回，所以不再需要“上一次没返回就不发新的”和 rerun。
+// 30 秒没有返回视为失败。结果一到扫描动画就收拢（约 0.4 秒，D60），收拢后（onScanDone）显示。
 
-// 检索进行中又改了开关：等这次返回后按新的开关再查一次
-let rerun = false
+const scan = ref<ScanLoaderHandle | null>(null)
+// 正在进行的是哪一个检索（请求内容），用来忽略完全相同的重复提交
+let runningRequest = ''
+const session = createSearchSession<SearchResponse>(controlsFrom(() => scan.value), {
+  onError: (error) => {
+    clearThumbnails()
+    hits.value = null
+    channels.value = []
+    const message = error instanceof SearchTimeoutError ? SEARCH_TEXT.timeout(error.timeoutMs / 1000) : errorMessage(error)
+    failure.value = {
+      unavailable: error instanceof ApiError && error.code === 'SEARCH_UNAVAILABLE',
+      message,
+    }
+    return message
+  },
+})
 
-async function onSearch() {
+function onSearch() {
   const text = query.value.trim()
-  // 上一次检索还没返回时不再发新的（在输入框里连按回车）：两个应答谁后到谁显示，结果会错位
-  if (!text || noChannel.value || loading.value) return
+  if (!text || noChannel.value) {
+    // 检索进行中把通道全部关掉（或清空检索词后重查）：取消正在进行的请求和扫描动画，旧请求的结果不再显示
+    if (loading.value) session.cancel()
+    return
+  }
+  const body = buildSearchRequest(text, selection)
+  // 连点“检索”：同一个检索已经在进行，不重来。检索词或开关变了就往下走，新的检索取消旧的
+  const requestKey = JSON.stringify(body)
+  if (loading.value && requestKey === runningRequest) return
+  runningRequest = requestKey
+
   // 检索词和通道开关放进地址栏：刷新页面或从预览页返回时结果还在
   const ch = selectionToQuery(selection)
   if (route.query.q !== text || route.query.ch !== ch || route.query.img !== undefined) {
     void router.replace({ query: { q: text, ch } })
   }
 
-  loading.value = true
   failure.value = null
-  try {
-    const response = await search(buildSearchRequest(text, selection))
-    hits.value = response.hits
-    channels.value = response.channels
-    tookMs.value = response.took_ms
-    updateClipFrom(response.channels)
-    loadThumbnails(response.hits)
-  } catch (error) {
-    clearThumbnails()
-    hits.value = null
-    channels.value = []
-    failure.value = {
-      unavailable: error instanceof ApiError && error.code === 'SEARCH_UNAVAILABLE',
-      message: errorMessage(error),
-    }
-  } finally {
-    loading.value = false
-    if (rerun) {
-      rerun = false
-      void onSearch()
-    }
-  }
+  hits.value = null
+  channels.value = []
+  clearThumbnails()
+  void session.run((signal) => search(body, signal))
+}
+
+function onScanDone(value: unknown) {
+  const response = value as SearchResponse
+  hits.value = response.hits
+  channels.value = response.channels
+  tookMs.value = response.took_ms
+  updateClipFrom(response.channels)
+  loadThumbnails(response.hits)
 }
 
 // 改动开关后自动重新检索：同一个查询换一组通道马上能对照（便于演示消融对照）。
-// 还没检索过时不自动发请求
+// 还没检索过时不自动发请求；检索进行中改开关会直接取消旧的、按新开关重查
 watch(selection, () => {
-  if (hits.value === null && failure.value === null) return
-  if (loading.value) rerun = true
-  else void onSearch()
+  if (hits.value === null && failure.value === null && !loading.value) return
+  onSearch()
 })
 
 function open(hit: SearchHit) {
@@ -164,10 +197,13 @@ function open(hit: SearchHit) {
 
 onMounted(() => {
   void checkClip()
-  if (query.value) void onSearch()
+  if (query.value) onSearch()
 })
 
-onBeforeUnmount(clearThumbnails)
+onBeforeUnmount(() => {
+  session.cancel()
+  clearThumbnails()
+})
 </script>
 
 <template>
@@ -181,13 +217,19 @@ onBeforeUnmount(clearThumbnails)
   <el-card shadow="never" class="search-card">
     <form class="search-bar" @submit.prevent="onSearch">
       <el-input
+        ref="searchInput"
         v-model="query"
+        class="sm-launch-target search-input"
         size="large"
         clearable
-        :placeholder="m().search.placeholder"
+        :placeholder="placeholder()"
         maxlength="256"
-      />
-      <el-button type="primary" size="large" native-type="submit" :loading="loading">{{ m().search.submit }}</el-button>
+      >
+        <template #prefix><AppIcon name="search" /></template>
+      </el-input>
+      <!-- 不用 :loading：加载中的按钮是禁用的，浏览器不再提交表单，检索进行中改了检索词按回车没有反应
+           （T24be）。进度由下面的扫描动画表示 -->
+      <el-button type="primary" size="large" round native-type="submit">{{ m().search.submit }}</el-button>
     </form>
 
     <div class="channels" role="group" :aria-label="m().search.channelsAria">
@@ -236,13 +278,19 @@ onBeforeUnmount(clearThumbnails)
     class="notice"
   />
 
-  <div v-loading="loading" class="results">
+  <div class="results">
+    <ScanLoader ref="scan" retryable @phase="(p: ScanPhase) => (scanPhase = p)" @done="onScanDone" @retry="onSearch" />
+
     <div v-if="hits === null && failure === null && !loading" class="guide">
-      <p class="guide-title">{{ m().search.guideTitle }}</p>
-      <ul class="guide-list">
-        <li v-for="line in m().search.guide" :key="line">{{ line }}</li>
-      </ul>
-      <p class="guide-foot">{{ m().search.guideFoot }}</p>
+      <div class="guide-text">
+        <p class="guide-title">{{ m().search.guideTitle }}</p>
+        <ul class="guide-list">
+          <li v-for="line in m().search.guide" :key="line">{{ line }}</li>
+        </ul>
+        <p class="guide-foot">{{ m().search.guideFoot }}</p>
+      </div>
+      <!-- 待机动画（search-motion）：8 秒无操作时出现在引导区右侧空白处，任意操作淡出 -->
+      <IdleSpinner class="guide-idle" />
     </div>
 
     <template v-else-if="hits !== null">
@@ -312,6 +360,11 @@ onBeforeUnmount(clearThumbnails)
 .search-bar {
   display: flex;
   gap: 12px;
+}
+
+/* 胶囊形检索框（search-motion：启动动画的终点就是这个形状） */
+.search-input :deep(.el-input__wrapper) {
+  border-radius: 999px;
 }
 
 .channels {
@@ -396,6 +449,9 @@ onBeforeUnmount(clearThumbnails)
 }
 
 .guide {
+  display: flex;
+  align-items: center;
+  gap: 24px;
   padding: 18px 24px;
   border: 1px dashed var(--el-border-color);
   border-radius: var(--app-radius-lg);
@@ -403,6 +459,15 @@ onBeforeUnmount(clearThumbnails)
   color: var(--app-text-regular);
   font-size: 14px;
   line-height: 1.9;
+}
+
+.guide-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.guide-idle {
+  margin-right: 24px;
 }
 
 .guide-title {
@@ -421,6 +486,28 @@ onBeforeUnmount(clearThumbnails)
   margin: 6px 0 0;
   color: var(--app-text-secondary);
   font-size: 13px;
+}
+
+/* 扫描动画收拢后，结果淡入（search-motion）；减少动效时不做 */
+.summary,
+.hits,
+.results > .el-empty {
+  animation: results-in 0.3s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+@keyframes results-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .summary,
+  .hits,
+  .results > .el-empty {
+    animation: none;
+  }
 }
 
 .summary {
@@ -611,6 +698,10 @@ onBeforeUnmount(clearThumbnails)
 @media (max-width: 600px) {
   .search-bar {
     flex-direction: column;
+  }
+
+  .guide-idle {
+    display: none;
   }
 }
 </style>

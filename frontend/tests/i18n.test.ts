@@ -6,6 +6,7 @@ import { en, zh } from '../src/i18n/messages'
 import { formatLocator, evidenceLabel } from '../src/utils/locator'
 import { STATUS_LABEL, typeBadge } from '../src/utils/format'
 import { cellText } from '../src/utils/channels'
+import { SCAN_TEXT } from '../src/features/search-motion/messages'
 
 afterEach(() => {
   locale.value = 'zh'
@@ -54,6 +55,7 @@ describe('切换', () => {
     expect(STATUS_LABEL.processing.text).toBe('解析中')
     expect(formatLocator({ type: 'pdf_page', page: 3 })).toBe('第 3 页')
     expect(cellText({ channel: 'text', state: 'hit', rank: 2 })).toBe('第 2 名')
+    expect(SCAN_TEXT.reading(1, 6)).toBe('正在阅读第 1 / 6 个文件')
     locale.value = 'en'
     expect(STATUS_LABEL.processing.text).toBe('Parsing')
     expect(STATUS_LABEL.processing.type).toBe('warning')
@@ -62,6 +64,7 @@ describe('切换', () => {
     expect(evidenceLabel(null)).toBe('Matched file name or tags')
     expect(typeBadge('image/png').text).toBe('IMG')
     expect(cellText({ channel: 'text', state: 'hit', rank: 2 })).toBe('#2')
+    expect(SCAN_TEXT.reading(1, 6)).toBe('Reading file 1 of 6')
   })
 })
 
