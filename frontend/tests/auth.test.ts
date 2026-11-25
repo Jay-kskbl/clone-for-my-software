@@ -143,3 +143,54 @@ describe('login / logout', () => {
     expect(authModule.auth).toMatchObject({ user: null, ready: true, unreachable: false })
   })
 })
+
+describe('点了“重试”还没返回时又登录（新功能联测 V4）', () => {
+  function pendingMe() {
+    let respond!: (response: Response) => void
+    fetchMock.mockImplementationOnce(() => new Promise<Response>((resolve) => (respond = resolve)))
+    return (response: Response) => respond(response)
+  }
+
+  async function loginWhileRestoring() {
+    const respond = pendingMe()
+    const restoring = authModule.restoreSession()
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(200, { access_token: 'new', token_type: 'bearer', expires_in: 3600 }))
+      .mockResolvedValueOnce(jsonResponse(200, USER))
+    await authModule.login('barry', 'password1')
+    return async (response: Response) => {
+      respond(response)
+      await restoring
+    }
+  }
+
+  beforeEach(async () => {
+    client.setToken('old')
+    client.setUnauthenticatedHandler(authModule.logout)
+    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    await authModule.restoreSession()
+  })
+
+  it('旧令牌的 401 后到：不把刚登录的人退出', async () => {
+    const finish = await loginWhileRestoring()
+    await finish(jsonResponse(401, { error: { code: 'UNAUTHENTICATED', message: '令牌无效或已过期' } }))
+
+    expect(client.getToken()).toBe('new')
+    expect(authModule.auth.user?.username).toBe('barry')
+  })
+
+  it('旧令牌的用户信息后到：不盖掉刚登录的用户', async () => {
+    const finish = await loginWhileRestoring()
+    await finish(jsonResponse(200, { ...USER, id: 'u0', username: 'someone-else' }))
+
+    expect(authModule.auth.user?.username).toBe('barry')
+  })
+
+  it('旧请求连不上：不标记连不上', async () => {
+    const finish = await loginWhileRestoring()
+    await finish(jsonResponse(503, { error: { code: 'DATABASE_UNAVAILABLE', message: '数据库不可用' } }))
+
+    expect(client.getToken()).toBe('new')
+    expect(authModule.auth).toMatchObject({ ready: true, unreachable: false })
+  })
+})

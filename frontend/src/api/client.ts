@@ -106,8 +106,9 @@ export async function requestRaw(path: string, options: RequestOptions = {}): Pr
   if (response.ok) return response
 
   const error = await toApiError(response)
-  // 登录接口自己的 401（密码错误）不算“登录状态失效”
-  if (error.status === 401 && error.code === 'UNAUTHENTICATED') onUnauthenticated?.()
+  // 登录接口自己的 401（密码错误）不算“登录状态失效”。等待期间令牌已经换了（重新登录了）也不算：
+  // 那是旧令牌的 401，与现在的登录状态无关（新功能联测 V4）
+  if (error.status === 401 && error.code === 'UNAUTHENTICATED' && getToken() === token) onUnauthenticated?.()
   throw error
 }
 

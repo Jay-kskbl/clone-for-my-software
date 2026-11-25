@@ -56,14 +56,20 @@ function cannotConfirm(error: unknown): boolean {
  */
 export async function restoreSession(): Promise<void> {
   if (state.ready) return
-  if (!getToken()) {
+  const token = getToken()
+  if (!token) {
     state.unreachable = false
     state.ready = true
     return
   }
   try {
-    state.user = await authApi.fetchMe()
+    const user = await authApi.fetchMe()
+    // 等待期间用户在登录页重新登录了（或退出了）：这个结果属于旧令牌，不能盖掉现在的登录状态
+    if (getToken() !== token) return
+    state.user = user
   } catch (error) {
+    // 同上。401 时令牌也可能已由 401 回调（main.ts 的 logout）清掉，那时状态已经是“未登录”
+    if (getToken() !== token) return
     state.user = null
     if (cannotConfirm(error)) {
       state.unreachable = true
