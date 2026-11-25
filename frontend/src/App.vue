@@ -199,7 +199,8 @@ function onLogout() {
   box-sizing: border-box;
   max-width: var(--app-content-max);
   margin: 0 auto;
-  padding: 24px 32px 40px;
+  /* 底部留出右下角浮动按钮的高度（44 px + 离底边 20 px），滚到底时分页按钮一定在它上方 */
+  padding: 24px 32px 76px;
 }
 
 @media (max-width: 768px) {
@@ -240,7 +241,7 @@ function onLogout() {
   }
 
   .content-inner {
-    padding: 16px;
+    padding: 16px 16px 76px;
   }
 }
 </style>
