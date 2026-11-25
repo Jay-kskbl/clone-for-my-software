@@ -162,7 +162,7 @@ T05 至 T17：Python 包约 154 MB（main 环境约 84 MB，ocr 环境 T17 新�
 
 ## 5. Windows 测试机上的下载（不在本机）
 
-执行方 Codex 在 Barry 的 Windows 机器上安装，依据 `output/docker-install-operation-log-20261125.txt`、`output/docker-images-20261125.txt`，2026-11-25 补登。**批准：待 Barry 确认**（安装时 Windows 弹出过管理员确认）。
+执行方 Codex 在 Barry 的 Windows 机器上安装，依据 `output/docker-install-operation-log-20261125.txt`、`output/docker-images-20261125.txt`，2026-11-25 补登。Barry 于 2026-11-25 说明：这些安装都在 Windows 测试机上，不需要管；此处只作记录。
 
 | 时间 | 内容 | 版本 | 来源 | 大小 | 用途 |
 |---|---|---|---|---|---|
