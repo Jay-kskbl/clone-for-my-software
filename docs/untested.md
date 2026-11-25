@@ -159,6 +159,7 @@ T24p 完成时 DEVPLAN §5 写了这一项未测试，但当时没有登记到�
 | 真实的 PostgreSQL、Worker、OpenSearch、CLIP、OCR | 任务状态由脚本改动，检索结果是注入的（OpenSearch 没启动时的 503 是真实的）。任务领取、真实处理过程没有参与 | 已复核：用到的接口和错误码没有变 |
 | Windows、Safari、Firefox、Edge、真机触屏、读屏软件 | 都没有看过。Windows 第四轮的界面结果（W4 10.2、截图 `windows-2026-11-23-t24s`）基于改动前的界面，要重测 | — |
 | T24bc 中英文、配色 | 只在内置浏览器里看过；翻译没有请人校对 | 已复核：`i18n.test.ts` 保证两套文字结构一致、英文里没有中文；存储读写失败时用默认值 |
+| T24bd 任务面板 | 真实 Worker 上的完整流程没有走过：停掉 CLIP → 上传图片 → embed 失败 → 打开 CLIP → 点重试 → 图像检索能搜到；停掉 OCR Worker → 扫描件部分页失败 → 重试 → OCR 文字能搜到。T24ad 的重试间隔期间只看过造出来的 `pending`。任务接口不分页，几百个任务时的大小和 3 秒一次的开销没有量过。`TaskDialog.vue` 没有组件测试；管理员登录后的界面没有看过 | 已复核：字段与 `TaskOut` 一致；重试只调现有的 `POST /api/tasks/{id}/retry`，它清空 `started_at`，不受重试间隔限制 |
 | T24bb 登录竞态、文件列表、预览页 | 三个 `.vue` 没有组件测试（没有组件测试工具），在浏览器里修改前后各测一次 | 已复核：判断在 `auth.ts`、`client.ts`、`LatestRun` 里，有单元测试 |
 
 ### T24e 文本预览排序（2026-11-19 登记，见 `decisions.md` D44）

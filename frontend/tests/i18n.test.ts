@@ -51,11 +51,11 @@ describe('切换', () => {
   })
 
   it('页面用到的标签和文案跟着切换', () => {
-    expect(STATUS_LABEL.processing.text).toBe('处理中')
+    expect(STATUS_LABEL.processing.text).toBe('解析中')
     expect(formatLocator({ type: 'pdf_page', page: 3 })).toBe('第 3 页')
     expect(cellText({ channel: 'text', state: 'hit', rank: 2 })).toBe('第 2 名')
     locale.value = 'en'
-    expect(STATUS_LABEL.processing.text).toBe('Processing')
+    expect(STATUS_LABEL.processing.text).toBe('Parsing')
     expect(STATUS_LABEL.processing.type).toBe('warning')
     expect(formatLocator({ type: 'pdf_page', page: 3 })).toBe('Page 3')
     expect(formatLocator({ type: 'docx_para', para_index: 0 })).toBe('Paragraph 1')

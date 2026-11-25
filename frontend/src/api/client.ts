@@ -44,6 +44,8 @@ export interface RequestOptions {
   query?: Query
   /** 普通对象按 JSON 发送；FormData 原样发送（上传文件用）。 */
   body?: unknown
+  /** 取消请求用（换文档、离开页面等）；取消时原样抛出 AbortError，不转成网络错误（T24bd） */
+  signal?: AbortSignal
 }
 
 function buildUrl(path: string, query?: Query): string {
@@ -93,8 +95,11 @@ export async function requestRaw(path: string, options: RequestOptions = {}): Pr
       method: options.method ?? 'GET',
       headers,
       body,
+      signal: options.signal,
     })
-  } catch {
+  } catch (error) {
+    // 主动取消不是网络故障：交给调用方自己判断
+    if (options.signal?.aborted) throw error
     throw new ApiError(0, 'NETWORK', m().api.network)
   }
 

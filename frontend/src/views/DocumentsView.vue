@@ -13,6 +13,9 @@ import type { DocumentItem, Scope } from '../api/types'
 import AppIcon from '../components/AppIcon.vue'
 import FileTypeBadge from '../components/FileTypeBadge.vue'
 import ShareDialog from '../components/ShareDialog.vue'
+import { parseStatus } from '../features/tasks/summary'
+import TaskDialog from '../features/tasks/TaskDialog.vue'
+import { useDocumentTasks } from '../features/tasks/useDocumentTasks'
 import { m, translated } from '../i18n'
 import { saveBlob } from '../utils/download'
 import { LatestRun } from '../utils/latestRun'
@@ -25,7 +28,7 @@ import {
   isInProgress,
 } from '../utils/format'
 
-// 有文档还在处理时，每隔这么久刷新一次列表，让状态自己变成“处理成功”或“处理失败”
+// 有文档还在处理时，每隔这么久刷新一次列表，让状态自己变成“已解析”或“解析失败”
 const REFRESH_INTERVAL_MS = 5000
 // 与后端允许的类型一致（docs/api.md §1.2）。只是帮用户在选择文件时过滤一下，
 // 真正的类型检查在后端按文件内容进行（拖进来的文件不经过这个过滤，由后端拒绝）。
@@ -49,8 +52,8 @@ const dragActive = ref(false)
 const inProgressCount = computed(() => documents.value.filter((d) => isInProgress(d.status)).length)
 
 let refreshTimer: ReturnType<typeof setTimeout> | undefined
-// 同时可能有几次加载（自动刷新、换筛选条件、翻页）：只认最后一次，离开页面后全部作废。原来先发后到的
-// 旧结果会盖掉新结果（选着“我上传的”却显示共享来的文件），没返回就离开时会一直每 5 秒请求（T24bb）
+// 同时可能有几次加载（自动刷新、换筛选条件、翻页、重试任务后的刷新）：只认最后一次，离开页面后全部作废。
+// 原来先发后到的旧结果会盖掉新结果（选着“我上传的”却显示共享来的文件），没返回就离开时会一直每 5 秒请求（T24bb）
 const runs = new LatestRun()
 
 async function load(options: { silent?: boolean } = {}) {
@@ -210,6 +213,28 @@ function canManage(document: DocumentItem): boolean {
   return document.access !== 'shared'
 }
 
+// ---- 处理详情：点状态标签打开，看每一步的情况、失败原因，重试 ----
+
+const inspecting = ref<DocumentItem | null>(null)
+const tasks = useDocumentTasks({
+  // 任务放回队列后文档状态可能变成“等待解析”：刷新列表，由列表自己的轮询接着跟
+  onQueued: () => void load({ silent: true }),
+  // 解析状态变了，列表里的状态马上跟上，不等列表的下一次轮询
+  onTasks: (next, previous) => {
+    if (previous && parseStatus(next) !== parseStatus(previous)) void load({ silent: true })
+  },
+})
+
+function openTasks(document: DocumentItem) {
+  inspecting.value = document
+  void tasks.start(document.id)
+}
+
+function closeTasks() {
+  inspecting.value = null
+  tasks.stop()
+}
+
 onMounted(() => void load())
 onBeforeUnmount(() => {
   runs.stop()
@@ -308,7 +333,16 @@ onBeforeUnmount(() => {
       </el-table-column>
       <el-table-column :label="m().documents.col.status" width="110">
         <template #default="{ row }: { row: DocumentItem }">
-          <el-tag :type="STATUS_LABEL[row.status].type">{{ STATUS_LABEL[row.status].text }}</el-tag>
+          <button
+            type="button"
+            class="status"
+            :title="m().tasks.open"
+            :aria-label="m().tasks.openAria(STATUS_LABEL[row.status].text)"
+            @click="openTasks(row)"
+          >
+            <el-tag :type="STATUS_LABEL[row.status].type">{{ STATUS_LABEL[row.status].text }}</el-tag>
+            <span v-if="row.status === 'failed'" class="status-more">{{ m().tasks.viewReason }}</span>
+          </button>
         </template>
       </el-table-column>
       <el-table-column :label="m().documents.col.size" width="100">
@@ -342,6 +376,7 @@ onBeforeUnmount(() => {
   </el-card>
 
   <ShareDialog :document="sharing" @close="sharing = null" />
+  <TaskDialog :document="inspecting" :source="tasks" @close="closeTasks" />
 </template>
 
 <style scoped>
@@ -490,6 +525,36 @@ onBeforeUnmount(() => {
   margin-top: 2px;
   color: var(--app-text-secondary);
   font-size: 12px;
+}
+
+/* 状态标签是按钮：去掉浏览器的按钮外观，键盘聚焦时给出轮廓 */
+.status {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 2px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.status:hover :deep(.el-tag) {
+  border-color: currentColor;
+}
+
+.status:focus-visible {
+  outline: 2px solid var(--app-primary);
+  outline-offset: 1px;
+}
+
+.status-more {
+  padding-left: 2px;
+  color: var(--app-text-regular);
+  font-size: 12px;
+  text-decoration: underline;
 }
 
 .pagination {

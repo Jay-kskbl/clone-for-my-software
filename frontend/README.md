@@ -31,7 +31,7 @@ npm install
 
 ```
 src/
-├── api/          接口封装：client.ts（令牌、错误转换）、auth.ts、documents.ts、search.ts、health.ts（GET /health，T24s）、types.ts（与 api.md 对应的类型）
+├── api/          接口封装：client.ts（令牌、错误转换）、auth.ts、documents.ts、tasks.ts（任务与重试）、search.ts、health.ts（GET /health，T24s）、types.ts（与 api.md 对应的类型）
 ├── auth.ts       登录状态（当前用户）
 ├── router.ts     路由与登录跳转
 ├── App.vue       页面骨架：登录后左侧导航栏 + 内容区（最宽 1200px）；≤768px 时导航栏收成顶部一行（T24s）
@@ -41,6 +41,7 @@ src/
 │                 PreviewView（预览；PDF、图片分“原文件 / 抽取文本”两个标签页，T24f）
 ├── i18n/         界面语言（T24bc）：index.ts（locale、m()、translated()）、messages.ts（中英文两套文字）
 ├── features/theme/  系统配色与语言按钮（T24bc）：theme.ts（颜色计算、保存）、store.ts、ThemePicker、LocaleSwitch
+├── features/tasks/  处理任务（T24bd）：TaskDialog（处理详情）、useDocumentTasks（加载、自动刷新、重试）；summary / retry / watcher / refresher / text / changes 是有单元测试的纯逻辑
 ├── components/   ShareDialog（共享）、PdfViewer（PDF 显示）、ExtractedText（抽取文本列表）、AppIcon（线条图标）、FileTypeBadge（文件类型色块）
 └── utils/        格式化、来源定位与通道说明、摘要清洗、缩略图加载（thumbnails.ts）、预览默认标签页（preview.ts）、检索通道开关与名次（channels.ts）、保存下载文件（download.ts）、只认最后一次（latestRun.ts）
 tests/            单元测试（接口封装、格式化、来源定位、摘要、缩略图、预览标签页、检索通道、pdf.js 资源一致性、Element Plus 注册）

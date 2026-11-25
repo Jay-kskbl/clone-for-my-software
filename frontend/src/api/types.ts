@@ -129,3 +129,23 @@ export interface TextChunk {
   text: string
   locator: Locator
 }
+
+// ---- 处理任务（docs/api.md §5.1、§6）----
+
+/** parse 解析正文；ocr 一页（一张图片）一个；embed 图片向量；cleanup 删除后的清理 */
+export type TaskType = 'parse' | 'ocr' | 'embed' | 'cleanup'
+
+export interface Task {
+  id: string
+  document_id: string
+  task_type: TaskType
+  status: Status
+  /** 已尝试次数；等待重试的任务（pending）也可能大于 0 */
+  attempts: number
+  max_attempts: number
+  /** 失败原因；普通用户看到的是后端清理过的文字 */
+  error: string | null
+  created_at: string
+  started_at: string | null
+  finished_at: string | null
+}

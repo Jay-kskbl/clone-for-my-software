@@ -42,7 +42,7 @@ describe('状态与类型', () => {
     expect(Object.keys(STATUS_LABEL).sort()).toEqual(
       ['failed', 'pending', 'processing', 'succeeded'].sort(),
     )
-    expect(STATUS_LABEL.failed).toEqual({ text: '处理失败', type: 'danger' })
+    expect(STATUS_LABEL.failed).toEqual({ text: '解析失败', type: 'danger' })
   })
 
   it('三种访问关系都有中文说明', () => {
