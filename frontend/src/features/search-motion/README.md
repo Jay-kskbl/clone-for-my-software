@@ -34,7 +34,7 @@
 - `useLaunchAnimation(inputRef, { placeholder, hasValue?, onFinish? })`，在 `setup` 里调用（首帧前要决定是否隐藏输入框）
 - `inputRef` 是 `el-input` 的组件 ref；`el-input` 上要加 `class="sm-launch-target"`，前缀图标（svg）会被照着画
 - 检索框为空时循环播放：一轮播完停 3 秒（期间有点击、按键、滚轮、触摸就重新计时）再播下一轮；输入框有内容或有焦点时停止，失焦且为空后重新开始。减少动效打开时不播
-- 用户按键或点击会立即结束当前这一轮并聚焦输入框（按下的字符进入输入框）；自然播完不聚焦
+- 用户按键或点击会立即结束当前这一轮并聚焦输入框（按下的字符进入输入框）；自然播完不聚焦。按键时别的控件有焦点（语言按钮、配色面板、通道开关等）则不抢焦点（`launch/focus.ts`，V2）
 - `onFinish(reason)` 每轮结束都会调用，reason 为 `end` / `skip` / `layout` / `reduced` / `destroy`
 
 **待机动画（`IdleSpinner.vue`）**

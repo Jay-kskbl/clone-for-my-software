@@ -126,6 +126,8 @@ function loadThumbnails(results: SearchHit[]) {
 // 30 秒没有返回视为失败。结果要等扫描动画这一轮播完、收拢后（onScanDone）才显示。
 
 const scan = ref<ScanLoaderHandle | null>(null)
+// 正在进行的是哪一个检索（请求内容），用来忽略完全相同的重复提交
+let runningRequest = ''
 const session = createSearchSession<SearchResponse>(controlsFrom(() => scan.value), {
   onError: (error) => {
     clearThumbnails()
@@ -147,6 +149,12 @@ function onSearch() {
     if (loading.value) session.cancel()
     return
   }
+  const body = buildSearchRequest(text, selection)
+  // 连点“检索”：同一个检索已经在进行，不重来。检索词或开关变了就往下走，新的检索取消旧的
+  const requestKey = JSON.stringify(body)
+  if (loading.value && requestKey === runningRequest) return
+  runningRequest = requestKey
+
   // 检索词和通道开关放进地址栏：刷新页面或从预览页返回时结果还在
   const ch = selectionToQuery(selection)
   if (route.query.q !== text || route.query.ch !== ch || route.query.img !== undefined) {
@@ -157,7 +165,6 @@ function onSearch() {
   hits.value = null
   channels.value = []
   clearThumbnails()
-  const body = buildSearchRequest(text, selection)
   void session.run((signal) => search(body, signal))
 }
 
@@ -220,7 +227,9 @@ onBeforeUnmount(() => {
       >
         <template #prefix><AppIcon name="search" /></template>
       </el-input>
-      <el-button type="primary" size="large" round native-type="submit" :loading="loading">{{ m().search.submit }}</el-button>
+      <!-- 不用 :loading：加载中的按钮是禁用的，浏览器不再提交表单，扫描动画那几秒里改了检索词按回车没有反应
+           （新功能联测 V2）。进度由下面的扫描动画表示 -->
+      <el-button type="primary" size="large" round native-type="submit">{{ m().search.submit }}</el-button>
     </form>
 
     <div class="channels" role="group" :aria-label="m().search.channelsAria">

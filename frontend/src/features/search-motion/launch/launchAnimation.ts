@@ -14,6 +14,7 @@ import { addFrame, createCanvasSurface } from '../shared/canvas'
 import { lerp } from '../shared/easing'
 import { onReducedMotionChange } from '../shared/reducedMotion'
 import { onThemeChange, readTokens, type MotionTokens } from '../shared/tokens'
+import { takesFocusOnKey } from './focus'
 import {
   ARMS,
   DUST,
@@ -293,8 +294,9 @@ export function playLaunch(target: LaunchTarget, options: LaunchOptions): Launch
     if (reduced) finish('reduced')
   })
 
-  // 任意按键 / 点击跳过：捕获阶段先聚焦输入框，不阻止默认行为，按下的字符就会进入输入框
-  const onKey = () => finish('skip')
+  // 任意按键 / 点击跳过：捕获阶段先聚焦输入框，不阻止默认行为，按下的字符就会进入输入框；
+  // 按键时别的控件有焦点，就不抢（focus.ts）
+  const onKey = () => finish('skip', takesFocusOnKey(document))
   const onPointer = () => finish('skip')
   // 动画中窗口尺寸或滚动位置变化：直接跳到结束状态，不重算
   const onLayout = () => finish('layout')
@@ -303,7 +305,7 @@ export function playLaunch(target: LaunchTarget, options: LaunchOptions): Launch
   window.addEventListener('resize', onLayout)
   window.addEventListener('scroll', onLayout, { capture: true, passive: true })
 
-  function finish(reason: LaunchEndReason): void {
+  function finish(reason: LaunchEndReason, focus = reason === 'skip'): void {
     if (done) return
     done = true
     offFrame()
@@ -318,7 +320,7 @@ export function playLaunch(target: LaunchTarget, options: LaunchOptions): Launch
     delete document.documentElement.dataset[LAUNCH_ATTR]
     surface.destroy()
     canvas.remove()
-    if (reason === 'skip') target.input.focus({ preventScroll: true })
+    if (focus) target.input.focus({ preventScroll: true })
     options.onFinish?.(reason)
   }
 
