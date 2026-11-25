@@ -133,7 +133,7 @@ T24p 完成时 DEVPLAN §5 写了这一项未测试，但当时没有登记到�
 
 | 项目 | 说明 | 代码复核 |
 |---|---|---|
-| 与真实后端联调 | **已验证（2026-11-23 Windows 第四轮，W4–W8，基线 `fd0b5eb`，核对见 `docs/changes/windows-2026-11-23-核对.md`）：** W4 第 10.2 节逐项核对通过（`/health` 与 CLIP 状态、各通道 `status` 与 `took_ms`、三格名次、RRF 融合分、上传成功）。偏差两处：停后端后刷新跳登录页（T24x 已修，待第 17.6 节重测）；四个开关全关后地址栏残留 `ch`（待 Barry 决定） | 已复核 |
+| 与真实后端联调 | **已验证（2026-11-23 Windows 第四轮，W4–W8，基线 `fd0b5eb`，核对见 `docs/changes/windows-2026-11-23-核对.md`）：** W4 第 10.2 节逐项核对通过（`/health` 与 CLIP 状态、各通道 `status` 与 `took_ms`、三格名次、RRF 融合分、上传成功）。偏差两处：停后端后刷新跳登录页（T24x 已修，待第 17.6 节重测）；四个开关全关后地址栏保留上一次的 `ch`（Barry 定为保留现状，不算偏差） | 已复核 |
 | 用鼠标从系统文件管理器真实拖入文件 | 本次是用脚本派发 drop 事件模拟的；真实拖放时浏览器给出的 `dataTransfer.files`、拖到子元素上时的 dragleave 没有实际看过 | 已复核：`onDrop` 取 `event.dataTransfer.files` 交给与点击选择相同的上传队列；dragenter、dragover 都 `preventDefault`（否则浏览器会直接打开文件）；dragleave 只在真正离开拖放区时取消高亮 |
 | Chrome 以外的浏览器 | **Edge 已看（2026-11-23 Windows 第四轮，W4–W8，基线 `fd0b5eb`，核对见 `docs/changes/windows-2026-11-23-核对.md`）：** W4 在 Chrome 157、Edge 158 上看过，400 px 窄窗正常。Firefox（那台机器没装）、Safari 没有看过 | 已复核：样式里用到的较新特性只有 `min()`、`:focus-visible`、flex 的 `gap` 和 CSS 变量；`onDragLeave` 依赖的 `relatedTarget` 在部分 Safari 版本可能为 null，只会让高亮闪一下 |
 
@@ -500,7 +500,6 @@ cd <项目目录> && docker compose --env-file .env -f deploy/docker-compose.yml
 | Worker 被强制结束后子进程继续跑 | W6 12.5 的日志里，被强杀的 Worker 的子进程照常跑完任务才报 `BrokenPipeError`。T24ab（D53）已修，强杀父进程的测试在 macOS 上通过；Windows 上、真实 Worker 上没有验证 | 任务书第 17.5 节 C 通过后删除本行 |
 | OCR Worker 在循环脚本里按 Ctrl+C | T24ac（D54）已改为收到停止信号返回 130；macOS 上用真实信号验证过 bash、zsh 循环都能停下（模型与数据库是假的）。Windows 的 `run_ocr_worker_loop.ps1` 里没有按过 | 任务书第 17.5 节 D 通过后删除本行 |
 | 一致性修复后检索排名与修复前不完全相同 | W6 12.4：B2 有 110 / 500 条完整排名变化，指标几乎不变。很可能是 BM25 统计值包含已删除但未合并的文档。原判定标准（逐条相同）不对 | 任务书第 17.4 节按新标准重测 |
-| 四个开关全关后地址栏残留 `ch` | 全关时 `onSearch` 直接返回，不更新地址栏；刷新会按上一次的开关重查 | 待 Barry 决定是否算问题 |
 | 连接超时（T24k）没有测到 | 那台机器的网络立刻回绝 `10.255.255.1` | 任务书第 17.3 节改用本地监听；方法已在 Mac 上验证（3 秒、5 秒都准确超时） |
 | T24aa、T24ab、T24ac 与 T24v–T24z | 第五轮（2026-11-25）测的代码是 `54d9760`，不含这些改动；任务书 W9 基本没有开始 | 任务书第 17 节 |
 | Worker 数与提交内存的关系 | 第五轮没有采集提交内存（页面文件用量），只有可用物理内存；可用内存 626 MB 时仍有一轮没有失败 | 任务书第 17.14 节 |
