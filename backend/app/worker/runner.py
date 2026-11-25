@@ -8,11 +8,13 @@
 
 import logging
 import multiprocessing
+import signal
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from multiprocessing.connection import Connection
 
+from shared.parent_watch import exit_when_parent_dies
 from shared.tasks import Task
 
 try:
@@ -67,6 +69,13 @@ def _child_main(
     handler: Handler, task: Task, memory_limit_mb: int | None, conn: Connection
 ) -> None:
     """子进程入口：执行处理函数，把结果通过管道告诉父进程。"""
+    # 在终端里按 Ctrl-C 时，信号会同时发给父进程和本进程。父进程的约定是“完成当前任务后
+    # 退出”；本进程若也响应，KeyboardInterrupt 会被下面当作一次可重试的失败，正在处理的
+    # 文件白白记一次失败。所以这里忽略它，由父进程决定何时结束（与 OCR 识别子进程相同，
+    # D34；T24aa 补上）
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    # 父进程被强制结束时跟着退出，不留下没有超时、没有续租的孤儿（T24ab）
+    exit_when_parent_dies()
     try:
         if memory_limit_mb is not None:
             _limit_memory(memory_limit_mb)
@@ -80,6 +89,23 @@ def _child_main(
         conn.send(None)
     finally:
         conn.close()
+
+
+def _poll(conn: Connection, timeout: float) -> bool:
+    """等管道里有数据，最多 timeout 秒；返回是否有数据。
+
+    Windows 上主线程在 Connection.poll() 里等待时，按下 Ctrl-C 会让它直接抛 InterruptedError
+    （等待会同时等 Ctrl-C 事件，PEP 475 的自动重试不覆盖这条路径；macOS、Linux 上信号处理
+    函数返回后系统会自动接着等）。此时信号处理函数已经记下“完成当前任务后退出”，
+    这里只需接着等，不能让正在处理的任务被当成失败（T24aa）。
+    """
+    deadline = time.monotonic() + timeout
+    while True:
+        try:
+            return conn.poll(max(0.0, deadline - time.monotonic()))
+        except InterruptedError:
+            if time.monotonic() >= deadline:
+                return False
 
 
 def _kill(process: multiprocessing.process.BaseProcess) -> None:
@@ -117,7 +143,7 @@ def run_in_subprocess(
                 _kill(process)
                 return RunResult(ok=False, error=f"处理超时（超过 {timeout_seconds:g} 秒），已终止")
 
-            if parent_conn.poll(min(tick_seconds, remaining)):
+            if _poll(parent_conn, min(tick_seconds, remaining)):
                 try:
                     failure = parent_conn.recv()
                 except EOFError:

@@ -1293,3 +1293,73 @@ Barry 于 2026-11-19 对 DEVPLAN §4 中整理出的 14 项待批准事项回复
 - 同样的原因，工作区里的 mapping 如果被改成 CRLF 而没有提交，`git_dirty` 不会因此变成 true，实验记录里的 hash 却是 CRLF 的。以 hash 本身为准。
 - 只在 macOS 上用 `core.autocrlf=true` 的模拟签出验证过，真实 Windows 签出待任务书第 0.2 节第 4 步。
 
+### D51 恢复会话时只在令牌确实无效时删除它（T24x）
+
+代码：`frontend/src/auth.ts` 的 `restoreSession`、`cannotConfirm`；登录页 `frontend/src/views/LoginView.vue` 的提示与“重试”。逐项记录见 `docs/changes/T24x.md`。来源：克隆库 `feat/search-motion` 的登录页结构优化 L2，Barry 于 2026-11-22 批准移植。
+
+**问题。** 页面加载时 `restoreSession` 用本地令牌请求 `GET /api/auth/me`，原来任何失败都删令牌。后端重启、开发代理返回 502、数据库不可用（503）、网络短暂断开时，用户一刷新页面就被退出，服务恢复后还要重新输入密码。演示时重启一次后端，所有人都要重新登录。
+
+**做法。**
+
+- 收到 4xx（401 令牌过期或账号被删，以及其他客户端错误）：与原来相同，删令牌，按未登录处理。
+- 网络不通（`ApiError.status === 0`）或 5xx：只说明“暂时确认不了”，令牌本身可能仍然有效，**保留令牌**；`auth.ready` 保持 `false`，新增 `auth.unreachable = true`。
+- 需要登录的页面仍然跳登录页（带 `redirect`，T24v）。登录页看到 `unreachable` 时显示“暂时连不上服务器，登录状态已保留”和“重试”；重试时重新确认，成功就直接回到原页面，不用再输密码。
+- 因为 `ready` 没有置位，之后每次导航都会再确认一次，服务恢复后用户随便点哪里都能自动恢复。
+
+**代价与局限。**
+
+- 后端一直不在时，令牌一直留在本机，最长到它本来的过期时间（`ACCESS_TOKEN_EXPIRE_SECONDS`，默认 1 小时）；下次连上时如果已经过期，会收到 401 被删掉。令牌存在 `localStorage` 的风险本身见 D22，本决策没有扩大它。
+- 连不上期间每次切换页面都会多一次 `/api/auth/me` 请求。经开发代理访问时，后端没启动会立即得到 502，不会卡住；如果网络是“请求发出去没有应答”，切换页面要等浏览器的请求超时才继续。没有另加超时，需要时再议。
+- 后端自身的 500（`INTERNAL_ERROR`）也按“暂时确认不了”处理、保留令牌。这时令牌是否有效确实不知道，保留比删除更稳妥。
+- 只对着模拟后端验证过（真正停掉模拟后端时，Vite 开发代理返回 502），没有和真实后端联调。
+
+### D52 Ctrl-C 时两个 Worker 都把当前任务做完再退出（T24aa）
+
+代码：`backend/app/worker/runner.py` 的 `_child_main`、`_poll`；`services/ocr_worker/ocr_worker/engine_process.py` 的 `_poll`。逐项记录见 `docs/changes/T24aa.md`。来源：Windows 第四轮核对（`docs/changes/windows-2026-11-23-核对.md` §2 第 1、2 条），Barry 于 2026-11-23 批准（“先修 Ctrl+C”）。
+
+**问题。** 两个 Worker 的约定都是“收到 Ctrl-C 或 SIGTERM 后，完成当前任务再退出”（D34 为 OCR Worker 写明，通用 Worker 的 `__main__.py` 同样这样提示）。实际有两处做不到：
+
+1. **Windows 上父进程的等待会被打断。** 父进程在主线程里用 `Connection.poll()` 等子进程的结果。Windows 上这个调用等待时会同时等 Ctrl-C 事件，收到后直接抛 `InterruptedError`；PEP 475 规定的“信号处理函数返回后自动重试”不覆盖这条路径。原来的循环没有捕获，异常一路抛到任务循环，当前任务被记成一次失败、放回队列，Worker 以退出码 1 结束（W6 12.7 在 Windows 上实测到）。macOS、Linux 上 `poll()` 底层是 `select`，信号处理函数返回后系统会自动接着等，所以本机测不出来。
+2. **通用 Worker 的子进程没有忽略 SIGINT。** 在终端里按 Ctrl-C 时，信号发给整个前台进程组，子进程也会收到。OCR 的识别子进程早在 D34 就忽略了它，通用 Worker 的子进程没有：它会收到 `KeyboardInterrupt`，被 `_child_main` 的 `except BaseException` 当作一次可重试的失败报告给父进程。这一条在任何系统上都会发生（Windows 第四轮核对时复核代码发现，没有实测过）。
+
+**决定。**
+
+- 两个模块各加一个 `_poll(conn, timeout)`：调用 `conn.poll()`，遇到 `InterruptedError` 就按剩余时间接着等，到期返回 `False`。父进程等结果、OCR 等模型加载的三处 `poll()` 都改用它。此时信号处理函数已经运行过、记下了“处理完当前任务后退出”，接着等就是约定要的行为。
+- 通用 Worker 的子进程入口第一行 `signal.signal(signal.SIGINT, signal.SIG_IGN)`，与 OCR 识别子进程相同。子进程什么时候结束由父进程决定（正常返回，或超时、租约丢失时 kill）。
+- 两处各写一份 `_poll`，没有放进 `shared/`：只有十几行，放进 `shared` 反而让两个 Worker 多一处共同依赖，以后改一边要顾及另一边。
+
+**不变的部分。** SIGTERM 的处理、退出码（通用 Worker 收到停止信号后返回 130，OCR Worker 返回 0）、超时与租约的判断都没有改。
+
+**局限。**
+
+- 父进程从子进程管道读结果的 `recv()` 没有包进重试：`poll()` 返回有数据之后才会调用它，数据已经在管道里，Windows 上不会进入需要等待的分支。
+- Windows 上的行为只有单元测试覆盖（用一个第一次 `poll()` 抛 `InterruptedError` 的包装对象模拟）；真实的 Ctrl-C 要按 `windows任务书.md` 第 17.5 节在 Windows 上手动验证。子进程忽略 SIGINT 的测试用 `os.kill(os.getpid(), SIGINT)` 模拟，在 Windows 上跳过（那里的 `os.kill` 会直接结束进程）。
+- 子进程刚启动、还没执行到 `signal.signal` 那一行时按 Ctrl-C，子进程仍会被打断。这段时间很短（OCR 子进程同样如此），出现时任务按可重试的失败处理，下一次会重做。
+
+### D53 Worker 被强制结束时，它的子进程跟着退出（T24ab）
+
+代码：`shared/parent_watch.py`；`backend/app/worker/runner.py`、`services/ocr_worker/ocr_worker/engine_process.py` 的 `_child_main` 开头调用。逐项记录见 `docs/changes/T24ab.md`。来源：`docs/changes/2026-11-23-代码复核建议.md` R1，Barry 于 2026-11-23 批准（“先修 R1”）。
+
+**问题。** 两个 Worker 都把任务放在 `daemon=True` 的子进程里执行，超时和续租由父进程负责。daemon 子进程只在父进程**正常退出**时才会被结束；父进程被强制结束（`kill -9`、`Stop-Process -Force`、内存不足被系统杀掉）时，子进程照常跑下去。W6 12.5 的日志里能看到：被强杀的 Worker 的子进程跑完之后，往断开的管道写结果才报 `BrokenPipeError`。这段时间没有超时、没有续租；租约到期后任务被别的 Worker 重新领取，两边可能同时写同一个文档。
+
+**决定。**
+
+- 子进程入口启动一个后台线程，等父进程的 sentinel，父进程一消失就 `os._exit(1)`。sentinel 在 POSIX 上是管道读端（父进程持有写端），Windows 上是父进程的句柄，都是标准库自带的，不需要轮询，也不受 pid 被复用的影响。
+- 用 `os._exit` 而不是抛异常：线程里抛异常影响不到主线程，主线程可能正卡在解析库里。未提交的事务随连接断开回滚；已经提交的部分由重新领取的任务按确定性 ID 覆盖（附录 A7）。
+- 放在 `shared/`，两个 Worker 共用。与 D52 的 `_poll` 各写一份不同：这里没有各自的变化点，而且 `shared` 本来就装在两个环境里。
+
+**局限。**
+
+- 主线程里的原生代码如果长时间不释放 GIL，看门狗线程要等它释放之后才能运行，退出会延迟。
+- 父进程**卡死但没有消失**时不起作用，仍然依靠租约到期后由别的 Worker 回收。
+- Windows 上的实际效果待 `windows任务书.md` 第 17.5 节 C 验证；自动化测试只在 macOS 上运行过。
+
+### D54 OCR Worker 收到停止信号时以 130 退出（T24ac）
+
+代码：`services/ocr_worker/ocr_worker/__main__.py`。逐项记录见 `docs/changes/T24ac.md`。来源：`docs/changes/2026-11-23-代码复核建议.md` R5，Barry 于 2026-11-23 批准（“修 R5”）。
+
+**问题。** 长期运行的写法是 `while true; do … -m ocr_worker || break; done`，退出码 0 表示“做满任务数，请重新拉起”（附录 A3 的定期重启）。OCR Worker 收到 SIGINT / SIGTERM、做完当前任务后也返回 0，循环会把它重新拉起。用真实信号实测（macOS，模型与数据库换成假的）：bash 里按一次 Ctrl+C 后被重新启动、循环没有停；zsh 里循环能停，因为 zsh 自己会被 Ctrl+C 中断。
+
+**决定。** 收到停止信号返回 130，与通用 Worker 一致；做满任务数返回 0，配置、模型、数据库有问题返回 1，都不变。两者同时发生（最后一个任务途中收到信号）时以停止信号为准。D52 中“OCR Worker 返回 0”描述的是当时的情况，以本条为准。
+
+**影响。** `CLAUDE.md` 的循环不用改（非 0 即停）；`scripts/windows/run_ocr_worker_loop.ps1` 本来就把 130 当作停止；`scripts/smoke/ocr_e2e.py` 用 `OCR_WORKER_MAX_TASKS=1` 做满退出，仍是 0。
