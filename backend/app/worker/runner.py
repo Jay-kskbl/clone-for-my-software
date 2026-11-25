@@ -9,6 +9,7 @@
 import logging
 import multiprocessing
 import signal
+import sys
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -49,14 +50,20 @@ class RunResult:
     retryable: bool = True
 
 
+def memory_limit_supported() -> bool:
+    """当前系统能不能限制子进程的内存。只有 Linux 能（D16）：Windows 没有 resource 模块；
+    macOS 上设置 RLIMIT_AS 会失败，内核也基本不执行它。"""
+    return resource is not None and sys.platform.startswith("linux")
+
+
 def _limit_memory(memory_limit_mb: int) -> None:
     """限制本进程（子进程）的地址空间。
 
-    局限：这个限制在 Linux 上有效；macOS 的内核基本不执行 RLIMIT_AS，设置可能失败或不起作用。
-    设置失败只记录警告，不让任务因此失败——超时仍然是有效的兜底。
+    不支持的系统上什么也不做、也不打印：每个任务一个子进程，在这里打印会刷满日志
+    （W3 的 500 个文件打了 1000 次），由 Worker 启动时说明一次（T24ag）。
+    支持却设置失败时只记录警告，不让任务因此失败——超时仍然是有效的兜底。
     """
-    if resource is None:
-        logger.warning("当前系统不支持设置内存上限，本任务只受超时保护")
+    if not memory_limit_supported():
         return
     limit = memory_limit_mb * 1024 * 1024
     try:

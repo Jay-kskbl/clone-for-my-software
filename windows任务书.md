@@ -51,7 +51,7 @@
 | 编号 | 状态（2026-11-23） | 还差什么 |
 |---|---|---|
 | W1–W3 | 完成（W3 的处理过程数字已由 12.11 的原始数据证实） | 8 项符号链接（W9 第 17.9 节） |
-| W4 | 部分完成：联调各项通过；停机刷新跳登录页（T24x 已修，要在新基线上重测）；全关时 `ch` 残留（待 Barry 定） | 真实拖拽（17.7）、停机刷新与登录页（17.6） |
+| W4 | 部分完成：联调各项通过；停机刷新跳登录页（T24x 已修，要在新基线上重测）；全关时 `ch` 残留（Barry 定为保留现状，不算偏差） | 真实拖拽（17.7）、停机刷新与登录页（17.6） |
 | W5 | 11.2–11.4、11.6 完成 | 11.5 改用本地监听重测（17.3） |
 | W6 | 12.2、12.4 修复路径、12.5、12.6、12.8、12.11 完成；12.7 **未通过**（Windows 上 Ctrl+C 打断当前任务，代码问题） | 12.3（17.9）、12.4 第 10 步（17.4）、12.7（17.5，等修复）、12.9–12.10（17.10）、`mapping-eol.txt`（17.2） |
 | W7 | 完成（13.2 的合计峰值由 Claude 按原始数据更正为 5732.8 MB） | — |
@@ -1467,7 +1467,7 @@ Copy-Item experiments\docvqa\datasets\document_map.csv "$out\missed\document_map
 | 原小节 | 第二轮结果 | 本节怎么处理 |
 |---|---|---|
 | W4 10.2 第 5 项场景①（停后端后刷新） | 跳到了登录页。这正是 T24x 修的问题，但 T24x 在 `fd0b5eb` 之后才提交，Windows 测的是修复前的代码 | 第 17.6 节在新基线上按 T24x 的新行为重测 |
-| W4 10.2 第 7 项（四个开关全关后 `ch` 残留） | 地址栏留着上一次的 `ch=image` | 待 Barry 决定是否算问题，本轮**不测** |
+| W4 10.2 第 7 项（四个开关全关后 `ch` 残留） | 地址栏留着上一次的 `ch=image` | Barry 于 2026-11-25 决定保留现状（地址栏记的是最后一次真正执行的检索，刷新能恢复结果），不算偏差，**不测** |
 | W4 10.3 真实鼠标拖入 | 自动化工具不能跨窗口拖 | 第 17.7 节由 Barry 手动做 |
 | W5 11.5 连接超时 | 网络立刻回绝，测不到超时 | 第 17.3 节改用本地监听 |
 | W6 12.3 符号链接 | 执行方没有权限 | 第 17.9 节，Barry 本人 |
@@ -1500,7 +1500,7 @@ Copy-Item experiments\docvqa\datasets\document_map.csv "$out\missed\document_map
 | 9c | 第 17.17 节：检索服务停掉时 repair 的提示 | GPT | 4（拉到的提交包含 T24af） | 10 分钟 |
 | 10 | 按第 14.1 节整理 `output/windows-w9/`、提交；Barry 推送，大文件另交 | GPT、Barry | 全部 | 30 分钟 |
 
-**2026-11-25 更新（第五轮，核对见 `docs/changes/windows-2026-11-25-核对.md`）：** 第五轮测的是旧代码 `54d9760`，**上表各项除了“第 16.8 节对照组”都还没有做**，仍按上面的顺序执行；先 `git pull`，`git log --oneline | Select-String "T24aa|T24ab|T24ac|T24ad|T24ae|T24af"` 要能各找到一条。第五轮的 OCR 崩溃复现见第 17.14 节，要重做。已经完成的：`docker-compose.yml`、OpenSearch 的 Dockerfile（还差后端 `/health` 的输出，以及 `down` 之后数据卷保留，可以顺手补上，存到 `output/windows-w9/docker/`）。
+**2026-11-25 更新（第五轮，核对见 `docs/changes/windows-2026-11-25-核对.md`）：** 第五轮测的是旧代码 `54d9760`，**上表各项除了“第 16.8 节对照组”都还没有做**，仍按上面的顺序执行；先 `git pull`，`git log --oneline | Select-String "T24aa|T24ab|T24ac|T24ad|T24ae|T24af|T24ag"` 要能各找到一条。第五轮的 OCR 崩溃复现见第 17.14 节，要重做。已经完成的：`docker-compose.yml`、OpenSearch 的 Dockerfile（还差后端 `/health` 的输出，以及 `down` 之后数据卷保留，可以顺手补上，存到 `output/windows-w9/docker/`）。
 
 ### 17.2 基线、公用脚本、新的内存采样脚本
 
@@ -1513,7 +1513,7 @@ Copy-Item experiments\docvqa\datasets\document_map.csv "$out\missed\document_map
    ```
 
    预期：三行都是 `i/lf w/lf attr/text eol=lf`；SHA-256 开头为 `be91f8071d05`（doc_meta）、`0c7937251bab`（chunks）、`c984e85b889b`（image_vectors）。不一致就按第 0.2 节第 4 步先删再签出，然后再导出一次。
-3. 新基线上有前端改动（T24v–T24z）和 Worker 改动（T24aa、T24ab、T24ac、T24ad）以及一个新命令（T24ae）、一处命令行提示（T24af，**2026-11-25 更正：原来写“只有前端代码变了”已过时**）。在 `frontend/` 下运行三项命令，输出存成 `frontend-typecheck.txt`、`frontend-test.txt`、`frontend-build.txt`。预期：类型检查、构建成功，单元测试 16 个文件 205 项全部通过（Mac 上 T24z 的结果）。如果这次拉到的提交里已经有 Ctrl+C 的修复（第 17.5 节），再按第 12.2 节重跑 backend、shared、OCR Worker 的测试，JUnit 存到 `output/windows-w9/`。
+3. 新基线上有前端改动（T24v–T24z）和 Worker 改动（T24aa、T24ab、T24ac、T24ad）以及一个新命令（T24ae）、一处命令行提示（T24af，**2026-11-25 更正：原来写“只有前端代码变了”已过时**）。在 `frontend/` 下运行三项命令，输出存成 `frontend-typecheck.txt`、`frontend-test.txt`、`frontend-build.txt`。预期：类型检查、构建成功，单元测试 17 个文件 207 项全部通过（Mac 上 T24ag 的结果）。如果这次拉到的提交里已经有 Ctrl+C 的修复（第 17.5 节），再按第 12.2 节重跑 backend、shared、OCR Worker 的测试，JUnit 存到 `output/windows-w9/`。
 4. 第 16.2 节的公用函数（`Q`、`Export`、`Wait-Tasks`、`Start-Ocr`）照用，只把 `$out` 改成 `"$repo\output\windows-w9"`。
 5. **新的内存采样脚本。** 第 13.2、16.2 节的脚本把 OCR 识别子进程归进了 `python_other`：子进程是 multiprocessing 启动的，命令行里没有 `ocr_worker`。新脚本沿着父进程往上找，并且每次只调用一次 CIM，所以采样更快：
 
@@ -1557,6 +1557,8 @@ Copy-Item experiments\docvqa\datasets\document_map.csv "$out\missed\document_map
    ```
 
    用法同第 16.2 节：`powershell -NoProfile -ExecutionPolicy Bypass -File "<仓库外的目录>\sample_w9.ps1" -Out <文件> -Stop <停止文件>`。识别子进程归在 `ocr_engine` 组，解析子进程归在 `worker_child` 组。用之前先空跑 30 秒，确认相邻两次采样的间隔不超过 3 秒，并把这 30 秒的输出存成 `sampler-selftest.csv`。
+
+6. **内存上限提示与网页图标（T24ag，2026-11-25 添加）。** W9 里任何一次用通用 Worker 处理 5 个以上任务时，把它的启动日志存成 `worker-startup.log`：`Select-String "内存上限|限制子进程的内存"` 应当只在启动时命中 1 行（“当前系统不支持限制子进程的内存”），任务处理期间没有。第 17.6 节打开前端时，网络记录里不应有 `favicon.ico`，`favicon.svg` 返回 200，浏览器标签上有图标。
 
 ### 17.3 连接超时（改良 W5 第 11.5 节）
 
