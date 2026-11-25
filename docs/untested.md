@@ -152,7 +152,7 @@ T24p 完成时 DEVPLAN §5 写了这一项未测试，但当时没有登记到�
 
 | 项目 | 说明 | 代码复核 |
 |---|---|---|
-| 与真实后端联调 | 本机没有 PostgreSQL，以上流程只对着模拟后端走过。模拟后端按 `docs/api.md` §4 的结构应答，但不是项目代码；真实后端的错误码、状态码与模拟是否完全一致没有核对 | 已复核：用到的错误码（`INVALID_CREDENTIALS`、`USERNAME_TAKEN`、`UNAUTHENTICATED`、`DATABASE_UNAVAILABLE`、`VALIDATION_ERROR`、`INTERNAL_ERROR`）与 `backend/app/core/errors.py`、`backend/app/api/errors.py` 逐个对照过 |
+| 与真实后端联调（PostgreSQL） | 2026-11-25 在真实 FastAPI 应用 + SQLite 替身上全部走通（`docs/changes/new-feature-verification.md`），**PostgreSQL 上仍未测**。原来的说明：本机没有 PostgreSQL，以上流程只对着模拟后端走过。模拟后端按 `docs/api.md` §4 的结构应答，但不是项目代码；真实后端的错误码、状态码与模拟是否完全一致没有核对 | 已复核：用到的错误码（`INVALID_CREDENTIALS`、`USERNAME_TAKEN`、`UNAUTHENTICATED`、`DATABASE_UNAVAILABLE`、`VALIDATION_ERROR`、`INTERNAL_ERROR`）与 `backend/app/core/errors.py`、`backend/app/api/errors.py` 逐个对照过 |
 | L8 对着真实后端的 `/health` | 只对着模拟后端和“没有后端”两种情况看过；数据库直接拒绝连接时 `/health` 应当很快返回；数据库主机连不上（不应答）时要等连接超时（`health_check_timeout_seconds`）才返回，提示会晚一点出现。两种情况的实际耗时都没有测 | 已复核：检查在页面挂载后异步进行，不阻塞表单；`database.status` 的取值与 `backend/app/api/health.py` 一致 |
 | 真机手机浏览器 | 窄屏布局只在内置浏览器里模拟 375×600、375×812、640×560 看过 | 已复核：只加了一条 `max-width: 720px` 的底部内边距 |
 | 读屏软件 | 表单内提示用 `el-alert`（`role="alert"`）、卡片标题改为 `h2`，只检查了 DOM 属性，没有用 VoiceOver 等实际听过 | — |
@@ -165,10 +165,19 @@ T24p 完成时 DEVPLAN §5 写了这一项未测试，但当时没有登记到�
 |---|---|---|
 | 与真实后端联调 | 处理详情、重试、预览页自动刷新只对着临时模拟后端走过（按 `docs/api.md` §5.1、§6 应答，没有提交）。真实后端上的完整流程没有走过：停掉 CLIP 服务 → 上传图片 → embed 任务失败 → 打开 CLIP 服务 → 点“重试失败项” → 图像检索能搜到；杀掉 OCR Worker → 扫描件部分页失败 → 重试 → OCR 文字能搜到 | 已复核：`Task` 的字段与 `TaskOut` 一致；重试只调现有的 `POST /api/tasks/{id}/retry`；409 的错误码与 `TaskNotRetryableError` 一致 |
 | 上百页的真实扫描件 | 模拟过 40 个 OCR 任务。任务接口不分页，几百个任务时一次返回的大小、每 3 秒刷新一次的开销没有量过 | 未实测，按字段长度估算每个任务约 300 字节、500 页约 150 KB；都结束后不再刷新 |
-| 管理员看到的原文 | 模拟后端里没有区分角色的失败原因，管理员界面上的原文没有实际看过 | 已复核：前端原样显示 `error`，按文字插值输出，不用 `v-html` |
+| 管理员看到的原文 | 2026-11-25 用管理员令牌调接口，返回的是原文（SQLite 替身）；管理员登录后的**界面**没有实际看过 | 已复核：前端原样显示 `error`，按文字插值输出，不用 `v-html` |
 | Chrome 以外的浏览器、真机、读屏软件 | 只在内置浏览器（Chrome 内核）里看过；窄屏用 375×812 模拟；`aria-live` 只检查了 DOM | — |
-| 组件自动化测试 | `TaskDialog.vue`、`useDocumentTasks.ts` 没有组件测试（项目里没有组件测试工具），靠浏览器手动检查 | 已复核：判断、文字、重试、轮询都在有单元测试的纯逻辑里 |
-| P1 集成测试 `test_documents.py::test_only_admin_sees_the_raw_failure_reason` | 1 项，**未运行**：本机没有 PostgreSQL。本机 backend 因此跳过 230 项（229 + 这 1 项） | 已复核：三个任务接口都只经过 `to_task_out`，该函数有单元测试（已通过）；被共享者走 `list_document_tasks` 同一路径 |
+| 组件自动化测试 | `TaskDialog.vue` 没有组件测试（项目里没有组件测试工具），靠浏览器手动检查。`useDocumentTasks.ts` 自 2026-11-25（V1）起有 4 项 | 已复核：判断、文字、重试、轮询都在有单元测试的纯逻辑里 |
+| P1 集成测试 `test_documents.py::test_only_admin_sees_the_raw_failure_reason` | 1 项，PostgreSQL 上**未运行**：本机没有 PostgreSQL。2026-11-25 原样搬到 SQLite 替身上运行通过，不能代替。本机 backend 因此跳过 230 项（229 + 这 1 项） | 已复核：三个任务接口都只经过 `to_task_out`，该函数有单元测试（已通过）；被共享者走 `list_document_tasks` 同一路径 |
+
+### 新功能联测 V1–V4（克隆库 `feat/search-motion`，2026-11-25 登记，见 `docs/changes/new-feature-verification.md`）
+
+| 项目 | 说明 | 代码复核 |
+|---|---|---|
+| 真实的 PostgreSQL、Worker、OpenSearch、CLIP、OCR | 联测用的是真实 FastAPI + SQLite，任务状态由脚本改动，检索结果是注入的（OpenSearch 没启动的 503 是真实的） | 已复核：V1–V4 只改前端，用到的接口和错误码没有变 |
+| `DocumentsView.vue`、`PreviewView.vue`、`SearchView.vue`、`App.vue` 的改动 | 没有组件自动化测试，修复前后在浏览器里各测一次；判断逻辑（`LatestRun`、`Refresher`、`takesFocusOnKey`）有单元测试 | 已复核 |
+| Safari、Firefox、Edge，真机触屏 | 只在内置浏览器（Chrome 内核）里测。启动动画的焦点判断依赖 `document.activeElement`：Safari 点击按钮后不给按钮焦点，表现为“没有焦点”，按键仍会进入检索框，与修复前相同 | 已复核 |
+| 中文输入法组字时按回车 | 没有实际输入法，未测。没有自己处理回车键，走浏览器的表单提交，组字中的回车不会提交 | 已复核 |
 
 ### T24e 文本预览排序（2026-11-19 登记，见 `decisions.md` D44）
 
