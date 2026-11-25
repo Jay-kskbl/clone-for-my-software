@@ -1,0 +1,42 @@
+STOP PID=30108
+STOP PID=24760
+STOP PID=15280
+STOP PID=10292
+STOP PID=20860
+STOP PID=32264
+STOP PID=33860
+STOP PID=21280
+STOP PID=23852
+STOP PID=26452
+
+ProcessId       : 4784
+ParentProcessId : 30844
+Name            : python.exe
+CommandLine     : "C:\Users\lenovo\Desktop\my-software-main\_gh_upload\.venv-main\Scripts\python.exe" -m app.worker
+
+ProcessId       : 6016
+ParentProcessId : 4784
+Name            : python.exe
+CommandLine     : "C:\Users\lenovo\Desktop\my-software-main\_gh_upload\.venv-main\Scripts\python.exe" -m app.worker
+
+ProcessId       : 31716
+ParentProcessId : 26352
+Name            : python.exe
+CommandLine     : "C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Scripts\python.exe" -m ocr_worker
+
+ProcessId       : 26884
+ParentProcessId : 31716
+Name            : python.exe
+CommandLine     : "C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Scripts\python.exe" -m ocr_worker
+
+ProcessId       : 34652
+ParentProcessId : 8644
+Name            : pwsh.exe
+CommandLine     : "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\native\powershell\pwsh.exe" -Command "try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}
+                  $stop='C:\Users\lenovo\Desktop\my-software-main\_gh_upload\output\w8-round2c-20261125\runtime\stop.flag'; if(-not (Test-Path -LiteralPath $stop)){ New-Item -ItemType File -Path $stop | Out-Null }
+                  Start-Sleep -Seconds 2
+                  $targets=30500,30108,24760,15280,10292,20860,32264,33860,21280,23852,26452
+                  foreach($id in $targets){$p=Get-Process -Id $id -ErrorAction SilentlyContinue;if($p){ \"STOP PID=$id\" | Tee-Object -FilePath 'output\w8-round2c-abort-20261125.txt' -Append; Stop-Process -Id $id -ErrorAction SilentlyContinue}}
+                  Start-Sleep -Seconds 2
+                  Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match '-m\s+ocr_worker|-m\s+app\.worker|monitor_w8_fast' } | Select-Object ProcessId,ParentProcessId,Name,CommandLine | Format-List | Tee-Object -FilePath 'output\w8-round2c-abort-20261125.txt' -Append"
+

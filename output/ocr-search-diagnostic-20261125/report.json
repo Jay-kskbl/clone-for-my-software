@@ -1,0 +1,18 @@
+[
+  {
+    "document_id": "7adbdb38-9b2f-4852-ab0a-7400ae0dd718",
+    "query_sha256": "beab9b92fd35fe2bacdfd165f24bb1564aa31d0c0f344c6852fab303b17d65cc",
+    "query_length": 8,
+    "direct_hit_count": 0,
+    "direct_target_hit": false,
+    "indexed_source_types": []
+  },
+  {
+    "document_id": "fa74b0dd-86c5-42bc-959b-52059aff6ed4",
+    "query_sha256": "beab9b92fd35fe2bacdfd165f24bb1564aa31d0c0f344c6852fab303b17d65cc",
+    "query_length": 8,
+    "direct_hit_count": 0,
+    "direct_target_hit": false,
+    "indexed_source_types": []
+  }
+]

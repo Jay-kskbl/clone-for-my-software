@@ -1,0 +1,52 @@
+Creating model: ('PP-OCRv5_mobile_det', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_det', None)
+信息: 用提供的模式无法找到文件。
+C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddle\utils\cpp_extension\extension_utils.py:712: UserWarning: No ccache found. Please be aware that recompiling all source files may be required. You can download and install ccache from: https://github.com/ccache/ccache/blob/master/doc/INSTALL.md
+  warnings.warn(warning_message)
+Creating model: ('PP-OCRv5_mobile_rec', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_rec', None)
+2026-11-25 13:33:45,465 INFO ocr_worker OCR 模型已加载：PP-OCRv5_mobile_det+PP-OCRv5_mobile_rec，paddleocr-3.7.0/det-afa1820c/rec-2460da90
+2026-11-25 13:33:46,188 INFO ocr_worker.loop 开始 OCR 任务 47e69ad1-b601-45cd-90df-ecad63f6bde3（文档 35b1fdc2-61cc-45fd-a983-e1444de00661，第 1/3 次尝试）
+2026-11-25 13:34:24,813 INFO httpx HTTP Request: HEAD http://127.0.0.1:9201/w8r2c_doc_meta "HTTP/1.1 200 OK"
+2026-11-25 13:34:24,818 INFO httpx HTTP Request: HEAD http://127.0.0.1:9201/w8r2c_chunks "HTTP/1.1 200 OK"
+2026-11-25 13:34:24,888 INFO httpx HTTP Request: POST http://127.0.0.1:9201/w8r2c_chunks/_delete_by_query?refresh=true&conflicts=proceed "HTTP/1.1 200 OK"
+2026-11-25 13:34:24,925 INFO httpx HTTP Request: POST http://127.0.0.1:9201/_bulk?refresh=true "HTTP/1.1 200 OK"
+2026-11-25 13:34:24,934 INFO ocr_worker.loop 任务 47e69ad1-b601-45cd-90df-ecad63f6bde3 完成（processed:62-lines:3-chunks）
+2026-11-25 13:34:40,068 INFO ocr_worker.loop 开始 OCR 任务 102b465e-1076-4922-ba34-a59979aebfae（文档 7586cc8e-1c65-44ed-8962-0da5ae52d8d6，第 1/3 次尝试）
+2026-11-25 13:34:47,971 WARNING ocr_worker.loop 任务 102b465e-1076-4922-ba34-a59979aebfae 失败（识别子进程异常退出（退出码 3221225477）），新状态：pending
+2026-11-25 13:34:47,985 INFO ocr_worker.loop 开始 OCR 任务 102b465e-1076-4922-ba34-a59979aebfae（文档 7586cc8e-1c65-44ed-8962-0da5ae52d8d6，第 2/3 次尝试）
+Creating model: ('PP-OCRv5_mobile_det', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_det', None)
+信息: 用提供的模式无法找到文件。
+C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddle\utils\cpp_extension\extension_utils.py:712: UserWarning: No ccache found. Please be aware that recompiling all source files may be required. You can download and install ccache from: https://github.com/ccache/ccache/blob/master/doc/INSTALL.md
+  warnings.warn(warning_message)
+Creating model: ('PP-OCRv5_mobile_rec', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_rec', None)
+2026-11-25 13:35:25,961 WARNING ocr_worker.loop 任务 102b465e-1076-4922-ba34-a59979aebfae 失败（识别子进程异常退出（退出码 3221225477）），新状态：pending
+2026-11-25 13:35:25,980 INFO ocr_worker.loop 开始 OCR 任务 102b465e-1076-4922-ba34-a59979aebfae（文档 7586cc8e-1c65-44ed-8962-0da5ae52d8d6，第 3/3 次尝试）
+Creating model: ('PP-OCRv5_mobile_det', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_det', None)
+信息: 用提供的模式无法找到文件。
+C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddle\utils\cpp_extension\extension_utils.py:712: UserWarning: No ccache found. Please be aware that recompiling all source files may be required. You can download and install ccache from: https://github.com/ccache/ccache/blob/master/doc/INSTALL.md
+  warnings.warn(warning_message)
+Creating model: ('PP-OCRv5_mobile_rec', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_rec', None)
+2026-11-25 13:36:00,466 INFO httpx HTTP Request: HEAD http://127.0.0.1:9201/w8r2c_doc_meta "HTTP/1.1 200 OK"
+2026-11-25 13:36:00,470 INFO httpx HTTP Request: HEAD http://127.0.0.1:9201/w8r2c_chunks "HTTP/1.1 200 OK"
+2026-11-25 13:36:00,588 INFO httpx HTTP Request: POST http://127.0.0.1:9201/w8r2c_chunks/_delete_by_query?refresh=true&conflicts=proceed "HTTP/1.1 200 OK"
+2026-11-25 13:36:00,614 INFO httpx HTTP Request: POST http://127.0.0.1:9201/_bulk?refresh=true "HTTP/1.1 200 OK"
+2026-11-25 13:36:00,621 INFO ocr_worker.loop 任务 102b465e-1076-4922-ba34-a59979aebfae 完成（processed:37-lines:2-chunks）
+2026-11-25 13:37:37,544 INFO ocr_worker.loop 开始 OCR 任务 47e69ad1-b601-45cd-90df-ecad63f6bde3（文档 35b1fdc2-61cc-45fd-a983-e1444de00661，第 1/3 次尝试）
+2026-11-25 13:37:48,802 WARNING ocr_worker.loop 任务 47e69ad1-b601-45cd-90df-ecad63f6bde3 失败（识别子进程异常退出（退出码 3221225477）），新状态：pending
+2026-11-25 13:37:48,813 INFO ocr_worker.loop 开始 OCR 任务 47e69ad1-b601-45cd-90df-ecad63f6bde3（文档 35b1fdc2-61cc-45fd-a983-e1444de00661，第 2/3 次尝试）
+Creating model: ('PP-OCRv5_mobile_det', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_det', None)
+信息: 用提供的模式无法找到文件。
+C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddle\utils\cpp_extension\extension_utils.py:712: UserWarning: No ccache found. Please be aware that recompiling all source files may be required. You can download and install ccache from: https://github.com/ccache/ccache/blob/master/doc/INSTALL.md
+  warnings.warn(warning_message)
+Creating model: ('PP-OCRv5_mobile_rec', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_rec', None)
+2026-11-25 13:38:02,579 WARNING ocr_worker.loop 任务 47e69ad1-b601-45cd-90df-ecad63f6bde3 失败（识别子进程异常退出（退出码 3221225477）），新状态：pending
+2026-11-25 13:38:02,590 INFO ocr_worker.loop 开始 OCR 任务 47e69ad1-b601-45cd-90df-ecad63f6bde3（文档 35b1fdc2-61cc-45fd-a983-e1444de00661，第 3/3 次尝试）
+Creating model: ('PP-OCRv5_mobile_det', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_det', None)
+信息: 用提供的模式无法找到文件。
+C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddle\utils\cpp_extension\extension_utils.py:712: UserWarning: No ccache found. Please be aware that recompiling all source files may be required. You can download and install ccache from: https://github.com/ccache/ccache/blob/master/doc/INSTALL.md
+  warnings.warn(warning_message)
+Creating model: ('PP-OCRv5_mobile_rec', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_rec', None)
+2026-11-25 13:38:56,170 INFO httpx HTTP Request: HEAD http://127.0.0.1:9201/w8r2c_doc_meta "HTTP/1.1 200 OK"
+2026-11-25 13:38:56,175 INFO httpx HTTP Request: HEAD http://127.0.0.1:9201/w8r2c_chunks "HTTP/1.1 200 OK"
+2026-11-25 13:38:56,202 INFO httpx HTTP Request: POST http://127.0.0.1:9201/w8r2c_chunks/_delete_by_query?refresh=true&conflicts=proceed "HTTP/1.1 200 OK"
+2026-11-25 13:38:56,228 INFO httpx HTTP Request: POST http://127.0.0.1:9201/_bulk?refresh=true "HTTP/1.1 200 OK"
+2026-11-25 13:38:56,236 INFO ocr_worker.loop 任务 47e69ad1-b601-45cd-90df-ecad63f6bde3 完成（processed:62-lines:3-chunks）

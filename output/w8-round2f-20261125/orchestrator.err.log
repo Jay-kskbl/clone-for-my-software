@@ -1,0 +1,45 @@
+fatal error: out of memory allocating heap arena map
+
+runtime stack:
+runtime.throw({0x7ff6b39d926f?, 0x98289ff570?})
+	/usr/local/go/src/runtime/panic.go:1229 +0x4d fp=0x98289ff4e8 sp=0x98289ff4b8 pc=0x7ff6b29f5f8d
+runtime.(*mheap).sysAlloc(0x7ff6b46b66c0, 0x0?, 0x7ff6b46c6ac0, 0x7ff6b46c6ae8)
+	/usr/local/go/src/runtime/malloc.go:866 +0x378 fp=0x98289ff5c0 sp=0x98289ff4e8 pc=0x7ff6b2991298
+runtime.(*mheap).grow(0x7ff6b46b66c0, 0x22800002000?)
+	/usr/local/go/src/runtime/mheap.go:1574 +0x7d fp=0x98289ff648 sp=0x98289ff5c0 pc=0x7ff6b29af15d
+runtime.(*mheap).allocSpan(0x7ff6b46b66c0, 0x1, 0x0, 0x24)
+	/usr/local/go/src/runtime/mheap.go:1299 +0x1b3 fp=0x98289ff6f8 sp=0x98289ff648 pc=0x7ff6b29ae933
+runtime.(*mheap).alloc.func1()
+	/usr/local/go/src/runtime/mheap.go:1017 +0x5c fp=0x98289ff740 sp=0x98289ff6f8 pc=0x7ff6b29ae3dc
+runtime.(*mheap).alloc(0x7ff6b29fd84e?, 0x98289ff7a0?, 0x0?)
+	/usr/local/go/src/runtime/mheap.go:1011 +0x57 fp=0x98289ff788 sp=0x98289ff740 pc=0x7ff6b29ae337
+runtime.(*mcentral).grow(0x7ff6b46ae540?)
+	/usr/local/go/src/runtime/mcentral.go:253 +0x36 fp=0x98289ff7b8 sp=0x98289ff788 pc=0x7ff6b2995ef6
+runtime.(*mcentral).cacheSpan(0x7ff6b46c8658)
+	/usr/local/go/src/runtime/mcentral.go:171 +0x454 fp=0x98289ff830 sp=0x98289ff7b8 pc=0x7ff6b2995d74
+runtime.(*mcache).refill(0x228fe2c0108, 0x20?)
+	/usr/local/go/src/runtime/mcache.go:205 +0x16b fp=0x98289ff870 sp=0x98289ff830 pc=0x7ff6b299534b
+runtime.(*mcache).nextFree(0x228fe2c0108, 0x24)
+	/usr/local/go/src/runtime/malloc.go:1006 +0x7e fp=0x98289ff8a8 sp=0x98289ff870 pc=0x7ff6b299179e
+runtime.mallocgcSmallScanNoHeader(0x100, 0x7ff6b3776480)
+	/usr/local/go/src/runtime/malloc.go:1529 +0x145 fp=0x98289ff908 sp=0x98289ff8a8 pc=0x7ff6b2992045
+runtime.mallocgc(0x100, 0x7ff6b3776480, 0x1)
+	/usr/local/go/src/runtime/malloc.go:1150 +0xa5 fp=0x98289ff938 sp=0x98289ff908 pc=0x7ff6b29f3a25
+runtime.newobject(0x7ff6b299bc57?)
+	/usr/local/go/src/runtime/malloc.go:2157 +0x25 fp=0x98289ff960 sp=0x98289ff938 pc=0x7ff6b2992b65
+internal/cpu.doinit()
+	/usr/local/go/src/internal/cpu/cpu_x86.go:72 +0x1e fp=0x98289ff9c8 sp=0x98289ff960 pc=0x7ff6b297429e
+internal/cpu.Initialize({0x0, 0x0})
+	/usr/local/go/src/internal/cpu/cpu.go:181 +0x1d fp=0x98289ff9e8 sp=0x98289ff9c8 pc=0x7ff6b2973d3d
+runtime.cpuinit(...)
+	/usr/local/go/src/runtime/proc.go:761
+runtime.schedinit()
+	/usr/local/go/src/runtime/proc.go:878 +0xfa fp=0x98289ffa40 sp=0x98289ff9e8 pc=0x7ff6b29c421a
+runtime.rt0_go()
+	/usr/local/go/src/runtime/asm_amd64.s:373 +0x143 fp=0x98289ffa48 sp=0x98289ffa40 pc=0x7ff6b29fbda3
+Program 'docker.exe' failed to run: StandardOutputEncoding is only supported when standard output is redirected.At C:\Users\lenovo\Desktop\my-software-main\_gh_upload\output\run_w8_round2_ocr_stability_20261125.ps1:36 char:14
++ бн    return ((& docker exec docmgr-postgres-1 psql -U docmgr -d $db -At бн
++               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.
+At C:\Users\lenovo\Desktop\my-software-main\_gh_upload\output\run_w8_round2_ocr_stability_20261125.ps1:36 char:12
++     return ((& docker exec docmgr-postgres-1 psql -U docmgr -d $db -A бн
++            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

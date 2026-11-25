@@ -1,0 +1,7 @@
+
+samples       : 114
+ocr_min_mb    : 2684.2
+ocr_max_mb    : 4297.9
+system_min_mb : 1017.9
+system_max_mb : 2682.4
+

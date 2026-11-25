@@ -1,0 +1,10 @@
+{
+  "status": "ok",
+  "model_name": "ViT-B-16",
+  "model_version": "cn_clip-1.6.0-5997ef32c50d",
+  "dim": 512,
+  "device": "cpu"
+}
+CLIP_READY=true
+CLIP_PID=22572
+OCR_PID=31716

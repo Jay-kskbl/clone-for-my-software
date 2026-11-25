@@ -1,0 +1,92 @@
+[
+  {
+    "round": "single-r01",
+    "start": "2026-11-25T03:54:12.5408230+00:00",
+    "finish": "2026-11-25T03:55:45.6594560+00:00",
+    "elapsed_seconds": 93.119,
+    "succeeded": 4,
+    "failed": 0,
+    "attempts_gt1": 0,
+    "max_attempts": 1.0
+  },
+  {
+    "round": "single-r02",
+    "start": "2026-11-25T03:55:50.7012390+00:00",
+    "finish": "2026-11-25T03:56:59.9038420+00:00",
+    "elapsed_seconds": 69.203,
+    "succeeded": 4,
+    "failed": 0,
+    "attempts_gt1": 0,
+    "max_attempts": 1.0
+  },
+  {
+    "round": "single-r03",
+    "start": "2026-11-25T03:57:03.7463590+00:00",
+    "finish": "2026-11-25T03:58:01.6198140+00:00",
+    "elapsed_seconds": 57.873,
+    "succeeded": 4,
+    "failed": 0,
+    "attempts_gt1": 0,
+    "max_attempts": 1.0
+  },
+  {
+    "round": "single-r04",
+    "start": "2026-11-25T03:58:05.6606390+00:00",
+    "finish": "2026-11-25T03:58:54.6648360+00:00",
+    "elapsed_seconds": 49.004,
+    "succeeded": 4,
+    "failed": 0,
+    "attempts_gt1": 0,
+    "max_attempts": 1.0
+  },
+  {
+    "round": "single-r05",
+    "start": "2026-11-25T03:58:59.7155570+00:00",
+    "finish": "2026-11-25T03:59:58.0849200+00:00",
+    "elapsed_seconds": 58.369,
+    "succeeded": 4,
+    "failed": 0,
+    "attempts_gt1": 1,
+    "max_attempts": 2.0
+  },
+  {
+    "round": "single-r06",
+    "start": "2026-11-25T04:00:03.2204100+00:00",
+    "finish": "2026-11-25T04:01:00.0881830+00:00",
+    "elapsed_seconds": 56.868,
+    "succeeded": 4,
+    "failed": 0,
+    "attempts_gt1": 1,
+    "max_attempts": 2.0
+  },
+  {
+    "round": "single-r07",
+    "start": "2026-11-25T04:01:04.9302790+00:00",
+    "finish": "2026-11-25T04:02:02.9297750+00:00",
+    "elapsed_seconds": 57.999,
+    "succeeded": 4,
+    "failed": 0,
+    "attempts_gt1": 2,
+    "max_attempts": 2.0
+  },
+  {
+    "round": "single-r08",
+    "start": "2026-11-25T04:02:07.9781240+00:00",
+    "finish": "2026-11-25T04:03:11.9193260+00:00",
+    "elapsed_seconds": 63.941,
+    "succeeded": 4,
+    "failed": 0,
+    "attempts_gt1": 2,
+    "max_attempts": 3.0
+  },
+  {
+    "round": "single-r09",
+    "start": "2026-11-25T04:03:16.2106450+00:00",
+    "finish": "2026-11-25T04:04:04.9915280+00:00",
+    "elapsed_seconds": 48.781,
+    "succeeded": 2,
+    "failed": 2,
+    "attempts_gt1": 4,
+    "max_attempts": 3.0
+  }
+]

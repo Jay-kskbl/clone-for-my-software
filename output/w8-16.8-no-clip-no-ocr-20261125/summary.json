@@ -1,0 +1,209 @@
+{
+  "username": "w8ctrl_a618398c",
+  "document_id": "8b0059fc-7f87-4af3-bad2-a58003dff43f",
+  "filename": "ffhv0228.jpg",
+  "snapshots": [
+    {
+      "at": "2026-11-25T03:43:37.051468+00:00",
+      "status": "pending",
+      "tasks": [
+        {
+          "type": "parse",
+          "status": "pending",
+          "attempts": 0,
+          "max_attempts": 3,
+          "error": null
+        }
+      ]
+    },
+    {
+      "at": "2026-11-25T03:43:40.098104+00:00",
+      "status": "succeeded",
+      "tasks": [
+        {
+          "type": "ocr",
+          "status": "pending",
+          "attempts": 0,
+          "max_attempts": 3,
+          "error": null
+        },
+        {
+          "type": "embed",
+          "status": "pending",
+          "attempts": 0,
+          "max_attempts": 3,
+          "error": null
+        },
+        {
+          "type": "parse",
+          "status": "processing",
+          "attempts": 1,
+          "max_attempts": 3,
+          "error": null
+        }
+      ]
+    },
+    {
+      "at": "2026-11-25T03:43:43.151998+00:00",
+      "status": "succeeded",
+      "tasks": [
+        {
+          "type": "ocr",
+          "status": "pending",
+          "attempts": 0,
+          "max_attempts": 3,
+          "error": null
+        },
+        {
+          "type": "embed",
+          "status": "processing",
+          "attempts": 1,
+          "max_attempts": 3,
+          "error": null
+        },
+        {
+          "type": "parse",
+          "status": "succeeded",
+          "attempts": 1,
+          "max_attempts": 3,
+          "error": null
+        }
+      ]
+    },
+    {
+      "at": "2026-11-25T03:43:46.187496+00:00",
+      "status": "succeeded",
+      "tasks": [
+        {
+          "type": "ocr",
+          "status": "pending",
+          "attempts": 0,
+          "max_attempts": 3,
+          "error": null
+        },
+        {
+          "type": "embed",
+          "status": "processing",
+          "attempts": 2,
+          "max_attempts": 3,
+          "error": "ClipUnavailable: CLIP 服务连接失败（ConnectError）"
+        },
+        {
+          "type": "parse",
+          "status": "succeeded",
+          "attempts": 1,
+          "max_attempts": 3,
+          "error": null
+        }
+      ]
+    },
+    {
+      "at": "2026-11-25T03:43:49.229985+00:00",
+      "status": "succeeded",
+      "tasks": [
+        {
+          "type": "ocr",
+          "status": "pending",
+          "attempts": 0,
+          "max_attempts": 3,
+          "error": null
+        },
+        {
+          "type": "embed",
+          "status": "processing",
+          "attempts": 3,
+          "max_attempts": 3,
+          "error": "ClipUnavailable: CLIP 服务连接失败（ConnectError）"
+        },
+        {
+          "type": "parse",
+          "status": "succeeded",
+          "attempts": 1,
+          "max_attempts": 3,
+          "error": null
+        }
+      ]
+    },
+    {
+      "at": "2026-11-25T03:43:52.257784+00:00",
+      "status": "succeeded",
+      "tasks": [
+        {
+          "type": "ocr",
+          "status": "pending",
+          "attempts": 0,
+          "max_attempts": 3,
+          "error": null
+        },
+        {
+          "type": "embed",
+          "status": "processing",
+          "attempts": 3,
+          "max_attempts": 3,
+          "error": "ClipUnavailable: CLIP 服务连接失败（ConnectError）"
+        },
+        {
+          "type": "parse",
+          "status": "succeeded",
+          "attempts": 1,
+          "max_attempts": 3,
+          "error": null
+        }
+      ]
+    },
+    {
+      "at": "2026-11-25T03:43:55.283965+00:00",
+      "status": "succeeded",
+      "tasks": [
+        {
+          "type": "ocr",
+          "status": "pending",
+          "attempts": 0,
+          "max_attempts": 3,
+          "error": null
+        },
+        {
+          "type": "embed",
+          "status": "failed",
+          "attempts": 3,
+          "max_attempts": 3,
+          "error": "ClipUnavailable: CLIP 服务连接失败（ConnectError）"
+        },
+        {
+          "type": "parse",
+          "status": "succeeded",
+          "attempts": 1,
+          "max_attempts": 3,
+          "error": null
+        }
+      ]
+    }
+  ],
+  "final": {
+    "at": "2026-11-25T03:43:55.283965+00:00",
+    "status": "succeeded",
+    "tasks": [
+      {
+        "type": "ocr",
+        "status": "pending",
+        "attempts": 0,
+        "max_attempts": 3,
+        "error": null
+      },
+      {
+        "type": "embed",
+        "status": "failed",
+        "attempts": 3,
+        "max_attempts": 3,
+        "error": "ClipUnavailable: CLIP 服务连接失败（ConnectError）"
+      },
+      {
+        "type": "parse",
+        "status": "succeeded",
+        "attempts": 1,
+        "max_attempts": 3,
+        "error": null
+      }
+    ]
+  }
+}

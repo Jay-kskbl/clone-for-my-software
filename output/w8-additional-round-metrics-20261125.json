@@ -1,0 +1,65 @@
+[
+  {
+    "round": "single-r10",
+    "succeeded": 4,
+    "failed": 0,
+    "attempts_gt1": 0,
+    "max_attempts": 1.0,
+    "elapsed_s": 102.449,
+    "errors": ""
+  },
+  {
+    "round": "multi4-r01",
+    "succeeded": 4,
+    "failed": 0,
+    "attempts_gt1": 2,
+    "max_attempts": 2.0,
+    "elapsed_s": 99.161,
+    "errors": ""
+  },
+  {
+    "round": "multi4-r02",
+    "succeeded": 2,
+    "failed": 2,
+    "attempts_gt1": 3,
+    "max_attempts": 3.0,
+    "elapsed_s": 73.926,
+    "errors": "识别子进程异常退出（退出码 3221225477）"
+  },
+  {
+    "round": "multi4-r03",
+    "succeeded": 4,
+    "failed": 0,
+    "attempts_gt1": 0,
+    "max_attempts": 1.0,
+    "elapsed_s": 47.701,
+    "errors": ""
+  },
+  {
+    "round": "multi4-r04",
+    "succeeded": 3,
+    "failed": 1,
+    "attempts_gt1": 4,
+    "max_attempts": 3.0,
+    "elapsed_s": 74.348,
+    "errors": "璇嗗埆瀛愯繘绋嬪紓甯搁€€鍑猴紙閫€鍑虹爜 3221225477锛?2026-11-25 05:35:22.37764+00"
+  },
+  {
+    "round": "multi4-r05",
+    "succeeded": 1,
+    "failed": 3,
+    "attempts_gt1": 4,
+    "max_attempts": 3.0,
+    "elapsed_s": 43.517,
+    "errors": "璇嗗埆瀛愯繘绋嬪紓甯搁€€鍑猴紙閫€鍑虹爜 3221225477锛?2026-11-25 05:36:14.438083+00 | 璇嗗埆瀛愯繘绋嬪紓甯搁€€鍑猴紙閫€鍑虹爜 3221225477锛?2026-11-25 05:36:20.720135+00 | 璇嗗埆瀛愯繘绋嬪紓甯搁€€鍑猴紙閫€鍑虹爜 3221225477锛?2026-11-25 05:36:23.369659+00"
+  },
+  {
+    "round": "multi4-r06",
+    "succeeded": 0,
+    "failed": 4,
+    "attempts_gt1": 4,
+    "max_attempts": 3.0,
+    "elapsed_s": 5.636,
+    "errors": "EngineStartError: OCR 妯″瀷鍔犺浇澶辫触锛歁emoryError:  | 璇嗗埆瀛愯繘绋嬪紓甯搁€€鍑猴紙閫€鍑虹爜 3221225477锛?2026-11-25 05:37:24.724896+00 | 璇嗗埆瀛愯繘绋嬪紓甯搁€€鍑猴紙閫€鍑虹爜 3221225477锛?2026-11-25 05:37:13.159286+00 | MemoryError: "
+  }
+]

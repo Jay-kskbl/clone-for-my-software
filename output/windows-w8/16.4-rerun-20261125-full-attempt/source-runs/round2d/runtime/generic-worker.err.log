@@ -1,0 +1,1 @@
+2026-11-25 11:54:03,001 INFO app.worker Worker Barry-Zou:11488:4e665ee2 启动，可处理的任务类型：['cleanup', 'embed', 'parse']

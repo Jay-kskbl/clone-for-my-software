@@ -1,0 +1,38 @@
+[
+  {
+    "run": "w8-round2d-20261125",
+    "samples": 590,
+    "start": "2026-11-25T11:54:01.2389720+08:00",
+    "end": "2026-11-25T12:08:26.0627552+08:00",
+    "max_gap_s": 2.074,
+    "min_system_mb": 626.0,
+    "peak_api_mb": 62.9,
+    "peak_clip_mb": 1043.3,
+    "peak_worker_mb": 179.6,
+    "peak_ocr_mb": 4350.3
+  },
+  {
+    "run": "w8-round2e-20261125",
+    "samples": 220,
+    "start": "2026-11-25T13:27:47.7459165+08:00",
+    "end": "2026-11-25T13:33:15.8779194+08:00",
+    "max_gap_s": 2.209,
+    "min_system_mb": 3.4,
+    "peak_api_mb": 42.8,
+    "peak_clip_mb": 23.6,
+    "peak_worker_mb": 178.3,
+    "peak_ocr_mb": 3929.5
+  },
+  {
+    "run": "w8-round2f-20261125",
+    "samples": 587,
+    "start": "2026-11-25T13:33:31.0663502+08:00",
+    "end": "2026-11-25T13:52:16.0562659+08:00",
+    "max_gap_s": 2.936,
+    "min_system_mb": 410.3,
+    "peak_api_mb": 6.7,
+    "peak_clip_mb": 4.9,
+    "peak_worker_mb": 150.3,
+    "peak_ocr_mb": 5278.8
+  }
+]

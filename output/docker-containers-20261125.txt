@@ -1,0 +1,2 @@
+docmgr-postgres-1|postgres:16.6|Up 32 seconds (healthy)|127.0.0.1:55433->5432/tcp
+docmgr-opensearch-1|docmgr-opensearch:2.19.1-smartcn|Up 31 seconds (healthy)|127.0.0.1:9201->9200/tcp

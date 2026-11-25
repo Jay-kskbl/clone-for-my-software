@@ -1,0 +1,32 @@
+W8 16.4 rerun commands
+======================
+
+1. Created a dedicated database:
+   docker exec docmgr-postgres-1 createdb -U docmgr docmgr_w8_round2c_20261125
+
+2. Database migration:
+   .venv-main\Scripts\python.exe -m alembic upgrade head
+
+3. Dataset validation:
+   .venv-main\Scripts\python.exe -m app.modules.experiments --root <docvqa-crash4> validate
+
+4. Dataset import:
+   .venv-main\Scripts\python.exe -m app.modules.experiments --root <docvqa-crash4> import
+
+5. Requeue OCR:
+   .venv-main\Scripts\python.exe -m app.modules.experiments --root <docvqa-crash4> reocr --yes
+
+6. OCR workers:
+   env_check\.venv-ocr\Scripts\python.exe -m ocr_worker
+
+7. Task export:
+   docker exec docmgr-postgres-1 psql -U docmgr -d docmgr_w8_round2c_20261125 -c
+   "\copy (select task_type,document_id,status,attempts,max_attempts,error,
+   started_at,finished_at from processing_tasks where task_type='ocr'
+   order by document_id) to stdout with csv header"
+
+8. Memory sampling:
+   output\monitor_w8_fast_20261125.ps1 -StopFile <stop.flag> -OutputFile <memory.csv>
+
+All commands were run from the repository host. No access token or database
+password was written to these records.

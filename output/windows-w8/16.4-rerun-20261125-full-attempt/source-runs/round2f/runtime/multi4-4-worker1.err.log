@@ -1,0 +1,114 @@
+Creating model: ('PP-OCRv5_mobile_det', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_det', None)
+信息: 用提供的模式无法找到文件。
+C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddle\utils\cpp_extension\extension_utils.py:712: UserWarning: No ccache found. Please be aware that recompiling all source files may be required. You can download and install ccache from: https://github.com/ccache/ccache/blob/master/doc/INSTALL.md
+  warnings.warn(warning_message)
+Creating model: ('PP-OCRv5_mobile_rec', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_rec', None)
+2026-11-25 13:34:56,490 INFO ocr_worker OCR 模型已加载：PP-OCRv5_mobile_det+PP-OCRv5_mobile_rec，paddleocr-3.7.0/det-afa1820c/rec-2460da90
+2026-11-25 13:36:04,266 INFO ocr_worker.loop 开始 OCR 任务 c33e0c2d-a3f0-4efe-a574-80c0397357d6（文档 60262f9d-5ccc-497a-8649-3a4fe2afff59，第 1/3 次尝试）
+2026-11-25 13:36:07,915 WARNING ocr_worker.loop 任务 c33e0c2d-a3f0-4efe-a574-80c0397357d6 失败（识别子进程异常退出（退出码 3221225477）），新状态：pending
+2026-11-25 13:36:07,928 INFO ocr_worker.loop 开始 OCR 任务 c33e0c2d-a3f0-4efe-a574-80c0397357d6（文档 60262f9d-5ccc-497a-8649-3a4fe2afff59，第 2/3 次尝试）
+Creating model: ('PP-OCRv5_mobile_det', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_det', None)
+信息: 用提供的模式无法找到文件。
+C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddle\utils\cpp_extension\extension_utils.py:712: UserWarning: No ccache found. Please be aware that recompiling all source files may be required. You can download and install ccache from: https://github.com/ccache/ccache/blob/master/doc/INSTALL.md
+  warnings.warn(warning_message)
+Creating model: ('PP-OCRv5_mobile_rec', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_rec', None)
+2026-11-25 13:36:20,714 WARNING ocr_worker.loop 任务 c33e0c2d-a3f0-4efe-a574-80c0397357d6 失败（识别子进程异常退出（退出码 3221225477）），新状态：pending
+2026-11-25 13:36:20,725 INFO ocr_worker.loop 开始 OCR 任务 c33e0c2d-a3f0-4efe-a574-80c0397357d6（文档 60262f9d-5ccc-497a-8649-3a4fe2afff59，第 3/3 次尝试）
+Creating model: ('PP-OCRv5_mobile_det', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_det', None)
+信息: 用提供的模式无法找到文件。
+C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddle\utils\cpp_extension\extension_utils.py:712: UserWarning: No ccache found. Please be aware that recompiling all source files may be required. You can download and install ccache from: https://github.com/ccache/ccache/blob/master/doc/INSTALL.md
+  warnings.warn(warning_message)
+Creating model: ('PP-OCRv5_mobile_rec', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_rec', None)
+2026-11-25 13:36:29,685 WARNING ocr_worker.loop 任务 c33e0c2d-a3f0-4efe-a574-80c0397357d6 失败（识别子进程异常退出（退出码 3221225477）），新状态：failed
+2026-11-25 13:37:03,956 INFO ocr_worker.loop 开始 OCR 任务 102b465e-1076-4922-ba34-a59979aebfae（文档 7586cc8e-1c65-44ed-8962-0da5ae52d8d6，第 1/3 次尝试）
+Creating model: ('PP-OCRv5_mobile_det', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_det', None)
+信息: 用提供的模式无法找到文件。
+C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddle\utils\cpp_extension\extension_utils.py:712: UserWarning: No ccache found. Please be aware that recompiling all source files may be required. You can download and install ccache from: https://github.com/ccache/ccache/blob/master/doc/INSTALL.md
+  warnings.warn(warning_message)
+Creating model: ('PP-OCRv5_mobile_rec', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_rec', None)
+2026-11-25 13:37:15,269 WARNING ocr_worker.loop 任务 102b465e-1076-4922-ba34-a59979aebfae 失败（error: OpenCV(4.10.0) D:\a\opencv-python\opencv-python\opencv\modules\core\src\alloc.cpp:73: error: (-4:Insufficient memory) Failed to allocate 3907584 bytes in function 'cv::OutOfMemoryError'
+），新状态：pending
+2026-11-25 13:37:15,280 INFO ocr_worker.loop 开始 OCR 任务 102b465e-1076-4922-ba34-a59979aebfae（文档 7586cc8e-1c65-44ed-8962-0da5ae52d8d6，第 2/3 次尝试）
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddlex\inference\models\text_detection\processors.py", line 185, in resize_image_type0
+    img = cv2.resize(img, (int(resize_w), int(resize_h)))
+cv2.error: OpenCV(4.10.0) D:\a\opencv-python\opencv-python\opencv\modules\core\src\alloc.cpp:73: error: (-4:Insufficient memory) Failed to allocate 11722752 bytes in function 'cv::OutOfMemoryError'
+
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\Lib\logging\__init__.py", line 1151, in emit
+    msg = self.format(record)
+  File "C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\Lib\logging\__init__.py", line 999, in format
+    return fmt.format(record)
+           ~~~~~~~~~~^^^^^^^^
+  File "C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\Lib\logging\__init__.py", line 712, in format
+    record.message = record.getMessage()
+                     ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\Lib\logging\__init__.py", line 400, in getMessage
+    msg = msg % self.args
+          ~~~~^~~~~~~~~~~
+TypeError: not all arguments converted during string formatting
+Call stack:
+  File "<string>", line 1, in <module>
+    from multiprocessing.spawn import spawn_main; spawn_main(parent_pid=32796, pipe_handle=740)
+  File "C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\Lib\multiprocessing\spawn.py", line 122, in spawn_main
+    exitcode = _main(fd, parent_sentinel)
+  File "C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\Lib\multiprocessing\spawn.py", line 135, in _main
+    return self._bootstrap(parent_sentinel)
+  File "C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\Lib\multiprocessing\process.py", line 313, in _bootstrap
+    self.run()
+  File "C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\Lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\lenovo\Desktop\my-software-main\_gh_upload\services\ocr_worker\ocr_worker\engine_process.py", line 101, in _child_main
+    lines = engine.recognize(image)
+  File "C:\Users\lenovo\Desktop\my-software-main\_gh_upload\services\ocr_worker\ocr_worker\engine.py", line 82, in recognize
+    for result in self._ocr.predict(bgr):
+  File "C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddleocr\_pipelines\ocr.py", line 223, in predict
+    return list(
+  File "C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddlex\inference\pipelines\_parallel.py", line 161, in predict
+    yield from self._pipeline.predict(
+  File "C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddlex\inference\pipelines\ocr\pipeline.py", line 366, in predict
+    det_results = list(
+  File "C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddlex\inference\models\predictors\base_predictor.py", line 117, in __call__
+    yield from self.apply(input, **kwargs)
+  File "C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddlex\inference\models\predictors\base_predictor.py", line 140, in apply
+    pred = self.process(batch_data, **kwargs)
+  File "C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddlex\inference\models\text_detection\predictor.py", line 133, in process
+    batch_imgs, batch_shapes = self.pre_tfs["Resize"](
+  File "C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddlex\inference\models\text_detection\processors.py", line 71, in __call__
+    img, shape = self.resize(
+  File "C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddlex\inference\models\text_detection\processors.py", line 91, in resize
+    img, [ratio_h, ratio_w] = self.resize_image_type0(
+  File "C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddlex\inference\models\text_detection\processors.py", line 187, in resize_image_type0
+    logging.info(img.shape, resize_w, resize_h)
+  File "C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddlex\utils\logging.py", line 71, in info
+    _logger.info(msg, *args, **kwargs)
+Message: (1700, 2310, 3)
+Arguments: (2304, 1696)
+2026-11-25 13:37:15,375 WARNING ocr_worker.loop 任务 102b465e-1076-4922-ba34-a59979aebfae 失败（error: OpenCV(4.10.0) D:\a\opencv-python\opencv-python\opencv\modules\core\src\alloc.cpp:73: error: (-4:Insufficient memory) Failed to allocate 11722752 bytes in function 'cv::OutOfMemoryError'
+），新状态：pending
+2026-11-25 13:37:15,384 INFO ocr_worker.loop 开始 OCR 任务 102b465e-1076-4922-ba34-a59979aebfae（文档 7586cc8e-1c65-44ed-8962-0da5ae52d8d6，第 3/3 次尝试）
+2026-11-25 13:37:15,419 WARNING ocr_worker.loop 任务 102b465e-1076-4922-ba34-a59979aebfae 失败（MemoryError: ），新状态：failed
+2026-11-25 13:37:37,572 INFO ocr_worker.loop 开始 OCR 任务 c33e0c2d-a3f0-4efe-a574-80c0397357d6（文档 60262f9d-5ccc-497a-8649-3a4fe2afff59，第 1/3 次尝试）
+2026-11-25 13:37:43,680 WARNING ocr_worker.loop 任务 c33e0c2d-a3f0-4efe-a574-80c0397357d6 失败（识别子进程异常退出（退出码 3221225477）），新状态：pending
+2026-11-25 13:37:43,706 INFO ocr_worker.loop 开始 OCR 任务 c33e0c2d-a3f0-4efe-a574-80c0397357d6（文档 60262f9d-5ccc-497a-8649-3a4fe2afff59，第 2/3 次尝试）
+Creating model: ('PP-OCRv5_mobile_det', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_det', None)
+信息: 用提供的模式无法找到文件。
+C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddle\utils\cpp_extension\extension_utils.py:712: UserWarning: No ccache found. Please be aware that recompiling all source files may be required. You can download and install ccache from: https://github.com/ccache/ccache/blob/master/doc/INSTALL.md
+  warnings.warn(warning_message)
+Creating model: ('PP-OCRv5_mobile_rec', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_rec', None)
+2026-11-25 13:37:57,171 WARNING ocr_worker.loop 任务 c33e0c2d-a3f0-4efe-a574-80c0397357d6 失败（识别子进程异常退出（退出码 3221225477）），新状态：pending
+2026-11-25 13:37:57,179 INFO ocr_worker.loop 开始 OCR 任务 c33e0c2d-a3f0-4efe-a574-80c0397357d6（文档 60262f9d-5ccc-497a-8649-3a4fe2afff59，第 3/3 次尝试）
+Creating model: ('PP-OCRv5_mobile_det', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_det', None)
+信息: 用提供的模式无法找到文件。
+C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddle\utils\cpp_extension\extension_utils.py:712: UserWarning: No ccache found. Please be aware that recompiling all source files may be required. You can download and install ccache from: https://github.com/ccache/ccache/blob/master/doc/INSTALL.md
+  warnings.warn(warning_message)
+Creating model: ('PP-OCRv5_mobile_rec', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_rec', None)
+2026-11-25 13:38:26,964 INFO httpx HTTP Request: HEAD http://127.0.0.1:9201/w8r2c_doc_meta "HTTP/1.1 200 OK"
+2026-11-25 13:38:26,971 INFO httpx HTTP Request: HEAD http://127.0.0.1:9201/w8r2c_chunks "HTTP/1.1 200 OK"
+2026-11-25 13:38:26,996 INFO httpx HTTP Request: POST http://127.0.0.1:9201/w8r2c_chunks/_delete_by_query?refresh=true&conflicts=proceed "HTTP/1.1 200 OK"
+2026-11-25 13:38:27,021 INFO httpx HTTP Request: POST http://127.0.0.1:9201/_bulk?refresh=true "HTTP/1.1 200 OK"
+2026-11-25 13:38:27,029 INFO ocr_worker.loop 任务 c33e0c2d-a3f0-4efe-a574-80c0397357d6 完成（processed:30-lines:2-chunks）

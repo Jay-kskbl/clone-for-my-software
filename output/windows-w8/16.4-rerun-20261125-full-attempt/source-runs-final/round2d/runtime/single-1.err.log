@@ -1,0 +1,96 @@
+Creating model: ('PP-OCRv5_mobile_det', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_det', None)
+信息: 用提供的模式无法找到文件。
+C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddle\utils\cpp_extension\extension_utils.py:712: UserWarning: No ccache found. Please be aware that recompiling all source files may be required. You can download and install ccache from: https://github.com/ccache/ccache/blob/master/doc/INSTALL.md
+  warnings.warn(warning_message)
+Creating model: ('PP-OCRv5_mobile_rec', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_rec', None)
+2026-11-25 11:54:12,232 INFO ocr_worker OCR 模型已加载：PP-OCRv5_mobile_det+PP-OCRv5_mobile_rec，paddleocr-3.7.0/det-afa1820c/rec-2460da90
+2026-11-25 11:54:12,544 INFO ocr_worker.loop 开始 OCR 任务 70a8f666-b63b-4d1c-bc49-28a11d387309（文档 296aa52b-b461-4ad8-bb7e-5c38cd52ca19，第 1/3 次尝试）
+2026-11-25 11:54:46,356 INFO httpx HTTP Request: HEAD http://127.0.0.1:9201/w8r2c_doc_meta "HTTP/1.1 200 OK"
+2026-11-25 11:54:46,359 INFO httpx HTTP Request: HEAD http://127.0.0.1:9201/w8r2c_chunks "HTTP/1.1 200 OK"
+2026-11-25 11:54:46,380 INFO httpx HTTP Request: POST http://127.0.0.1:9201/w8r2c_chunks/_delete_by_query?refresh=true&conflicts=proceed "HTTP/1.1 200 OK"
+2026-11-25 11:54:46,393 INFO httpx HTTP Request: POST http://127.0.0.1:9201/_bulk?refresh=true "HTTP/1.1 200 OK"
+2026-11-25 11:54:46,400 INFO ocr_worker.loop 任务 70a8f666-b63b-4d1c-bc49-28a11d387309 完成（processed:65-lines:4-chunks）
+2026-11-25 11:54:46,408 INFO ocr_worker.loop 开始 OCR 任务 47e69ad1-b601-45cd-90df-ecad63f6bde3（文档 35b1fdc2-61cc-45fd-a983-e1444de00661，第 1/3 次尝试）
+2026-11-25 11:55:10,010 INFO httpx HTTP Request: HEAD http://127.0.0.1:9201/w8r2c_doc_meta "HTTP/1.1 200 OK"
+2026-11-25 11:55:10,014 INFO httpx HTTP Request: HEAD http://127.0.0.1:9201/w8r2c_chunks "HTTP/1.1 200 OK"
+2026-11-25 11:55:10,041 INFO httpx HTTP Request: POST http://127.0.0.1:9201/w8r2c_chunks/_delete_by_query?refresh=true&conflicts=proceed "HTTP/1.1 200 OK"
+2026-11-25 11:55:10,060 INFO httpx HTTP Request: POST http://127.0.0.1:9201/_bulk?refresh=true "HTTP/1.1 200 OK"
+2026-11-25 11:55:10,068 INFO ocr_worker.loop 任务 47e69ad1-b601-45cd-90df-ecad63f6bde3 完成（processed:62-lines:3-chunks）
+2026-11-25 11:55:10,077 INFO ocr_worker.loop 开始 OCR 任务 c33e0c2d-a3f0-4efe-a574-80c0397357d6（文档 60262f9d-5ccc-497a-8649-3a4fe2afff59，第 1/3 次尝试）
+2026-11-25 11:55:27,406 INFO httpx HTTP Request: HEAD http://127.0.0.1:9201/w8r2c_doc_meta "HTTP/1.1 200 OK"
+2026-11-25 11:55:27,410 INFO httpx HTTP Request: HEAD http://127.0.0.1:9201/w8r2c_chunks "HTTP/1.1 200 OK"
+2026-11-25 11:55:27,436 INFO httpx HTTP Request: POST http://127.0.0.1:9201/w8r2c_chunks/_delete_by_query?refresh=true&conflicts=proceed "HTTP/1.1 200 OK"
+2026-11-25 11:55:27,451 INFO httpx HTTP Request: POST http://127.0.0.1:9201/_bulk?refresh=true "HTTP/1.1 200 OK"
+2026-11-25 11:55:27,456 INFO ocr_worker.loop 任务 c33e0c2d-a3f0-4efe-a574-80c0397357d6 完成（processed:30-lines:2-chunks）
+2026-11-25 11:55:27,461 INFO ocr_worker.loop 开始 OCR 任务 102b465e-1076-4922-ba34-a59979aebfae（文档 7586cc8e-1c65-44ed-8962-0da5ae52d8d6，第 1/3 次尝试）
+2026-11-25 11:55:45,584 INFO httpx HTTP Request: HEAD http://127.0.0.1:9201/w8r2c_doc_meta "HTTP/1.1 200 OK"
+2026-11-25 11:55:45,587 INFO httpx HTTP Request: HEAD http://127.0.0.1:9201/w8r2c_chunks "HTTP/1.1 200 OK"
+2026-11-25 11:55:45,636 INFO httpx HTTP Request: POST http://127.0.0.1:9201/w8r2c_chunks/_delete_by_query?refresh=true&conflicts=proceed "HTTP/1.1 200 OK"
+2026-11-25 11:55:45,656 INFO httpx HTTP Request: POST http://127.0.0.1:9201/_bulk?refresh=true "HTTP/1.1 200 OK"
+2026-11-25 11:55:45,663 INFO ocr_worker.loop 任务 102b465e-1076-4922-ba34-a59979aebfae 完成（processed:37-lines:2-chunks）
+2026-11-25 11:55:50,703 INFO ocr_worker.loop 开始 OCR 任务 70a8f666-b63b-4d1c-bc49-28a11d387309（文档 296aa52b-b461-4ad8-bb7e-5c38cd52ca19，第 1/3 次尝试）
+2026-11-25 11:56:33,058 INFO httpx HTTP Request: HEAD http://127.0.0.1:9201/w8r2c_doc_meta "HTTP/1.1 200 OK"
+2026-11-25 11:56:33,063 INFO httpx HTTP Request: HEAD http://127.0.0.1:9201/w8r2c_chunks "HTTP/1.1 200 OK"
+2026-11-25 11:56:33,128 INFO httpx HTTP Request: POST http://127.0.0.1:9201/w8r2c_chunks/_delete_by_query?refresh=true&conflicts=proceed "HTTP/1.1 200 OK"
+2026-11-25 11:56:33,151 INFO httpx HTTP Request: POST http://127.0.0.1:9201/_bulk?refresh=true "HTTP/1.1 200 OK"
+2026-11-25 11:56:33,156 INFO ocr_worker.loop 任务 70a8f666-b63b-4d1c-bc49-28a11d387309 完成（processed:65-lines:4-chunks）
+2026-11-25 11:56:33,164 INFO ocr_worker.loop 开始 OCR 任务 c33e0c2d-a3f0-4efe-a574-80c0397357d6（文档 60262f9d-5ccc-497a-8649-3a4fe2afff59，第 1/3 次尝试）
+2026-11-25 11:56:56,603 INFO httpx HTTP Request: HEAD http://127.0.0.1:9201/w8r2c_doc_meta "HTTP/1.1 200 OK"
+2026-11-25 11:56:56,608 INFO httpx HTTP Request: HEAD http://127.0.0.1:9201/w8r2c_chunks "HTTP/1.1 200 OK"
+2026-11-25 11:56:56,658 INFO httpx HTTP Request: POST http://127.0.0.1:9201/w8r2c_chunks/_delete_by_query?refresh=true&conflicts=proceed "HTTP/1.1 200 OK"
+2026-11-25 11:56:56,687 INFO httpx HTTP Request: POST http://127.0.0.1:9201/_bulk?refresh=true "HTTP/1.1 200 OK"
+2026-11-25 11:56:56,696 INFO ocr_worker.loop 任务 c33e0c2d-a3f0-4efe-a574-80c0397357d6 完成（processed:30-lines:2-chunks）
+2026-11-25 11:57:03,749 INFO ocr_worker.loop 开始 OCR 任务 70a8f666-b63b-4d1c-bc49-28a11d387309（文档 296aa52b-b461-4ad8-bb7e-5c38cd52ca19，第 1/3 次尝试）
+2026-11-25 11:57:51,633 INFO httpx HTTP Request: HEAD http://127.0.0.1:9201/w8r2c_doc_meta "HTTP/1.1 200 OK"
+2026-11-25 11:57:51,639 INFO httpx HTTP Request: HEAD http://127.0.0.1:9201/w8r2c_chunks "HTTP/1.1 200 OK"
+2026-11-25 11:57:51,668 INFO httpx HTTP Request: POST http://127.0.0.1:9201/w8r2c_chunks/_delete_by_query?refresh=true&conflicts=proceed "HTTP/1.1 200 OK"
+2026-11-25 11:57:51,692 INFO httpx HTTP Request: POST http://127.0.0.1:9201/_bulk?refresh=true "HTTP/1.1 200 OK"
+2026-11-25 11:57:51,701 INFO ocr_worker.loop 任务 70a8f666-b63b-4d1c-bc49-28a11d387309 完成（processed:65-lines:4-chunks）
+2026-11-25 11:58:05,816 INFO ocr_worker.loop 开始 OCR 任务 47e69ad1-b601-45cd-90df-ecad63f6bde3（文档 35b1fdc2-61cc-45fd-a983-e1444de00661，第 1/3 次尝试）
+2026-11-25 11:58:44,131 INFO httpx HTTP Request: HEAD http://127.0.0.1:9201/w8r2c_doc_meta "HTTP/1.1 200 OK"
+2026-11-25 11:58:44,134 INFO httpx HTTP Request: HEAD http://127.0.0.1:9201/w8r2c_chunks "HTTP/1.1 200 OK"
+2026-11-25 11:58:44,190 INFO httpx HTTP Request: POST http://127.0.0.1:9201/w8r2c_chunks/_delete_by_query?refresh=true&conflicts=proceed "HTTP/1.1 200 OK"
+2026-11-25 11:58:44,215 INFO httpx HTTP Request: POST http://127.0.0.1:9201/_bulk?refresh=true "HTTP/1.1 200 OK"
+2026-11-25 11:58:44,223 INFO ocr_worker.loop 任务 47e69ad1-b601-45cd-90df-ecad63f6bde3 完成（processed:62-lines:3-chunks）
+2026-11-25 11:58:59,354 INFO ocr_worker.loop 开始 OCR 任务 70a8f666-b63b-4d1c-bc49-28a11d387309（文档 296aa52b-b461-4ad8-bb7e-5c38cd52ca19，第 1/3 次尝试）
+2026-11-25 11:59:07,072 WARNING ocr_worker.loop 任务 70a8f666-b63b-4d1c-bc49-28a11d387309 失败（识别子进程异常退出（退出码 3221225477）），新状态：pending
+2026-11-25 11:59:07,084 INFO ocr_worker.loop 开始 OCR 任务 70a8f666-b63b-4d1c-bc49-28a11d387309（文档 296aa52b-b461-4ad8-bb7e-5c38cd52ca19，第 2/3 次尝试）
+Creating model: ('PP-OCRv5_mobile_det', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_det', None)
+信息: 用提供的模式无法找到文件。
+C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddle\utils\cpp_extension\extension_utils.py:712: UserWarning: No ccache found. Please be aware that recompiling all source files may be required. You can download and install ccache from: https://github.com/ccache/ccache/blob/master/doc/INSTALL.md
+  warnings.warn(warning_message)
+Creating model: ('PP-OCRv5_mobile_rec', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_rec', None)
+2026-11-25 11:59:58,035 INFO httpx HTTP Request: HEAD http://127.0.0.1:9201/w8r2c_doc_meta "HTTP/1.1 200 OK"
+2026-11-25 11:59:58,038 INFO httpx HTTP Request: HEAD http://127.0.0.1:9201/w8r2c_chunks "HTTP/1.1 200 OK"
+2026-11-25 11:59:58,063 INFO httpx HTTP Request: POST http://127.0.0.1:9201/w8r2c_chunks/_delete_by_query?refresh=true&conflicts=proceed "HTTP/1.1 200 OK"
+2026-11-25 11:59:58,082 INFO httpx HTTP Request: POST http://127.0.0.1:9201/_bulk?refresh=true "HTTP/1.1 200 OK"
+2026-11-25 11:59:58,089 INFO ocr_worker.loop 任务 70a8f666-b63b-4d1c-bc49-28a11d387309 完成（processed:65-lines:4-chunks）
+2026-11-25 12:00:03,138 INFO ocr_worker.loop 开始 OCR 任务 70a8f666-b63b-4d1c-bc49-28a11d387309（文档 296aa52b-b461-4ad8-bb7e-5c38cd52ca19，第 1/3 次尝试）
+2026-11-25 12:00:09,471 WARNING ocr_worker.loop 任务 70a8f666-b63b-4d1c-bc49-28a11d387309 失败（识别子进程异常退出（退出码 3221225477）），新状态：pending
+2026-11-25 12:00:09,481 INFO ocr_worker.loop 开始 OCR 任务 70a8f666-b63b-4d1c-bc49-28a11d387309（文档 296aa52b-b461-4ad8-bb7e-5c38cd52ca19，第 2/3 次尝试）
+Creating model: ('PP-OCRv5_mobile_det', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_det', None)
+信息: 用提供的模式无法找到文件。
+C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddle\utils\cpp_extension\extension_utils.py:712: UserWarning: No ccache found. Please be aware that recompiling all source files may be required. You can download and install ccache from: https://github.com/ccache/ccache/blob/master/doc/INSTALL.md
+  warnings.warn(warning_message)
+Creating model: ('PP-OCRv5_mobile_rec', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_rec', None)
+2026-11-25 12:01:00,046 INFO httpx HTTP Request: HEAD http://127.0.0.1:9201/w8r2c_doc_meta "HTTP/1.1 200 OK"
+2026-11-25 12:01:00,050 INFO httpx HTTP Request: HEAD http://127.0.0.1:9201/w8r2c_chunks "HTTP/1.1 200 OK"
+2026-11-25 12:01:00,065 INFO httpx HTTP Request: POST http://127.0.0.1:9201/w8r2c_chunks/_delete_by_query?refresh=true&conflicts=proceed "HTTP/1.1 200 OK"
+2026-11-25 12:01:00,085 INFO httpx HTTP Request: POST http://127.0.0.1:9201/_bulk?refresh=true "HTTP/1.1 200 OK"
+2026-11-25 12:01:00,093 INFO ocr_worker.loop 任务 70a8f666-b63b-4d1c-bc49-28a11d387309 完成（processed:65-lines:4-chunks）
+2026-11-25 12:03:15,603 INFO ocr_worker.loop 开始 OCR 任务 102b465e-1076-4922-ba34-a59979aebfae（文档 7586cc8e-1c65-44ed-8962-0da5ae52d8d6，第 1/3 次尝试）
+2026-11-25 12:03:20,087 WARNING ocr_worker.loop 任务 102b465e-1076-4922-ba34-a59979aebfae 失败（识别子进程异常退出（退出码 3221225477）），新状态：pending
+2026-11-25 12:03:20,097 INFO ocr_worker.loop 开始 OCR 任务 102b465e-1076-4922-ba34-a59979aebfae（文档 7586cc8e-1c65-44ed-8962-0da5ae52d8d6，第 2/3 次尝试）
+Creating model: ('PP-OCRv5_mobile_det', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_det', None)
+信息: 用提供的模式无法找到文件。
+C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddle\utils\cpp_extension\extension_utils.py:712: UserWarning: No ccache found. Please be aware that recompiling all source files may be required. You can download and install ccache from: https://github.com/ccache/ccache/blob/master/doc/INSTALL.md
+  warnings.warn(warning_message)
+Creating model: ('PP-OCRv5_mobile_rec', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_rec', None)
+2026-11-25 12:03:31,831 WARNING ocr_worker.loop 任务 102b465e-1076-4922-ba34-a59979aebfae 失败（识别子进程异常退出（退出码 3221225477）），新状态：pending
+2026-11-25 12:03:31,850 INFO ocr_worker.loop 开始 OCR 任务 102b465e-1076-4922-ba34-a59979aebfae（文档 7586cc8e-1c65-44ed-8962-0da5ae52d8d6，第 3/3 次尝试）
+Creating model: ('PP-OCRv5_mobile_det', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_det', None)
+信息: 用提供的模式无法找到文件。
+C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddle\utils\cpp_extension\extension_utils.py:712: UserWarning: No ccache found. Please be aware that recompiling all source files may be required. You can download and install ccache from: https://github.com/ccache/ccache/blob/master/doc/INSTALL.md
+  warnings.warn(warning_message)
+Creating model: ('PP-OCRv5_mobile_rec', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_rec', None)
+2026-11-25 12:03:44,129 WARNING ocr_worker.loop 任务 102b465e-1076-4922-ba34-a59979aebfae 失败（识别子进程异常退出（退出码 3221225477）），新状态：failed

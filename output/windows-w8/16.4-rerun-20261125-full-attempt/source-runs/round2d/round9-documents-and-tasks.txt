@@ -1,0 +1,4 @@
+296aa52b-b461-4ad8-bb7e-5c38cd52ca19|mjbw0217.jpg|failed|3|识别子进程异常退出（退出码 3221225477）
+35b1fdc2-61cc-45fd-a983-e1444de00661|mjxn0226.jpg|succeeded|2|
+60262f9d-5ccc-497a-8649-3a4fe2afff59|mkhg0227.jpg|succeeded|3|
+7586cc8e-1c65-44ed-8962-0da5ae52d8d6|mkvw0217.jpg|failed|3|识别子进程异常退出（退出码 3221225477）

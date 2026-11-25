@@ -1,0 +1,121 @@
+Traceback (most recent call last):
+  File "/tmp/codex_rlimit_test.py", line 101, in <module>
+    main()
+  File "/tmp/codex_rlimit_test.py", line 75, in main
+    module = load_module("codex_worker_runner", "/tmp/codex_rlimit_runner.py")
+  File "/tmp/codex_rlimit_test.py", line 65, in load_module
+    spec.loader.exec_module(module)
+  File "<frozen importlib._bootstrap_external>", line 850, in exec_module
+  File "<frozen importlib._bootstrap>", line 228, in _call_with_frames_removed
+  File "/tmp/codex_rlimit_runner.py", line 38, in <module>
+    class RunResult:
+  File "/tmp/codex_rlimit_runner.py", line 41, in RunResult
+    error: str | None = None
+TypeError: unsupported operand type(s) for |: 'type' and 'NoneType'
+Traceback (most recent call last):
+  File "/tmp/codex_rlimit_test.py", line 101, in <module>
+    main()
+  File "/tmp/codex_rlimit_test.py", line 77, in main
+    module = load_module("codex_ocr_engine_process", "/tmp/codex_rlimit_engine_process.py")
+  File "/tmp/codex_rlimit_test.py", line 65, in load_module
+    spec.loader.exec_module(module)
+  File "<frozen importlib._bootstrap_external>", line 850, in exec_module
+  File "<frozen importlib._bootstrap>", line 228, in _call_with_frames_removed
+  File "/tmp/codex_rlimit_engine_process.py", line 49, in <module>
+    class EngineResult:
+  File "/tmp/codex_rlimit_engine_process.py", line 52, in EngineResult
+    error: str | None = None
+TypeError: unsupported operand type(s) for |: 'type' and 'NoneType'
+worker_exit=1
+ocr_exit=1
+sed: cannot rename /tmp/sedMcLGFV: Operation not permitted
+Traceback (most recent call last):
+  File "/tmp/codex_rlimit_test.py", line 101, in <module>
+    main()
+  File "/tmp/codex_rlimit_test.py", line 75, in main
+    module = load_module("codex_worker_runner", "/tmp/codex_rlimit_runner.py")
+  File "/tmp/codex_rlimit_test.py", line 65, in load_module
+    spec.loader.exec_module(module)
+  File "<frozen importlib._bootstrap_external>", line 850, in exec_module
+  File "<frozen importlib._bootstrap>", line 228, in _call_with_frames_removed
+  File "/tmp/codex_rlimit_runner.py", line 38, in <module>
+    class RunResult:
+  File "/tmp/codex_rlimit_runner.py", line 41, in RunResult
+    error: str | None = None
+TypeError: unsupported operand type(s) for |: 'type' and 'NoneType'
+Traceback (most recent call last):
+  File "/tmp/codex_rlimit_test.py", line 101, in <module>
+    main()
+  File "/tmp/codex_rlimit_test.py", line 77, in main
+    module = load_module("codex_ocr_engine_process", "/tmp/codex_rlimit_engine_process.py")
+  File "/tmp/codex_rlimit_test.py", line 65, in load_module
+    spec.loader.exec_module(module)
+  File "<frozen importlib._bootstrap_external>", line 850, in exec_module
+  File "<frozen importlib._bootstrap>", line 228, in _call_with_frames_removed
+  File "/tmp/codex_rlimit_engine_process.py", line 49, in <module>
+    class EngineResult:
+  File "/tmp/codex_rlimit_engine_process.py", line 52, in EngineResult
+    error: str | None = None
+TypeError: unsupported operand type(s) for |: 'type' and 'NoneType'
+retry_worker_exit=1
+retry_ocr_exit=1
+Traceback (most recent call last):
+  File "/tmp/codex_rlimit_test2.py", line 101, in <module>
+    main()
+  File "/tmp/codex_rlimit_test2.py", line 75, in main
+    module = load_module("codex_worker_runner", "/tmp/codex_rlimit_runner2.py")
+  File "/tmp/codex_rlimit_test2.py", line 65, in load_module
+    spec.loader.exec_module(module)
+  File "<frozen importlib._bootstrap_external>", line 850, in exec_module
+  File "<frozen importlib._bootstrap>", line 228, in _call_with_frames_removed
+  File "/tmp/codex_rlimit_runner2.py", line 39, in <module>
+    class RunResult:
+  File "/usr/lib64/python3.9/dataclasses.py", line 1013, in wrap
+    return _process_class(cls, init, repr, eq, order, unsafe_hash, frozen)
+  File "/usr/lib64/python3.9/dataclasses.py", line 863, in _process_class
+    cls_fields = [_get_field(cls, name, type)
+  File "/usr/lib64/python3.9/dataclasses.py", line 863, in <listcomp>
+    cls_fields = [_get_field(cls, name, type)
+  File "/usr/lib64/python3.9/dataclasses.py", line 714, in _get_field
+    and _is_type(f.type, cls, typing, typing.ClassVar,
+  File "/usr/lib64/python3.9/dataclasses.py", line 660, in _is_type
+    ns = sys.modules.get(cls.__module__).__dict__
+AttributeError: 'NoneType' object has no attribute '__dict__'
+Traceback (most recent call last):
+  File "/tmp/codex_rlimit_test2.py", line 101, in <module>
+    main()
+  File "/tmp/codex_rlimit_test2.py", line 77, in main
+    module = load_module("codex_ocr_engine_process", "/tmp/codex_rlimit_engine_process2.py")
+  File "/tmp/codex_rlimit_test2.py", line 65, in load_module
+    spec.loader.exec_module(module)
+  File "<frozen importlib._bootstrap_external>", line 850, in exec_module
+  File "<frozen importlib._bootstrap>", line 228, in _call_with_frames_removed
+  File "/tmp/codex_rlimit_engine_process2.py", line 42, in <module>
+    class Job:
+  File "/usr/lib64/python3.9/dataclasses.py", line 1013, in wrap
+    return _process_class(cls, init, repr, eq, order, unsafe_hash, frozen)
+  File "/usr/lib64/python3.9/dataclasses.py", line 863, in _process_class
+    cls_fields = [_get_field(cls, name, type)
+  File "/usr/lib64/python3.9/dataclasses.py", line 863, in <listcomp>
+    cls_fields = [_get_field(cls, name, type)
+  File "/usr/lib64/python3.9/dataclasses.py", line 714, in _get_field
+    and _is_type(f.type, cls, typing, typing.ClassVar,
+  File "/usr/lib64/python3.9/dataclasses.py", line 660, in _is_type
+    ns = sys.modules.get(cls.__module__).__dict__
+AttributeError: 'NoneType' object has no attribute '__dict__'
+compat_worker_exit=1
+compat_ocr_exit=1
+target=worker
+soft=268435456
+hard=268435456
+expected=268435456
+limit_applied=True
+allocation_result=MemoryError
+target=ocr
+soft=268435456
+hard=268435456
+expected=268435456
+limit_applied=True
+allocation_result=MemoryError
+compat2_worker_exit=0
+compat2_ocr_exit=0

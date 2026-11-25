@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 203, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\lenovo\Desktop\my-software-main\_gh_upload\services\ocr_worker\ocr_worker\__main__.py", line 25, in <module>
+    from ocr_worker.engine import make_paddle_engine
+  File "C:\Users\lenovo\Desktop\my-software-main\_gh_upload\services\ocr_worker\ocr_worker\engine.py", line 12, in <module>
+    from ocr_worker.rendering import RenderedImage
+  File "C:\Users\lenovo\Desktop\my-software-main\_gh_upload\services\ocr_worker\ocr_worker\rendering.py", line 10, in <module>
+    import pymupdf
+  File "C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\pymupdf\__init__.py", line 33, in <module>
+    from . import extra
+  File "C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\pymupdf\extra.py", line 10, in <module>
+    from . import _extra
+ImportError: DLL load failed while importing _extra: 页面文件太小，无法完成操作。
