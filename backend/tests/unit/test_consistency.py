@@ -34,6 +34,7 @@ from app.modules.consistency.model import (
     IndexChunk,
     IndexState,
     IndexVector,
+    Issue,
     Snapshot,
     locator_key,
 )
@@ -1023,3 +1024,77 @@ def test_cli_force_without_rebuild_indices_is_a_usage_error(cli, capsys):
 
     assert exc.value.code == 2
     assert "--force 只能和 --fix rebuild-indices 一起使用" in capsys.readouterr().err
+
+
+# ---- T24af：检索服务不可用时，repair 的提示不能让人以为没有问题 ----
+
+NOTHING_TO_FIX = "没有需要修复的问题"
+
+
+@pytest.fixture
+def cli_search_down(cli):
+    cli.snapshot.index.available = False
+    cli.snapshot.index.error = "ConnectError"
+    return cli
+
+
+@pytest.mark.parametrize(
+    "kinds", [["index"], ["rebuild-indices"], ["index", "rebuild-indices"], ["index", "index"]]
+)
+def test_only_index_kinds_and_search_down_never_claims_nothing_to_fix(
+    cli_search_down, capsys, kinds
+):
+    argv = [arg for kind in kinds for arg in ("--fix", kind)]
+
+    assert cli_search_down.main(["repair", *argv, "--yes"]) == 1
+
+    captured = capsys.readouterr()
+    # 索引没有检查过：只说没检查、没修，不说“没有问题”
+    assert NOTHING_TO_FIX not in captured.out + captured.err
+    assert "没有检查索引" in captured.err
+    for kind in set(kinds):
+        assert kind in captured.err
+    assert cli_search_down.applied == []
+
+
+def test_skipped_message_names_only_the_selected_kinds(cli_search_down, capsys):
+    cli_search_down.main(["repair", "--fix", "index", "--yes"])
+
+    assert "rebuild-indices" not in capsys.readouterr().err
+
+
+def test_other_kinds_are_reported_separately_when_search_is_down(cli_search_down, capsys):
+    code = cli_search_down.main(["repair", "--fix", "index", "--fix", "temp-files", "--yes"])
+
+    captured = capsys.readouterr()
+    assert code == 1
+    # 磁盘、数据库检查过，可以说没有问题，但要写明是哪几类
+    assert "temp-files" in captured.out and NOTHING_TO_FIX in captured.out
+    assert "index" not in captured.out
+    assert "没有检查索引" in captured.err
+
+
+def test_kinds_that_do_not_need_the_search_service_are_unaffected(cli_search_down, capsys):
+    assert cli_search_down.main(["repair", "--fix", "temp-files", "--yes"]) == 0
+
+    captured = capsys.readouterr()
+    assert NOTHING_TO_FIX in captured.out and captured.err == ""
+
+
+def test_rebuild_warning_is_not_shown_when_the_rebuild_is_skipped(
+    cli_search_down, capsys, monkeypatch
+):
+    from app.modules.consistency import __main__ as cli_main
+
+    stray = Issue(kind="orphan_file", detail="多余的文件", repair="orphan-files")
+    monkeypatch.setattr(cli_main, "analyze", lambda *_args, **_kwargs: [stray])
+
+    code = cli_search_down.main(
+        ["repair", "--fix", "rebuild-indices", "--fix", "orphan-files", "--yes"]
+    )
+
+    captured = capsys.readouterr()
+    assert code == 1
+    assert "重建索引前请先停掉" not in captured.out
+    ((selected, client),) = cli_search_down.applied  # 其余类别照常修复
+    assert selected == [stray] and client is None

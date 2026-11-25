@@ -1497,9 +1497,10 @@ Copy-Item experiments\docvqa\datasets\document_map.csv "$out\missed\document_map
 | 9 | 第 17.14 节：OCR Worker 数与崩溃（会吃满内存，不和别的测量同时跑） | GPT | 2 | 2 小时 |
 | 9a | 第 17.15 节：失败任务的重试间隔 | GPT | 2（拉到的提交包含 T24ad） | 30 分钟 |
 | 9b | 第 17.16 节：失败任务成批放回队列 | GPT | 9a（拉到的提交包含 T24ae） | 20 分钟 |
+| 9c | 第 17.17 节：检索服务停掉时 repair 的提示 | GPT | 4（拉到的提交包含 T24af） | 10 分钟 |
 | 10 | 按第 14.1 节整理 `output/windows-w9/`、提交；Barry 推送，大文件另交 | GPT、Barry | 全部 | 30 分钟 |
 
-**2026-11-25 更新（第五轮，核对见 `docs/changes/windows-2026-11-25-核对.md`）：** 第五轮测的是旧代码 `54d9760`，**上表各项除了“第 16.8 节对照组”都还没有做**，仍按上面的顺序执行；先 `git pull`，`git log --oneline | Select-String "T24aa|T24ab|T24ac|T24ad|T24ae"` 要能各找到一条。第五轮的 OCR 崩溃复现见第 17.14 节，要重做。已经完成的：`docker-compose.yml`、OpenSearch 的 Dockerfile（还差后端 `/health` 的输出，以及 `down` 之后数据卷保留，可以顺手补上，存到 `output/windows-w9/docker/`）。
+**2026-11-25 更新（第五轮，核对见 `docs/changes/windows-2026-11-25-核对.md`）：** 第五轮测的是旧代码 `54d9760`，**上表各项除了“第 16.8 节对照组”都还没有做**，仍按上面的顺序执行；先 `git pull`，`git log --oneline | Select-String "T24aa|T24ab|T24ac|T24ad|T24ae|T24af"` 要能各找到一条。第五轮的 OCR 崩溃复现见第 17.14 节，要重做。已经完成的：`docker-compose.yml`、OpenSearch 的 Dockerfile（还差后端 `/health` 的输出，以及 `down` 之后数据卷保留，可以顺手补上，存到 `output/windows-w9/docker/`）。
 
 ### 17.2 基线、公用脚本、新的内存采样脚本
 
@@ -1512,7 +1513,7 @@ Copy-Item experiments\docvqa\datasets\document_map.csv "$out\missed\document_map
    ```
 
    预期：三行都是 `i/lf w/lf attr/text eol=lf`；SHA-256 开头为 `be91f8071d05`（doc_meta）、`0c7937251bab`（chunks）、`c984e85b889b`（image_vectors）。不一致就按第 0.2 节第 4 步先删再签出，然后再导出一次。
-3. 新基线上有前端改动（T24v–T24z）和 Worker 改动（T24aa、T24ab、T24ac、T24ad）以及一个新命令（T24ae，**2026-11-25 更正：原来写“只有前端代码变了”已过时**）。在 `frontend/` 下运行三项命令，输出存成 `frontend-typecheck.txt`、`frontend-test.txt`、`frontend-build.txt`。预期：类型检查、构建成功，单元测试 16 个文件 205 项全部通过（Mac 上 T24z 的结果）。如果这次拉到的提交里已经有 Ctrl+C 的修复（第 17.5 节），再按第 12.2 节重跑 backend、shared、OCR Worker 的测试，JUnit 存到 `output/windows-w9/`。
+3. 新基线上有前端改动（T24v–T24z）和 Worker 改动（T24aa、T24ab、T24ac、T24ad）以及一个新命令（T24ae）、一处命令行提示（T24af，**2026-11-25 更正：原来写“只有前端代码变了”已过时**）。在 `frontend/` 下运行三项命令，输出存成 `frontend-typecheck.txt`、`frontend-test.txt`、`frontend-build.txt`。预期：类型检查、构建成功，单元测试 16 个文件 205 项全部通过（Mac 上 T24z 的结果）。如果这次拉到的提交里已经有 Ctrl+C 的修复（第 17.5 节），再按第 12.2 节重跑 backend、shared、OCR Worker 的测试，JUnit 存到 `output/windows-w9/`。
 4. 第 16.2 节的公用函数（`Q`、`Export`、`Wait-Tasks`、`Start-Ocr`）照用，只把 `$out` 改成 `"$repo\output\windows-w9"`。
 5. **新的内存采样脚本。** 第 13.2、16.2 节的脚本把 OCR 识别子进程归进了 `python_other`：子进程是 multiprocessing 启动的，命令行里没有 `ocr_worker`。新脚本沿着父进程往上找，并且每次只调用一次 CIM，所以采样更快：
 
@@ -1798,6 +1799,18 @@ if ((Count-Ocr) -ne 0) { Stop-AllOcr }
 **预期：** 第 1 次列出 3 个任务，原因是 ClipUnavailable，没有改动（导出与之前相同）；第 2 次“已放回队列 3 个”，之后 3 个都 `succeeded`、`attempts = 1`，向量条数加 3；第 3 次“没有需要放回队列的 embed 任务”；三次退出码都是 0；一致性检查没有问题。
 
 **Claude 怎么判断：** 对照三次输出与前后两次导出，全部符合才判为通过。
+
+### 17.17 检索服务停掉时 repair 的提示（T24af，2026-11-25 添加）
+
+接着第 17.4 节做，`docmgr_docvqa`、`docvqa_`，只演练和看提示，不改数据。先 `check` 一次，确认没有不一致（有的话先停下问 Barry），再停掉 OpenSearch，在 `backend\` 下依次执行，输出（标准输出和标准错误都要）与退出码存成 `repair-down-1.txt` 到 `repair-down-3.txt`：
+
+```powershell
+..\.venv-main\Scripts\python -m app.modules.consistency repair --fix index
+..\.venv-main\Scripts\python -m app.modules.consistency repair --fix index --fix temp-files
+..\.venv-main\Scripts\python -m app.modules.consistency repair --fix temp-files
+```
+
+**预期：** 第 1 条只说“没有检查索引，index 这次不会修复”，**没有**“没有需要修复的问题”，退出码 1；第 2 条另有一行“其余所选类别（temp-files）下没有需要修复的问题”，退出码 1；第 3 条只有“所选类别下没有需要修复的问题”，退出码 0。做完重新启动 OpenSearch。逐条一致才判为通过。
 
 ### 17.12 验收标准
 

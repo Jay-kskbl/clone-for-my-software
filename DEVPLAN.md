@@ -244,6 +244,7 @@ BARRY zou/
 - [x] **T24ac OCR Worker 收到停止信号时以 130 退出**（来自 `docs/changes/2026-11-23-代码复核建议.md` R5，Barry 于 2026-11-23 批准“修 R5”）：原来返回 0，外层循环会把它重新拉起。见 D54
 - [x] **T24ad 失败的任务隔一段时间再重试**（来自 `docs/changes/2026-11-23-代码复核建议.md` R2 的 a，Barry 于 2026-11-25 选定不改表结构的做法“No migration”）：领取时按 `started_at` + `TASK_RETRY_DELAYS_SECONDS`（默认 30、120 秒）等待。见 D55
 - [x] **T24ae 把失败的 embed、ocr 任务成批放回队列**（R2 的 b，Barry 于 2026-11-25 批准“做 T24ae”）：`python -m app.modules.documents requeue-failed --type embed|ocr [--yes]`，默认演练。见 D56
+- [x] **T24af 检索服务不可用时，repair 不再说“没有需要修复的问题”**（R3，Barry 于 2026-11-25 批准“先做 R3”）：只对检查过的类别这样说
 
 ### 阶段五：实验（W13–W15）
 
@@ -345,13 +346,13 @@ BARRY zou/
 
 - **待 Barry 决定（Windows 第四轮核对，2026-11-23 记录，见 `docs/changes/windows-2026-11-23-核对.md` §2）**
   - **（T24aa 已解决，D52）Ctrl+C 打断当前任务**：① OCR Worker 在 Windows 上，`engine_process.py` 的等待循环调用 `Connection.poll()` 时收到 Ctrl+C 会抛 `InterruptedError`，循环没有捕获（W6 12.7 实测：任务被记一次失败、Worker 退出码 1）；② 通用 Worker 的 `runner.py` 有同样的等待写法，而且子进程没有忽略 SIGINT（D34 只改了 OCR 子进程），任何系统上按 Ctrl+C 都会把正在解析的文件记一次失败（代码复核，未实测）。修法：两处等待循环捕获 `InterruptedError` 后继续等；通用 Worker 的子进程也 `signal(SIGINT, SIG_IGN)`；补单元测试。修完后按 `windows任务书.md` 第 17.5 节重测
-  - `consistency repair` 在检索服务不可用时，在“这次不会修复”之后还多打一行“所选类别下没有需要修复的问题”，与 D34 的意图相反。小改动
+  - （T24af 已解决）`consistency repair` 在检索服务不可用时，在“这次不会修复”之后还多打一行“所选类别下没有需要修复的问题”，与 D34 的意图相反。小改动
   - 检索页四个开关全关时地址栏保留上一次的 `ch`（W4）。不发请求、刷新会按上一次的开关重查，可以看成合理，也可以改成清掉 `ch`
 
 - **待 Barry 决定（代码复核建议，2026-11-23 记录，见 `docs/changes/2026-11-23-代码复核建议.md`）**
   - （T24ab 已解决，D53）R1 Worker 被强制结束后，子进程成为孤儿继续跑完任务
   - （2026-11-25 第五轮又有两份证据：OCR 内存不足时 3 次立刻重试都失败；embed 约 15 秒用完 3 次，建议优先做）（已解决：a 由 T24ad，D55；b 由 T24ae，D56；c 不做）R2 失败任务没有重试间隔；CLIP 短暂不可用会让 embed 永久失败且没有批量补救（a 加重试间隔要迁移，🔒；b 加重新排队命令；c 一致性检查新增一类）
-  - R3 `repair` 的误导提示；R4 内存上限日志刷屏、favicon 404、地址栏残留 `ch`（小改动）
+  - （R3 已由 T24af 解决）R3 `repair` 的误导提示；R4 内存上限日志刷屏、favicon 404、地址栏残留 `ch`（小改动）
   - （T24ac 已解决，D54）R5 OCR Worker 收到停止信号后返回 0，`CLAUDE.md` 的循环和 `run_ocr_worker_loop.ps1` 会把它重新拉起（通用 Worker 返回 130）；建议也返回 130，不带 🔒
   - 风险记录（不做）：`OCR_WORKER_MEMORY_LIMIT_MB=3072` 在 Linux 上可能太小
 
@@ -436,3 +437,4 @@ BARRY zou/
 | T24ac | 2026-11-23 | 664e54a | Barry 于 2026-11-23 批准（“修 R5”）；不带 🔒。`ocr_worker/__main__.py` 收到停止信号返回 130（与通用 Worker 一致），做满任务数仍返回 0；新增 `tests/test_main.py` 4 项。没有改表结构、接口、配置、附录 A，没有新依赖。已执行：`services/ocr_worker/` 80 passed、4 skipped；ocr 环境真实识别 4 项通过；ruff 通过；改之前新增测试 3 项失败；用真实信号驱动真实循环：bash 改之前被重新拉起、改之后停下，zsh 前后都能停。backend、shared 没有改动，没有重跑。**未测试（Not Tested）**：Windows 的 `run_ocr_worker_loop.ps1`（`windows任务书.md` 第 17.5 节 D），已登记 `docs/untested.md`。修改记录 `docs/changes/T24ac.md`，决策 D54 |
 | T24ad | 2026-11-25 | 986474a | Barry 于 2026-11-25 选定（“No migration”）；不带 🔒（原计划加列带 🔒，改为用已有的 `started_at`）。`shared/tasks.py` 领取条件加重试间隔，两个 Worker 读 `TASK_RETRY_DELAYS_SECONDS`（默认 `30,120`）。没有改表结构、接口、附录 A，没有新依赖。已执行：`shared/` 124 passed；`backend/` 732 passed、237 skipped；`services/ocr_worker/` 82 passed、4 skipped；ocr 环境真实识别 4 项通过；三处 ruff 通过；去掉三处传参后新增测试各有失败。**未测试（Not Tested）**：领取 SQL 在真实 PostgreSQL 上（新增 8 项集成测试）、CLIP 短暂不可用后自己恢复（`windows任务书.md` 第 17.15 节），已登记 `docs/untested.md`。修改记录 `docs/changes/T24ad.md`，决策 D55 |
 | T24ae | 2026-11-25 | dcbfb81 | Barry 于 2026-11-25 批准（“做 T24ae”）；不带 🔒。新增 `documents/requeue.py`、`documents/__main__.py`：`requeue-failed` 把失败的 embed、ocr 任务放回队列，默认演练，跳过已删除文档和旧版本 OCR 任务。没有改表结构、接口、配置、附录 A，没有新依赖。已执行：`backend/` 752 passed、240 skipped；ruff 通过；真实命令对着连不上的数据库退出码 1、不泄露口令；5 种改坏的写法都使新增测试失败。shared、OCR Worker 没有改动，没有重跑。**未测试（Not Tested）**：3 项集成测试（需要 PostgreSQL）、CLIP 恢复后补齐向量的全过程（`windows任务书.md` 第 17.16 节），已登记 `docs/untested.md`。修改记录 `docs/changes/T24ae.md`，决策 D56 |
+| T24af | 2026-11-25 | （待填） | Barry 于 2026-11-25 批准（“先做 R3”）；不带 🔒。`consistency/__main__.py`：检索服务不可用时只对检查过的类别说“没有需要修复的问题”，提示只写实际选了的索引类别，跳过重建时不打印重建的注意事项。退出码与修复行为没有变。没有改表结构、接口、配置、附录 A，没有新依赖。已执行：`backend/` 760 passed、240 skipped；ruff 通过；用修改前的代码跑，新增 8 项中 7 项失败。shared、OCR Worker 没有改动，没有重跑。**未测试（Not Tested）**：停掉真实 OpenSearch 后的输出（`windows任务书.md` 第 17.17 节），已登记 `docs/untested.md`。修改记录 `docs/changes/T24af.md` |

@@ -58,7 +58,7 @@ T24ad（2026-11-25）的 8 项：`test_failed_task_waits_for_the_delay_of_its_at
 | Word、Excel、图片解析器在真实文件上的表现 | T11 的测试文件是用 python-docx、openpyxl、PyMuPDF 现场生成的；没有用 Microsoft Word / Excel / WPS 实际保存的文件、手机或相机拍的照片验证过。尤其是 Excel 公式的缓存值，测试里是手工改 XML 模拟的 | `decisions.md` D24 |
 | mapping 文件随安装包发布 | T17 起 mapping 在 `shared/text_index/mappings/`，`shared/pyproject.toml` 声明了 package-data（`shared.text_index` 下的 `mappings/*.json`）。两个环境都是 editable 安装，没有做过普通安装来验证文件确实被打包。验证方法：在一个临时虚拟环境里 `pip install ./shared`（会联网下载依赖，按规则先征得同意），然后确认 `site-packages/shared/text_index/mappings/` 下有两个 JSON 文件 | `decisions.md` D26、D30 |
 | B0–B2 实验 | **流程已验证（2026-11-21 Windows 第一轮 W3）：** 用 DocVQA 500 张英文扫描页在真实 PostgreSQL、OpenSearch 上跑通了导入、处理和运行，Claude 用 `results.jsonl` 独立重算的指标与 `metrics.json` 一致。DocVQA 只有英文文字型查询，数字不能当论文结论；**正式评测数据集和标注仍然没有**（T25） | `decisions.md` D32 |
-| 一致性检查对真实 OpenSearch 的操作 | **已验证（2026-11-23 Windows 第四轮，W4–W8，基线 `fd0b5eb`，核对见 `docs/changes/windows-2026-11-23-核对.md`）：** W5 11.3 在真实 OpenSearch 上做了新建索引后的检查（没有误报）、人为制造结构差异、`rebuild-indices` 与 `--force` 重建；W6 12.4 在 500 个文档上做了单个文档重建（片段与向量）、孤立文件删除，修复后计数不变。剩下一处：检索服务不可用时 `repair` 多打了一行“所选类别下没有需要修复的问题”（见第 7.4 节） | `decisions.md` D31 |
+| 一致性检查对真实 OpenSearch 的操作 | **已验证（2026-11-23 Windows 第四轮，W4–W8，基线 `fd0b5eb`，核对见 `docs/changes/windows-2026-11-23-核对.md`）：** W5 11.3 在真实 OpenSearch 上做了新建索引后的检查（没有误报）、人为制造结构差异、`rebuild-indices` 与 `--force` 重建；W6 12.4 在 500 个文档上做了单个文档重建（片段与向量）、孤立文件删除，修复后计数不变。检索服务不可用时 `repair` 多打的一行误导提示，T24af 已修，待任务书第 17.17 节看实际输出 | `decisions.md` D31 |
 | OCR 在真实文件上的表现 | 只用 PyMuPDF 现场生成的扫描版 PDF 页、图片和空白图验证过；没有真实扫描件、手机照片、多栏排版、竖排或手写文字 | `decisions.md` D30 |
 | OCR 子进程的内存上限 | `OCR_WORKER_MEMORY_LIMIT_MB` 用 `RLIMIT_AS` 实现，只在 Linux 上有效；本机（macOS）启动时打印“无法设置识别子进程的内存上限”，只受超时保护。没有在 Linux 上验证过 | `decisions.md` D16、D30 |
 | `deploy/opensearch/Dockerfile` | **已构建（2026-11-25 Windows 第五轮）：** 镜像 `docmgr-opensearch:2.19.1-smartcn` 构建成功，`_cat/plugins` 显示 analysis-smartcn 2.19.1，集群 green。只在这一台机器上构建过 | `decisions.md` D26 |
@@ -86,7 +86,7 @@ T20 的测试都在本机实际运行过（接口测试 39 项，真实模型测
 
 | 项目 | 原因 | 代码复核 |
 |---|---|---|
-| `consistency repair` 在检索服务不可用时的提示 | **退出码已验证（2026-11-23 Windows 第四轮，W4–W8，基线 `fd0b5eb`，核对见 `docs/changes/windows-2026-11-23-核对.md`）：** W6 12.4 第 3 步退出码 1，并提示“没有检查索引，index、rebuild-indices 两类这次不会修复”。但后面还多打了一行“所选类别下没有需要修复的问题”，与 D34 的意图相反，待 Barry 决定是否修改（第 7.4 节） | 已复核 |
+| `consistency repair` 在检索服务不可用时的提示 | 退出码 1 已验证（2026-11-23 Windows 第四轮，W6 12.4 第 3 步）。多打的误导提示 T24af 已修，有单元测试；停掉真实 OpenSearch 后的新输出没有看过（任务书第 17.17 节） | 已复核 |
 | `consistency repair --fix index`、`rebuild-indices` 给解析失败的文档写回 `doc_meta` | 完整路径需要 PostgreSQL；`reindex_document` 本身有单元测试（已通过） | 已复核 |
 | OCR Worker 按 Ctrl-C 时完成当前任务再退出 | **已修复（T24aa，D52），Windows 上待重测。** 原来：**未通过（2026-11-23 Windows 第四轮，W4–W8，基线 `fd0b5eb`，核对见 `docs/changes/windows-2026-11-23-核对.md`）：** W6 12.7 在 Windows 上按 Ctrl+C，主进程等待识别子进程时抛 `InterruptedError`，当前任务被记一次失败并放回队列，Worker 退出码 1。T24aa 让等待循环遇到 `InterruptedError` 时接着等，有单元测试（模拟被打断，已通过）；真实按键按 `windows任务书.md` 第 17.5 节重测。macOS 上没有对着真实 Worker 按过（本机没有 PostgreSQL） | 已复核 |
 | PDF 预览的绘制排队 | 只对着临时模拟接口、用一份 5 页的测试 PDF 检查过；没有自动化测试 | 已复核 |
@@ -500,7 +500,6 @@ cd <项目目录> && docker compose --env-file .env -f deploy/docker-compose.yml
 | Worker 被强制结束后子进程继续跑 | W6 12.5 的日志里，被强杀的 Worker 的子进程照常跑完任务才报 `BrokenPipeError`。T24ab（D53）已修，强杀父进程的测试在 macOS 上通过；Windows 上、真实 Worker 上没有验证 | 任务书第 17.5 节 C 通过后删除本行 |
 | OCR Worker 在循环脚本里按 Ctrl+C | T24ac（D54）已改为收到停止信号返回 130；macOS 上用真实信号验证过 bash、zsh 循环都能停下（模型与数据库是假的）。Windows 的 `run_ocr_worker_loop.ps1` 里没有按过 | 任务书第 17.5 节 D 通过后删除本行 |
 | 一致性修复后检索排名与修复前不完全相同 | W6 12.4：B2 有 110 / 500 条完整排名变化，指标几乎不变。很可能是 BM25 统计值包含已删除但未合并的文档。原判定标准（逐条相同）不对 | 任务书第 17.4 节按新标准重测 |
-| `repair` 在检索服务不可用时多一行误导提示 | 见第 4 节“`consistency repair` 在检索服务不可用时的提示”一行 | 待 Barry 决定 |
 | 四个开关全关后地址栏残留 `ch` | 全关时 `onSearch` 直接返回，不更新地址栏；刷新会按上一次的开关重查 | 待 Barry 决定是否算问题 |
 | 连接超时（T24k）没有测到 | 那台机器的网络立刻回绝 `10.255.255.1` | 任务书第 17.3 节改用本地监听；方法已在 Mac 上验证（3 秒、5 秒都准确超时） |
 | T24aa、T24ab、T24ac 与 T24v–T24z | 第五轮（2026-11-25）测的代码是 `54d9760`，不含这些改动；任务书 W9 基本没有开始 | 任务书第 17 节 |
