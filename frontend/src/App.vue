@@ -52,11 +52,12 @@ function onLogout() {
     </aside>
     <main class="content">
       <div class="content-inner">
-        <router-view />
+        <!-- key：从一个文件直接跳到另一个文件（浏览器后退两步）时重新创建预览页，否则地址变了、内容还是上一个文件（T24bb） -->
+        <router-view :key="route.path" />
       </div>
     </main>
   </div>
-  <router-view v-else />
+  <router-view v-else :key="route.path" />
 </template>
 
 <style scoped>

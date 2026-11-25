@@ -150,6 +150,16 @@ T24p 完成时 DEVPLAN §5 写了这一项未测试，但当时没有登记到�
 | T24y 与真实后端联调、读屏软件 | 表单内的错误提示只对着模拟后端看过（409、422、502、503 都是模拟后端造的）；`el-alert` 的 `role="alert"` 只检查了 DOM 属性，没有用 VoiceOver 等实际听过 | 已复核：5 个错误码与 `backend/app/core/errors.py`、`backend/app/api/errors.py` 一致；没列出的错误码显示后端原文，不会显示空白 |
 | T24z 对着真实后端的 `/health` | 只对着模拟后端（正常、数据库不可用、真正停掉）看过。数据库直接拒绝连接时 `/health` 应当很快返回；数据库主机连不上（不应答）时要等连接超时（`health_check_timeout_seconds`，默认 2 秒）才返回，提示会晚一点出现。两种情况的实际耗时都没有测 | 已复核：检查在页面挂载后异步进行，不阻塞表单，检查完之前不显示提示；`database.status` 的取值（`ok` / `unavailable`）与 `backend/app/api/health.py` 一致 |
 
+### T24ba–T24be 克隆库前端整体放入（2026-11-25 登记，见 `docs/changes/T24ba.md` 起）
+
+已执行：每个任务的类型检查、单元测试、生产构建；浏览器（Chrome 内核）对着**真实的 FastAPI 应用 + SQLite 替身**检查（只替换引擎、列类型和 `/health` 的数据库探测，没有提交）。替身不等于 PostgreSQL。
+
+| 项目 | 说明 | 代码复核 |
+|---|---|---|
+| 真实的 PostgreSQL、Worker、OpenSearch、CLIP、OCR | 任务状态由脚本改动，检索结果是注入的（OpenSearch 没启动时的 503 是真实的）。任务领取、真实处理过程没有参与 | 已复核：用到的接口和错误码没有变 |
+| Windows、Safari、Firefox、Edge、真机触屏、读屏软件 | 都没有看过。Windows 第四轮的界面结果（W4 10.2、截图 `windows-2026-11-23-t24s`）基于改动前的界面，要重测 | — |
+| T24bb 登录竞态、文件列表、预览页 | 三个 `.vue` 没有组件测试（没有组件测试工具），在浏览器里修改前后各测一次 | 已复核：判断在 `auth.ts`、`client.ts`、`LatestRun` 里，有单元测试 |
+
 ### T24e 文本预览排序（2026-11-19 登记，见 `decisions.md` D44）
 
 | 项目 | 说明 | 代码复核 |

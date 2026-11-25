@@ -251,7 +251,7 @@ BARRY zou/
 来源：克隆库 `~/Desktop/BARRY zou-search-motion` 的 `feat/search-motion`（`2834695`）。Barry 于 2026-11-25 看过影响分析和计划后批准“批准，用建议选项”：① 检索结果一到就收拢，不再等扫描动画播完一轮；② 作为 GLOBAL §3.1“不做复杂动画”和 P4 规则的例外（D60）；③ `/motion-lab` 只在开发模式保留；④ 在单独的工作区和分支 `feat/frontend-port` 上做，Barry 看过之后才合进 `main`。没有新依赖，不改表结构、索引、配置、附录 A。编号从 T24ba 开始，避开同时在做的 T24a 系列。一次做一个，各自一个 commit，不 push。
 
 - [x] **T24ba 任务失败原因清理后再返回**（来自克隆库 P1）：普通用户、被共享者看到清理过的文字，管理员看原文。必须在 T24bd 之前，否则任务面板会把服务器路径显示出来
-- [ ] **T24bb 登录竞态、文件列表、预览页的缺陷**（来自 V1 的一部分、V4）：这三处 main 上都已复现
+- [x] **T24bb 登录竞态、文件列表、预览页的缺陷**（来自 V1 的一部分、V4）：这三处 main 上都已复现
 - [ ] **T24bc 中英文切换与配色**（来自克隆库的界面语言、系统配色、L6 英文部分、L7、V3）
 - [ ] **T24bd 任务面板：处理详情、重试、预览页自动刷新**（来自 P2–P4、V1）
 - [ ] **T24be 搜索动效，检索可取消、30 秒超时**（来自克隆库搜索动效、V2，按决定 ① ③ 修改）
@@ -450,3 +450,4 @@ BARRY zou/
 | T24ae | 2026-11-25 | dcbfb81 | Barry 于 2026-11-25 批准（“做 T24ae”）；不带 🔒。新增 `documents/requeue.py`、`documents/__main__.py`：`requeue-failed` 把失败的 embed、ocr 任务放回队列，默认演练，跳过已删除文档和旧版本 OCR 任务。没有改表结构、接口、配置、附录 A，没有新依赖。已执行：`backend/` 752 passed、240 skipped；ruff 通过；真实命令对着连不上的数据库退出码 1、不泄露口令；5 种改坏的写法都使新增测试失败。shared、OCR Worker 没有改动，没有重跑。**未测试（Not Tested）**：3 项集成测试（需要 PostgreSQL）、CLIP 恢复后补齐向量的全过程（`windows任务书.md` 第 17.16 节），已登记 `docs/untested.md`。修改记录 `docs/changes/T24ae.md`，决策 D56 |
 | T24af | 2026-11-25 | c1f1df5 | Barry 于 2026-11-25 批准（“先做 R3”）；不带 🔒。`consistency/__main__.py`：检索服务不可用时只对检查过的类别说“没有需要修复的问题”，提示只写实际选了的索引类别，跳过重建时不打印重建的注意事项。退出码与修复行为没有变。没有改表结构、接口、配置、附录 A，没有新依赖。已执行：`backend/` 760 passed、240 skipped；ruff 通过；用修改前的代码跑，新增 8 项中 7 项失败。shared、OCR Worker 没有改动，没有重跑。**未测试（Not Tested）**：停掉真实 OpenSearch 后的输出（`windows任务书.md` 第 17.17 节），已登记 `docs/untested.md`。修改记录 `docs/changes/T24af.md` |
 | T24ba | 2026-11-25 | eee58fe | Barry 于 2026-11-25 批准（“批准，用建议选项”）；不带 🔒。新增 `documents/task_errors.py`，三个任务接口都经过 `to_task_out`：普通用户、被共享者看到清理过的失败原因，管理员看原文，数据库里不变。接口字段不变，没有改表结构、配置、附录 A，没有新依赖。已执行：`backend/` 802 passed、241 skipped（新增单元测试 42 项）；ruff 通过；把 `to_task_out` 改成总返回原文，新增测试失败；集成测试 3 个文件原样搬到 SQLite 替身上 82 通过、1 失败（`test_create_admin_command` 直连 PostgreSQL，替身覆盖不到）。shared、OCR、CLIP 没有改动，没有重跑。**未测试（Not Tested）**：新增的 1 项集成测试在 PostgreSQL 上，已登记 `docs/untested.md`。修改记录 `docs/changes/T24ba.md` |
+| T24bb | 2026-11-25 | 待填 | Barry 于 2026-11-25 批准（“批准，用建议选项”）；不带 🔒。① 点“重试”没返回时又登录，不采用旧令牌的结果（`auth.ts`、`client.ts`）；② 文件列表只认最后一次加载，离开后停止（新增 `utils/latestRun.ts`）；③ 预览页之间跳转时重新创建（`App.vue` 的 key），没加载完就离开不再请求。只改前端，没有改后端、接口、附录 A，没有新依赖。已执行：类型检查；前端 17 个文件 210 项通过（新增 5 项）；撤掉 ① 后 3 项失败；生产构建；浏览器对着真实 FastAPI + SQLite 替身，修改前后各测一次。**未测试（Not Tested）**：PostgreSQL 上的真实后端、Windows、Chrome 以外的浏览器；三个 `.vue` 没有组件测试，已登记 `docs/untested.md`。修改记录 `docs/changes/T24bb.md` |

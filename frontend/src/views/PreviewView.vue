@@ -23,7 +23,9 @@ const EXTRACTED_NOTICE =
 
 const route = useRoute()
 const router = useRouter()
-const id = computed(() => String(route.params.id))
+// 进入页面时就定下来，不跟着 route 变：请求返回时用户可能已经去了别的页面，那时 route.params 是别的页面的（T24bb）。
+// 换一个文件时 App.vue 会重新创建本组件（router-view 的 key）
+const id = String(route.params.id)
 const initialPage = computed(() => {
   const page = Number(route.query.page)
   return Number.isInteger(page) && page >= 1 ? page : 1
@@ -54,9 +56,13 @@ const emptyText = computed(() => {
   return kind.value === 'text' ? '这个文件里没有抽取到文字' : '没有抽取到文字（扫描页和图片的 OCR 可能还在处理中）'
 })
 
+let disposed = false
+
 async function load() {
   try {
-    document.value = await getDocument(id.value)
+    document.value = await getDocument(id)
+    // 文件信息还没取回来用户就离开了：不再下载原文件
+    if (disposed) return
   } catch (error) {
     loadError.value = errorMessage(error)
     return
@@ -66,7 +72,8 @@ async function load() {
   tab.value = initialPreviewTab(kind.value, route.query)
   try {
     // 下载接口需要登录令牌，不能直接把地址交给 <img> 或 pdf.js，先取成字节
-    const blob = await downloadDocument(id.value)
+    const blob = await downloadDocument(id)
+    if (disposed) return
     if (kind.value === 'pdf') fileData.value = await blob.arrayBuffer()
     else imageUrl.value = URL.createObjectURL(blob)
   } catch (error) {
@@ -97,6 +104,7 @@ function goBack() {
 
 onMounted(() => void load())
 onBeforeUnmount(() => {
+  disposed = true
   if (imageUrl.value) URL.revokeObjectURL(imageUrl.value)
 })
 </script>
