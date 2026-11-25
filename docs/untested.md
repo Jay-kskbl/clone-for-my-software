@@ -26,7 +26,8 @@
 |---|---|---|---|---|
 | T24ad | `backend/tests/integration/test_task_queue.py`（新增 8 项） | 8 | 需要 PostgreSQL，本机没有 | 已复核（见 `docs/changes/T24ad.md`） |
 | T24ae | `backend/tests/integration/test_requeue_failed_db.py` | 3 | 需要 PostgreSQL，本机没有 | 已复核（见 `docs/changes/T24ae.md`） |
-| **合计** | | **11** | | 本机 backend 跳过的 229 项 = 2026-11-16 通过的 188 项 + 2026-11-19 通过的 38 项 + 2026-11-21 通过的 3 项（T24g 1 项、T24i 2 项）。注意几轮基于不同的提交。2026-11-23 Windows 第四轮（W6 12.2）在 `fd0b5eb` 上又跑了一遍全部 950 项，除 6 项符号链接外都通过；之后只改了前端（T24v–T24z） |
+| T24ba | `backend/tests/integration/test_documents.py::test_only_admin_sees_the_raw_failure_reason` | 1 | 需要 PostgreSQL，本机没有；2026-11-25 在 SQLite 替身上通过，不能代替 | 已复核（见 `docs/changes/T24ba.md`） |
+| **合计** | | **12** | | 本机 backend 跳过的 229 项 = 2026-11-16 通过的 188 项 + 2026-11-19 通过的 38 项 + 2026-11-21 通过的 3 项（T24g 1 项、T24i 2 项）。注意几轮基于不同的提交。2026-11-23 Windows 第四轮（W6 12.2）在 `fd0b5eb` 上又跑了一遍全部 950 项，除 6 项符号链接外都通过；之后只改了前端（T24v–T24z） |
 
 T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器）和 T12（切分）不需要数据库，它们的测试全部在本机执行并通过，没有未测试项。
 

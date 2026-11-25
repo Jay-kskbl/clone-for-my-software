@@ -609,6 +609,25 @@ def test_retry_permissions(client, session, bob, as_alice, as_bob, as_admin):
     assert client.post(url, headers=as_admin).status_code == 200
 
 
+def test_only_admin_sees_the_raw_failure_reason(client, session, bob, as_alice, as_bob, as_admin):
+    doc = upload_ok(client, as_alice)["id"]
+    raw = "FileNotFoundError: [Errno 2] No such file or directory: '/srv/docmgr/a.pdf'"
+    task = only_task(session, doc)
+    mark_failed(session, task)
+    task.error = raw
+    session.add(DocumentShare(document_id=uuid.UUID(doc), user_id=bob.id))
+    session.commit()
+    url = f"/api/documents/{doc}/tasks"
+
+    def reason(headers):
+        return client.get(url, headers=headers).json()["items"][0]["error"]
+
+    assert reason(as_alice) == "系统内部错误（FileNotFoundError）"
+    assert reason(as_bob) == "系统内部错误（FileNotFoundError）"
+    assert reason(as_admin) == raw
+    assert client.get("/api/tasks", headers=as_admin).json()["items"][0]["error"] == raw
+
+
 def test_tasks_of_deleted_document_are_only_retryable_by_admin(client, session, as_alice, as_admin):
     doc = upload_ok(client, as_alice)["id"]
     client.delete(f"/api/documents/{doc}", headers=as_alice)

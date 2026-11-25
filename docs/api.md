@@ -180,10 +180,15 @@
   "status": "failed",
   "attempts": 3,
   "max_attempts": 3,
-  "error": "解析超时（60 秒）",
+  "error": "处理超时（超过 60 秒），已终止",
   "created_at": "…", "started_at": "…", "finished_at": "…"
 }
 ```
+
+`error` 是失败原因。等待重试的任务（`status` 为 `pending`、`attempts` 大于 0）也可能带着上一次的原因。
+
+- 管理员看到原文（“异常类型: 异常文字”）。
+- 其他用户看到清理过的文字：项目自己的错误（解析、OCR、CLIP、任务框架）给出说明；检索服务的错误只到 HTTP 状态码；没有预料到的异常只给类型名，例如 `系统内部错误（FileNotFoundError）`。原文可能带有服务器路径、数据库地址、SQL 参数，不返回。规则见 `backend/app/modules/documents/task_errors.py`。
 
 ### 5.2 POST /api/documents
 

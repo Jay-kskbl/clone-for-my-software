@@ -17,17 +17,17 @@ router = APIRouter(prefix="/api", tags=["tasks"])
 def list_document_tasks(document_id: uuid.UUID, user: CurrentUser, session: SessionDep) -> TaskList:
     document = get_accessible_document(session, user, document_id)
     items = tasks.list_document_tasks(session, document)
-    return TaskList(items=[TaskOut.model_validate(t) for t in items])
+    return TaskList(items=[tasks.to_task_out(user, t) for t in items])
 
 
 @router.post("/tasks/{task_id}/retry", response_model=TaskOut)
 def retry_task(task_id: uuid.UUID, user: CurrentUser, session: SessionDep) -> TaskOut:
-    return TaskOut.model_validate(tasks.retry_task(session, user, task_id))
+    return tasks.to_task_out(user, tasks.retry_task(session, user, task_id))
 
 
 @router.get("/tasks", response_model=TaskPage)
 def list_all_tasks(
-    _admin: AdminUser,
+    admin: AdminUser,
     session: SessionDep,
     pagination: PaginationDep,
     status: Status | None = None,
@@ -41,7 +41,7 @@ def list_all_tasks(
         task_type=task_type,
     )
     return TaskPage(
-        items=[TaskOut.model_validate(t) for t in items],
+        items=[tasks.to_task_out(admin, t) for t in items],
         total=total,
         page=pagination.page,
         page_size=pagination.page_size,
