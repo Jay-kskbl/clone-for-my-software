@@ -226,9 +226,8 @@ export const zh = {
     timeout: (seconds: number) => `检索超时（${seconds} 秒内没有返回），请稍后重试`,
   },
   scan: {
-    opening: '正在打开文件…',
-    reading: (index: number, total: number) => `正在阅读第 ${index} / ${total} 个文件`,
-    summarizing: '正在整理答案…',
+    searching: '正在检索…',
+    summarizing: '正在整理结果…',
     failed: '检索失败',
     retry: '重试',
   },
@@ -491,9 +490,8 @@ export const en: Messages = {
     timeout: (seconds: number) => `Search timed out (no response within ${seconds} s). Please try again later.`,
   },
   scan: {
-    opening: 'Opening files…',
-    reading: (index: number, total: number) => `Reading file ${index} of ${total}`,
-    summarizing: 'Putting the answer together…',
+    searching: 'Searching…',
+    summarizing: 'Preparing results…',
     failed: 'Search failed',
     retry: 'Retry',
   },
