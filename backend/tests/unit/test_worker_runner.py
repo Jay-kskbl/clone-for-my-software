@@ -307,3 +307,62 @@ def test_child_exits_when_the_parent_is_killed(tmp_path):
     size = _size(beat)
     time.sleep(1.0)
     assert _size(beat) == size, "父进程已被强制结束，子进程还在运行"
+
+
+# ---- T24ag：不支持限制内存的系统上，子进程不再每个任务打印一次 ----
+
+
+def test_child_is_silent_when_memory_limits_are_not_supported(capfd):
+    for _ in range(2):
+        assert run_in_subprocess(handler_ok, TASK, timeout_seconds=30, memory_limit_mb=2048).ok
+
+    # 子进程的输出直接进终端，所以用 capfd（抓文件描述符）而不是 capsys
+    assert "内存上限" not in capfd.readouterr().err
+
+
+@pytest.mark.parametrize(
+    ("platform", "has_resource", "expected"),
+    [
+        ("linux", True, True),
+        ("linux", False, False),
+        ("darwin", True, False),
+        ("win32", False, False),
+    ],
+)
+def test_memory_limit_is_only_supported_on_linux(monkeypatch, platform, has_resource, expected):
+    monkeypatch.setattr(runner.sys, "platform", platform)
+    monkeypatch.setattr(runner, "resource", object() if has_resource else None)
+
+    assert runner.memory_limit_supported() is expected
+
+
+class _FakeResource:
+    RLIMIT_AS = 9
+
+    def __init__(self, error: Exception | None = None) -> None:
+        self.calls: list = []
+        self._error = error
+
+    def setrlimit(self, which, limits) -> None:
+        self.calls.append((which, limits))
+        if self._error:
+            raise self._error
+
+
+def test_limit_is_set_on_linux(monkeypatch):
+    fake = _FakeResource()
+    monkeypatch.setattr(runner, "resource", fake)
+    monkeypatch.setattr(runner.sys, "platform", "linux")
+
+    runner._limit_memory(256)
+
+    assert fake.calls == [(9, (256 * 1024 * 1024,) * 2)]
+
+
+def test_a_real_failure_on_linux_is_still_reported(monkeypatch, caplog):
+    monkeypatch.setattr(runner, "resource", _FakeResource(ValueError("over the hard limit")))
+    monkeypatch.setattr(runner.sys, "platform", "linux")
+
+    runner._limit_memory(256)
+
+    assert "无法设置内存上限（over the hard limit）" in caplog.text
