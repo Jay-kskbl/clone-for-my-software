@@ -39,9 +39,9 @@ src/
 ├── views/        页面：LoginView（登录/注册）、DocumentsView（文件列表、拖拽上传与逐个文件的上传记录、下载、删除）、
 │                 SearchView（检索：检索通道面板与 CLIP 服务状态、结果卡片、三个通道的名次与 RRF 融合分、图片缩略图、降级提示）、
 │                 PreviewView（预览；PDF、图片分“原文件 / 抽取文本”两个标签页，T24f）
-├── features/tasks/  处理任务：TaskDialog（处理详情）、useDocumentTasks（加载、自动刷新、重试）；summary / retry / watcher / text / changes 是有单元测试的纯逻辑
+├── features/tasks/  处理任务：TaskDialog（处理详情）、useDocumentTasks（加载、自动刷新、重试）；summary / retry / watcher / refresher / text / changes 是有单元测试的纯逻辑
 ├── components/   ShareDialog（共享）、PdfViewer（PDF 显示）、ExtractedText（抽取文本列表）、AppIcon（线条图标）、FileTypeBadge（文件类型色块）
-└── utils/        格式化、来源定位与通道说明、摘要清洗、缩略图加载（thumbnails.ts）、预览默认标签页（preview.ts）、检索通道开关与名次（channels.ts）、保存下载文件（download.ts）
+└── utils/        格式化、来源定位与通道说明、摘要清洗、缩略图加载（thumbnails.ts）、预览默认标签页（preview.ts）、检索通道开关与名次（channels.ts）、保存下载文件（download.ts）、只认最后一次（latestRun.ts）
 tests/            单元测试（接口封装、格式化、来源定位、摘要、缩略图、预览标签页、检索通道、pdf.js 资源一致性、Element Plus 注册）
 scripts/          pdfjs-assets.mjs（资源比较）、sync-pdfjs.mjs（复制资源）
 public/pdfjs/     pdf.js 的 CMap、标准字体、WASM 解码器、ICC 配置，PdfViewer 运行时按需加载（中文 PDF 需要 CMap）

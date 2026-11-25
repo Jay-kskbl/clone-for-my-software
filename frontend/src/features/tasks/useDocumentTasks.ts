@@ -40,6 +40,8 @@ export function useDocumentTasks(options: DocumentTasksOptions = {}) {
   })
 
   function start(documentId: string): Promise<void> {
+    // 页面可能要先等别的请求返回才调用 start，那时用户也许已经离开：不再开始，否则没有人会停下它
+    if (disposed) return Promise.resolve()
     tasks.value = null
     error.value = null
     return watcher.start(documentId)

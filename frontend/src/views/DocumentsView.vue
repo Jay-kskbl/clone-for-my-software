@@ -18,6 +18,7 @@ import TaskDialog from '../features/tasks/TaskDialog.vue'
 import { useDocumentTasks } from '../features/tasks/useDocumentTasks'
 import { m, translated } from '../i18n'
 import { saveBlob } from '../utils/download'
+import { LatestRun } from '../utils/latestRun'
 import {
   ACCESS_LABEL,
   STATUS_LABEL,
@@ -51,8 +52,14 @@ const dragActive = ref(false)
 const inProgressCount = computed(() => documents.value.filter((d) => isInProgress(d.status)).length)
 
 let refreshTimer: ReturnType<typeof setTimeout> | undefined
+// 同时可能有几次加载（自动刷新、重试任务后的刷新、翻页）：只认最后一次。原来每次都会排一个定时器，
+// 后排的盖住先排的，先排的就清不掉了，离开页面后还在每 5 秒请求一次（新功能联测 V1）
+const runs = new LatestRun()
 
 async function load(options: { silent?: boolean } = {}) {
+  // 页面已经离开（例如还在上传时去了别的页面，传完才走到这里）
+  if (runs.stopped) return
+  const run = runs.begin()
   clearTimeout(refreshTimer)
   if (!options.silent) loading.value = true
   try {
@@ -61,6 +68,7 @@ async function load(options: { silent?: boolean } = {}) {
       page_size: query.page_size,
       scope: query.scope || undefined,
     })
+    if (!runs.isCurrent(run)) return
     documents.value = page.items
     total.value = page.total
     loadError.value = null
@@ -71,9 +79,11 @@ async function load(options: { silent?: boolean } = {}) {
       return
     }
   } catch (error) {
+    if (!runs.isCurrent(run)) return
     loadError.value = { silent: options.silent === true, message: errorMessage(error) }
   } finally {
-    loading.value = false
+    // 已被更新的一次取代：由那一次来收起加载状态
+    if (runs.isCurrent(run)) loading.value = false
   }
   if (documents.value.some((d) => isInProgress(d.status))) {
     refreshTimer = setTimeout(() => void load({ silent: true }), REFRESH_INTERVAL_MS)
@@ -226,7 +236,10 @@ function closeTasks() {
 }
 
 onMounted(() => void load())
-onBeforeUnmount(() => clearTimeout(refreshTimer))
+onBeforeUnmount(() => {
+  runs.stop()
+  clearTimeout(refreshTimer)
+})
 </script>
 
 <template>
