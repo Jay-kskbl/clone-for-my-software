@@ -6,6 +6,8 @@ import type { PDFDocumentLoadingTask, PDFDocumentProxy, RenderTask } from 'pdfjs
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 import { onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 
+import { m } from '../i18n'
+
 // 解析 PDF 的工作在单独的 Web Worker 里进行，不卡住页面。worker 文件由 Vite 一起打包
 GlobalWorkerOptions.workerSrc = workerUrl
 
@@ -73,7 +75,7 @@ async function render() {
   } catch (e) {
     // 被更新的绘制取消或取代的，不算失败
     if (e instanceof RenderingCancelledException || seq !== renderSeq) return
-    error.value = '这一页无法显示，可以下载原文件查看'
+    error.value = m().pdf.pageError
   }
 }
 
@@ -94,7 +96,7 @@ async function open() {
     // 地址里的页码可能超出范围（例如文档被重新上传过）：夹到有效范围内
     page.value = Math.min(Math.max(props.initialPage ?? 1, 1), pageCount.value)
   } catch {
-    error.value = 'PDF 无法打开，可以下载原文件查看'
+    error.value = m().pdf.openError
   } finally {
     loading.value = false
   }
@@ -118,9 +120,9 @@ onBeforeUnmount(() => {
 <template>
   <div class="pdf-viewer">
     <div class="toolbar">
-      <el-button :disabled="page <= 1" @click="page -= 1">上一页</el-button>
+      <el-button :disabled="page <= 1" @click="page -= 1">{{ m().pdf.prev }}</el-button>
       <span class="page-input">
-        第
+        {{ m().pdf.pageBefore }}
         <el-input-number
           v-model="page"
           :min="1"
@@ -129,13 +131,13 @@ onBeforeUnmount(() => {
           size="small"
           controls-position="right"
         />
-        页，共 {{ pageCount }} 页
+        {{ m().pdf.pageAfter(pageCount) }}
       </span>
-      <el-button :disabled="page >= pageCount" @click="page += 1">下一页</el-button>
+      <el-button :disabled="page >= pageCount" @click="page += 1">{{ m().pdf.next }}</el-button>
       <span class="zoom">
-        <el-button size="small" :disabled="scale <= MIN_SCALE" @click="zoom(-SCALE_STEP)">缩小</el-button>
+        <el-button size="small" :disabled="scale <= MIN_SCALE" @click="zoom(-SCALE_STEP)">{{ m().pdf.zoomOut }}</el-button>
         {{ Math.round(scale * 100) }}%
-        <el-button size="small" :disabled="scale >= MAX_SCALE" @click="zoom(SCALE_STEP)">放大</el-button>
+        <el-button size="small" :disabled="scale >= MAX_SCALE" @click="zoom(SCALE_STEP)">{{ m().pdf.zoomIn }}</el-button>
       </span>
     </div>
     <el-alert v-if="error" type="warning" :title="error" show-icon :closable="false" />

@@ -13,6 +13,7 @@ import type { DocumentItem, Scope } from '../api/types'
 import AppIcon from '../components/AppIcon.vue'
 import FileTypeBadge from '../components/FileTypeBadge.vue'
 import ShareDialog from '../components/ShareDialog.vue'
+import { m, translated } from '../i18n'
 import { saveBlob } from '../utils/download'
 import { LatestRun } from '../utils/latestRun'
 import {
@@ -102,12 +103,14 @@ interface UploadItem {
   message: string
 }
 
-const UPLOAD_STATE: Record<UploadState, { text: string; type: 'info' | 'primary' | 'success' | 'danger' }> = {
-  waiting: { text: '等待上传', type: 'info' },
-  uploading: { text: '上传中', type: 'primary' },
-  done: { text: '已上传', type: 'success' },
-  failed: { text: '上传失败', type: 'danger' },
-}
+const UPLOAD_STATE: Record<UploadState, { text: string; type: 'info' | 'primary' | 'success' | 'danger' }> = translated(
+  (msg) => ({
+    waiting: { text: msg.documents.uploadState.waiting, type: 'info' },
+    uploading: { text: msg.documents.uploadState.uploading, type: 'primary' },
+    done: { text: msg.documents.uploadState.done, type: 'success' },
+    failed: { text: msg.documents.uploadState.failed, type: 'danger' },
+  }),
+)
 
 const uploads = ref<UploadItem[]>([])
 const uploading = computed(() => uploads.value.some((u) => u.state === 'waiting' || u.state === 'uploading'))
@@ -185,17 +188,17 @@ async function onDownload(document: DocumentItem) {
 
 async function onDelete(document: DocumentItem) {
   try {
-    await ElMessageBox.confirm(`确定删除“${document.filename}”吗？删除后无法恢复。`, '删除文件', {
+    await ElMessageBox.confirm(m().documents.confirmDelete(document.filename), m().documents.confirmDeleteTitle, {
       type: 'warning',
-      confirmButtonText: '删除',
-      cancelButtonText: '取消',
+      confirmButtonText: m().documents.delete,
+      cancelButtonText: m().documents.cancel,
     })
   } catch {
     return // 用户点了取消
   }
   try {
     await deleteDocument(document.id)
-    ElMessage.success('已删除')
+    ElMessage.success(m().documents.deleted)
     await load()
   } catch (error) {
     ElMessage.error(errorMessage(error))
@@ -217,9 +220,9 @@ onBeforeUnmount(() => {
 <template>
   <div class="page-head">
     <div>
-      <h1 class="page-title">文件</h1>
+      <h1 class="page-title">{{ m().documents.title }}</h1>
       <p class="page-desc">
-        共 {{ total }} 个文件<template v-if="inProgressCount > 0">，本页 {{ inProgressCount }} 个正在处理，状态会自动刷新</template>
+        {{ m().documents.total(total) }}<template v-if="inProgressCount > 0">{{ m().documents.inProgress(inProgressCount) }}</template>
       </p>
     </div>
   </div>
@@ -238,15 +241,15 @@ onBeforeUnmount(() => {
     @drop.prevent="onDrop"
   >
     <AppIcon name="upload" :size="28" class="dropzone-icon" />
-    <div class="dropzone-text">把文件拖到这里，或 <span class="dropzone-link">点击选择文件</span></div>
-    <div class="dropzone-hint">支持 PDF、Word（docx）、Excel（xlsx）、PNG、JPEG，可以一次选多个；上传后在后台解析和识别</div>
+    <div class="dropzone-text">{{ m().documents.dropText }}<span class="dropzone-link">{{ m().documents.dropLink }}</span></div>
+    <div class="dropzone-hint">{{ m().documents.dropHint }}</div>
   </div>
   <input ref="fileInput" type="file" multiple hidden :accept="ACCEPT" @change="onFilesChosen" />
 
   <div v-if="uploads.length > 0" class="uploads">
     <div class="uploads-head">
-      <span>上传记录<template v-if="uploading">（正在上传）</template></span>
-      <el-button v-if="hasFinishedUploads" link type="primary" @click="clearFinishedUploads">清除已结束的记录</el-button>
+      <span>{{ m().documents.uploads }}<template v-if="uploading">{{ m().documents.uploadingNow }}</template></span>
+      <el-button v-if="hasFinishedUploads" link type="primary" @click="clearFinishedUploads">{{ m().documents.clearFinished }}</el-button>
     </div>
     <div v-for="item in uploads" :key="item.id" class="upload-row">
       <span class="upload-name" :title="item.file.name">{{ item.file.name }}</span>
@@ -259,18 +262,18 @@ onBeforeUnmount(() => {
   <el-card shadow="never" class="list-card">
     <div class="toolbar">
       <el-radio-group v-model="query.scope" @change="onFilterChange">
-        <el-radio-button value="">全部</el-radio-button>
-        <el-radio-button value="mine">我上传的</el-radio-button>
-        <el-radio-button value="shared">共享给我的</el-radio-button>
+        <el-radio-button value="">{{ m().documents.scope.all }}</el-radio-button>
+        <el-radio-button value="mine">{{ m().documents.scope.mine }}</el-radio-button>
+        <el-radio-button value="shared">{{ m().documents.scope.shared }}</el-radio-button>
       </el-radio-group>
-      <el-button @click="load()">刷新</el-button>
+      <el-button @click="load()">{{ m().documents.refresh }}</el-button>
     </div>
 
     <el-alert
       v-if="loadError"
       type="error"
-      :title="loadError.silent ? '自动刷新失败，列表里的状态可能不是最新的' : '文件列表没有加载出来'"
-      :description="`${loadError.message}。点“刷新”重试。`"
+      :title="loadError.silent ? m().documents.loadErrorSilent : m().documents.loadErrorTitle"
+      :description="m().documents.loadErrorDesc(loadError.message)"
       show-icon
       :closable="false"
       class="notice"
@@ -279,15 +282,15 @@ onBeforeUnmount(() => {
     <el-table v-loading="loading" :data="documents">
       <template #empty>
         <div class="table-empty">
-          <template v-if="loadError">列表没有加载出来</template>
-          <template v-else-if="query.scope === 'shared'">还没有人共享文件给你</template>
-          <template v-else>还没有文件。把文件拖到上方区域，或点击它选择文件</template>
+          <template v-if="loadError">{{ m().documents.emptyError }}</template>
+          <template v-else-if="query.scope === 'shared'">{{ m().documents.emptyShared }}</template>
+          <template v-else>{{ m().documents.empty }}</template>
         </div>
       </template>
       <!-- 不用 show-overflow-tooltip：它把整格压成一行，标签会和文件名一起被省略号截掉（T24n）。
            文件名自己省略、悬停看全名；标签放不下时换到下一行。
            类型、上传者、来源合并成文件名下面的一行小字（T24s），表格从 8 列减到 5 列 -->
-      <el-table-column label="文件名" min-width="300">
+      <el-table-column :label="m().documents.col.name" min-width="300">
         <template #default="{ row }: { row: DocumentItem }">
           <div class="doc-cell">
             <FileTypeBadge :mime-type="row.mime_type" />
@@ -297,30 +300,30 @@ onBeforeUnmount(() => {
                 <el-tag v-for="tag in row.tags" :key="tag" size="small" class="doc-tag" :title="tag">{{ tag }}</el-tag>
               </div>
               <div class="doc-sub">
-                {{ formatType(row.mime_type) }} · 上传者 {{ row.owner.username }} · {{ ACCESS_LABEL[row.access] }}
+                {{ formatType(row.mime_type) }} · {{ m().documents.uploader(row.owner.username) }} · {{ ACCESS_LABEL[row.access] }}
               </div>
             </div>
           </div>
         </template>
       </el-table-column>
-      <el-table-column label="处理状态" width="110">
+      <el-table-column :label="m().documents.col.status" width="110">
         <template #default="{ row }: { row: DocumentItem }">
           <el-tag :type="STATUS_LABEL[row.status].type">{{ STATUS_LABEL[row.status].text }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="大小" width="100">
+      <el-table-column :label="m().documents.col.size" width="100">
         <template #default="{ row }: { row: DocumentItem }">{{ formatSize(row.size_bytes) }}</template>
       </el-table-column>
-      <el-table-column label="上传时间" width="150">
+      <el-table-column :label="m().documents.col.created" width="150">
         <template #default="{ row }: { row: DocumentItem }">{{ formatTime(row.created_at) }}</template>
       </el-table-column>
-      <el-table-column label="操作" width="210" fixed="right">
+      <el-table-column :label="m().documents.col.actions" width="210" fixed="right">
         <template #default="{ row }: { row: DocumentItem }">
-          <el-button link type="primary" @click="$router.push({ name: 'preview', params: { id: row.id } })">查看</el-button>
-          <el-button link type="primary" @click="onDownload(row)">下载</el-button>
+          <el-button link type="primary" @click="$router.push({ name: 'preview', params: { id: row.id } })">{{ m().documents.view }}</el-button>
+          <el-button link type="primary" @click="onDownload(row)">{{ m().documents.download }}</el-button>
           <template v-if="canManage(row)">
-            <el-button link type="primary" @click="sharing = row">共享</el-button>
-            <el-button link type="danger" @click="onDelete(row)">删除</el-button>
+            <el-button link type="primary" @click="sharing = row">{{ m().documents.share }}</el-button>
+            <el-button link type="danger" @click="onDelete(row)">{{ m().documents.delete }}</el-button>
           </template>
         </template>
       </el-table-column>

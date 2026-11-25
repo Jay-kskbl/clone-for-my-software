@@ -1,59 +1,49 @@
 import type { Channel, ChannelStatus, Evidence, Locator, SourceType } from '../api/types'
+import { m, translated } from '../i18n'
 
 /**
- * 来源位置的中文说明。Word 只到段落（附录 A9），不显示页码。
+ * 来源位置的说明（文字随界面语言）。Word 只到段落（附录 A9），不显示页码。
  * 段落序号在数据里从 0 开始，给人看时从 1 开始。
  */
 export function formatLocator(locator: Locator): string {
   switch (locator.type) {
     case 'pdf_page':
-      return `第 ${locator.page} 页`
+      return m().locator.page(locator.page)
     case 'docx_para':
-      return `第 ${locator.para_index + 1} 段`
+      return m().locator.para(locator.para_index + 1)
     case 'xlsx_range':
-      return `工作表“${locator.sheet}” ${locator.range}`
+      return m().locator.sheet(locator.sheet, locator.range)
     case 'image':
-      return '图片'
+      return m().locator.image
   }
 }
 
-export const SOURCE_TYPE_LABEL: Record<SourceType, string> = {
-  body: '正文',
-  ocr: 'OCR 文字',
-}
+export const SOURCE_TYPE_LABEL: Record<SourceType, string> = translated((msg) => ({ ...msg.locator.source }))
 
 // text 通道同时检索正文和 OCR 文字（用 source_types 区分），所以叫“文字”而不是“正文”（T24s）
-export const CHANNEL_LABEL: Record<Channel, string> = {
-  meta: '文件名/标签',
-  text: '文字',
-  image: '图像',
-}
+export const CHANNEL_LABEL: Record<Channel, string> = translated((msg) => ({ ...msg.locator.channel }))
 
 // 检索结果右侧名次格子里用的短名称
-export const CHANNEL_SHORT_LABEL: Record<Channel, string> = {
-  meta: '文件名',
-  text: '文字',
-  image: '图像',
-}
+export const CHANNEL_SHORT_LABEL: Record<Channel, string> = translated((msg) => ({ ...msg.locator.channelShort }))
 
 /**
  * 一条结果的命中依据。图片证据来自 CLIP 图像语义检索（不是 OCR 文字），
  * 要与 OCR 命中分开说明（GLOBAL §4.1、§13）。
  */
 export function evidenceLabel(evidence: Evidence | null): string {
-  if (!evidence) return '文件名或标签匹配'
-  if (evidence.image_id) return '图像语义匹配（CLIP）'
-  const where = `位置：${formatLocator(evidence.locator)}`
-  return evidence.source_type ? `${where}（${SOURCE_TYPE_LABEL[evidence.source_type]}）` : where
+  const msg = m().locator
+  if (!evidence) return msg.evidenceMeta
+  if (evidence.image_id) return msg.evidenceImage
+  const where = msg.where(formatLocator(evidence.locator))
+  return evidence.source_type ? msg.withSource(where, SOURCE_TYPE_LABEL[evidence.source_type]) : where
 }
 
 /** 本应执行却没有执行成功的通道的提示。图像通道不可用时，结果只来自文字检索。 */
 export function degradedNotice(status: ChannelStatus): string {
-  const reason = status.detail ?? '不可用'
-  if (status.channel === 'image') {
-    return `图像检索暂时不可用，本次结果只来自文字检索（原因：${reason}）`
-  }
-  return `${CHANNEL_LABEL[status.channel]}通道未参与本次检索：${reason}`
+  const msg = m().locator
+  const reason = status.detail ?? msg.unavailable
+  if (status.channel === 'image') return msg.imageDegraded(reason)
+  return msg.channelDegraded(CHANNEL_LABEL[status.channel], reason)
 }
 
 /** 预览页的地址：PDF 带上页码，其他类型带上命中片段的 ID，用来跳到命中的位置。 */

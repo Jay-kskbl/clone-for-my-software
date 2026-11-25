@@ -11,6 +11,8 @@ import type {
   SourceType,
 } from '../api/types'
 
+import { m } from '../i18n'
+
 export interface ChannelSelection {
   meta: boolean
   body: boolean
@@ -103,13 +105,13 @@ export function channelCells(hitChannels: ChannelResult[], statuses: ChannelStat
 export function cellText(cell: ChannelCell): string {
   switch (cell.state) {
     case 'hit':
-      return `第 ${cell.rank} 名`
+      return m().channels.rank(cell.rank ?? 0)
     case 'miss':
-      return '未命中'
+      return m().channels.miss
     case 'disabled':
-      return '未开启'
+      return m().channels.disabled
     case 'unavailable':
-      return '不可用'
+      return m().channels.unavailable
   }
 }
 
@@ -117,11 +119,11 @@ export function cellText(cell: ChannelCell): string {
 export function channelStatusText(status: ChannelStatus): string {
   switch (status.status) {
     case 'ok':
-      return `${status.took_ms} 毫秒`
+      return m().channels.took(status.took_ms)
     case 'disabled':
-      return '未开启'
+      return m().channels.disabled
     case 'unavailable':
-      return '不可用'
+      return m().channels.unavailable
   }
 }
 

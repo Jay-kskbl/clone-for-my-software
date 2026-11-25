@@ -1,11 +1,19 @@
 <script setup lang="ts">
 // 页面里用到的几个线条图标（T24s）。项目没有图标库，这几个形状很简单，
 // 直接画成 SVG，不为它们新增依赖。颜色跟随所在位置的文字颜色（currentColor）。
-type IconName = 'docs' | 'folder' | 'search' | 'upload' | 'logout'
+type IconName = 'docs' | 'folder' | 'palette' | 'search' | 'upload' | 'logout'
 
 const PATHS: Record<IconName, string[]> = {
   docs: ['M8 3h7l5 5v11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2', 'M15 3v5h5', 'M10 13h6', 'M10 17h4'],
   folder: ['M4 6a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z'],
+  // 配色面板按钮：调色盘（项目自己画的：外轮廓 + 四个颜料点 + 拇指孔）
+  palette: [
+    'M12 3c-5 0-9 3.6-9 8.5S7 21 11.5 21c1.4 0 2-1 1.6-2.1-.4-1.2.3-2.4 1.6-2.4H17a4 4 0 0 0 4-4C21 7.4 17 3 12 3',
+    'M7.5 12h.01',
+    'M9.5 7.5h.01',
+    'M14.5 7.5h.01',
+    'M17 11h.01',
+  ],
   search: ['M11 4a7 7 0 1 0 0 14a7 7 0 1 0 0-14', 'M20 20l-4-4'],
   upload: ['M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2', 'M7 9l5-5l5 5', 'M12 4v12'],
   logout: [

@@ -33,10 +33,12 @@ import 'element-plus/es/components/message/style/css'
 import 'element-plus/es/components/message-box/style/css'
 
 import { ElLoading, ElMessage, ElMessageBox, provideGlobalConfig } from 'element-plus'
+import en from 'element-plus/es/locale/lang/en'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
-import type { App } from 'vue'
+import { computed, type App } from 'vue'
 
 import { ELEMENT_COMPONENTS, componentName } from './element-components'
+import { locale } from './i18n'
 
 export function installElementPlus(app: App): void {
   for (const component of ELEMENT_COMPONENTS) app.component(componentName(component), component)
@@ -44,6 +46,11 @@ export function installElementPlus(app: App): void {
   // 让在脚本里调用的 ElMessage、ElMessageBox 拿到应用的上下文（中文语言包等）
   app.use(ElMessage)
   app.use(ElMessageBox)
-  // 等同于原来 app.use(ElementPlus, { locale: zhCn }) 里的全局配置
-  provideGlobalConfig({ locale: zhCn }, app, true)
+  // 等同于原来 app.use(ElementPlus, { locale: zhCn }) 里的全局配置；
+  // 传 computed：界面语言切换时，Element Plus 自带的文字（分页、确认框按钮、空表格等）跟着切换
+  provideGlobalConfig(
+    computed(() => ({ locale: locale.value === 'en' ? en : zhCn })),
+    app,
+    true,
+  )
 }

@@ -4,37 +4,31 @@
 // 登录时只检查“填了没有”：格式不对就是登录失败，不提前说明用户名该长什么样。
 //
 // 检查本身写成返回错误文字的纯函数，规则只是把它包成 Element Plus 的 validator，
-// 所以测试测到的就是页面实际用的判断。
+// 所以测试测到的就是页面实际用的判断。提示文字在校验时才按当前语言取（m()），规则本身不用随语言重建。
 import type { FormItemRule, FormRules } from 'element-plus'
+
+import { m } from '../../i18n'
 
 /** 用户名：3–32 个字符，只允许英文字母、数字、下划线、点、连字符（与后端相同，区分大小写） */
 export const USERNAME_PATTERN = /^[A-Za-z0-9_.-]{3,32}$/
 export const PASSWORD_MIN = 8
 export const PASSWORD_MAX = 128
 
-export const RULE_TEXT = {
-  usernameRequired: '请输入用户名',
-  usernamePattern: '3–32 个字符，只能包含英文字母、数字、下划线、点、连字符',
-  passwordRequired: '请输入密码',
-  passwordLength: '8–128 个字符',
-} as const
-
 /** 返回 null 表示没有问题，否则是要显示的提示 */
 export type Check = (value: string) => string | null
 
-export const requireUsername: Check = (value) => (value === '' ? RULE_TEXT.usernameRequired : null)
-export const requirePassword: Check = (value) => (value === '' ? RULE_TEXT.passwordRequired : null)
+export const requireUsername: Check = (value) => (value === '' ? m().login.usernameRequired : null)
+export const requirePassword: Check = (value) => (value === '' ? m().login.passwordRequired : null)
 
 export const checkNewUsername: Check = (value) =>
-  requireUsername(value) ?? (USERNAME_PATTERN.test(value) ? null : RULE_TEXT.usernamePattern)
+  requireUsername(value) ?? (USERNAME_PATTERN.test(value) ? null : m().login.usernamePattern)
 
 export const checkNewPassword: Check = (value) => {
   const missing = requirePassword(value)
   if (missing) return missing
-  // 按字符数而不是 UTF-16 长度算，和后端（Python 的 len）一致：一个 emoji 算 1 个字符。
-  // 原来用 Element Plus 的 min / max，按 UTF-16 长度算，含 emoji 的密码会被误判
+  // 按字符数而不是 UTF-16 长度算，和后端（Python 的 len）一致：一个 emoji 算 1 个字符
   const length = [...value].length
-  return length < PASSWORD_MIN || length > PASSWORD_MAX ? RULE_TEXT.passwordLength : null
+  return length < PASSWORD_MIN || length > PASSWORD_MAX ? m().login.passwordLength : null
 }
 
 function rule(check: Check): FormItemRule {

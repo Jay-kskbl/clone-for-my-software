@@ -1,13 +1,14 @@
 <script setup lang="ts">
 // 登录页顶部的品牌区：系统标志、系统名、一句话说明（T24w，从 LoginView.vue 拆出，外观不变）。
 import AppIcon from '../../components/AppIcon.vue'
+import { m } from '../../i18n'
 </script>
 
 <template>
   <div class="login-brand">
     <span class="app-logo login-logo"><AppIcon name="docs" :size="26" /></span>
-    <h1 class="login-title">智能文档管理系统</h1>
-    <p class="login-desc">多格式文档管理 · 全文检索 · OCR 文字检索 · 图文语义检索</p>
+    <h1 class="login-title">{{ m().app.title }}</h1>
+    <p class="login-desc">{{ m().login.desc }}</p>
   </div>
 </template>
 

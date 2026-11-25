@@ -1,5 +1,7 @@
 // 所有请求的统一出口：带上登录令牌，把后端的错误结构转换成 ApiError。
 
+import { m } from '../i18n'
+
 const TOKEN_KEY = 'docmgr.token'
 
 /** 后端返回的错误：{"error": {"code", "message"}}（docs/api.md §1.2）。 */
@@ -65,9 +67,9 @@ async function toApiError(response: Response): Promise<ApiError> {
   }
   // 502/503/504 且不是后端自己的错误结构：请求没有到达后端（后端没启动，或中间的代理连不上它）
   if (response.status >= 502 && response.status <= 504) {
-    return new ApiError(response.status, 'UNAVAILABLE', `服务暂时不可用（HTTP ${response.status}），请确认后端已启动`)
+    return new ApiError(response.status, 'UNAVAILABLE', m().api.unavailable(response.status))
   }
-  return new ApiError(response.status, 'UNKNOWN', `请求失败（HTTP ${response.status}）`)
+  return new ApiError(response.status, 'UNKNOWN', m().api.failed(response.status))
 }
 
 /** 发请求并返回原始响应；非 2xx 时抛 ApiError，网络不通时抛 code 为 NETWORK 的 ApiError。 */
@@ -93,7 +95,7 @@ export async function requestRaw(path: string, options: RequestOptions = {}): Pr
       body,
     })
   } catch {
-    throw new ApiError(0, 'NETWORK', '无法连接服务器，请检查网络或确认后端已启动')
+    throw new ApiError(0, 'NETWORK', m().api.network)
   }
 
   if (response.ok) return response
@@ -115,5 +117,5 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
 /** 把任意异常变成可以直接显示给用户的一句话。 */
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) return error.message
-  return '发生了未预期的错误'
+  return m().api.unexpected
 }

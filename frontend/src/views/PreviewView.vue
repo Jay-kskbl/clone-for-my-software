@@ -12,14 +12,11 @@ import type { DocumentItem } from '../api/types'
 import ExtractedText from '../components/ExtractedText.vue'
 import PdfViewer from '../components/PdfViewer.vue'
 import { saveBlob } from '../utils/download'
+import { m } from '../i18n'
 import { STATUS_LABEL, formatType, isImageType } from '../utils/format'
 import { type PreviewTab, initialPreviewTab } from '../utils/preview'
 
 const PDF = 'application/pdf'
-const OFFICE_NOTICE =
-  'Word 和 Excel 只显示系统抽取出的文本，看不到原始格式、图表和公式；需要原样查看请下载原文件。'
-const EXTRACTED_NOTICE =
-  '这里是系统从文件中抽取的文字：PDF 有文字层的页直接取出文字，扫描页和图片是 OCR 识别的结果，可能有错字。'
 
 const route = useRoute()
 const router = useRouter()
@@ -51,9 +48,9 @@ const kind = computed<'pdf' | 'image' | 'text' | null>(() => {
 })
 
 const emptyText = computed(() => {
-  if (document.value?.status !== 'succeeded') return '文件还没有处理完成，暂时没有抽取文本'
+  if (document.value?.status !== 'succeeded') return m().preview.notReady
   // PDF、图片解析成功后 OCR 仍在后台进行（文档状态只跟随解析，D27）
-  return kind.value === 'text' ? '这个文件里没有抽取到文字' : '没有抽取到文字（扫描页和图片的 OCR 可能还在处理中）'
+  return kind.value === 'text' ? m().preview.noText : m().preview.noTextScan
 })
 
 let disposed = false
@@ -110,16 +107,16 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <el-button link class="back" @click="goBack">← 返回</el-button>
+  <el-button link class="back" @click="goBack">{{ m().preview.back }}</el-button>
   <div class="page-head">
     <div class="head-main">
-      <h1 class="page-title">{{ document?.filename ?? '文件预览' }}</h1>
+      <h1 class="page-title">{{ document?.filename ?? m().preview.fallbackTitle }}</h1>
       <p v-if="document" class="page-desc">
         <span>{{ formatType(document.mime_type) }}</span>
         <el-tag :type="STATUS_LABEL[document.status].type" size="small">{{ STATUS_LABEL[document.status].text }}</el-tag>
       </p>
     </div>
-    <el-button v-if="document" @click="onDownload">下载原文件</el-button>
+    <el-button v-if="document" @click="onDownload">{{ m().preview.downloadOriginal }}</el-button>
   </div>
 
   <el-card shadow="never" class="preview-card">
@@ -128,19 +125,19 @@ onBeforeUnmount(() => {
     <!-- 两个标签页都懒加载：PdfViewer 不在隐藏的标签页里先渲染（那时量不到容器宽度），
          抽取文本也只在第一次切过去时才请求 -->
     <el-tabs v-else-if="kind === 'pdf' || kind === 'image'" v-model="tab" @tab-change="onTabChange">
-      <el-tab-pane label="原文件" name="file" lazy>
+      <el-tab-pane :label="m().preview.tabFile" name="file" lazy>
         <PdfViewer v-if="kind === 'pdf' && fileData" :data="fileData" :initial-page="initialPage" />
         <div v-else-if="kind === 'image' && imageUrl" class="image-box">
           <img :src="imageUrl" :alt="document?.filename" class="image" />
         </div>
         <div v-else v-loading="true" class="placeholder" />
       </el-tab-pane>
-      <el-tab-pane label="抽取文本" name="text" lazy>
+      <el-tab-pane :label="m().preview.tabText" name="text" lazy>
         <ExtractedText
           :document-id="id"
           :target-chunk="targetChunk"
           :terms="terms"
-          :notice="EXTRACTED_NOTICE"
+          :notice="m().preview.extractedNotice"
           :empty-text="emptyText"
         />
       </el-tab-pane>
@@ -151,7 +148,7 @@ onBeforeUnmount(() => {
       :document-id="id"
       :target-chunk="targetChunk"
       :terms="terms"
-      :notice="OFFICE_NOTICE"
+      :notice="m().preview.officeNotice"
       :empty-text="emptyText"
     />
 

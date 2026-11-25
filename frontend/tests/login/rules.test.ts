@@ -1,6 +1,6 @@
-// 登录 / 注册表单的校验规则（T24w）：边界与后端一致（docs/api.md §4.2）。
+// 登录 / 注册表单的校验规则（T24w）：边界与后端一致（docs/api.md §4.2），提示随界面语言。
 import type { FormItemRule } from 'element-plus'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
 import {
   checkNewPassword,
@@ -9,8 +9,13 @@ import {
   REGISTER_RULES,
   requirePassword,
   requireUsername,
-  RULE_TEXT,
 } from '../../src/features/login/rules'
+import { locale } from '../../src/i18n'
+import { en, zh } from '../../src/i18n/messages'
+
+afterEach(() => {
+  locale.value = 'zh'
+})
 
 describe('注册时的用户名', () => {
   it.each(['abc', 'a'.repeat(32), 'Barry_2026', 'a.b-c_d', '___'])('合格：%s', (value) => {
@@ -18,7 +23,7 @@ describe('注册时的用户名', () => {
   })
 
   it('没填', () => {
-    expect(checkNewUsername('')).toBe(RULE_TEXT.usernameRequired)
+    expect(checkNewUsername('')).toBe(zh.login.usernameRequired)
   })
 
   it.each([
@@ -29,7 +34,7 @@ describe('注册时的用户名', () => {
     ['@', 'barry@x'],
     ['斜杠', 'a/b'],
   ])('不合格：%s', (_name, value) => {
-    expect(checkNewUsername(value)).toBe(RULE_TEXT.usernamePattern)
+    expect(checkNewUsername(value)).toBe(zh.login.usernamePattern)
   })
 })
 
@@ -45,7 +50,7 @@ describe('注册时的密码', () => {
   })
 
   it('没填', () => {
-    expect(checkNewPassword('')).toBe(RULE_TEXT.passwordRequired)
+    expect(checkNewPassword('')).toBe(zh.login.passwordRequired)
   })
 
   it.each([
@@ -53,7 +58,7 @@ describe('注册时的密码', () => {
     ['129 个字符', 'x'.repeat(129)],
     ['7 个 emoji（UTF-16 长度 14，但只有 7 个字符）', '😀'.repeat(7)],
   ])('长度不合格：%s', (_name, value) => {
-    expect(checkNewPassword(value)).toBe(RULE_TEXT.passwordLength)
+    expect(checkNewPassword(value)).toBe(zh.login.passwordLength)
   })
 })
 
@@ -64,8 +69,8 @@ describe('登录时只检查填了没有', () => {
   })
 
   it('没填时提示', () => {
-    expect(requireUsername('')).toBe(RULE_TEXT.usernameRequired)
-    expect(requirePassword('')).toBe(RULE_TEXT.passwordRequired)
+    expect(requireUsername('')).toBe(zh.login.usernameRequired)
+    expect(requirePassword('')).toBe(zh.login.passwordRequired)
   })
 })
 
@@ -94,23 +99,20 @@ describe('表单规则', () => {
 
   it('登录规则：只检查填了没有', () => {
     expect(run(LOGIN_RULES.username as FormItemRule[], 'a')).toBeNull()
-    expect(run(LOGIN_RULES.username as FormItemRule[], '')).toBe(RULE_TEXT.usernameRequired)
-    expect(run(LOGIN_RULES.password as FormItemRule[], '')).toBe(RULE_TEXT.passwordRequired)
+    expect(run(LOGIN_RULES.username as FormItemRule[], '')).toBe(zh.login.usernameRequired)
+    expect(run(LOGIN_RULES.password as FormItemRule[], '')).toBe(zh.login.passwordRequired)
   })
 
   it('注册规则：检查格式和长度；值不是字符串时按没填处理', () => {
-    expect(run(REGISTER_RULES.username as FormItemRule[], 'ab')).toBe(RULE_TEXT.usernamePattern)
-    expect(run(REGISTER_RULES.username as FormItemRule[], undefined)).toBe(RULE_TEXT.usernameRequired)
-    expect(run(REGISTER_RULES.password as FormItemRule[], 'x'.repeat(7))).toBe(RULE_TEXT.passwordLength)
+    expect(run(REGISTER_RULES.username as FormItemRule[], 'ab')).toBe(zh.login.usernamePattern)
+    expect(run(REGISTER_RULES.username as FormItemRule[], undefined)).toBe(zh.login.usernameRequired)
+    expect(run(REGISTER_RULES.password as FormItemRule[], 'x'.repeat(7))).toBe(zh.login.passwordLength)
     expect(run(REGISTER_RULES.password as FormItemRule[], 'x'.repeat(8))).toBeNull()
   })
 
-  it('提示文字与拆分前登录页上的相同', () => {
-    expect(RULE_TEXT).toEqual({
-      usernameRequired: '请输入用户名',
-      usernamePattern: '3–32 个字符，只能包含英文字母、数字、下划线、点、连字符',
-      passwordRequired: '请输入密码',
-      passwordLength: '8–128 个字符',
-    })
+  it('提示文字在校验时按当前语言取，切换语言后不用重建规则', () => {
+    locale.value = 'en'
+    expect(run(REGISTER_RULES.username as FormItemRule[], 'ab')).toBe(en.login.usernamePattern)
+    expect(run(LOGIN_RULES.password as FormItemRule[], '')).toBe(en.login.passwordRequired)
   })
 })

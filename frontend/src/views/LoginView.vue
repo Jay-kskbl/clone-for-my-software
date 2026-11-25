@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // 登录页：只负责布局和组装（T24w）。
-// 品牌区、登录卡片在 features/login/；跳转规则在 redirect.ts，表单规则在 rules.ts，提交流程在 submit.ts。
+// 品牌区、登录卡片在 features/login/，跳转规则在 features/login/redirect.ts，表单规则在 rules.ts。
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -11,6 +11,7 @@ import LoginForm from '../features/login/LoginForm.vue'
 import { safeRedirect } from '../features/login/redirect'
 import { checkLoginService, type ServiceStatus } from '../features/login/serviceStatus'
 import { singleFlight } from '../features/login/submit'
+import { m } from '../i18n'
 
 const router = useRouter()
 const route = useRoute()
@@ -27,8 +28,8 @@ const checkService = singleFlight(async () => {
   service.value = await checkLoginService(fetchHealth)
 })
 const serviceNotice = computed(() => {
-  if (service.value === 'backend-down') return '连不上后端服务，现在无法登录。请确认后端已启动，再点“重新检查”。'
-  if (service.value === 'database-down') return '后端已启动，但数据库不可用，现在无法登录。请确认数据库已启动，再点“重新检查”。'
+  if (service.value === 'backend-down') return m().login.service.backendDown
+  if (service.value === 'database-down') return m().login.service.databaseDown
   return ''
 })
 const rechecking = ref(false)
@@ -69,12 +70,16 @@ async function onRetry() {
     <LoginForm :after-sign-in="goBack">
       <!-- 两条提示只显示一条：本地有令牌但连不上（T24x）时，“登录状态已保留”更要紧，它的“重试”也会更新服务状态 -->
       <el-alert v-if="auth.unreachable" type="warning" :closable="false" show-icon class="login-status">
-        <template #title>暂时连不上服务器，登录状态已保留。服务恢复后点“重试”即可继续。</template>
-        <el-button size="small" :loading="retrying" class="login-status-action" @click="onRetry">重试</el-button>
+        <template #title>{{ m().login.unreachable }}</template>
+        <el-button size="small" :loading="retrying" class="login-status-action" @click="onRetry">
+          {{ m().login.retry }}
+        </el-button>
       </el-alert>
       <el-alert v-else-if="serviceNotice" type="warning" :closable="false" show-icon class="login-status">
         <template #title>{{ serviceNotice }}</template>
-        <el-button size="small" :loading="rechecking" class="login-status-action" @click="onRecheck">重新检查</el-button>
+        <el-button size="small" :loading="rechecking" class="login-status-action" @click="onRecheck">
+          {{ m().login.service.recheck }}
+        </el-button>
       </el-alert>
     </LoginForm>
   </div>
@@ -88,7 +93,18 @@ async function onRetry() {
   gap: 24px;
   box-sizing: border-box;
   min-height: 100vh;
-  padding: 72px 16px 24px;
+  padding: 24px 16px 24px;
+}
+
+/*
+ * 右下角浮动的“语言 / 配色”按钮（App.vue，高 44 px，离底边 12–20 px，宽 144 px）在窄屏上会盖住卡片底部的
+ * “没有账号？注册”（克隆库实测 375 px 宽时盖住约 21×11 px，英文更多）。窗口宽于约 708 px 时按钮在卡片右边，
+ * 不会重叠；更窄时页面底部多留出按钮的高度，滚到底时注册链接一定在按钮上方。不改 App.vue 的按钮。
+ */
+@media (max-width: 720px) {
+  .login {
+    padding-bottom: 72px;
+  }
 }
 
 .login-status {
