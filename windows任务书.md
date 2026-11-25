@@ -1495,9 +1495,10 @@ Copy-Item experiments\docvqa\datasets\document_map.csv "$out\missed\document_map
 | 7 | 第 17.7、17.9、17.10、17.11 节 | **Barry 本人** | 1 | 共约 2 小时，可以分几次做 |
 | 8 | 第 17.5 节：Ctrl+C 重测、强制结束后的子进程、循环脚本 | GPT | 1（拉到的提交包含 T24aa、T24ab、T24ac） | 50 分钟 |
 | 9 | 第 17.14 节：OCR Worker 数与崩溃（会吃满内存，不和别的测量同时跑） | GPT | 2 | 2 小时 |
+| 9a | 第 17.15 节：失败任务的重试间隔 | GPT | 2（拉到的提交包含 T24ad） | 30 分钟 |
 | 10 | 按第 14.1 节整理 `output/windows-w9/`、提交；Barry 推送，大文件另交 | GPT、Barry | 全部 | 30 分钟 |
 
-**2026-11-25 更新（第五轮，核对见 `docs/changes/windows-2026-11-25-核对.md`）：** 第五轮测的是旧代码 `54d9760`，**上表各项除了“第 16.8 节对照组”都还没有做**，仍按上面的顺序执行；先 `git pull`，`git log --oneline | Select-String "T24aa|T24ab|T24ac"` 要能各找到一条。第五轮的 OCR 崩溃复现见第 17.14 节，要重做。已经完成的：`docker-compose.yml`、OpenSearch 的 Dockerfile（还差后端 `/health` 的输出，以及 `down` 之后数据卷保留，可以顺手补上，存到 `output/windows-w9/docker/`）。
+**2026-11-25 更新（第五轮，核对见 `docs/changes/windows-2026-11-25-核对.md`）：** 第五轮测的是旧代码 `54d9760`，**上表各项除了“第 16.8 节对照组”都还没有做**，仍按上面的顺序执行；先 `git pull`，`git log --oneline | Select-String "T24aa|T24ab|T24ac|T24ad"` 要能各找到一条。第五轮的 OCR 崩溃复现见第 17.14 节，要重做。已经完成的：`docker-compose.yml`、OpenSearch 的 Dockerfile（还差后端 `/health` 的输出，以及 `down` 之后数据卷保留，可以顺手补上，存到 `output/windows-w9/docker/`）。
 
 ### 17.2 基线、公用脚本、新的内存采样脚本
 
@@ -1510,7 +1511,7 @@ Copy-Item experiments\docvqa\datasets\document_map.csv "$out\missed\document_map
    ```
 
    预期：三行都是 `i/lf w/lf attr/text eol=lf`；SHA-256 开头为 `be91f8071d05`（doc_meta）、`0c7937251bab`（chunks）、`c984e85b889b`（image_vectors）。不一致就按第 0.2 节第 4 步先删再签出，然后再导出一次。
-3. 新基线上只有前端代码变了（T24v–T24z）。在 `frontend/` 下运行三项命令，输出存成 `frontend-typecheck.txt`、`frontend-test.txt`、`frontend-build.txt`。预期：类型检查、构建成功，单元测试 16 个文件 205 项全部通过（Mac 上 T24z 的结果）。如果这次拉到的提交里已经有 Ctrl+C 的修复（第 17.5 节），再按第 12.2 节重跑 backend、shared、OCR Worker 的测试，JUnit 存到 `output/windows-w9/`。
+3. 新基线上有前端改动（T24v–T24z）和 Worker 改动（T24aa、T24ab、T24ac、T24ad，**2026-11-25 更正：原来写“只有前端代码变了”已过时**）。在 `frontend/` 下运行三项命令，输出存成 `frontend-typecheck.txt`、`frontend-test.txt`、`frontend-build.txt`。预期：类型检查、构建成功，单元测试 16 个文件 205 项全部通过（Mac 上 T24z 的结果）。如果这次拉到的提交里已经有 Ctrl+C 的修复（第 17.5 节），再按第 12.2 节重跑 backend、shared、OCR Worker 的测试，JUnit 存到 `output/windows-w9/`。
 4. 第 16.2 节的公用函数（`Q`、`Export`、`Wait-Tasks`、`Start-Ocr`）照用，只把 `$out` 改成 `"$repo\output\windows-w9"`。
 5. **新的内存采样脚本。** 第 13.2、16.2 节的脚本把 OCR 识别子进程归进了 `python_other`：子进程是 multiprocessing 启动的，命令行里没有 `ocr_worker`。新脚本沿着父进程往上找，并且每次只调用一次 CIM，所以采样更快：
 
@@ -1762,6 +1763,23 @@ if ((Count-Ocr) -ne 0) { Stop-AllOcr }
 **预期：** 30 个 CSV（停止的组除外），每个 4 行；`worker-count.txt` 每轮 before、after 都是 0；`memory.csv` 覆盖全程、间隔不超过 3 秒，有 `commit_free`、`commit_limit`、`system_available`。不设通过线。
 
 **Claude 怎么判断：** 按实际 Worker 数统计失败数；看每次失败前 10 秒的 `commit_free`，如果失败都集中在提交内存将尽的时刻、充足时没有失败，就确认“内存耗尽”；得出建议的 Worker 上限，写进 T30。
+
+### 17.15 失败任务的重试间隔（T24ad，2026-11-25 添加）
+
+**为什么：** 失败的任务原来马上又被领走，CLIP 停十几秒就会让图片永久没有向量。T24ad 让失败过的任务按“上一次尝试的开始时间 + 30 秒 / 120 秒”再领（D55）。SQL 在 Mac 上没有跑过。
+
+1. **集成测试**（随第 17.2 节第 3 步的 backend 测试一起跑）：`tests/integration/test_task_queue.py` 里 T24ad 的 8 项应全部通过，不跳过。
+2. **CLIP 短暂不可用后自己恢复**（`docmgr_w9`，CLIP 服务先不开）：启动后端和一个通用 Worker，上传一张图片，记下时间。等 embed 任务第 1 次失败后（`attempts = 1`、`error` 为 ClipUnavailable），启动 CLIP 服务。每 5 秒导出一次这个任务，直到它结束：
+
+   ```powershell
+   Q 'docmgr_w9' "SELECT now(), status, attempts, started_at, error FROM processing_tasks WHERE task_type = 'embed' ORDER BY created_at DESC LIMIT 1" | Out-File -Append -Encoding utf8 "$out\retry\embed.txt"
+   ```
+
+3. **CLIP 一直不开**：另传一张图片，同样导出，直到 `failed`。
+
+**预期：** 第 2 步：第 1 次失败后，距它的 `started_at` 不到 30 秒时不会出现第 2 次尝试；CLIP 起来后的下一次尝试成功，任务 `succeeded`。第 3 步：相邻两次尝试的 `started_at` 相差不少于 30 秒、120 秒，第 3 次失败后 `failed`，从第 1 次开始到 `failed` 约 150 秒（加上每次尝试的几秒）。轮询间隔 2 秒，所以允许多出几秒。
+
+**Claude 怎么判断：** 逐行看 `embed.txt` 的时间和 `attempts`，两次间隔都不短于设定值才判为通过；同时确认等待期间别的任务照常被处理。
 
 ### 17.12 验收标准
 

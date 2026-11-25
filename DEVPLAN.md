@@ -242,6 +242,7 @@ BARRY zou/
 - [x] **T24aa Ctrl-C 时两个 Worker 都把当前任务做完再退出**（来自 Windows 第四轮核对 §2 第 1、2 条，Barry 于 2026-11-23 批准“先修 Ctrl+C”）：两个 Worker 等子进程结果的 `poll()` 遇到 `InterruptedError` 接着等（Windows 上按 Ctrl-C 时会抛出）；通用 Worker 的子进程也忽略 SIGINT（D34 只改过 OCR 子进程）。见 D52
 - [x] **T24ab Worker 被强制结束时，它的子进程跟着退出**（来自 `docs/changes/2026-11-23-代码复核建议.md` R1，Barry 于 2026-11-23 批准“先修 R1”）：两个 Worker 的子进程入口加父进程看门狗（`shared/parent_watch.py`），父进程一消失就退出。见 D53
 - [x] **T24ac OCR Worker 收到停止信号时以 130 退出**（来自 `docs/changes/2026-11-23-代码复核建议.md` R5，Barry 于 2026-11-23 批准“修 R5”）：原来返回 0，外层循环会把它重新拉起。见 D54
+- [x] **T24ad 失败的任务隔一段时间再重试**（来自 `docs/changes/2026-11-23-代码复核建议.md` R2 的 a，Barry 于 2026-11-25 选定不改表结构的做法“No migration”）：领取时按 `started_at` + `TASK_RETRY_DELAYS_SECONDS`（默认 30、120 秒）等待。见 D55
 
 ### 阶段五：实验（W13–W15）
 
@@ -348,7 +349,7 @@ BARRY zou/
 
 - **待 Barry 决定（代码复核建议，2026-11-23 记录，见 `docs/changes/2026-11-23-代码复核建议.md`）**
   - （T24ab 已解决，D53）R1 Worker 被强制结束后，子进程成为孤儿继续跑完任务
-  - （2026-11-25 第五轮又有两份证据：OCR 内存不足时 3 次立刻重试都失败；embed 约 15 秒用完 3 次，建议优先做）R2 失败任务没有重试间隔；CLIP 短暂不可用会让 embed 永久失败且没有批量补救（a 加重试间隔要迁移，🔒；b 加重新排队命令；c 一致性检查新增一类）
+  - （2026-11-25 第五轮又有两份证据：OCR 内存不足时 3 次立刻重试都失败；embed 约 15 秒用完 3 次，建议优先做）（a 已由 T24ad 解决，D55，不改表结构；b、c 未做，等 Barry 决定）R2 失败任务没有重试间隔；CLIP 短暂不可用会让 embed 永久失败且没有批量补救（a 加重试间隔要迁移，🔒；b 加重新排队命令；c 一致性检查新增一类）
   - R3 `repair` 的误导提示；R4 内存上限日志刷屏、favicon 404、地址栏残留 `ch`（小改动）
   - （T24ac 已解决，D54）R5 OCR Worker 收到停止信号后返回 0，`CLAUDE.md` 的循环和 `run_ocr_worker_loop.ps1` 会把它重新拉起（通用 Worker 返回 130）；建议也返回 130，不带 🔒
   - 风险记录（不做）：`OCR_WORKER_MEMORY_LIMIT_MB=3072` 在 Linux 上可能太小
@@ -432,3 +433,4 @@ BARRY zou/
 | T24aa | 2026-11-23 | da6f29a | Barry 于 2026-11-23 批准（“先修 Ctrl+C”，来自 Windows 第四轮核对 §2 第 1、2 条）；不带 🔒。`backend/app/worker/runner.py`、`services/ocr_worker/ocr_worker/engine_process.py` 各加 `_poll`：`poll()` 遇到 `InterruptedError`（Windows 上按 Ctrl-C 时抛出，W6 12.7 实测）按剩余时间接着等；通用 Worker 子进程入口忽略 SIGINT（原来会把 `KeyboardInterrupt` 当作一次可重试的失败）。没有改表结构、接口、配置、附录 A，没有新依赖。已执行：`backend/` pytest 725 passed、229 skipped；`services/ocr_worker/` pytest 75 passed、4 skipped；ocr 环境真实识别 4 项通过；两处 ruff 通过；去掉修复后新增测试按预期失败。**未测试（Not Tested）**：Windows 上真实按 Ctrl+C（`windows任务书.md` 第 17.5 节）、macOS 上对着真实 Worker 按 Ctrl+C（本机没有 PostgreSQL），已登记 `docs/untested.md`。修改记录 `docs/changes/T24aa.md`，决策 D52 |
 | T24ab | 2026-11-23 | 3d1eaf2 | Barry 于 2026-11-23 批准（“先修 R1”）；不带 🔒。新增 `shared/parent_watch.py`，`runner.py`、`engine_process.py` 的子进程入口调用：父进程被强制结束时子进程立即退出（W6 12.5 日志显示原来会继续跑完）。没有改表结构、接口、配置、附录 A，没有新依赖。已执行：`backend/` 726 passed、229 skipped；`shared/` 109 passed；`services/ocr_worker/` 76 passed、4 skipped；ocr 环境真实识别 4 项通过；三处 ruff 通过；去掉看门狗后两项强杀测试失败，恢复后各重复 6 次通过。**未测试（Not Tested）**：Windows 上的强制结束、真实 Worker 上的强制结束（`windows任务书.md` 第 17.5 节 C），已登记 `docs/untested.md`。顺带更正：代码复核建议里“退出码不同没有问题”的说法是错的，改列为 R5。修改记录 `docs/changes/T24ab.md`，决策 D53 |
 | T24ac | 2026-11-23 | 664e54a | Barry 于 2026-11-23 批准（“修 R5”）；不带 🔒。`ocr_worker/__main__.py` 收到停止信号返回 130（与通用 Worker 一致），做满任务数仍返回 0；新增 `tests/test_main.py` 4 项。没有改表结构、接口、配置、附录 A，没有新依赖。已执行：`services/ocr_worker/` 80 passed、4 skipped；ocr 环境真实识别 4 项通过；ruff 通过；改之前新增测试 3 项失败；用真实信号驱动真实循环：bash 改之前被重新拉起、改之后停下，zsh 前后都能停。backend、shared 没有改动，没有重跑。**未测试（Not Tested）**：Windows 的 `run_ocr_worker_loop.ps1`（`windows任务书.md` 第 17.5 节 D），已登记 `docs/untested.md`。修改记录 `docs/changes/T24ac.md`，决策 D54 |
+| T24ad | 2026-11-25 | （待填） | Barry 于 2026-11-25 选定（“No migration”）；不带 🔒（原计划加列带 🔒，改为用已有的 `started_at`）。`shared/tasks.py` 领取条件加重试间隔，两个 Worker 读 `TASK_RETRY_DELAYS_SECONDS`（默认 `30,120`）。没有改表结构、接口、附录 A，没有新依赖。已执行：`shared/` 124 passed；`backend/` 732 passed、237 skipped；`services/ocr_worker/` 82 passed、4 skipped；ocr 环境真实识别 4 项通过；三处 ruff 通过；去掉三处传参后新增测试各有失败。**未测试（Not Tested）**：领取 SQL 在真实 PostgreSQL 上（新增 8 项集成测试）、CLIP 短暂不可用后自己恢复（`windows任务书.md` 第 17.15 节），已登记 `docs/untested.md`。修改记录 `docs/changes/T24ad.md`，决策 D55 |

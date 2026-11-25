@@ -83,6 +83,7 @@ def main() -> int:
         worker_id=worker_id,
         lease_seconds=settings.ocr_worker_lease_seconds,
         connect_timeout_seconds=connect_timeout,
+        retry_delays=settings.retry_delays,
     )
     store = PgStore(settings.database_url, connect_timeout_seconds=connect_timeout)
     try:

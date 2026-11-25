@@ -55,6 +55,7 @@ def main() -> int:
         worker_id=worker_id,
         lease_seconds=settings.worker_lease_seconds,
         connect_timeout_seconds=settings.worker_db_connect_timeout_seconds,
+        retry_delays=settings.retry_delays,
     )
     try:
         queue.ping()

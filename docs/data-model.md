@@ -156,7 +156,7 @@ erDiagram
 | error | text，可空 | 失败原因 |
 | payload | jsonb，默认 `{}` | 任务参数，例如 OCR 任务要处理的页码 |
 | created_at | timestamptz | |
-| started_at / finished_at | timestamptz，可空 | 开始、完成时间 |
+| started_at / finished_at | timestamptz，可空 | 开始、完成时间。失败放回 `pending` 时 `started_at` 保留上一次尝试的开始时间，领取时用它算重试间隔（T24ad，D55）；手动重试和 `reocr` 会清空 |
 | lease_expires_at | timestamptz，可空 | 租约到期时间；过期仍为 `processing` 说明 Worker 已崩溃，可回收 |
 | claimed_by | varchar(128)，可空 | 领取者标识 |
 

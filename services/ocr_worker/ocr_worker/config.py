@@ -9,6 +9,7 @@ from collections.abc import Mapping
 from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
+from shared.task_queue import parse_retry_delays
 
 # services/ocr_worker/ocr_worker/config.py → 项目根目录
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -58,6 +59,18 @@ class OcrSettings(BaseModel):
     ocr_worker_max_tasks: int = Field(default=200, gt=0)
     # 连接数据库最多等多久（秒，整数，最小有效值 2），与通用 Worker 的同名配置含义相同（T24k）
     ocr_worker_db_connect_timeout_seconds: int = Field(default=10, ge=2, le=300)
+    # 失败任务的重试间隔（秒，逗号分隔），与通用 Worker 共用；写 0 表示马上重试（T24ad）
+    task_retry_delays_seconds: str = Field(default="30,120")
+
+    @field_validator("task_retry_delays_seconds")
+    @classmethod
+    def _retry_delays_valid(cls, value: str) -> str:
+        parse_retry_delays(value)
+        return value
+
+    @property
+    def retry_delays(self) -> tuple[float, ...]:
+        return parse_retry_delays(self.task_retry_delays_seconds)
 
     @field_validator("storage_root", "ocr_det_model_dir", "ocr_rec_model_dir", mode="after")
     @classmethod

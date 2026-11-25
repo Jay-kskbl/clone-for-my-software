@@ -26,8 +26,10 @@ class FakeEngine:
 
 
 class FakeQueue:
-    def __init__(self, *_args, **_kwargs) -> None:
-        pass
+    created: list[dict] = []
+
+    def __init__(self, *_args, **kwargs) -> None:
+        FakeQueue.created.append(kwargs)
 
     def reset(self) -> None:
         pass
@@ -43,6 +45,8 @@ class FakeStore(FakeQueue):
 
 class AnySettings:
     """任何配置项都有值：入口只是把它们转交给（假的）对象。"""
+
+    retry_delays = (30.0, 120.0)
 
     def __getattr__(self, _name: str) -> int:
         return 1
@@ -96,3 +100,12 @@ def test_stop_signal_wins_when_max_tasks_is_reached_at_the_same_time(handlers, m
     monkeypatch.setattr(ocr_main, "run_worker", fake_run_worker)
 
     assert ocr_main.main() == 130
+
+
+def test_retry_delays_are_passed_to_the_queue(handlers, monkeypatch):
+    FakeQueue.created.clear()
+    monkeypatch.setattr(ocr_main, "run_worker", lambda *_args, **_kwargs: 0)
+
+    assert ocr_main.main() == 0
+
+    assert FakeQueue.created[0]["retry_delays"] == (30.0, 120.0)

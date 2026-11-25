@@ -11,12 +11,14 @@
        └───────────────────┘
                            └─ fail / 租约过期，且 attempts ≥ max_attempts ──▶ failed
 
-三条约定：
+四条约定：
 1. attempts 在“领取”时加一，而不是在失败时。Worker 崩溃来不及回写也算一次尝试，
    所以一个必然让 Worker 崩溃的文件最多被尝试 max_attempts 次，不会无限重试。
 2. renew / complete / fail 都要求“任务仍由我领取且状态为 processing”。Worker 卡住、
    租约被回收、任务被别人领走之后，它迟到的回写会被拒绝，不会覆盖别人的结果。
 3. 时间一律用数据库的 now()，不用各个 Worker 进程自己的时钟。
+4. 失败后放回 pending 的任务不会马上被再次领取（T24ad，D55）：从上一次尝试开始（started_at）
+   算起，等够 retry_delays 里对应的秒数才能领。第一次领取、租约过期被回收、手动重试都不等。
 
 每个函数自己开一个事务（连接已在事务中时是一个保存点），调用方不需要另外提交，
 前提是连接处于 autocommit 模式，或调用方自己负责提交外层事务。
@@ -105,6 +107,20 @@ UPDATE processing_tasks SET
 WHERE id = (
     SELECT id FROM processing_tasks
     WHERE status = '{STATUS_PENDING}' AND task_type = ANY(%(task_types)s::text[])
+      -- 重试间隔（约定 4）。放回 pending 时 started_at 保留着上一次尝试的开始时间，所以不需要
+      -- 另加一列；手动重试和 reocr 会把 started_at 清空、attempts 归零，自然不用等。
+      -- 租约过期的任务已经等过一个租约时长了，不再等。
+      -- 数组下标从 1 开始：第 n 次尝试失败后用第 n 个间隔，次数超出时用最后一个；
+      -- 空数组取不到值（NULL），按 0 秒处理，即不等。
+      AND (
+          attempts = 0
+          OR started_at IS NULL
+          OR error = %(lease_expired_error)s
+          OR started_at + make_interval(secs => COALESCE(
+              (%(retry_delays)s::double precision[])[
+                  LEAST(attempts, cardinality(%(retry_delays)s::double precision[]))
+              ], 0)) <= now()
+      )
     ORDER BY created_at, id
     LIMIT 1
     -- 已被别的 Worker 锁住（正在领取）的行直接跳过：两个 Worker 不会领到同一个任务，也不互相阻塞
@@ -153,8 +169,12 @@ def claim(
     worker_id: str,
     task_types: Sequence[str],
     lease_seconds: float,
+    retry_delays: Sequence[float] = (),
 ) -> Task | None:
-    """领取一个最早创建的 pending 任务；没有可领取的任务时返回 None。
+    """领取一个最早创建的、到了可领取时间的 pending 任务；没有时返回 None。
+
+    retry_delays：第 1、2……次尝试失败后，距那次尝试开始至少隔多少秒才能再领（约定 4）；
+    空表示不等。
 
     领取前先回收过期租约，所以不需要单独的回收进程：只要还有 Worker 在领任务，
     崩溃的 Worker 留下的任务就会被重新放回队列。
@@ -169,6 +189,8 @@ def claim(
                 "worker_id": worker_id,
                 "task_types": list(task_types),
                 "lease_seconds": lease_seconds,
+                "retry_delays": [float(delay) for delay in retry_delays],
+                "lease_expired_error": LEASE_EXPIRED_ERROR,
             },
         ).fetchone()
     if row is None:

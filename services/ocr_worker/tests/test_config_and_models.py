@@ -126,3 +126,16 @@ def test_incomplete_model_directory_names_the_missing_files(tmp_path):
 
     assert "inference.pdiparams" in str(excinfo.value)
     assert "inference.json 或 inference.pdmodel" in str(excinfo.value)
+
+
+# ---- T24ad：重试间隔（与通用 Worker 共用 TASK_RETRY_DELAYS_SECONDS）----
+
+
+def test_retry_delays_default_custom_and_invalid():
+    assert load_settings(env_file=None, environ=REQUIRED).retry_delays == (30.0, 120.0)
+    custom = load_settings(env_file=None, environ={**REQUIRED, "TASK_RETRY_DELAYS_SECONDS": "5"})
+    assert custom.retry_delays == (5.0,)
+
+    with pytest.raises(ConfigError) as excinfo:
+        load_settings(env_file=None, environ={**REQUIRED, "TASK_RETRY_DELAYS_SECONDS": "soon"})
+    assert "TASK_RETRY_DELAYS_SECONDS" in str(excinfo.value)

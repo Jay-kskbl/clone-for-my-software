@@ -322,3 +322,17 @@ def test_heartbeat_must_leave_room_for_a_missed_renewal():
         Settings(**BASE, worker_lease_seconds=20, worker_heartbeat_seconds=15)
 
     assert Settings(**BASE, worker_lease_seconds=30, worker_heartbeat_seconds=15)
+
+
+# ---- T24ad：重试间隔 ----
+
+
+def test_retry_delays_default_and_custom():
+    assert Settings(**BASE).retry_delays == (30.0, 120.0)
+    assert Settings(**BASE, task_retry_delays_seconds="0").retry_delays == (0.0,)
+
+
+@pytest.mark.parametrize("value", ["", "soon", "-1", "99999"])
+def test_bad_retry_delays_stop_the_worker_at_startup(value):
+    with pytest.raises(ValueError, match="task_retry_delays_seconds"):
+        Settings(**BASE, task_retry_delays_seconds=value)
