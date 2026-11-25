@@ -159,3 +159,17 @@ T05 至 T17：Python 包约 154 MB（main 环境约 84 MB，ocr 环境 T17 新�
 ## 4. 已移除
 
 （空）
+
+## 5. Windows 测试机上的下载（不在本机）
+
+执行方 Codex 在 Barry 的 Windows 机器上安装，依据 `output/docker-install-operation-log-20261125.txt`、`output/docker-images-20261125.txt`，2026-11-25 补登。**批准：待 Barry 确认**（安装时 Windows 弹出过管理员确认）。
+
+| 时间 | 内容 | 版本 | 来源 | 大小 | 用途 |
+|---|---|---|---|---|---|
+| 2026-11-25 | Docker Desktop | 4.99.0（Engine 29.9.3、Compose v5.7.0） | 仓库外 `.tools/downloads/Docker Desktop Installer.exe`（安装包 623,969,712 字节） | — | OS-7：容器化的 PostgreSQL 与 OpenSearch |
+| 2026-11-25 | Windows Subsystem for Linux | 3.0.1.0（内核 6.18.40.1） | `wsl --update`（微软商店） | — | Docker Desktop 的后端 |
+| 2026-11-25 | 镜像 `postgres:16.6` | 16.6 | Docker Hub | 617 MB | compose |
+| 2026-11-25 | 镜像 `opensearchproject/opensearch:2.19.1` | 2.19.1 | Docker Hub | 2.5 GB | 构建项目镜像的基础 |
+| 2026-11-25 | 镜像 `docmgr-opensearch:2.19.1-smartcn` | 2.19.1 + analysis-smartcn 2.19.1 | 本地构建（`deploy/opensearch/Dockerfile`），插件从 OpenSearch 官方地址下载 | 2.51 GB | compose |
+| 2026-11-25 | 镜像拉取失败的尝试 | Ubuntu、Python rootfs | WSL 商店等 | — | 没有安装成功，或只试过拉取 |
+

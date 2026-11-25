@@ -12,6 +12,8 @@
 
 - 增补：2026-11-23 收到第二轮结果（`065e640`、`54d9760`，基线 `fd0b5eb`，执行者 Codex），核对后添加 W9（第 17 节：没完成的项目与改良后的补测方案，执行顺序见第 17.1 节），更新第 0.1 节的状态，更正第 16.8 节对照组的预期。W1–W8 已写的步骤没有改
 
+- 增补：2026-11-25 核对第五轮结果（`415d343`）后，在第 17.1 节加更新说明，新增第 17.14 节（OCR Worker 数与崩溃，按正确的方法重做）
+
 本任务书有九项任务。**W1–W8 的执行顺序以第 0.4 节为准，W9 以第 17.1 节为准**（W4 于 2026-11-21 14:26 添加，W5 于 14:37 添加，W6、W7 于 19:40 添加，W8 于 21:20 添加，W9 于 2026-11-23 添加；W1–W8 已执行，状态见第 0.1 节）：
 
 | 编号 | 任务 | 结果 |
@@ -1492,7 +1494,10 @@ Copy-Item experiments\docvqa\datasets\document_map.csv "$out\missed\document_map
 | 6 | 第 17.8 节：300 秒超时的文档 | GPT | 1 | 40 分钟 |
 | 7 | 第 17.7、17.9、17.10、17.11 节 | **Barry 本人** | 1 | 共约 2 小时，可以分几次做 |
 | 8 | 第 17.5 节：Ctrl+C 重测、强制结束后的子进程、循环脚本 | GPT | 1（拉到的提交包含 T24aa、T24ab、T24ac） | 50 分钟 |
-| 9 | 按第 14.1 节整理 `output/windows-w9/`、提交；Barry 推送，大文件另交 | GPT、Barry | 全部 | 30 分钟 |
+| 9 | 第 17.14 节：OCR Worker 数与崩溃（会吃满内存，不和别的测量同时跑） | GPT | 2 | 2 小时 |
+| 10 | 按第 14.1 节整理 `output/windows-w9/`、提交；Barry 推送，大文件另交 | GPT、Barry | 全部 | 30 分钟 |
+
+**2026-11-25 更新（第五轮，核对见 `docs/changes/windows-2026-11-25-核对.md`）：** 第五轮测的是旧代码 `54d9760`，**上表各项除了“第 16.8 节对照组”都还没有做**，仍按上面的顺序执行；先 `git pull`，`git log --oneline | Select-String "T24aa|T24ab|T24ac"` 要能各找到一条。第五轮的 OCR 崩溃复现见第 17.14 节，要重做。已经完成的：`docker-compose.yml`、OpenSearch 的 Dockerfile（还差后端 `/health` 的输出，以及 `down` 之后数据卷保留，可以顺手补上，存到 `output/windows-w9/docker/`）。
 
 ### 17.2 基线、公用脚本、新的内存采样脚本
 
@@ -1725,6 +1730,38 @@ echo exit=%ERRORLEVEL%
 ### 17.11 30 条漏检查询的人工核对（W8 第 16.7 节 B，Barry 本人）
 
 做法不变，见第 16.7 节 B。Claude 已经按自动规则把 270 条分好类（核对记录第 3 节）：14 条查询太泛、33 条内容词都在 OCR 文本里、223 条有内容词不在 OCR 文本里。这 30 条人工答案用来区分最后一类里，哪些是 OCR 漏认了、哪些是图上本来就没有这些词。
+
+### 17.14 OCR Worker 数与崩溃：按正确的方法重做（2026-11-25 添加）
+
+**为什么：** 2026-11-25 的第五轮复现了 `0xC0000005`，但编排脚本用 `$workers.ProcessId` 停 Worker，而 `Start-Process -PassThru` 返回的对象只有 `.Id`，**每一轮的 Worker 都没停掉**，标称“单 Worker”的第 9 轮实际有 9 个在跑（核对见 `docs/changes/windows-2026-11-25-核对.md` 第 2 节）。重新统计后看到：活着的 Worker 不超过 4 个时没有失败，5 个以上每轮都崩。这一节用干净的步骤确认，并补上当时没有采集的**提交内存**（页面文件用量），判断内存耗尽是不是原因。
+
+**方法上的三条硬要求：** 停进程用 `.Id`；每一轮开始前先**数清活着的 OCR Worker**，不为 0 就先全部停掉、等 10 秒再数；每一轮只测一种 Worker 数。测试期间其他程序（浏览器、Docker 之外的服务）保持不变，并记下可用内存的起始值。
+
+**准备：** 数据集用第 16.4 节的 `docvqa-crash4`，数据库与前缀用新的 `docmgr_w9b`、`w9b_`。在新基线（包含 T24aa–T24ac）上做。**先停掉平时常开的 OCR Worker**，只保留 PostgreSQL、OpenSearch、CLIP。采样用第 17.2 节的新脚本，把每次采样最后的 `cpu_total_percent` 一行之前加一行（提交内存，单位 MB，`commit_used` 与 `commit_limit`）：
+
+```powershell
+$os = Get-CimInstance Win32_OperatingSystem -Property TotalVirtualMemorySize, FreeVirtualMemory, FreePhysicalMemory
+$lines += "$now,commit_limit,0,{0:F1},0" -f ($os.TotalVirtualMemorySize / 1KB)
+$lines += "$now,commit_free,0,{0:F1},0" -f ($os.FreeVirtualMemory / 1KB)
+```
+
+**步骤：** Worker 数 N = 1、2、3、4、5、6，每种 5 轮（共 30 轮）。每一轮：
+
+```powershell
+function Count-Ocr { @(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match '-m ocr_worker' -and $_.Name -eq 'python.exe' }).Count }
+function Stop-AllOcr { Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match '-m ocr_worker' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }; Start-Sleep -Seconds 10 }
+# 每轮开头
+if ((Count-Ocr) -ne 0) { Stop-AllOcr }
+"round=<N>-<r> before=$(Count-Ocr) time=$(Get-Date -Format o)" | Out-File -Append -Encoding utf8 "$out\worker-count.txt"
+# 启动 N 个：Start-Ocr（第 16.2 节），用返回对象的 .Id 停止
+# 等 4 个 OCR 任务全部结束 → 导出 CSV → Stop-AllOcr → 再写一行 after=$(Count-Ocr)
+```
+
+注意 `python.exe -m ocr_worker` 在虚拟环境里有启动器和真正的进程两个，`Count-Ocr` 的数要除以 2 理解；日志里“OCR 模型已加载”的份数才是真正的 Worker 数，两者对照写进报告。**可用内存低于 300 MB 或出现“页面文件太小”就停止这一组**，照实记录停在哪一轮，不要继续加压。
+
+**预期：** 30 个 CSV（停止的组除外），每个 4 行；`worker-count.txt` 每轮 before、after 都是 0；`memory.csv` 覆盖全程、间隔不超过 3 秒，有 `commit_free`、`commit_limit`、`system_available`。不设通过线。
+
+**Claude 怎么判断：** 按实际 Worker 数统计失败数；看每次失败前 10 秒的 `commit_free`，如果失败都集中在提交内存将尽的时刻、充足时没有失败，就确认“内存耗尽”；得出建议的 Worker 上限，写进 T30。
 
 ### 17.12 验收标准
 

@@ -1,6 +1,6 @@
 # 未测试清单（Not Tested）
 
-更新日期：2026-11-23（按 Windows 第四轮（W4–W8，执行者 Codex，基线 `fd0b5eb`）的核对结果更新：第 4 节删除已验证的 14 行、改写 16 行，第 6.2 节删去 OS-6，第 7.2 节改写 2 行，第 7.3 节删 2 行、改写 3 行，新增第 7.4 节；核对见 `docs/changes/windows-2026-11-23-核对.md`。再上一次：2026-11-21（20:40 按 Windows 第一轮（W1–W3，执行者 Codex，基线 `8fb5830`）的核对结果更新：删除第 1、3 节的 T24g 1 项、T24i 2 项（Windows `output/windows-w1/backend.xml` 中通过），删除第 4 节已由 W3 原始数据证实的 4 行、改写 7 行，第 7 节新增 7.3；核对见 `docs/changes/windows-2026-11-21-核对.md`。同日 14:37 补登 T24p 漏登的一项，并注明 T24d、T24k、T24l、T24m、T24o 的条目已排进 `windows任务书.md` W5；同日稍早，T24s 完成后登记前端界面优化的 3 项未验证性质，见第 4 节“T24s 前端界面优化”；自动化测试的合计不变。同日稍早：按 T24k–T24n 的提交修正汇总数字和 Windows 未覆盖范围，没有运行任何测试。再上一次：2026-11-19 T24i 完成后，按 Barry 批准整理，并删除 Windows 第二轮已通过的 38 项）
+更新日期：2026-11-25（按 Windows 第五轮的核对结果改写 Docker、Dockerfile、`RLIMIT_AS`、OCR 崩溃 6 行，第 7.4 节加 2 行，见 `docs/changes/windows-2026-11-25-核对.md`；这一轮没有测新代码）。再上一次：2026-11-23（按 Windows 第四轮（W4–W8，执行者 Codex，基线 `fd0b5eb`）的核对结果更新：第 4 节删除已验证的 14 行、改写 16 行，第 6.2 节删去 OS-6，第 7.2 节改写 2 行，第 7.3 节删 2 行、改写 3 行，新增第 7.4 节；核对见 `docs/changes/windows-2026-11-23-核对.md`。再上一次：2026-11-21（20:40 按 Windows 第一轮（W1–W3，执行者 Codex，基线 `8fb5830`）的核对结果更新：删除第 1、3 节的 T24g 1 项、T24i 2 项（Windows `output/windows-w1/backend.xml` 中通过），删除第 4 节已由 W3 原始数据证实的 4 行、改写 7 行，第 7 节新增 7.3；核对见 `docs/changes/windows-2026-11-21-核对.md`。同日 14:37 补登 T24p 漏登的一项，并注明 T24d、T24k、T24l、T24m、T24o 的条目已排进 `windows任务书.md` W5；同日稍早，T24s 完成后登记前端界面优化的 3 项未验证性质，见第 4 节“T24s 前端界面优化”；自动化测试的合计不变。同日稍早：按 T24k–T24n 的提交修正汇总数字和 Windows 未覆盖范围，没有运行任何测试。再上一次：2026-11-19 T24i 完成后，按 Barry 批准整理，并删除 Windows 第二轮已通过的 38 项）
 
 这里列出**已经写好但从未实际执行过**的测试，以及其他没有经过验证的性质。
 规则来自 GLOBAL.md“测试执行限制与代码验证要求”：跑不了的测试不强行执行、不安装工具，
@@ -46,7 +46,7 @@ T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器�
 |---|---|---|
 | Worker 子进程的内存上限 | 用 `RLIMIT_AS` 实现，只在 Linux 上有效；开发机是 macOS，内核基本不执行这个限制 | `decisions.md` D16 |
 | 后端连上真实数据库后的整体运行 | **部分验证（2026-11-19 Windows 第二轮）。** Windows 上用真实 PostgreSQL、OpenSearch、OCR Worker、CLIP 服务走通了注册、登录、上传、状态轮询、下载、OCR 检索、删除、共享与取消共享、CLIP 检索与降级。macOS 本机仍没有跑过 | DEVPLAN §5“Windows 第二轮补测” |
-| `deploy/docker-compose.yml` | 只校验过语法，容器从未启动 | DEVPLAN §5 T01 |
+| `deploy/docker-compose.yml` | **基本验证（2026-11-25 Windows 第五轮，`docs/changes/windows-2026-11-25-核对.md`）：** Docker Desktop 上 `config -q` 通过，PostgreSQL 16.6 与 OpenSearch 两个容器启动并 healthy，解析、向量、OCR 任务在这两个容器上跑过（端口改用 55433、9201）。没有用后端 `/health` 查看的记录；`down`、数据卷保留没有验证 | DEVPLAN §5 T01 |
 | 前端与真实后端的联调 | **大部分已验证（2026-11-23 Windows 第四轮，W4–W8，基线 `fd0b5eb`，核对见 `docs/changes/windows-2026-11-23-核对.md`）：** W4 在真实后端、真实 CLIP 服务上核对了文件页（五列、来源、筛选空态）、拖拽区之外的上传与自动刷新、共享对话框、检索页（`ch` 参数、改开关自动重查、三格名次、RRF 融合分、耗时、CLIP 在线 / 降级 / 恢复）、预览页返回，W5 11.6 核对了生产构建。仍未验证：T24v–T24z 的登录页（见下面“T24v–T24z”一节；W4 测的是这些提交之前的代码）、真实鼠标拖入（`windows任务书.md` 第 17.6、17.7 节） | DEVPLAN §5 T10、T16、T24s |
 | 前端页面组件的自动化测试 | 没有写，项目里也没有组件测试工具（加装需要 Barry 同意）。前端单元测试（T10 时 48 项，2026-11-21 T24n 时 70 项，T24s 时 93 项，2026-11-23 T24z 时 205 项）只覆盖接口封装、格式化、摘要清洗、位置格式和检索通道的纯函数（T24s 的 `utils/channels.ts`），以及 T24v–T24z 从登录页抽出的纯函数（跳转规则、会话恢复、表单规则、提交流程、错误文字、服务状态，`tests/login/`、`tests/auth.test.ts`）；登录页的组件本身（`LoginForm.vue` 等）、文件列表、共享对话框、检索页、预览页、PDF 查看器只做过人工浏览器检查 | DEVPLAN §5 T10、T16、T24v–T24z |
 | PDF 预览在真实文件上的表现 | **部分验证。** 2026-11-19 Windows 第二轮发现中文 PDF 预览空白（pdf.js 没有配置 CMap 等资源），修复后用一份真实中文 PDF 在真实后端上看到正常显示（截图 `docs/screenshots/windows-2026-11-19/pdf-preview-e2e-fixed.png`）。修复后的预览在 macOS 浏览器里没有看过；扫描件、加密、接近 50 MB 的 PDF 仍没有试过 | `decisions.md` D29 |
@@ -59,8 +59,8 @@ T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器�
 | 一致性检查对真实 OpenSearch 的操作 | **已验证（2026-11-23 Windows 第四轮，W4–W8，基线 `fd0b5eb`，核对见 `docs/changes/windows-2026-11-23-核对.md`）：** W5 11.3 在真实 OpenSearch 上做了新建索引后的检查（没有误报）、人为制造结构差异、`rebuild-indices` 与 `--force` 重建；W6 12.4 在 500 个文档上做了单个文档重建（片段与向量）、孤立文件删除，修复后计数不变。剩下一处：检索服务不可用时 `repair` 多打了一行“所选类别下没有需要修复的问题”（见第 7.4 节） | `decisions.md` D31 |
 | OCR 在真实文件上的表现 | 只用 PyMuPDF 现场生成的扫描版 PDF 页、图片和空白图验证过；没有真实扫描件、手机照片、多栏排版、竖排或手写文字 | `decisions.md` D30 |
 | OCR 子进程的内存上限 | `OCR_WORKER_MEMORY_LIMIT_MB` 用 `RLIMIT_AS` 实现，只在 Linux 上有效；本机（macOS）启动时打印“无法设置识别子进程的内存上限”，只受超时保护。没有在 Linux 上验证过 | `decisions.md` D16、D30 |
-| `deploy/opensearch/Dockerfile` | 从未构建过。安装 analysis-smartcn 需要联网 | `decisions.md` D26 |
-| `deploy/docker-compose.yml` 的语法 | 只用 macOS 自带的 Ruby 读过一遍 YAML，确认结构和 `build`、`image` 两项能读出来；没有用 `docker compose config` 校验过（本机没有 Docker），compose 自己的规则没有检查 | — |
+| `deploy/opensearch/Dockerfile` | **已构建（2026-11-25 Windows 第五轮）：** 镜像 `docmgr-opensearch:2.19.1-smartcn` 构建成功，`_cat/plugins` 显示 analysis-smartcn 2.19.1，集群 green。只在这一台机器上构建过 | `decisions.md` D26 |
+| `deploy/docker-compose.yml` 的语法 | 已由 `docker compose config -q` 校验（2026-11-25 Windows 第五轮，退出码 0）。macOS 上没有 Docker，仍只用 Ruby 读过 YAML | — |
 | smartcn 的切分效果 | **英文部分有数据（2026-11-23 Windows 第四轮，W4–W8，基线 `fd0b5eb`，核对见 `docs/changes/windows-2026-11-23-核对.md`）：** W8 16.6 实测 smartcn 对英文转小写、做 Porter 词干化、不去停用词、在标点处切开（详见核对记录第 3 节）。中文切分对 B0–B2 的影响仍要到阶段五（T25 之后） | `decisions.md` A13 |
 | `action.auto_create_index: "false"` | 只写进了 `deploy/docker-compose.yml`，没有在真实 OpenSearch 上确认它生效、也没有确认它不影响 `ensure_indices` 显式建索引 | `decisions.md` D27 |
 | cleanup 硬删除与续租的配合 | 硬删除后任务记录被级联删除，父进程的下一次续租会把子进程按“租约丢失”终止。代码把硬删除放在最后一步来规避，但真实时序没有观察过 | `decisions.md` D27 |
@@ -466,9 +466,9 @@ cd <项目目录> && docker compose --env-file .env -f deploy/docker-compose.yml
 
 | 项目 | 说明 | 记录位置 |
 |---|---|---|
-| Docker 与 compose | Windows 上 Docker Desktop 未安装（需要 UAC，可能还需 WSL2）：`docker compose config`、`deploy/docker-compose.yml` 启动、`deploy/opensearch/Dockerfile` 构建、容器里的完整服务拓扑都没有测（同第 4 节和 OS-7） | 第 4 节、第 6 节 |
+| Docker 与 compose | Windows 上已装 Docker Desktop 4.99.0，两个服务容器启动成功（同第 4 节两行）。后端、Worker 没有容器化，仍在主机上运行 | 第 4 节、第 6 节 |
 | 正式检索评测 | `experiments/` 仍是 0 个文件、0 条查询、0 条 qrels，B0–B3 没有正式指标。2026-11-21 W2、W3 用 `vidore/docvqa_test_subsampled`（500 张英文扫描页，在 `experiments/docvqa/`）只做了流程验证 | 第 4 节“B0–B2 实验”“T24 B3” |
-| `RLIMIT_AS` 内存上限 | 只在 Linux 有效；Windows 上没有 WSL/Linux，仍未验证（同第 4 节两行） | `decisions.md` D16、D30 |
+| `RLIMIT_AS` 内存上限 | **部分验证（2026-11-25 Windows 第五轮的 Linux 容器）：** 两个 `_limit_memory` 能设上限（256 MB），超限申请得到 `MemoryError`。跑的是为 Python 3.9 改过的副本和桩依赖；真实解析、真实 OCR 下默认值（通用 2048 MB、OCR 3072 MB）够不够没有测 | `decisions.md` D16、D30；`docs/changes/windows-2026-11-25-核对.md` |
 | 并发、长时间运行、吞吐、峰值内存 | **部分数据（2026-11-23 Windows 第四轮，W4–W8，基线 `fd0b5eb`，核对见 `docs/changes/windows-2026-11-23-核对.md`）：** W7 13.2 六组进程同时运行的内存（合计峰值 5732.8 MB）；W8 16.5 用 40 张图比较了 1、2、4 个 OCR Worker（4.327 张/分钟最高，但每张耗时和 CPU 争抢也最高）。没有长时间运行观察 | DEVPLAN T27 |
 | 极端真实文件 | 已用 6 个真实样本（中文 PDF、Word、Excel、相机 JPEG、PaddleOCR 示例图、一个 PDF 模糊测试样本）；接近 50 MB 的 PDF、加密 PDF、多栏/表格/水印/竖排/手写扫描件、Office/WPS 实际保存的复杂文件、超大图片、渐进式 JPEG、超限压缩包都没有测 | 第 4 节解析器、OCR 各行 |
 | T24g 之后的代码 | **已覆盖到 `fd0b5eb`（2026-11-23 Windows 第四轮，W4–W8，基线 `fd0b5eb`，核对见 `docs/changes/windows-2026-11-23-核对.md`）：** W5 11.2–11.4、11.6 与 W6 12.2 在 `fd0b5eb` 上覆盖了 T24k–T24u；T24k 的连接超时因网络立刻回绝没有测到，改用本地监听重测（`windows任务书.md` 第 17.3 节）。`fd0b5eb` 之后的 T24v–T24z 没有在 Windows 上跑过 | 第 3 节、第 4 节 |
@@ -484,7 +484,7 @@ cd <项目目录> && docker compose --env-file .env -f deploy/docker-compose.yml
 | 8 项符号链接测试 | 仍因 WinError 1314 失败（同第 7.1 节）：执行方的沙箱账号没有 `SeCreateSymbolicLinkPrivilege`，提权返回退出码 4 | `windows任务书.md` W6 第 12.3 节，由 Barry 本人的终端运行 |
 | 实验记录的 mapping hash 跨机器不一致 | T24u 已改 `.gitattributes`。第二轮没有交回第 0.2 节第 4 步的 `mapping-eol.txt`，W6 的实验结果目录也没有交回，Windows 上的 LF 签出仍没有核对 | `windows任务书.md` 第 17.2、17.4 节 |
 | `git_dirty: true` | 第二轮的实验结果目录没有交回，仍无法确认 | `windows任务书.md` 第 17.4 节要求交回并记下运行前的 `git status` |
-| OCR 子进程访问违例 | 补充日志显示一共 8 次、涉及 4 个文档、都在同一分钟内。第二轮 W8 16.3：应用程序日志没有被覆盖，但没有 python 的崩溃记录；16.4：单个和 4 个 Worker 各跑 10 轮都没有复现。结论：与当时的机器状态有关，原因不明，写进论文局限 | 不再安排 |
+| OCR 子进程访问违例 | **2026-11-25 复现并查清了条件：** 同样 4 张图，活着的 OCR Worker 不超过 4 个时 24 个任务没有失败，5 个以上每轮都崩，最多时 4 个全部失败；日志里有“页面文件太小”和 `MemoryError`，可用内存都不到 2000 MB。判断为系统内存（提交内存）耗尽，没有崩溃转储，`0xC0000005` 与内存的因果是推断。那一轮的编排脚本没有停掉前面的 Worker，要按任务书第 17.14 节重做 | `docs/changes/windows-2026-11-25-核对.md` §2 |
 
 ### 7.4 Windows 第四轮（2026-11-23，W4–W8）的发现
 
@@ -501,6 +501,8 @@ cd <项目目录> && docker compose --env-file .env -f deploy/docker-compose.yml
 | `repair` 在检索服务不可用时多一行误导提示 | 见第 4 节“`consistency repair` 在检索服务不可用时的提示”一行 | 待 Barry 决定 |
 | 四个开关全关后地址栏残留 `ch` | 全关时 `onSearch` 直接返回，不更新地址栏；刷新会按上一次的开关重查 | 待 Barry 决定是否算问题 |
 | 连接超时（T24k）没有测到 | 那台机器的网络立刻回绝 `10.255.255.1` | 任务书第 17.3 节改用本地监听；方法已在 Mac 上验证（3 秒、5 秒都准确超时） |
+| T24aa、T24ab、T24ac 与 T24v–T24z | 第五轮（2026-11-25）测的代码是 `54d9760`，不含这些改动；任务书 W9 基本没有开始 | 任务书第 17 节 |
+| Worker 数与提交内存的关系 | 第五轮没有采集提交内存（页面文件用量），只有可用物理内存；可用内存 626 MB 时仍有一轮没有失败 | 任务书第 17.14 节 |
 | OCR 单次超过 300 秒 | W8 16.5 第一组，文档 `f35fbcc2` 第一次识别超过 300 秒被终止，第二次 88 秒成功 | 任务书第 17.8 节重复 15 轮 |
 | 采样脚本把 OCR 识别子进程归错组 | 任务书第 13.2、16.2 节的脚本按命令行归组，multiprocessing 启动的识别子进程被归进 `python_other`。W7 的合计峰值因此少算约 3 GB，已按原始数据更正；W8 16.5 汇总里的内存数字同样受影响 | 任务书第 17.2 节换成按父进程归组的新脚本 |
 | 真实文件、人工核对、真实拖拽 | W6 12.9、12.10，W8 16.7 B，W4 10.3 都需要 Barry 本人准备或操作，这一轮没做 | 任务书第 17.7、17.10、17.11 节 |
