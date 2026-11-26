@@ -1490,7 +1490,7 @@ Copy-Item experiments\docvqa\datasets\document_map.csv "$out\missed\document_map
 
 | 顺序 | 内容 | 谁做 | 依赖 | 预计耗时 |
 |---|---|---|---|---|
-| 1 | Barry 推送；Windows `git pull`，确认 T24aa–T24ag、T24ba–T24be 都在（见下面的更新说明） | Barry、GPT | — | 15 分钟 |
+| 1 | Barry 推送；Windows `git pull`，确认 T24aa–T24ag、T24ba–T24be、T24bh 都在（见下面的更新说明） | Barry、GPT | — | 15 分钟 |
 | 2 | 第 17.2 节：换行符核对、前端三项命令、backend / shared / OCR Worker 全套测试（含从没运行过的 12 项集成测试）。**集成测试有失败就先停下报给 Barry**，不做第 3、4 步 | GPT | 1 | 1.5 小时 |
 | 3 | 第 17.15 节：重试间隔；接着第 17.16 节：批量放回队列。这里要用的 `docmgr_w9`、前缀 `w9_`、新的存储目录在这一步新建（`alembic upgrade head`） | GPT | 2 | 50 分钟 |
 | 4 | 第 17.5 节：Ctrl+C、强制结束后的子进程、循环脚本 | GPT | 2 | 50 分钟 |
@@ -1504,7 +1504,7 @@ Copy-Item experiments\docvqa\datasets\document_map.csv "$out\missed\document_map
 
 **Barry 本人的四项**不依赖上表，随时可以做，建议顺序：第 17.9 节符号链接（20 分钟，最先做）→ 第 17.10 节真实文件（可以和 T25 收集数据一起）→ 第 17.7 节鼠标拖入（10 分钟左右）→ 第 17.11 节 30 条核对（40 分钟）。
 
-**2026-11-25 更新（第五轮，核对见 `docs/changes/windows-2026-11-25-核对.md`）：** 第五轮测的是旧代码 `54d9760`，**上表各项除了“第 16.8 节对照组”都还没有做**，仍按上面的顺序执行；先 `git pull`，`git log --oneline | Select-String "T24aa|T24ab|T24ac|T24ad|T24ae|T24af|T24ag|T24ba|T24bb|T24bc|T24bd|T24be"` 要能各找到一条。第五轮的 OCR 崩溃复现见第 17.14 节，要重做。已经完成的：`docker-compose.yml`、OpenSearch 的 Dockerfile（还差后端 `/health` 的输出，以及 `down` 之后数据卷保留，可以顺手补上，存到 `output/windows-w9/docker/`）。
+**2026-11-25 更新（第五轮，核对见 `docs/changes/windows-2026-11-25-核对.md`）：** 第五轮测的是旧代码 `54d9760`，**上表各项除了“第 16.8 节对照组”都还没有做**，仍按上面的顺序执行；先 `git pull`，`git log --oneline | Select-String "T24aa|T24ab|T24ac|T24ad|T24ae|T24af|T24ag|T24ba|T24bb|T24bc|T24bd|T24be|T24bh"` 要能各找到一条。第五轮的 OCR 崩溃复现见第 17.14 节，要重做。已经完成的：`docker-compose.yml`、OpenSearch 的 Dockerfile（还差后端 `/health` 的输出，以及 `down` 之后数据卷保留，可以顺手补上，存到 `output/windows-w9/docker/`）。
 
 ### 17.2 基线、公用脚本、新的内存采样脚本
 
@@ -1517,7 +1517,7 @@ Copy-Item experiments\docvqa\datasets\document_map.csv "$out\missed\document_map
    ```
 
    预期：三行都是 `i/lf w/lf attr/text eol=lf`；SHA-256 开头为 `be91f8071d05`（doc_meta）、`0c7937251bab`（chunks）、`c984e85b889b`（image_vectors）。不一致就按第 0.2 节第 4 步先删再签出，然后再导出一次。
-3. 新基线上有前端改动（T24v–T24z、T24bb–T24be）、任务接口改动（T24ba）和 Worker 改动（T24aa、T24ab、T24ac、T24ad）以及一个新命令（T24ae）、一处命令行提示（T24af，**2026-11-25 更正：原来写“只有前端代码变了”已过时**）。在 `frontend/` 下运行三项命令，输出存成 `frontend-typecheck.txt`、`frontend-test.txt`、`frontend-build.txt`。预期：类型检查、构建成功，单元测试 32 个文件 376 项全部通过（Mac 上 `d650843` 的结果；**2026-11-25 更正：原来写 17 个文件 207 项，是 T24ba 之前的数**）。如果这次拉到的提交里已经有 Ctrl+C 的修复（第 17.5 节），再按第 12.2 节重跑 backend、shared、OCR Worker 的测试，JUnit 存到 `output/windows-w9/`。
+3. 新基线上有前端改动（T24v–T24z、T24bb–T24be）、任务接口改动（T24ba）和 Worker 改动（T24aa、T24ab、T24ac、T24ad）以及一个新命令（T24ae）、一处命令行提示（T24af，**2026-11-25 更正：原来写“只有前端代码变了”已过时**）。在 `frontend/` 下运行三项命令，输出存成 `frontend-typecheck.txt`、`frontend-test.txt`、`frontend-build.txt`。预期：类型检查、构建成功，单元测试 32 个文件 378 项全部通过（Mac 上 T24bh 的结果；**2026-11-25 更正：原来写 17 个文件 207 项，是 T24ba 之前的数**）。如果这次拉到的提交里已经有 Ctrl+C 的修复（第 17.5 节），再按第 12.2 节重跑 backend、shared、OCR Worker 的测试，JUnit 存到 `output/windows-w9/`。
 4. 第 16.2 节的公用函数（`Q`、`Export`、`Wait-Tasks`、`Start-Ocr`）照用，只把 `$out` 改成 `"$repo\output\windows-w9"`。
 5. **新的内存采样脚本。** 第 13.2、16.2 节的脚本把 OCR 识别子进程归进了 `python_other`：子进程是 multiprocessing 启动的，命令行里没有 `ocr_worker`。新脚本沿着父进程往上找，并且每次只调用一次 CIM，所以采样更快：
 
@@ -1854,7 +1854,7 @@ s.save(d / "scan6.pdf", deflate=True)
 | 7 | 网络限速 Slow 3G，文件页快速依次点“共享给我的”“我上传的” | 最后显示的是“我上传的”文件，与选中的按钮一致（T24bb） |
 | 8 | 文件列表 → 打开文件甲 → 返回列表 → 打开文件乙；在浏览器的后退按钮上长按（或右键），直接选甲那一条 | 地址和页面内容都是甲（T24bb） |
 | 9 | 同第 17.6 节第 8 步，把令牌有效期设为 60 秒重启后端；A 登录并打开检索页，停掉后端，刷新检索页（显示“登录状态已保留”）；等到登录满 70 秒，启动后端。先在表单里填好 B 的用户名和密码，限速 Slow 3G，点“重试”后马上按回车登录 | 进入的是 B，没有被退回登录页，本地令牌还在；再点几个页面都正常（T24bb）。做完用原来的设置重启后端 |
-| 10 | 检索页：① 快速改词并连按回车；② 连点“检索”按钮三下；③ 检索中改一次开关（都在 Slow 3G 下做） | ① 只显示最后一个词的结果，前面的请求是 canceled；② 只有 1 条 `POST /api/search`；③ 同第 10.2 节第 8 项的新预期 |
+| 10 | 检索页：① 快速改词并连按回车；② 连点“检索”按钮三下；③ 检索中改一次开关（都在 Slow 3G 下做） | 检索中扫描区写“正在检索…”，结果到了写“正在整理结果…”，没有文件计数（T24bh）。① 只显示最后一个词的结果，前面的请求是 canceled；② 只有 1 条 `POST /api/search`；③ 同第 10.2 节第 8 项的新预期 |
 | 11 | 停掉 OpenSearch 后检索；启动后点扫描区的“重试” | 红色“检索服务暂时不可用”，**不是**“没有找到匹配的文件”；重试后正常显示结果 |
 | 12 | 打开检索页，按 Tab 把焦点移到右下角“EN”，停 5 秒等启动动画重新播放，按回车 | 语言切换为英文，焦点仍在“EN”上，没有跳到检索框；再点“中”切回 |
 | 13 | 切到 English，把登录页、文件页、共享对话框、删除确认框、处理详情、预览页、检索结果看一遍；切回中文 | 除了后端返回的文字（失败原因等）、文件名、正文和按钮“中”，没有中文；分页、确认框也跟着切换；没有文字溢出或被截断 |
