@@ -42,7 +42,7 @@ T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器�
 
 括号里的数字是该测试的参数化用例数，未标注的为 1。
 
-T24ad（2026-11-25）的 8 项：`test_failed_task_waits_for_the_delay_of_its_attempt`、`test_last_delay_is_reused_for_further_attempts`、`test_waiting_task_does_not_block_other_tasks`、`test_no_delay_means_immediate_retry`（2）、`test_non_retryable_failure_is_final_at_once`、`test_reclaimed_task_does_not_wait_again`、`test_manual_retry_does_not_wait`。T24ae 的 3 项：`test_requeue_failed_db.py` 全部（`test_dry_run_changes_nothing`、`test_only_failed_tasks_of_the_type_are_requeued`、`test_ocr_tasks_of_an_old_version_are_left_alone`）。T24al（2026-11-26）的 1 项：`test_search_db.py::test_clip_service_down_degrades_to_text_search`，它以前在 Windows 上通过过，T24al 给它加了 2 条断言（`channels.image` 的 `encode_ms`、`vector_ms`），加了之后没有运行。除此之外没有写好但从未运行的自动化测试。（2026-11-21 20:40：原来这里的 T24g `test_preflight_reports_mixed_ocr_models`、T24i `test_reocr_requeues_finished_ocr_tasks_of_the_current_version`、`test_reocr_refuses_while_parse_or_ocr_tasks_are_unfinished` 在 Windows 第一轮通过，已删除。）
+T24ad（2026-11-25）的 8 项：`test_failed_task_waits_for_the_delay_of_its_attempt`、`test_last_delay_is_reused_for_further_attempts`、`test_waiting_task_does_not_block_other_tasks`、`test_no_delay_means_immediate_retry`（2）、`test_non_retryable_failure_is_final_at_once`、`test_reclaimed_task_does_not_wait_again`、`test_manual_retry_does_not_wait`。T24ae 的 3 项：`test_requeue_failed_db.py` 全部（`test_dry_run_changes_nothing`、`test_only_failed_tasks_of_the_type_are_requeued`、`test_ocr_tasks_of_an_old_version_are_left_alone`）。T24al（2026-11-26）的 1 项：`test_search_db.py::test_clip_service_down_degrades_to_text_search`，它以前在 Windows 上通过过，T24al 给它加了 2 条断言（`channels.image` 的 `encode_ms`、`vector_ms`），加了之后没有运行；已排进 `后端六项联调测试计划.md` J0-1。除此之外没有写好但从未运行的自动化测试。（2026-11-21 20:40：原来这里的 T24g `test_preflight_reports_mixed_ocr_models`、T24i `test_reocr_requeues_finished_ocr_tasks_of_the_current_version`、`test_reocr_refuses_while_parse_or_ocr_tasks_are_unfinished` 在 Windows 第一轮通过，已删除。）
 
 ## 4. 不是测试、但同样没有验证过的性质
 
@@ -168,7 +168,7 @@ T24p 完成时 DEVPLAN §5 写了这一项未测试，但当时没有登记到�
 
 | 项目 | 说明 | 代码复核 |
 |---|---|---|
-| 真实 CLIP 服务和 OpenSearch 上的 `encode_ms`、`vector_ms` | 只用假的网络层和等待时间测过；两个阶段在真实服务上的数字、两者之和与 `took_ms` 的差距都没有看过。留给 T27 | 已复核：计时只包住 `encode_text`、`search_vectors` 两次调用，用 `finally` 记录 |
+| 真实 CLIP 服务和 OpenSearch 上的 `encode_ms`、`vector_ms` | 只用假的网络层和等待时间测过；两个阶段在真实服务上的数字、两者之和与 `took_ms` 的差距都没有看过。已排进 `后端六项联调测试计划.md` J4（T24am），数字也留给 T27 | 已复核：计时只包住 `encode_text`、`search_vectors` 两次调用，用 `finally` 记录 |
 
 ### T24e 文本预览排序（2026-11-19 登记，见 `decisions.md` D44）
 
