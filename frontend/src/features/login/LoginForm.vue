@@ -1,10 +1,10 @@
 <script setup lang="ts">
-// 登录 / 注册卡片（登录页结构优化 L4，从 LoginView.vue 拆出）：表单、模式切换、提交。
+// 登录 / 注册卡片（T24w，从 LoginView.vue 拆出）：表单、模式切换、提交。
 // 不管登录后去哪里：登录成功后调用 afterSignIn，由页面决定跳转（等它完成才结束“提交中”，避免按钮闪一下又能点）。
-// 默认插槽放在表单上方，页面用它显示“连不上服务器”之类的提示。
-// 提交流程（先注册再登录、注册成功但登录失败）在 submit.ts（L5），有单元测试。
-// 出错时在“登录”按钮上方显示提示（L6），一直留到用户修改输入、切换模式或重新提交；
-// 原来是顶部约 3 秒就消失的提示，离表单远，还盖在 logo 上（问题 C1）。
+// 默认插槽放在表单上方，页面用它显示“连不上服务器”之类的提示（T24x）。
+// 提交流程（先注册再登录、注册成功但登录失败）在 submit.ts（T24w），有单元测试。
+// 出错时在“登录”按钮上方显示提示（T24y），一直留到用户修改输入、切换模式或重新提交；
+// 原来是顶部约 3 秒就消失的提示，离表单远，还盖在标志上，容易看漏。错误文字见 errors.ts。
 import type { FormInstance } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { computed, reactive, ref, watch } from 'vue'
@@ -52,7 +52,7 @@ function switchMode() {
   setMode(mode.value === 'login' ? 'register' : 'login')
 }
 
-// singleFlight：校验结束前连按两次回车，原来会发两次请求（L5 实测）
+// singleFlight：校验结束前连按两次回车，原来会发两次请求（T24w 实测）
 const onSubmit = singleFlight(async () => {
   if (!(await formRef.value?.validate().catch(() => false))) return
   notice.value = null
@@ -64,7 +64,8 @@ const onSubmit = singleFlight(async () => {
       return
     }
     if (result.kind === 'registered-not-signed-in') {
-      // 账号已经建好：切回登录模式，用户名和密码都保留，再点一次“登录”即可（问题 A3）
+      // 账号已经建好：切回登录模式，用户名和密码都保留，再点一次“登录”即可。
+      // 原来停在注册模式，再点一次只会得到“用户名已存在”
       setMode('login')
       notice.value = { kind: 'registered-not-signed-in', error: result.error }
       return
@@ -84,11 +85,16 @@ const onSubmit = singleFlight(async () => {
 
 <template>
   <el-card class="login-card" shadow="never">
-    <!-- 用 h2：读屏软件按标题跳转时能找到表单（问题 C4）；样式与原来的卡片标题相同 -->
+    <!-- 用 h2：读屏软件按标题跳转时能找到表单；样式与原来的卡片标题相同 -->
     <template #header>
       <h2 class="login-card-title">{{ mode === 'login' ? m().login.loginTitle : m().login.registerTitle }}</h2>
     </template>
+    <!-- 表单上方的提示，由页面传入（“连不上服务器，登录状态已保留”等） -->
     <slot />
+    <!--
+      切换登录 / 注册时 rules 会换一套。Element Plus 默认在 rules 变化后把整个表单校验一遍，
+      空表单一切到“注册”就冒出两行红字（原来就有这个问题），所以关掉；各字段仍在失去焦点和提交时校验
+    -->
     <el-form
       ref="formRef"
       :model="form"

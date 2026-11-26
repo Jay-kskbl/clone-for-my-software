@@ -1,0 +1,30 @@
+[
+  {
+    "document_id": "7adbdb38-9b2f-4852-ab0a-7400ae0dd718",
+    "db_text_length": 143,
+    "indexed_hit_count": 1,
+    "indexed_text_lengths": [
+      143
+    ],
+    "working_candidate": {
+      "query_sha256": "9d48561d55d0e1d0454a5b5d2406a7aafebd0436284340fd0448451b578e42b1",
+      "query_length": 4,
+      "hit_count": 2,
+      "target_hit": true
+    }
+  },
+  {
+    "document_id": "fa74b0dd-86c5-42bc-959b-52059aff6ed4",
+    "db_text_length": 143,
+    "indexed_hit_count": 1,
+    "indexed_text_lengths": [
+      143
+    ],
+    "working_candidate": {
+      "query_sha256": "9d48561d55d0e1d0454a5b5d2406a7aafebd0436284340fd0448451b578e42b1",
+      "query_length": 4,
+      "hit_count": 2,
+      "target_hit": true
+    }
+  }
+]

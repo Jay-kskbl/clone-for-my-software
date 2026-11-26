@@ -1,0 +1,9 @@
+{
+  "label": "parse",
+  "task_id": "58f217bd-cd0b-44d6-8aa3-4b96a7f5939f",
+  "claimed_by": "Barry-Zou:6728:1d3d1c3c",
+  "worker": "backend2",
+  "wrapper_pid": 27760,
+  "process_pid": 6728,
+  "time": "2026-11-22T19:05:02.4951271+08:00"
+}

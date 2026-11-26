@@ -1,4 +1,4 @@
-// 登录前后的跳转（登录页结构优化 L1、L3）：登录后只回站内路径；去登录页时记住原地址；
+// 登录前后的跳转（T24v）：登录后只回站内路径；去登录页时记住原地址；
 // 令牌过期后回到原页面；页面加载时的 401 交给路由守卫。
 import { describe, expect, it } from 'vitest'
 
@@ -73,7 +73,8 @@ describe('guardTarget', () => {
   const search = route({ name: 'search', fullPath: '/search?q=1', query: { q: '1' }, meta: { requiresAuth: true } })
   const home = route({ name: 'documents', fullPath: '/', meta: { requiresAuth: true } })
   const login = route({ name: 'login', fullPath: '/login?redirect=/search', query: { redirect: '/search' } })
-  const lab = route({ name: 'motion-lab', fullPath: '/motion-lab' })
+  // 没有 requiresAuth 的页面（现在只有登录页；守卫的规则对以后加的公开页面同样适用）
+  const open = route({ name: 'public-page', fullPath: '/public-page' })
 
   it('未登录打开需要登录的页面：去登录页，带上原地址', () => {
     expect(guardTarget(search, false)).toEqual({ name: 'login', query: { redirect: '/search?q=1' } })
@@ -83,9 +84,9 @@ describe('guardTarget', () => {
     expect(guardTarget(home, false)).toEqual({ name: 'login', query: {} })
   })
 
-  it('未登录打开登录页、公开页面：放行', () => {
+  it('未登录打开登录页、不需要登录的页面：放行', () => {
     expect(guardTarget(login, false)).toBe(true)
-    expect(guardTarget(lab, false)).toBe(true)
+    expect(guardTarget(open, false)).toBe(true)
   })
 
   it('已登录打开需要登录的页面：放行', () => {

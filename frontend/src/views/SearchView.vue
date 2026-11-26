@@ -123,7 +123,7 @@ function loadThumbnails(results: SearchHit[]) {
 // ---- 检索 ----
 // 请求经 searchSession 发出（search-motion 指南 §6.3）：它负责扫描动画的开始 / 成功 / 失败 / 取消，
 // 新的检索会取消旧请求并丢弃旧请求的返回，所以不再需要“上一次没返回就不发新的”和 rerun。
-// 30 秒没有返回视为失败。结果要等扫描动画这一轮播完、收拢后（onScanDone）才显示。
+// 30 秒没有返回视为失败。结果一到扫描动画就收拢（约 0.4 秒，D60），收拢后（onScanDone）显示。
 
 const scan = ref<ScanLoaderHandle | null>(null)
 // 正在进行的是哪一个检索（请求内容），用来忽略完全相同的重复提交
@@ -227,8 +227,8 @@ onBeforeUnmount(() => {
       >
         <template #prefix><AppIcon name="search" /></template>
       </el-input>
-      <!-- 不用 :loading：加载中的按钮是禁用的，浏览器不再提交表单，扫描动画那几秒里改了检索词按回车没有反应
-           （新功能联测 V2）。进度由下面的扫描动画表示 -->
+      <!-- 不用 :loading：加载中的按钮是禁用的，浏览器不再提交表单，检索进行中改了检索词按回车没有反应
+           （T24be）。进度由下面的扫描动画表示 -->
       <el-button type="primary" size="large" round native-type="submit">{{ m().search.submit }}</el-button>
     </form>
 

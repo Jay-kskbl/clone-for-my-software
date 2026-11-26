@@ -1,4 +1,4 @@
-// 重新取文档（新功能联测 V1）：失败后自己再试、迟到的旧响应丢弃、离开后停止。
+// 重新取文档（T24bd）：失败后自己再试、迟到的旧响应丢弃、离开后停止。
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ApiError } from '../../src/api/client'

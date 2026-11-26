@@ -1,4 +1,4 @@
-"""任务失败原因的对外文字（处理详情面板 P1，docs/changes/task-panel.md）。
+"""任务失败原因的对外文字（T24ba，docs/changes/T24ba.md）。
 
 Worker 把异常写成“类型名: 异常文字”存进 processing_tasks.error
 （worker/runner.py、ocr_worker/loop.py）。

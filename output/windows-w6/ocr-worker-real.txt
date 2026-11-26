@@ -1,0 +1,14 @@
+Creating model: ('PP-OCRv5_mobile_det', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_det', None)
+INFO: Could not find files for the given pattern(s).
+C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddle\utils\cpp_extension\extension_utils.py:712: UserWarning: No ccache found. Please be aware that recompiling all source files may be required. You can download and install ccache from: https://github.com/ccache/ccache/blob/master/doc/INSTALL.md
+  warnings.warn(warning_message)
+Creating model: ('PP-OCRv5_mobile_rec', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_rec', None)
+test_blank_image_gives_no_text (tests.test_real_ocr.RealOcrTest.test_blank_image_gives_no_text) ... ok
+test_model_version_records_the_library_and_weights (tests.test_real_ocr.RealOcrTest.test_model_version_records_the_library_and_weights) ... ok
+test_scanned_pdf_page_is_recognized (tests.test_real_ocr.RealOcrTest.test_scanned_pdf_page_is_recognized) ... ok
+test_standalone_image_is_recognized (tests.test_real_ocr.RealOcrTest.test_standalone_image_is_recognized) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 8.836s
+
+OK

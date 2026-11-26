@@ -1,0 +1,14 @@
+=== Before docker compose down ===
+pg_alembic_version=0002
+pg_marker=persisted-across-down-20261126
+os_doc={"_index":"w9_volume_probe","_id":"1","_version":1,"_seq_no":0,"_primary_term":1,"found":true,"_source":{"marker":"persisted-across-down-20261126"}}
+=== Volumes present after down (no -v) ===
+docmgr_osdata
+docmgr_pgdata
+=== After docker compose up -d ===
+pg_alembic_version=0002
+pg_marker=persisted-across-down-20261126
+os_doc={"_index":"w9_volume_probe","_id":"1","_version":1,"_seq_no":0,"_primary_term":1,"found":true,"_source":{"marker":"persisted-across-down-20261126"}}
+=== Verdict ===
+pg_persisted=True
+os_persisted=True

@@ -1,0 +1,68 @@
+python.exe : test_garbage_weight_file_is_a_config_error (tests.test_real_clip.LoadFailureTest.test_garbage_weight_file_
+is_a_config_error) ... 加载模型失败
+At line:34 char:1
++ & "$repo\env_check\.venv-clip\Scripts\python.exe" -m unittest tests.t ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (test_garbage_we...ror) ... 加载模型失败:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Traceback (most recent call last):
+  File "C:\Users\lenovo\Desktop\my-software-main\_gh_upload\services\clip_service\clip_service\encoder.py", line 131, i
+n load_encoder
+    checkpoint = torch.load(fh, map_location="cpu", weights_only=True)
+  File "C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-clip\Lib\site-packages\torch\serialization.
+py", line 1641, in load
+    raise pickle.UnpicklingError(_get_wo_message(str(e))) from None
+_pickle.UnpicklingError: Weights only load failed. In PyTorch 2.6, we changed the default value of the `weights_only` a
+rgument in `torch.load` from `False` to `True`. Re-running `torch.load` with `weights_only` set to `False` will likely 
+succeed, but it can result in arbitrary code execution. Do it only if you got the file from a trusted source.
+Please file an issue with the following so that we can make `weights_only=True` compatible with your use case: WeightsU
+npickler error: 
+
+Unsupported operand 100
+
+Check the documentation of torch.load to learn more about types accepted by default with weights_only https://pytorch.o
+rg/docs/stable/generated/torch.load.html.
+ok
+test_unknown_model_name_is_a_config_error (tests.test_real_clip.LoadFailureTest.test_unknown_model_name_is_a_config_err
+or) ... ok
+test_bad_text_requests_are_rejected (tests.test_real_clip.RealClipServiceTest.test_bad_text_requests_are_rejected) ... 
+ok
+test_body_over_byte_limit_is_rejected (tests.test_real_clip.RealClipServiceTest.test_body_over_byte_limit_is_rejected) 
+... ok
+test_corrupt_and_unsupported_images_are_rejected (tests.test_real_clip.RealClipServiceTest.test_corrupt_and_unsupported
+_images_are_rejected) ... ok
+test_exif_orientation_is_applied (tests.test_real_clip.RealClipServiceTest.test_exif_orientation_is_applied)
+带 EXIF 方向标记的照片，按摆正后的画面编码（与用户在浏览器里看到的一致）。 ... ok
+test_health_reports_the_loaded_model (tests.test_real_clip.RealClipServiceTest.test_health_reports_the_loaded_model) ..
+. ok
+test_image_at_pixel_limit_is_accepted (tests.test_real_clip.RealClipServiceTest.test_image_at_pixel_limit_is_accepted) 
+... ok
+test_image_over_pixel_limit_is_rejected_before_decoding (tests.test_real_clip.RealClipServiceTest.test_image_over_pixel
+_limit_is_rejected_before_decoding) ... ok
+test_other_image_modes_are_accepted (tests.test_real_clip.RealClipServiceTest.test_other_image_modes_are_accepted) ... 
+ok
+test_pixel_bomb_beyond_pillow_own_limit_is_rejected (tests.test_real_clip.RealClipServiceTest.test_pixel_bomb_beyond_pi
+llow_own_limit_is_rejected) ... ok
+test_same_image_gives_identical_vectors (tests.test_real_clip.RealClipServiceTest.test_same_image_gives_identical_vecto
+rs) ... ok
+test_same_text_gives_identical_vectors (tests.test_real_clip.RealClipServiceTest.test_same_text_gives_identical_vectors
+) ... ok
+test_service_keeps_working_after_bad_requests (tests.test_real_clip.RealClipServiceTest.test_service_keeps_working_afte
+r_bad_requests) ... ok
+test_text_and_image_vectors_are_in_the_same_space (tests.test_real_clip.RealClipServiceTest.test_text_and_image_vectors
+_are_in_the_same_space)
+只验证链路：红色图片对“红色”的相似度高于蓝色图片。不是检索效果数据。 ... ok
+test_text_vector_does_not_depend_on_the_rest_of_the_batch (tests.test_real_clip.RealClipServiceTest.test_text_vector_do
+es_not_depend_on_the_rest_of_the_batch)
+查询单独编码和夹在一批里编码，结果应当一样（允许浮点误差）。 ... ok
+test_vectors_are_unit_length_and_finite (tests.test_real_clip.RealClipServiceTest.test_vectors_are_unit_length_and_fini
+te) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 14.497s
+
+OK
+Loading vision model config from C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-clip\Lib\site-packages\cn_clip\clip\model_configs\ViT-B-16.json
+Loading text model config from C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-clip\Lib\site-packages\cn_clip\clip\model_configs\RoBERTa-wwm-ext-base-chinese.json
+Model info {'embed_dim': 512, 'image_resolution': 224, 'vision_layers': 12, 'vision_width': 768, 'vision_patch_size': 16, 'vocab_size': 21128, 'text_attention_probs_dropout_prob': 0.1, 'text_hidden_act': 'gelu', 'text_hidden_dropout_prob': 0.1, 'text_hidden_size': 768, 'text_initializer_range': 0.02, 'text_intermediate_size': 3072, 'text_max_position_embeddings': 512, 'text_num_attention_heads': 12, 'text_num_hidden_layers': 12, 'text_type_vocab_size': 2}

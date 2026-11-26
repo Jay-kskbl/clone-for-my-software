@@ -1,0 +1,7 @@
+将要修复 2 处：
+- rebuild-indices：index_missing 索引 doc_meta 不存在
+- rebuild-indices：index_missing 索引 chunks 不存在
+
+注意：重建索引前请先停掉通用 Worker 和 OCR Worker，重建期间检索结果不完整。
+
+已完成：重建了三个索引：0 个文档，0 个片段，0 个图片向量

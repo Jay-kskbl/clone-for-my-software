@@ -1,0 +1,19 @@
+
+ProcessId       : 29476
+ParentProcessId : 8644
+Name            : pwsh.exe
+CommandLine     : "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\native\powershell\pwsh.exe" -Command "try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}
+                  $start=(Get-Date).AddHours(-1); Get-WinEvent -FilterHashtable @{LogName='Application'; StartTime=$start; Id=1000,1001} -ErrorAction SilentlyContinue | Where-Object { $_.Message -match 'python|paddle|ocr' } | Select-Object TimeCreated,Id,ProviderName,LevelDisplayName,Message | Format-List | Tee-Object -FilePath 'output\w8-round2d-20261125\application-crash-events-20261125.txt'"
+
+ProcessId       : 5180
+ParentProcessId : 8644
+Name            : pwsh.exe
+CommandLine     : "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\native\powershell\pwsh.exe" -Command "try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}
+                  $start=(Get-Date).AddHours(-1); Get-WinEvent -FilterHashtable @{LogName='Application'; StartTime=$start} -ErrorAction SilentlyContinue | Where-Object { $_.ProviderName -match 'Application Error|Windows Error Reporting' } | Select-Object TimeCreated,Id,ProviderName,LevelDisplayName,Message | Format-List | Tee-Object -FilePath 'output\w8-round2d-20261125\wer-and-application-errors-20261125.txt'"
+
+ProcessId       : 29832
+ParentProcessId : 8644
+Name            : pwsh.exe
+CommandLine     : "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\native\powershell\pwsh.exe" -Command "try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}
+                  Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'w8-round2d-20261125|monitor_w8_fast|run_w8_round2' } | Select-Object ProcessId,ParentProcessId,Name,CommandLine | Format-List | Tee-Object -FilePath 'output\w8-round2d-20261125\remaining-test-processes.txt'"
+

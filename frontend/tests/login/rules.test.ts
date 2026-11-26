@@ -1,4 +1,4 @@
-// 登录 / 注册表单的校验规则（登录页结构优化 L1）：边界与后端一致（docs/api.md §4.2），提示随界面语言。
+// 登录 / 注册表单的校验规则（T24w）：边界与后端一致（docs/api.md §4.2），提示随界面语言。
 import type { FormItemRule } from 'element-plus'
 import { afterEach, describe, expect, it } from 'vitest'
 

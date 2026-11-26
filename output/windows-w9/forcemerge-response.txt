@@ -1,0 +1,3 @@
+docvqa_chunks: {"_shards":{"total":1,"successful":1,"failed":0}}
+docvqa_doc_meta: {"_shards":{"total":1,"successful":1,"failed":0}}
+docvqa_image_vectors: {"_shards":{"total":1,"successful":1,"failed":0}}

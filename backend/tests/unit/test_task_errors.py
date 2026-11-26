@@ -1,4 +1,4 @@
-"""处理详情面板 P1：任务失败原因的对外文字（documents/task_errors.py）。
+"""T24ba：任务失败原因的对外文字（documents/task_errors.py）。
 
 数据库和接口的部分在 tests/integration/test_documents.py。
 """

@@ -1,0 +1,10 @@
+
+
+ProcessId       : 15392
+ParentProcessId : 4952
+CommandLine     : "C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\python.exe" "-c" "from mu
+                  ltiprocessing.spawn import spawn_main; spawn_main(parent_pid=4952, pipe_handle=492)" "--multiprocessi
+                  ng-fork"
+
+
+

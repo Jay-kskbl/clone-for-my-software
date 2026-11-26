@@ -1,0 +1,9 @@
+{
+  "label": "ocr",
+  "task_id": "0f9abb4d-4557-44f7-9c27-67738a2d216a",
+  "claimed_by": "ocr-Barry-Zou-25340-afcecb",
+  "worker": "ocr1",
+  "wrapper_pid": 29548,
+  "process_pid": 25340,
+  "time": "2026-11-22T19:05:02.5694175+08:00"
+}

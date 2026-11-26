@@ -1,0 +1,12 @@
+{
+  "samples": 590,
+  "start": "2026-11-25T11:54:01.2389720+08:00",
+  "end": "2026-11-25T12:08:26.0627552+08:00",
+  "min_gap_s": 1.198,
+  "max_gap_s": 2.074,
+  "system_available_min_mb": 626.0,
+  "api_peak_mb": 62.9,
+  "clip_peak_mb": 1043.3,
+  "worker_peak_mb": 179.6,
+  "ocr_peak_mb": 4350.3
+}

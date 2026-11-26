@@ -126,8 +126,8 @@ export function createScanLoader<T>(host: HTMLElement, options: ScanLoaderOption
     errorBox.hidden = true
   }
 
-  function scanCard(card: HTMLElement, index: number): void {
-    setStatus(SCAN_TEXT.reading(index + 1, count))
+  // 卡片只是装饰，数目与文件数无关，所以进度文字不跟着卡片变（T24bh）
+  function scanCard(card: HTMLElement): void {
     card.classList.add('is-active')
     if (!reduced) {
       const line = card.querySelector<HTMLElement>('.sm-scan-beam')
@@ -152,7 +152,7 @@ export function createScanLoader<T>(host: HTMLElement, options: ScanLoaderOption
       for (const card of items) card.classList.remove('is-in', 'is-read', 'is-active')
       t = RESET_MS
     }
-    setStatus(SCAN_TEXT.opening)
+    setStatus(SCAN_TEXT.searching)
     items.forEach((card, i) =>
       timers.after(t + i * STAGGER_MS, () => {
         // 容器刚从 display: none 变为显示时，先强制算一次样式，入场过渡才有起点
@@ -161,11 +161,10 @@ export function createScanLoader<T>(host: HTMLElement, options: ScanLoaderOption
       }),
     )
     t += Math.max(600, (items.length - 1) * STAGGER_MS + CARD_IN_MS)
-    items.forEach((card, i) => timers.after(t + i * SCAN_MS, () => scanCard(card, i)))
+    items.forEach((card, i) => timers.after(t + i * SCAN_MS, () => scanCard(card)))
     timers.after(t + items.length * SCAN_MS, () => {
       dispatch({ type: 'roundEnd' })
-      if (state.phase === 'summarizing') summarize()
-      else if (state.phase === 'scanning') runRound()
+      runRound()
     })
   }
 
@@ -206,7 +205,12 @@ export function createScanLoader<T>(host: HTMLElement, options: ScanLoaderOption
     complete(value) {
       if (state.phase !== 'scanning') return
       result = { value }
+      // 不等这一轮播完：停下扫描，马上收拢（D60）
+      timers.clear()
+      stopBeam()
+      for (const card of cards()) card.classList.remove('is-active')
       dispatch({ type: 'complete' })
+      summarize()
     },
     error(message) {
       if (state.phase !== 'scanning') return

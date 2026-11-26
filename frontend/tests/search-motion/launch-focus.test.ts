@@ -1,4 +1,4 @@
-// 启动动画播放中按键跳过时，焦点交给谁（新功能联测 V2）。
+// 启动动画播放中按键跳过时，焦点交给谁（T24be）。
 import { describe, expect, it } from 'vitest'
 
 import { takesFocusOnKey } from '../../src/features/search-motion/launch/focus'

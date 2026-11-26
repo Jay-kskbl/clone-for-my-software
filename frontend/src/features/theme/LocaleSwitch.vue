@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// 界面语言切换（Barry 2026-11-22，演示用）：右下角、配色按钮左边的“中 | EN”胶囊，点一下立即切换，
+// 界面语言切换（T24bc）：右下角、配色按钮左边的“中 | EN”胶囊，点一下立即切换，
 // 选择保存在本机浏览器（src/i18n）。
 import { locale, m, type Locale } from '../../i18n'
 

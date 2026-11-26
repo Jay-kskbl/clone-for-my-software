@@ -1,0 +1,15 @@
+{
+  "status": "degraded",
+  "database": {
+    "status": "ok",
+    "detail": null
+  },
+  "opensearch": {
+    "status": "ok",
+    "detail": "集群状态为 yellow"
+  },
+  "clip_service": {
+    "status": "unavailable",
+    "detail": "ConnectTimeout"
+  }
+}

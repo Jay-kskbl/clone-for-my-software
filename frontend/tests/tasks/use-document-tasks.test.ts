@@ -1,4 +1,4 @@
-// useDocumentTasks 与页面生命周期的配合：离开页面之后不再请求、不再轮询（新功能联测 V1）。
+// useDocumentTasks 与页面生命周期的配合：离开页面之后不再请求、不再轮询（T24bd）。
 // 项目没有组件测试工具，用 Vue 自带的 createRenderer 配一套什么都不画的节点操作来挂载、卸载组件。
 import { createRenderer, defineComponent, h } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'

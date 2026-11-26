@@ -1,4 +1,4 @@
-// 批量重试（任务状态与重试 P2）
+// 批量重试（T24bd）
 import { describe, expect, it, vi } from 'vitest'
 
 import { ApiError } from '../../src/api/client'

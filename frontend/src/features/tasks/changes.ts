@@ -1,4 +1,4 @@
-// 预览页要不要跟着任务的变化刷新（任务状态与重试 P4）。纯函数。
+// 预览页要不要跟着任务的变化刷新（T24bd）。纯函数。
 import type { Status, Task } from '../../api/types'
 import { parseStatus } from './summary'
 

@@ -1,0 +1,83 @@
+ Image docmgr-opensearch:2.19.1-smartcn Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 634B 0.0s done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 708B done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/opensearchproject/opensearch:2.19.1
+#3 DONE 0.0s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 2B done
+#4 DONE 0.0s
+
+#5 [1/2] FROM docker.io/opensearchproject/opensearch:2.19.1@sha256:72fe2fc84be8295906b8efca020b46c58ed45c8da60cd9b8b49e1991e38e89a4
+#5 resolve docker.io/opensearchproject/opensearch:2.19.1@sha256:72fe2fc84be8295906b8efca020b46c58ed45c8da60cd9b8b49e1991e38e89a4 0.0s done
+#5 DONE 0.2s
+
+#5 [1/2] FROM docker.io/opensearchproject/opensearch:2.19.1@sha256:72fe2fc84be8295906b8efca020b46c58ed45c8da60cd9b8b49e1991e38e89a4
+#5 extracting sha256:a60da04a601b8a4165b40817da07cd2d6e94c2b008c87988152b943d6465d10c
+#5 extracting sha256:a60da04a601b8a4165b40817da07cd2d6e94c2b008c87988152b943d6465d10c 1.4s done
+#5 DONE 1.6s
+
+#5 [1/2] FROM docker.io/opensearchproject/opensearch:2.19.1@sha256:72fe2fc84be8295906b8efca020b46c58ed45c8da60cd9b8b49e1991e38e89a4
+#5 extracting sha256:4c036822f6972a70db1138880fd0393f04b6282d21076fc40dfe111b2107852b
+#5 extracting sha256:4c036822f6972a70db1138880fd0393f04b6282d21076fc40dfe111b2107852b 0.2s done
+#5 DONE 1.8s
+
+#5 [1/2] FROM docker.io/opensearchproject/opensearch:2.19.1@sha256:72fe2fc84be8295906b8efca020b46c58ed45c8da60cd9b8b49e1991e38e89a4
+#5 extracting sha256:4077e1cc9344da79a471c1c0fed320cc57a6a51195d63a2e120dca794b55f67f 0.0s done
+#5 extracting sha256:83ca2899e055720360c7bc6d02ecee536f886e8a459368ebab8006ca8f96e469
+#5 extracting sha256:83ca2899e055720360c7bc6d02ecee536f886e8a459368ebab8006ca8f96e469 7.3s done
+#5 DONE 9.1s
+
+#5 [1/2] FROM docker.io/opensearchproject/opensearch:2.19.1@sha256:72fe2fc84be8295906b8efca020b46c58ed45c8da60cd9b8b49e1991e38e89a4
+#5 extracting sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1 0.0s done
+#5 extracting sha256:7d34d22a493124a217fb0e1a1f02414d3be8295e34d06437778095ee8af3492c 0.0s done
+#5 extracting sha256:002fbd2438c8055a1353ecb89a44e5c7aaa8ee4a141bb82f92b9e25638c3b1ee 0.0s done
+#5 DONE 9.2s
+
+#6 [2/2] RUN /usr/share/opensearch/bin/opensearch-plugin install --batch analysis-smartcn
+#6 1.987 -> Installing analysis-smartcn
+#6 3.645 -> Downloading analysis-smartcn from opensearch
+#6 9.385 -> Installed analysis-smartcn with folder name analysis-smartcn
+#6 DONE 11.4s
+
+#7 exporting to image
+#7 exporting layers
+#7 exporting layers 0.2s done
+#7 exporting manifest sha256:903b6db398b818d9455bff2630d2f1850a8f6eeed778989cf205d07b29f36820 0.0s done
+#7 exporting config sha256:5fa1391e5225ec2270c5194764fe8f1f86fa5247cb27c6e8abde21647683ff16 0.0s done
+#7 exporting attestation manifest sha256:cc5e183e809bad2d2c18838c7d7e9ade36d9e537ea08a5a1dd1753822bbfe65c 0.0s done
+#7 exporting manifest list sha256:bc8a8f824e5b7fc4e4e35d61b9c1a7e57ccf5ec7ceb390f3882e6c4176ace22d 0.0s done
+#7 naming to docker.io/library/docmgr-opensearch:2.19.1-smartcn
+#7 naming to docker.io/library/docmgr-opensearch:2.19.1-smartcn done
+#7 unpacking to docker.io/library/docmgr-opensearch:2.19.1-smartcn 0.0s done
+#7 DONE 0.4s
+
+#8 resolving provenance for metadata file
+#8 DONE 0.0s
+ Image docmgr-opensearch:2.19.1-smartcn Built 
+ Network docmgr_default Creating 
+ Volume docmgr_pgdata Creating 
+ Volume docmgr_osdata Creating 
+ Volume docmgr_osdata Creating 
+ Network docmgr_default Creating 
+ Volume docmgr_pgdata Creating 
+ Volume docmgr_osdata Created 
+ Volume docmgr_osdata Created 
+ Volume docmgr_pgdata Created 
+ Volume docmgr_pgdata Created 
+ Network docmgr_default Created 
+ Network docmgr_default Created 
+ Container docmgr-postgres-1 Creating 
+ Container docmgr-opensearch-1 Creating 
+ Container docmgr-opensearch-1 Created 
+ Container docmgr-postgres-1 Created 
+ Container docmgr-postgres-1 Starting 
+ Container docmgr-opensearch-1 Starting 
+ Container docmgr-postgres-1 Started 
+ Container docmgr-opensearch-1 Started 

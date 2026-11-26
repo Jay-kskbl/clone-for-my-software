@@ -1,4 +1,4 @@
-// 登录状态（src/auth.ts）：恢复会话时只有 401 才删除令牌，连不上服务器时保留（登录页结构优化 L2）。
+// 登录状态（src/auth.ts）：恢复会话时只有 401 才删除令牌，连不上服务器时保留（T24x）。
 // fetch 和 localStorage 用假的实现替换，不需要浏览器，也不需要后端。
 // auth.ts 的状态是模块级的单例，每个测试重新导入一份。
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -144,7 +144,7 @@ describe('login / logout', () => {
   })
 })
 
-describe('点了“重试”还没返回时又登录（新功能联测 V4）', () => {
+describe('点了“重试”还没返回时又登录（T24bb）', () => {
   function pendingMe() {
     let respond!: (response: Response) => void
     fetchMock.mockImplementationOnce(() => new Promise<Response>((resolve) => (respond = resolve)))

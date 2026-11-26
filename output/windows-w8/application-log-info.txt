@@ -1,0 +1,8 @@
+
+LogName            : Application
+FileSize           : 20975616
+MaximumSizeInBytes : 20971520
+RecordCount        : 68091
+LogMode            : Circular
+
+2026-09-13T21:36:03.9414951+08:00

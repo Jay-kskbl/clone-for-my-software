@@ -1,0 +1,7 @@
+
+检索服务不可用（检索服务连接失败（ConnectError）），没有检查索引；以上只是数据库和磁盘的结果
+{
+  "index_available": false,
+  "index_error": "检索服务连接失败（ConnectError）",
+  "issues": []
+}

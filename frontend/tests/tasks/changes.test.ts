@@ -1,4 +1,4 @@
-// 预览页跟随任务变化（任务状态与重试 P4）
+// 预览页跟随任务变化（T24bd）
 import { describe, expect, it } from 'vitest'
 
 import { documentOutdated, hasNewOcr } from '../../src/features/tasks/changes'

@@ -55,7 +55,7 @@ describe('切换', () => {
     expect(STATUS_LABEL.processing.text).toBe('解析中')
     expect(formatLocator({ type: 'pdf_page', page: 3 })).toBe('第 3 页')
     expect(cellText({ channel: 'text', state: 'hit', rank: 2 })).toBe('第 2 名')
-    expect(SCAN_TEXT.reading(1, 6)).toBe('正在阅读第 1 / 6 个文件')
+    expect(SCAN_TEXT.searching).toBe('正在检索…')
     locale.value = 'en'
     expect(STATUS_LABEL.processing.text).toBe('Parsing')
     expect(STATUS_LABEL.processing.type).toBe('warning')
@@ -64,7 +64,7 @@ describe('切换', () => {
     expect(evidenceLabel(null)).toBe('Matched file name or tags')
     expect(typeBadge('image/png').text).toBe('IMG')
     expect(cellText({ channel: 'text', state: 'hit', rank: 2 })).toBe('#2')
-    expect(SCAN_TEXT.reading(1, 6)).toBe('Reading file 1 of 6')
+    expect(SCAN_TEXT.searching).toBe('Searching…')
   })
 })
 
@@ -93,5 +93,18 @@ describe('保存与读取', () => {
     expect(() => saveLocale('en', broken)).not.toThrow()
     expect(isLocale('en')).toBe(true)
     expect(isLocale('EN')).toBe(false)
+  })
+})
+
+describe('检索动效的文字只说真实发生的事（T24bh）', () => {
+  it.each([
+    ['中文', zh.scan],
+    ['英文', en.scan],
+  ])('%s：不出现文件计数，不说“阅读”“答案”', (_name, scan) => {
+    for (const text of Object.values(scan)) {
+      // 卡片数不是文件数；系统不打开文件，也不生成答案（GLOBAL §8.1、§13）
+      expect(typeof text).toBe('string')
+      expect(text).not.toMatch(/阅读|打开|答案|\d|read|open|answer/i)
+    }
   })
 })

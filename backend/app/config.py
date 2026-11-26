@@ -4,6 +4,7 @@ from pathlib import Path
 
 from pydantic import Field, SecretStr, ValidationError, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from shared.task_queue import parse_retry_delays
 
 from app.core.errors import ConfigError
 from app.modules.storage.filetype import SUPPORTED_TYPES
@@ -137,6 +138,18 @@ class Settings(BaseSettings):
     # 连接数据库最多等多久（秒，libpq 的 connect_timeout 只接受整数，最小有效值 2）。
     # 不设上限时主机不可达要等操作系统的 TCP 超时，启动检查迟迟不报错（T24k）
     worker_db_connect_timeout_seconds: int = Field(default=10, ge=2, le=300)
+    # 失败任务的重试间隔（秒，逗号分隔），与 OCR Worker 共用；写 0 表示马上重试（T24ad）
+    task_retry_delays_seconds: str = Field(default="30,120")
+
+    @field_validator("task_retry_delays_seconds")
+    @classmethod
+    def _retry_delays_valid(cls, value: str) -> str:
+        parse_retry_delays(value)
+        return value
+
+    @property
+    def retry_delays(self) -> tuple[float, ...]:
+        return parse_retry_delays(self.task_retry_delays_seconds)
 
     @model_validator(mode="after")
     def _overlap_shorter_than_chunk(self) -> "Settings":

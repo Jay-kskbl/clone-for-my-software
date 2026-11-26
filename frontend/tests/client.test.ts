@@ -211,7 +211,7 @@ describe('登录状态失效', () => {
   })
 })
 
-describe('任务接口（任务状态与重试 P2）', () => {
+describe('任务接口（T24bd）', () => {
   it('列出文档的任务：取出 items', async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, { items: [{ id: 't1' }] }))
     const controller = new AbortController()
@@ -233,5 +233,29 @@ describe('任务接口（任务状态与重试 P2）', () => {
       jsonResponse(409, { error: { code: 'TASK_NOT_RETRYABLE', message: '只有失败的任务可以重试' } }),
     )
     await expect(retryTask('t1')).rejects.toMatchObject({ status: 409, code: 'TASK_NOT_RETRYABLE' })
+  })
+})
+
+describe('取消请求（T24bd）', () => {
+  it('signal 交给 fetch；主动取消时原样抛出，不说成“连不上服务器”', async () => {
+    const controller = new AbortController()
+    fetchMock.mockImplementation((_url: string, init: RequestInit) => {
+      controller.abort()
+      return Promise.reject(init.signal?.reason)
+    })
+
+    const error = await listDocumentTasks('d1', controller.signal).catch((e: unknown) => e)
+
+    expect(lastCall().init.signal).toBe(controller.signal)
+    expect(error).not.toBeInstanceOf(ApiError)
+    expect((error as Error).name).toBe('AbortError')
+  })
+
+  it('带了 signal 但没有取消：网络不通仍是 NETWORK', async () => {
+    fetchMock.mockRejectedValue(new TypeError('Failed to fetch'))
+
+    const error = await listDocumentTasks('d1', new AbortController().signal).catch((e: unknown) => e)
+
+    expect(error).toMatchObject({ status: 0, code: 'NETWORK' })
   })
 })

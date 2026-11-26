@@ -1,4 +1,4 @@
-// 任务刷新（任务状态与重试 P2）：轮询、停止、丢弃迟到的响应
+// 任务刷新（T24bd）：轮询、停止、丢弃迟到的响应
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Task } from '../../src/api/types'

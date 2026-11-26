@@ -8,13 +8,13 @@ import { afterUnauthenticated } from './features/login/redirect'
 import { initTheme } from './features/theme/store'
 import { initLocale } from './i18n'
 import { router } from './router'
-// Element Plus 的暗色变量（只在 html.dark 时生效），系统配色的“深色”用它
+// Element Plus 的暗色变量（只在 html.dark 时生效），系统配色的“深色”用它（T24bc）
 import 'element-plus/theme-chalk/dark/css-vars.css'
 // 放在 element.ts 之后引入：全局样式引用 Element Plus 的 CSS 变量（T24s）
 import './styles.css'
 
 // 任何请求发现令牌失效时：清掉登录状态；使用中过期的，带上当前地址回到登录页，
-// 重新登录后回来（规则见 features/login/redirect.ts 的 afterUnauthenticated）
+// 重新登录后回来（T24v，规则见 features/login/redirect.ts 的 afterUnauthenticated）
 setUnauthenticatedHandler(() => {
   const target = afterUnauthenticated(auth.user !== null, router.currentRoute.value)
   logout()

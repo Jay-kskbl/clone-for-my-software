@@ -1,0 +1,7 @@
+[32mCreating model: ('PP-OCRv5_mobile_det', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_det', None)[0m
+ĞÅÏ¢: ÓÃÌá¹©µÄÄ£Ê½ÎŞ·¨ÕÒµ½ÎÄ¼ş¡£
+C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddle\utils\cpp_extension\extension_utils.py:712: UserWarning: No ccache found. Please be aware that recompiling all source files may be required. You can download and install ccache from: https://github.com/ccache/ccache/blob/master/doc/INSTALL.md
+  warnings.warn(warning_message)
+[32mCreating model: ('PP-OCRv5_mobile_rec', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_rec', None)[0m
+2026-11-25 19:53:36,403 INFO ocr_worker OCR æ¨¡å‹å·²åŠ è½½ï¼šPP-OCRv5_mobile_det+PP-OCRv5_mobile_recï¼Œpaddleocr-3.7.0/det-afa1820c/rec-2460da90
+2026-11-25 19:53:36,762 INFO ocr_worker.loop å¼€å§‹ OCR ä»»åŠ¡ d9c4c090-3ab7-4789-ad2f-f25490c18165ï¼ˆæ–‡æ¡£ 29e76469-9d2a-4f7d-8c81-7591b71a0be3ï¼Œç¬¬ 2/3 æ¬¡å°è¯•ï¼‰

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// 动效演示页（/motion-lab，只在克隆库里，不需要登录和后端）：用模拟的搜索请求走一遍
+// 动效演示页（/motion-lab，只在开发模式有，不需要登录和后端）：用模拟的搜索请求走一遍
 // 快速返回、慢速返回、报错、超时、连续搜索，供自测和设计走查。不是正式功能。
 
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
@@ -142,7 +142,7 @@ onBeforeUnmount(() => {
   <div class="lab">
     <header class="lab-head">
       <h1 class="page-title">搜索动效演示</h1>
-      <p class="page-desc">克隆库专用自测页：模拟请求，不连后端。</p>
+      <p class="page-desc">开发模式自测页：模拟请求，不连后端。</p>
       <div class="lab-tools">
         <el-button size="small" data-test="replay" @click="replayLaunch">重播启动动画（刷新）</el-button>
         <el-button size="small" @click="toggleDark">{{ dark ? '切到浅色' : '切到暗色' }}</el-button>

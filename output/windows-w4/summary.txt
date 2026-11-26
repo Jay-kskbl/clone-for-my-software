@@ -1,0 +1,139 @@
+Windows W4 实测记录：T24s 前端联调与界面核对
+============================================
+
+执行日期：2026-11-23（Asia/Shanghai）
+代码基线：fd0b5ebf729cf6602447bf95012a6064a2fe270a
+数据库：docmgr_ui
+索引前缀：ui_
+存储：storage/w4-20261123
+
+环境
+----
+
+- PostgreSQL、OpenSearch、后端：ok
+- CLIP：ok
+- 浏览器：
+  - Google Chrome，UA Chrome/157.0.0.0
+  - Microsoft Edge，UA Chrome/158.0.0.0 Safari/537.36 Edg/158.0.0.0
+- Firefox：未安装（Playwright 报 firefox executable missing）
+- Safari：Windows 上没有，未测试
+
+10.2 真实后端联调
+-----------------
+
+1. 侧栏：通过（管理员和普通用户）
+   - 管理员显示管理员标签
+   - 普通用户 w4user 显示用户名，没有管理员标签
+   - 管理员能看到 w4user 上传的文件，来源显示“管理员可见”
+
+2. 文件页加载与筛选：通过
+   - 五列：文件名、处理状态、大小、上传时间、操作
+   - 文件类型、上传者和来源在文件名下
+   - 类型色块正常
+   - “共享给我的”空态显示“还没有人共享文件给你”
+
+3. 上传记录：基本通过
+   - 一次选择 4 个支持文件
+   - 捕获到“等待处理”和“已上传”
+   - 上传过程很短，“上传中”瞬时状态未被自动截图捕获
+   - “清除已结束的记录”可见
+
+4. 5 秒自动刷新：通过
+   - 上传后未手工刷新，4 个文件从等待处理自动变为处理成功
+   - 完成后停止轮询
+
+5. 后端故障提示：部分不符
+   - 场景①：直接停后端并刷新页面，前端把身份检查失败视为登出并跳到 /login，
+     没有显示预期的“文件列表没有加载出来”
+   - 场景②：保持页面已登录，big3000.pdf 处理期间停后端；5 秒自动刷新后，
+     页面显示“自动刷新失败，列表里的状态可能不是最新的”和 HTTP 502 提示
+   - 后端恢复后点击刷新，提示消失，文件恢复为处理成功
+
+6. 共享对话框窄窗：通过
+   - viewport=400px
+   - .el-dialog 实际宽度=368px，正好为 92vw
+
+7. 四个开关与 ch 参数：部分通过
+   - 默认搜索地址没有 ch
+   - 关文件名后 ch=body,ocr
+   - 再关正文后 ch=ocr，请求 source_types 仅 [ocr]
+   - 打开图像后 ch=image，请求 channels.meta/text=false、image=true
+   - 四通道全关时显示“至少选择一个检索通道”，且没有发新请求
+   - 偏差：四通道全关后 URL 仍残留 ch=image，没有清空
+   - 旧地址 /search?q=...&img=1 打开后四个开关均为开，图像开关正确兼容
+
+8. 改开关自动重查：通过
+   - 检索完成后关闭 OCR，地址更新为 ch=meta,body,image
+   - 自动多发一次 POST /api/search
+   - 请求与最新开关一致
+
+9. 三格名次与融合分：通过
+   - w4-image.png：文字第1名、图像第1名、文件名未命中，融合分 0.0328
+   - w4-chinese.pdf：文字第2名、文件名和图像未命中，融合分 0.0161
+   - 与 POST /api/search 返回的 channels[].rank 和 score 一致
+
+10. 各通道耗时：通过
+    - 全通道请求 took_ms=67
+    - meta=31ms、text=8ms、image=65ms
+    - 页面汇总行与应答一致
+
+11. CLIP 状态：通过
+    - GET /health clip_service.status=ok
+    - 页面显示“CLIP 服务在线”
+
+12. CLIP 降级：通过
+    - 停 CLIP 后再次检索：
+      - 显示“CLIP 服务不可用，图像通道会被跳过”
+      - 显示黄色“图像检索暂时不可用”
+      - 图像格为“不可用”
+      - 文字结果正常，无报错页
+    - 重启 CLIP 后检索恢复，状态回到“CLIP 服务在线”
+
+13. 预览页返回：通过
+    - 从检索结果进入后返回，检索词和四个开关保持
+    - 新标签直接打开预览后返回，落到文件列表 /
+
+10.3 资源管理器真实拖入
+------------------------
+
+未完成：Computer Use 的 Windows 原生 drag API 只允许目标点位于源窗口边界内。
+从资源管理器拖到 Chrome 时，目标点必然落在资源管理器窗口之外，API 返回：
+
+  point is outside window bounds
+
+已实际打开资源管理器、导航到样本目录并选中文件，但无法完成跨窗口真实鼠标 drop。
+没有用 DataTransfer 或脚本派发 drop 伪装成该测试。
+
+10.4 浏览器与窄窗
+-----------------
+
+- Chrome 157：文件页、检索页、结果名次、CLIP 降级通过
+- Edge 158：文件页、检索页、全通道结果、三格名次与融合分、CLIP 在线状态通过
+- 400px 窄窗：侧栏变成顶部一行，宽 385px、高 99px；结果卡片宽 353px，布局正常
+- Firefox 未安装，Safari 未测试
+
+10.5 新截图
+-----------
+
+目录：docs/screenshots/windows-2026-11-23-t24s/
+
+- login.png
+- files-admin-uploaded.png
+- search-initial.png
+- search-all-channels.png
+- search-image-off.png
+- search-clip-degraded.png
+- preview-pdf-original.png
+- preview-image-extracted.png
+- narrow-400.png
+
+10.6 验收结果
+-------------
+
+- 使用独立 docmgr_ui、ui_、storage/w4-20261123
+- 13 个核对点均有结果
+- 发现两项前端偏差：四开关全关 URL 残留；停机后刷新跳到登录页
+- 第 10.3 节受 Windows 原生跨窗口拖拽工具限制，未完成
+- Chrome、Edge 已看；Firefox、Safari 未看
+- 截图齐全
+- 未修改前端代码

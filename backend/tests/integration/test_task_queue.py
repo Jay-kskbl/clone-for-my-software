@@ -21,6 +21,7 @@ from shared.ids import make_chunk_id
 from shared.tasks import LEASE_EXPIRED_ERROR, Task
 
 from app.db.models import Document, ProcessingTask, User
+from app.modules.documents.tasks import retry_task
 from app.worker.loop import PgTaskQueue, WorkerOptions, run_worker
 
 LEASE = 60.0
@@ -512,3 +513,110 @@ def test_worker_loop_end_to_end_failure_until_max_attempts(conn, add_task, test_
     assert state["status"] == "failed"
     assert state["attempts"] == 2
     assert state["error"] == "ValueError: 文件已损坏"
+
+
+# ---- T24ad：失败后的重试间隔 ----
+
+DELAYS = (30.0, 120.0)
+
+
+def claim_delayed(conn, delays=DELAYS, task_types=("parse",)):
+    return tasks.claim(
+        conn,
+        worker_id="worker-a",
+        task_types=task_types,
+        lease_seconds=LEASE,
+        retry_delays=delays,
+    )
+
+
+def started_ago(conn, task_id, seconds: float) -> None:
+    """把上一次尝试的开始时间往前挪，等价于过了这么久，测试不必真的等。"""
+    conn.execute(
+        "UPDATE processing_tasks SET started_at = now() - make_interval(secs => %s) WHERE id = %s",
+        [seconds, task_id],
+    )
+
+
+def fail_once(conn, task_id, *, retryable: bool = True):
+    return tasks.fail(
+        conn, task_id=task_id, worker_id="worker-a", error="boom", retryable=retryable
+    )
+
+
+def test_failed_task_waits_for_the_delay_of_its_attempt(conn, add_task):
+    task_id = add_task()
+    assert claim_delayed(conn).attempts == 1  # 第一次领取不等
+    assert fail_once(conn, task_id) == "pending"
+
+    started_ago(conn, task_id, 25)
+    assert claim_delayed(conn) is None
+    started_ago(conn, task_id, 31)
+    assert claim_delayed(conn).attempts == 2
+
+    assert fail_once(conn, task_id) == "pending"
+    started_ago(conn, task_id, 110)  # 超过第一个间隔，没到第二个
+    assert claim_delayed(conn) is None
+    started_ago(conn, task_id, 121)
+    assert claim_delayed(conn).attempts == 3
+
+    assert fail_once(conn, task_id) == "failed"
+
+
+def test_last_delay_is_reused_for_further_attempts(conn, add_task):
+    task_id = add_task(max_attempts=5)
+    for _ in range(3):
+        started_ago(conn, task_id, 1000)
+        assert claim_delayed(conn) is not None
+        fail_once(conn, task_id)
+
+    started_ago(conn, task_id, 110)
+    assert claim_delayed(conn) is None
+    started_ago(conn, task_id, 121)
+    assert claim_delayed(conn).attempts == 4
+
+
+def test_waiting_task_does_not_block_other_tasks(conn, add_task):
+    first, second = add_task(), add_task()
+    assert claim_delayed(conn).id == first
+    fail_once(conn, first)
+
+    assert claim_delayed(conn).id == second
+
+
+@pytest.mark.parametrize("delays", [(), (0.0,)])
+def test_no_delay_means_immediate_retry(conn, add_task, delays):
+    task_id = add_task()
+    claim_delayed(conn, delays)
+    fail_once(conn, task_id)
+
+    assert claim_delayed(conn, delays).attempts == 2
+
+
+def test_non_retryable_failure_is_final_at_once(conn, add_task):
+    task_id = add_task()
+    claim_delayed(conn)
+
+    assert fail_once(conn, task_id, retryable=False) == "failed"
+
+
+def test_reclaimed_task_does_not_wait_again(conn, add_task):
+    # Worker 崩溃的任务已经等过一个租约时长
+    task_id = add_task()
+    claim_delayed(conn)
+    expire_lease(conn, task_id)
+
+    task = claim_delayed(conn)
+
+    assert task.id == task_id and task.attempts == 2
+
+
+def test_manual_retry_does_not_wait(conn, add_task, session, document):
+    task_id = add_task(max_attempts=1)
+    claim_delayed(conn)
+    assert fail_once(conn, task_id) == "failed"
+    owner = session.get(User, document.owner_id)
+
+    retry_task(session, owner, task_id)
+
+    assert claim_delayed(conn).id == task_id

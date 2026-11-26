@@ -1,4 +1,4 @@
-// 登录页打开时的服务状态检查（登录页结构优化 L8）：只看后端是否连得上、数据库是否可用。
+// 登录页打开时的服务状态检查（T24z）：只看后端是否连得上、数据库是否可用。
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { fetchHealth } from '../../src/api/health'

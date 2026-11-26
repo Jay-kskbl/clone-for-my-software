@@ -1,0 +1,16 @@
+{
+  "items": [
+    {
+      "id": "236bc9b9-12ba-4c3e-90c0-4393c0097041",
+      "document_id": "bab1f685-6421-4ac6-ac98-67d0fb9a2b5d",
+      "task_type": "parse",
+      "status": "failed",
+      "attempts": 1,
+      "max_attempts": 3,
+      "error": "ParseError: 图片尺寸为 12000×9000，像素数超过上限 100000000，拒绝处理",
+      "created_at": "2026-11-23T14:05:15.484173+08:00",
+      "started_at": "2026-11-23T14:05:22.328276+08:00",
+      "finished_at": "2026-11-23T14:05:24.845789+08:00"
+    }
+  ]
+}

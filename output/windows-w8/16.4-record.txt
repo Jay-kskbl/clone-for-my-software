@@ -1,0 +1,77 @@
+W8 第 16.4 节记录：OCR 崩溃复现
+================================
+
+执行时间：2026-11-23（Asia/Shanghai）
+数据库：docmgr_w8a
+索引前缀：w8a_
+存储：storage/w8a-20261123
+
+样本
+----
+
+4 files, 4 queries:
+
+- dv_mjbw0217
+- dv_mjxn0226
+- dv_mkhg0227
+- dv_mkvw0217
+
+parse 与 embed 均 4/4 succeeded，之后 CLIP 服务和通用 Worker 已停止。
+
+单 OCR Worker：10 轮
+---------------------
+
+- 共 10 个 CSV，每个 4 行
+- 每轮都是 4/4 succeeded
+- 每轮 attempts 都是 1
+- error 全为空
+- attempts>1：0
+- 耗时约 56.2、87.0、91.9、92.3、91.9、86.6、86.7、86.7、86.7、86.7 秒
+
+4 个 OCR Worker 同时运行：10 轮
+-------------------------------
+
+- 共 10 个 CSV，每个 4 行
+- 每轮都是 4/4 succeeded
+- 每轮 attempts 都是 1
+- error 全为空
+- attempts>1：0
+- 每轮耗时约 46.2–46.4 秒
+
+结论
+----
+
+本轮没有复现第一轮的 0xC0000005。按第 16.4 节的判定，应记为：
+
+  A、B 都不崩：第一轮崩溃复现不了，与当时机器状态有关，原因不明。
+
+没有生成新的崩溃事件日志，因为没有发生崩溃。
+
+内存采样
+--------
+
+- 采样文件：crash4/memory.csv
+- 时刻数：894
+- 开始：2026-11-23T13:37:43.8206599+08:00
+- 结束：2026-11-23T14:02:59.1731838+08:00
+- 采样组：postgresql、opensearch、api、ocr_worker、python_other、node、system_available、cpu_total_percent
+- 最低系统可用内存：7759.3 MB
+
+已知限制：
+
+- 采样相邻间隔并非全部不超过 3 秒
+- 最短约 1.56 秒，最长约 10.33 秒
+- 原因是每秒枚举 Win32_Process 并读取多进程内存的耗时波动
+- 因此本节数据可用于判断没有明显内存耗尽，但不满足“全程 <= 3 秒”的严格采样要求
+
+原始文件
+--------
+
+- crash4/single-r01.csv 至 single-r10.csv
+- crash4/multi4-r01.csv 至 multi4-r10.csv
+- crash4/memory.csv
+- crash4/16.4-summary.json
+- crash4/16.4-memory-peaks.json
+- logs/crash4-single.err.log
+- logs/crash4-multi1.err.log 至 multi4.err.log
+- logs/crash4-multi-pids.json

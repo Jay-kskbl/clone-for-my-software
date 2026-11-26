@@ -25,6 +25,7 @@ from app.config import load_settings
 from app.core.errors import ConfigError
 from app.worker.loop import PgTaskQueue, WorkerOptions, run_worker
 from app.worker.registry import HANDLERS
+from app.worker.runner import memory_limit_supported
 from app.worker.schema import check_schema
 
 logger = logging.getLogger("app.worker")
@@ -55,6 +56,7 @@ def main() -> int:
         worker_id=worker_id,
         lease_seconds=settings.worker_lease_seconds,
         connect_timeout_seconds=settings.worker_db_connect_timeout_seconds,
+        retry_delays=settings.retry_delays,
     )
     try:
         queue.ping()
@@ -89,6 +91,9 @@ def main() -> int:
         task_timeout_seconds=settings.worker_task_timeout_seconds,
         memory_limit_mb=settings.worker_memory_limit_mb,
     )
+    if not memory_limit_supported():
+        # 每个任务的子进程不再各打一次（T24ag）
+        logger.warning("当前系统不支持限制子进程的内存（只有 Linux 支持），任务只受超时保护")
     logger.info("Worker %s 启动，可处理的任务类型：%s", worker_id, sorted(HANDLERS) or "无")
     try:
         processed = run_worker(queue, HANDLERS, options, should_stop=lambda: stop_requested)

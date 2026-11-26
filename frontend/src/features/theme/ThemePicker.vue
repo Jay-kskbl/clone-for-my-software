@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// 配色面板（Barry 2026-11-22，演示用）：页面右下角一个圆形按钮，点开选主色（预设或自定义）和浅色 / 深色 / 跟随系统。
+// 配色面板（T24bc）：页面右下角一个圆形按钮，点开选主色（预设或自定义）和浅色 / 深色 / 跟随系统。
 // 所有页面都有（App.vue 右下角，与语言切换放在一起），包括登录页。点面板外面或按 Esc 关闭。
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 

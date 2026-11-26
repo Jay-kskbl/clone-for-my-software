@@ -1,0 +1,13 @@
+
+> docmgr-frontend@0.1.0 test
+> vitest run tests/pdfjs-assets.test.mjs
+
+
+ RUN  v5.1.0 C:/Users/lenovo/Desktop/my-software-main/_gh_upload/frontend
+
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  20:24:48
+   Duration  465ms (tests 81%, import 10%, transform 6%, worker 3%)
+

@@ -34,6 +34,7 @@ def fake_settings(database_url: str) -> SimpleNamespace:
         worker_task_timeout_seconds=600.0,
         worker_memory_limit_mb=None,
         worker_db_connect_timeout_seconds=10,
+        retry_delays=(30.0, 120.0),
     )
 
 
@@ -183,3 +184,42 @@ def test_ping_on_the_real_queue_raises_when_nothing_listens() -> None:
     with pytest.raises(psycopg.OperationalError):
         queue.ping()
     queue.reset()
+
+
+def test_worker_passes_retry_delays_to_the_queue(
+    monkeypatch: pytest.MonkeyPatch, run_worker_calls: list[object]
+) -> None:
+    created: list[dict] = []
+
+    class FakeQueue:
+        def __init__(self, _url: str, **kwargs: object) -> None:
+            created.append(kwargs)
+
+        def ping(self) -> None:
+            pass
+
+        def reset(self) -> None:
+            pass
+
+    monkeypatch.setattr(worker_main, "load_settings", lambda: fake_settings("postgresql://x"))
+    monkeypatch.setattr(worker_main, "PgTaskQueue", FakeQueue)
+
+    assert worker_main.main() == 0
+    assert created[0]["retry_delays"] == (30.0, 120.0)
+
+
+@pytest.mark.parametrize(("supported", "expected"), [(False, 1), (True, 0)])
+def test_unsupported_memory_limit_is_reported_once_at_startup(
+    monkeypatch: pytest.MonkeyPatch,
+    run_worker_calls: list[object],
+    caplog: pytest.LogCaptureFixture,
+    supported: bool,
+    expected: int,
+) -> None:
+    # T24ag：原来每个任务的子进程各打一次
+    monkeypatch.setattr(worker_main, "load_settings", lambda: fake_settings("postgresql://x"))
+    monkeypatch.setattr(worker_main, "PgTaskQueue", lambda *_args, **_kwargs: FakeQueue())
+    monkeypatch.setattr(worker_main, "memory_limit_supported", lambda: supported)
+
+    assert worker_main.main() == 0
+    assert caplog.text.count("不支持限制子进程的内存") == expected

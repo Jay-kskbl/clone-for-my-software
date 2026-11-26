@@ -1,0 +1,31 @@
+Creating model: ('PP-OCRv5_mobile_det', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_det', None)
+��Ϣ: ���ṩ��ģʽ�޷��ҵ��ļ���
+C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddle\utils\cpp_extension\extension_utils.py:712: UserWarning: No ccache found. Please be aware that recompiling all source files may be required. You can download and install ccache from: https://github.com/ccache/ccache/blob/master/doc/INSTALL.md
+  warnings.warn(warning_message)
+Creating model: ('PP-OCRv5_mobile_rec', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_rec', None)
+2026-11-22 19:03:29,136 INFO ocr_worker OCR 模型已加载：PP-OCRv5_mobile_det+PP-OCRv5_mobile_rec，paddleocr-3.7.0/det-afa1820c/rec-2460da90
+2026-11-22 19:03:30,469 INFO ocr_worker.loop 开始 OCR 任务 c2c62a92-b897-4545-802c-7b8c68ad86dd（文档 01eb5270-4708-48ff-b27f-450e534c5906，第 1/3 次尝试）
+2026-11-22 19:04:44,905 INFO httpx HTTP Request: HEAD http://127.0.0.1:9200/w6_doc_meta "HTTP/1.1 200 OK"
+2026-11-22 19:04:44,911 INFO httpx HTTP Request: HEAD http://127.0.0.1:9200/w6_chunks "HTTP/1.1 200 OK"
+2026-11-22 19:04:44,927 INFO httpx HTTP Request: POST http://127.0.0.1:9200/w6_chunks/_delete_by_query?refresh=true&conflicts=proceed "HTTP/1.1 200 OK"
+2026-11-22 19:04:45,062 INFO httpx HTTP Request: POST http://127.0.0.1:9200/_bulk?refresh=true "HTTP/1.1 200 OK"
+2026-11-22 19:04:45,067 INFO ocr_worker.loop 任务 c2c62a92-b897-4545-802c-7b8c68ad86dd 完成（processed:89-lines:3-chunks）
+2026-11-22 19:04:45,076 INFO ocr_worker.loop 开始 OCR 任务 0f9abb4d-4557-44f7-9c27-67738a2d216a（文档 fc186d8e-d3c2-4dfd-9538-e13245ab73ac，第 1/3 次尝试）
+Process SpawnProcess-1:
+Traceback (most recent call last):
+  File "C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\Lib\multiprocessing\process.py", line 313, in _bootstrap
+    self.run()
+    ~~~~~~~~^^
+  File "C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\Lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\Desktop\my-software-main\_gh_upload\services\ocr_worker\ocr_worker\engine_process.py", line 106, in _child_main
+    conn.send(("ok", tuple(lines)))
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\Lib\multiprocessing\connection.py", line 211, in send
+    self._send_bytes(_ForkingPickler.dumps(obj))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\Lib\multiprocessing\connection.py", line 294, in _send_bytes
+    ov, err = _winapi.WriteFile(self._handle, buf, overlapped=True)
+              ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+BrokenPipeError: [WinError 232] 管道正在被关闭。

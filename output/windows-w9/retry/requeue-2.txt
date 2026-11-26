@@ -1,0 +1,4 @@
+3 个文档的 3 个失败的 embed 任务，原因：
+- 3 个：ClipUnavailable: CLIP 服务连接失败（ConnectError）
+已放回队列 3 个 embed 任务，由通用 Worker（需要 CLIP 服务已启动）处理。
+exit=0

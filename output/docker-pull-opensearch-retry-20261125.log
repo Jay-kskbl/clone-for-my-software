@@ -1,0 +1,25 @@
+2.19.1: Pulling from opensearchproject/opensearch
+002fbd2438c8: Pulling fs layer
+4077e1cc9344: Pulling fs layer
+a60da04a601b: Pulling fs layer
+7d34d22a4931: Pulling fs layer
+4f4fb700ef54: Pulling fs layer
+83ca2899e055: Pulling fs layer
+4c036822f697: Pulling fs layer
+4c036822f697: Download complete
+4077e1cc9344: Download complete
+7d34d22a4931: Download complete
+4f4fb700ef54: Download complete
+002fbd2438c8: Download complete
+a60da04a601b: Download complete
+a60da04a601b: Pull complete
+4c036822f697: Pull complete
+4077e1cc9344: Pull complete
+83ca2899e055: Download complete
+7d34d22a4931: Pull complete
+4f4fb700ef54: Pull complete
+002fbd2438c8: Pull complete
+83ca2899e055: Pull complete
+Digest: sha256:72fe2fc84be8295906b8efca020b46c58ed45c8da60cd9b8b49e1991e38e89a4
+Status: Downloaded newer image for opensearchproject/opensearch:2.19.1
+docker.io/opensearchproject/opensearch:2.19.1

@@ -1,0 +1,186 @@
+Docker Desktop 安装与操作记录
+============================
+
+日期：2026-11-25（Asia/Shanghai）
+执行者：Codex
+仓库：C:\Users\lenovo\Desktop\my-software-main\_gh_upload
+约束：
+  1. 不修改任何 .md 文件。
+  2. 用户在 2026-11-25 10:38 左右追加要求：不进行任何删除，所有操作记录。
+  3. 自收到该要求起，后续没有执行删除。
+  4. 所有新增日志和验证文件均保留在 output 下，没有清理。
+
+一、安装前检查
+--------------
+
+1. 检查安装包：
+   路径：.tools\downloads\Docker Desktop Installer.exe
+   版本：4.99.0.245822
+   大小：623969712 字节
+
+2. 检查系统条件：
+   Windows：Windows 11 家庭中文版 10.0.22621
+   CPU：13th Gen Intel(R) Core(TM) i5-13500H
+   HypervisorPresent：True
+   管理员账号：barry-zou\lenovo
+   当前普通进程的管理员组为 deny-only，安装需要 UAC 提权。
+
+3. 检查原有状态：
+   Docker Desktop 未安装。
+   docker 命令不在 PATH。
+   WSL 命令存在，但为旧版 inbox WSL，没有 WSL2 内核和发行版。
+
+二、Docker Desktop 安装
+-----------------------
+
+命令：
+  Start-Process "Docker Desktop Installer.exe" `
+    -ArgumentList @("install", "--quiet", "--accept-license", "--backend=wsl-2") `
+    -Verb RunAs -Wait -PassThru
+
+UAC：
+  Windows 弹出管理员权限确认。
+
+结果：
+  DOCKER_INSTALL_EXIT=0
+
+安装后确认：
+  Docker Desktop 4.99.0（build 245822）
+  Docker CLI 29.9.3（build 5457199）
+  Docker Compose v5.7.0
+  com.docker.service 存在，启动类型 Manual。
+
+三、首次启动和 WSL 更新
+------------------------
+
+1. 首次启动 Docker Desktop：
+   进程 PID：18660
+   Docker 界面标题：Welcome - Docker Desktop
+
+2. 首次 docker info：
+   返回：Error response from daemon: Docker Desktop is unable to start
+
+3. 查看 Docker 日志后定位：
+   engine linux/wsl failed to start: checking preconditions: WSL update required
+
+4. 检查旧 WSL：
+   wsl --status：
+     默认版本：2
+     未找到 WSL 2 内核文件
+   wsl --version：旧版不支持该参数，返回 -1
+   wsl --list --verbose：没有已安装的发行版
+
+5. 第一次尝试：
+   wsl --install --no-distribution
+   结果：WSL_INSTALL_EXIT=-1
+   原因：旧版 inbox WSL 不支持 --no-distribution。
+
+6. 第二次尝试：
+   wsl --update --web-download
+   结果：WSL_UPDATE_EXIT=-1
+   日志：已禁止(403)。
+   日志文件：output\wsl-update-20261125.log
+
+7. 第三次尝试：
+   wsl --update
+   结果：WSL_UPDATE_STORE_EXIT=0
+   输出：
+     正在安装: 适用于 Linux 的 Windows 子系统
+     已安装 适用于 Linux 的 Windows 子系统。
+   日志文件：output\wsl-update-store-20261125.log
+
+8. 更新后 WSL 状态：
+   WSL 版本：3.0.1.0
+   内核版本：6.18.40.1-1
+   默认版本：2
+   WSLg：1.0.79
+   MSRDC：1.2.7214
+   Appx 状态：Ok
+   没有额外安装 Ubuntu 等 Linux 发行版。
+
+四、Docker 引擎验证
+--------------------
+
+1. docker desktop status：
+   最终状态：running
+   SessionID：4e4618e6-4888-4924-9f96-4fc38b3d18f3
+
+2. docker version：
+   Client：29.9.3
+   Server：Docker Desktop 4.99.0，Engine 29.9.3
+   平台：linux/amd64
+   Kernel：6.18.40.1-microsoft-standard-WSL2
+   containerd：v2.4.2
+   runc：1.5.2
+
+3. docker info：
+   OSType：linux
+   Driver：overlayfs
+   CgroupVersion：2
+   CPU：16
+   容器内存上限：8185794560 字节
+   MemoryLimit：true
+   SwapLimit：true
+   PidsLimit：true
+   当前镜像数：0
+   当前容器数：0
+
+五、项目 compose 配置检查
+--------------------------
+
+只读命令：
+  docker compose --env-file .env -f deploy\docker-compose.yml config -q
+
+结果：
+  EXIT=0
+
+说明：
+  compose YAML 可解析，环境变量替换和配置语法没有报错。
+  本次没有启动容器、没有拉取镜像、没有构建镜像，也没有删除任何容器或卷。
+
+六、操作生成的文件
+------------------
+
+以下文件全部保留：
+  output\docker-install-operation-log-20261125.txt
+  output\wsl-list-20261125.txt
+  output\wsl-status-20261125.txt
+  output\wsl-status-after-update-20261125.txt
+  output\wsl-update-20261125.log
+  output\wsl-update-store-20261125.log
+  output\wsl-version-20261125.txt
+  output\wsl-version-after-update-20261125.txt
+
+Docker Desktop 自身日志仍保留在：
+  C:\Users\lenovo\AppData\Local\Docker\log
+  C:\ProgramData\DockerDesktop
+
+七、当前结果
+------------
+
+Docker Desktop 与 Docker Engine 已安装并运行成功。
+WSL2 已安装并升级到 3.0.1.0。
+项目 compose 配置检查通过。
+没有删除任何文件、目录、容器、镜像或卷。
+
+八、最终复核（2026-11-25 10:42 左右）
+-------------------------------------
+
+docker desktop status：
+  Status=running
+
+docker compose version：
+  v5.7.0
+
+docker info：
+  Server=29.9.3
+  OS=linux
+  Kernel=6.18.40.1-microsoft-standard-WSL2
+  Containers=0
+  Images=0
+
+本条最终复核内容追加前的日志 SHA-256：
+  E22C6FF77B04277FA30E88B785B8A1F13428AC0351D22E91918F8B1C94C517AA
+
+git status 在工作区中提示 output/retest-shared-temp/ 无读取权限。
+遵照“不进行任何删除”的要求，本次没有尝试删除、修复权限或移动该目录。

@@ -10,7 +10,15 @@
 - 增补：2026-11-21 19:40 收到第一轮执行结果（GitHub `bb3883c`，执行者 Codex，基于 `8fb5830`）后添加：第 0 节（当前状态、基线同步、报告格式、测试计划、怎样才算完成）；W6（新基线复测、符号链接、其余真实环境补测、补交 W1–W3 原始数据，第 12 节）；W7（跨机器 CLIP 向量一致性、同时运行的内存、负载下的查询编码，第 13 节）；第 14 节（交回的原始数据与 Claude 的核对方法）；第 15 节（不交给 Windows 的项目）。并在第 2、8、9 节补了对应的行。W1–W5 已写的内容没有改
 - 增补：2026-11-21 21:20 读了第一轮补充上传的日志（`0408d25`，核对记录见 `docs/changes/windows-2026-11-21-补充核对.md`）后，添加 W8（第 16 节：查 OCR 崩溃的事件日志、复现崩溃、OCR Worker 数与吞吐、smartcn 怎么切英文、B2 漏检分析、没有内存上限时的畸形文件防护），并在第 0.1、0.4、8、9、14 节补了对应的行；第 0.1 节的发现那一段补了一句。W1–W7 已写的步骤没有改
 
-本任务书有八项任务。**执行顺序以第 0.4 节为准**（W4 于 2026-11-21 14:26 添加，W5 于 14:37 添加，W6、W7 于 19:40 添加，W8 于 21:20 添加；W1–W3 第一轮已执行，状态见第 0.1 节）：
+- 增补：2026-11-23 收到第二轮结果（`065e640`、`54d9760`，基线 `fd0b5eb`，执行者 Codex），核对后添加 W9（第 17 节：没完成的项目与改良后的补测方案，执行顺序见第 17.1 节），更新第 0.1 节的状态，更正第 16.8 节对照组的预期。W1–W8 已写的步骤没有改
+
+- 增补：2026-11-25 核对第五轮结果（`415d343`）后，在第 17.1 节加更新说明，新增第 17.14 节（OCR Worker 数与崩溃，按正确的方法重做）
+
+- 增补：2026-11-25 按 Barry 的要求重排第 17.1 节的执行顺序，各节步骤没有改
+
+- 增补：2026-11-25 前端整体放入（T24ba–T24be，T24bg）：新增第 17.18 节（界面更新），第 17.1、17.2、17.12、17.13、14.2 节补上对应内容；第 10.2 节第 2、4、8、9 项和第 10.5 节只加注，原文保留（W4 是在改动前的界面上执行的）
+
+本任务书有九项任务。**W1–W8 的执行顺序以第 0.4 节为准，W9 以第 17.1 节为准**（W4 于 2026-11-21 14:26 添加，W5 于 14:37 添加，W6、W7 于 19:40 添加，W8 于 21:20 添加，W9 于 2026-11-23 添加；W1–W8 已执行，状态见第 0.1 节）：
 
 | 编号 | 任务 | 结果 |
 |---|---|---|
@@ -22,6 +30,7 @@
 | W6 | 新基线上的全套复测；8 项符号链接测试（Barry 本人的终端）；一致性修复、Worker 崩溃恢复与并发、解析超时、Ctrl-C、端口占用、真实文件解析与 OCR 的真实环境补测；补交 W1–W3 的原始数据（2026-11-21 19:40 添加） | JUnit XML、数据库与索引的导出文件、命令输出、真实样本与人工抄录文本 |
 | W7 | 跨机器 CLIP 向量一致性；数据库、OpenSearch、后端、两个 Worker、CLIP 同时运行时的内存采样；OCR 负载下的查询编码耗时（2026-11-21 19:40 添加） | 向量 JSON、内存采样 CSV、检索耗时 CSV |
 | W8 | 针对第一轮日志的补充测试：事件日志查 OCR 崩溃、复现崩溃、1/2/4 个 OCR Worker 的吞吐、smartcn 切英文、B2 漏检的导出与人工核对、没有内存上限时的畸形文件防护（2026-11-21 21:20 添加） | 事件日志导出、任务 CSV、1 秒间隔的内存与 CPU 采样、分词结果、OCR 文本导出、人工答案、畸形文件的任务 JSON |
+| W9 | 第二轮没完成的项目与改良方案：连接超时改用本地监听、一致性修复后的检索结果按新标准重测、Ctrl+C 修复后重测、登录页与停机刷新、300 秒超时的文档，以及由 Barry 本人做的符号链接、真实文件、拖拽、人工核对（2026-11-23 添加） | 见第 17.12 节 |
 
 做完后按第 8 节交付，按第 9 节自查，按第 14 节交回原始数据。
 
@@ -40,6 +49,18 @@
 | W5 | 未开始 | — | 按第 11 节做 |
 | W6、W7 | 新增，未开始 | — | 按第 12、13 节做 |
 | W8 | 新增（2026-11-21 21:20），未开始 | — | 按第 16 节做 |
+
+**2026-11-23 更新（第二轮结果，核对见 `docs/changes/windows-2026-11-23-核对.md`）：**
+
+| 编号 | 状态（2026-11-23） | 还差什么 |
+|---|---|---|
+| W1–W3 | 完成（W3 的处理过程数字已由 12.11 的原始数据证实） | 8 项符号链接（W9 第 17.9 节） |
+| W4 | 部分完成：联调各项通过；停机刷新跳登录页（T24x 已修，要在新基线上重测）；全关时 `ch` 残留（Barry 定为保留现状，不算偏差） | 真实拖拽（17.7）、停机刷新与登录页（17.6） |
+| W5 | 11.2–11.4、11.6 完成 | 11.5 改用本地监听重测（17.3） |
+| W6 | 12.2、12.4 修复路径、12.5、12.6、12.8、12.11 完成；12.7 **未通过**（Windows 上 Ctrl+C 打断当前任务，代码问题） | 12.3（17.9）、12.4 第 10 步（17.4）、12.7（17.5，等修复）、12.9–12.10（17.10）、`mapping-eol.txt`（17.2） |
+| W7 | 完成（13.2 的合计峰值由 Claude 按原始数据更正为 5732.8 MB） | — |
+| W8 | 16.3–16.6、16.7 A、16.8 完成 | 16.7 B（17.11）、16.5 的一次超时（17.8） |
+| W9 | 新增，未开始 | 按第 17 节做 |
 
 第一轮里值得记下的发现（Claude 会写进 `docs/untested.md` 和 T27 的参考）：两张图片（`mjbw0217.jpg`、`mkvw0217.jpg`）的 OCR 子进程以 `0xC0000005`（访问违例）退出，自动重试 3 次都失败，改成只开一个 OCR Worker 后手动重试才成功；处理阶段同时开了 4 个 OCR Worker，OCR 每个任务平均 53.57 秒（macOS 单张测试图 0.44 秒，两者条件不同，不能直接比较）；DocVQA 上 B3 的指标低于 B2（CLIP 对英文查询起了负作用）。（2026-11-21 21:20 补充：补充上传的日志显示，崩溃一共 8 次、涉及 4 个文档，全部集中在 14:31:08–14:31:59，4 个 Worker 都碰到了；reocr 时没有再崩。详见第 16.1 节，W8 要查清原因。）
 
@@ -441,6 +462,7 @@ python -m app.modules.experiments --root ..\experiments\docvqa run --config ..\e
 | 36 | Worker 数与吞吐：N = 1、2、4、1 四组 CSV 齐全，每组 40 个任务（2026-11-21 21:20 添加） | 16.9 |
 | 37 | smartcn 分词 17 行、OCR 文本导出、30 条人工答案都交回（2026-11-21 21:20 添加） | 16.9 |
 | 38 | 三个畸形文件都被拒绝解析、`attempts = 1`、错误原文与预期一致；对照组成功；通用 Worker 没有退出，峰值不超过 500 MB（2026-11-21 21:20 添加） | 16.9 |
+| 39 | W9 第 17.12 节的每一条（2026-11-23 添加） | 17.12 |
 
 任何一项做不到，不要硬凑：在报告里写明哪一项、卡在哪里、已经试过什么，然后继续做不依赖它的部分。
 
@@ -480,14 +502,14 @@ T24s（`281b226`，2026-11-21）重做了前端界面，只改前端，后端和
 | # | 页面 | 核对点 | 预期 |
 |---|---|---|---|
 | 1 | 侧栏 | 管理员登录、普通用户登录各看一次 | 侧栏显示用户名；只有管理员有“管理员”标签；“文件 / 检索”导航和退出登录可用（顺带覆盖 untested.md 第 4 节“管理员视角的前端”，管理员看别人的文件时来源一栏显示管理员可见） |
-| 2 | 文件页：加载 | 打开文件页；切换“全部 / 我上传的 / 共享给我的” | 列表 5 列（文件名、处理状态、大小、上传时间、操作），类型、上传者、来源在文件名下面一行，文件名前有类型色块；空列表按范围显示不同说明 |
+| 2 | 文件页：加载 | 打开文件页；切换“全部 / 我上传的 / 共享给我的” | 列表 5 列（文件名、处理状态、大小、上传时间、操作）（T24bd 起第 2 列是“解析状态”：等待解析、解析中、已解析、解析失败，点它打开“处理详情”），类型、上传者、来源在文件名下面一行，文件名前有类型色块；空列表按范围显示不同说明 |
 | 3 | 文件页：上传记录 | 点击上传区一次选 3–4 个文件 | 每个文件一条记录，依次经过“等待上传 → 上传中 → 已上传”；“清除已结束的记录”能清掉已结束的 |
-| 4 | 文件页：5 秒自动刷新 | 上传后不刷新页面，看处理状态 | 有等待处理或处理中的文件时，每 5 秒自动刷新一次，状态变成已完成后停止刷新 |
+| 4 | 文件页：5 秒自动刷新 | 上传后不刷新页面，看处理状态（T24bd 起叫“解析状态”） | 有等待处理或处理中的文件时，每 5 秒自动刷新一次，状态变成已完成后停止刷新 |
 | 5 | 文件页：加载失败提示 | ① 停掉后端，刷新文件页；② 有文件在处理时停掉后端，等下一次自动刷新 | ① 页内红色提示“文件列表没有加载出来”；② 页内提示“自动刷新失败，列表里的状态可能不是最新的”；两种都不是弹出消息，也不是空列表。重新启动后端后恢复 |
 | 6 | 文件页：共享对话框 | 打开共享对话框，再把浏览器窗口拉窄 | 对话框宽度不超出窗口（T24s 改为 `min(520px, 92vw)`，没有单独截图检查过） |
 | 7 | 检索页：四个开关与 `ch` 参数 | 依次关掉“文件名”“正文”“OCR 文字”，再打开“图像（CLIP）”；四个全关一次；另用旧地址 `/search?q=<词>&img=1` 打开一次 | 默认地址里没有 `ch`；改开关后地址变成 `ch=…`，只列开着的开关；请求体的 `channels` 与开关一致，正文和 OCR 都关时请求里没有 `source_types`；四个全关时显示“至少选择一个检索通道”，不发请求；旧地址打开后图像开关是开的 |
-| 8 | 检索页：改开关自动重查 | 检索过一次后改动开关；检索进行中再改一次 | 每次改动都自动重新检索（网络面板里多一次 `POST /api/search`）；进行中改动的，等这次返回后再查一次，最后显示的是按最新开关的结果 |
-| 9 | 检索页：三格名次与融合分 | 对 3–5 个结果，逐个比对卡片右侧和应答里的 `hits[].channels`、`hits[].score` | 三格（文件名 / 文字 / 图像）的“第 N 名”与应答的 `rank` 一致；应答里没有该通道、但通道执行了时显示“未命中”，没开的显示“未开启”，不可用的显示“不可用”；融合分等于 `score` 保留 4 位小数 |
+| 8 | 检索页：改开关自动重查 | 检索过一次后改动开关；检索进行中再改一次 | 每次改动都自动重新检索（网络面板里多一次 `POST /api/search`）；进行中改动的，等这次返回后再查一次，最后显示的是按最新开关的结果（T24be 起改为：**立即取消**这次请求并按新开关重查，网络面板里旧请求是 canceled） |
+| 9 | 检索页：三格名次与融合分 | 对 3–5 个结果，逐个比对卡片右侧和应答里的 `hits[].channels`、`hits[].score` | 三格（文件名 / 文字 / 图像）的“第 N 名”与应答的 `rank` 一致；应答里没有该通道、但通道执行了时显示“未命中”，没开的显示“未开启”，不可用的显示“不可用”；融合分等于 `score` 保留 4 位小数（T24be 起结果在后端返回后约 0.42 秒才显示，是收拢动画；`took_ms` 不含这段时间，核对方法不变） |
 | 10 | 检索页：各通道耗时 | 比对结果汇总行和应答 | 总用时等于应答 `took_ms`；每个通道的耗时等于 `channels[].took_ms`，没开的写“未开启” |
 | 11 | 检索页：CLIP 状态 | 进入检索页时看通道面板旁的 CLIP 状态，对照 `GET /health` | `clip_service.status` 为 `ok` 时显示“CLIP 服务在线” |
 | 12 | 关掉 CLIP 服务后的降级显示（T32 答辩要演示） | 开着图像开关，停掉 CLIP 服务，再检索一次；然后重新启动 CLIP 服务再检索 | 停掉后：CLIP 状态变红（“CLIP 服务不可用，图像通道会被跳过”），出现黄色提示“图像检索暂时不可用，本次结果只来自文字检索（原因：…）”，图像格显示“不可用”，文字结果照常返回、没有报错页。重新启动后：图像通道检索成功，状态回到“CLIP 服务在线”。顺带覆盖 untested.md 第 4 节 T23 的“与真实后端、真实 CLIP 服务联调” |
@@ -517,7 +539,7 @@ T24s（`281b226`，2026-11-21）重做了前端界面，只改前端，后端和
 
 不对应 untested.md 的条目，对应 DEVPLAN §4 前端“待议（T24s 记录）”里的提醒：T24s 改了全部页面的布局和配色，旧截图（包括 `docs/screenshots/windows-2026-11-19/` 的 5 张）是改版之前的样子。T31 要逐条核对论文、README、截图和实际功能。
 
-- 放到 `docs/screenshots/windows-<执行日期>-t24s/`，PNG，浏览器窗口约 1280×800；文件名用英文和连字符，写明画面内容。
+- （T24ba–T24be 之后要重截，放 `docs/screenshots/windows-<执行日期>-t24b/`，见第 17.18 节；旧截图不删。）放到 `docs/screenshots/windows-<执行日期>-t24s/`，PNG，浏览器窗口约 1280×800；文件名用英文和连字符，写明画面内容。
 - 至少要有：登录页；文件页（含上传记录和处理状态）；检索页的说明状态（还没检索时）；全通道检索结果（能看清三格名次和融合分）；关掉一个通道后的对照结果；CLIP 停掉后的降级显示；预览页的 PDF 原文件和图片的抽取文本；窄窗口布局一张。
 - 画面里不能有密码、令牌、连接串和个人文件。
 - 旧截图不要删，用不用由 Barry 和 Claude 定。
@@ -1041,7 +1063,7 @@ for ($i = 0; $i -lt 200; $i++) {
 
 ### 14.1 交回什么、怎么交
 
-每个任务一个目录：`output/windows-w4/`、`output/windows-w5/`、`output/windows-w6/`、`output/windows-w7/`、`output/windows-w8/`（2026-11-21 21:20 添加；里面的 `missed/missed270.tsv`、`missed/missed30.tsv` 是 Claude 预先放好的输入，不要改）、`output/windows-w3-supplement/`。每个目录里都要有：
+每个任务一个目录：`output/windows-w4/`、`output/windows-w5/`、`output/windows-w6/`、`output/windows-w7/`、`output/windows-w8/`（2026-11-21 21:20 添加；里面的 `missed/missed270.tsv`、`missed/missed30.tsv` 是 Claude 预先放好的输入，不要改）、`output/windows-w9/`（2026-11-23 添加）、`output/windows-w3-supplement/`。每个目录里都要有：
 
 - `git-head.txt`：`git rev-parse HEAD` 和 `git status --porcelain` 的输出（第 2 节第 11 条）
 - `commands.txt`：按执行顺序列出实际运行的命令（去掉密码、令牌、连接串）和每条的退出码
@@ -1074,6 +1096,7 @@ Claude 在 Mac 上做，不装新东西；Mac 上没有 PostgreSQL 和 OpenSearc
 | W8 第 16.6 节 | 逐行看分词结果，判断有没有转小写、词干化、去停用词 | 17 行齐全；结论写进论文“局限”一节 |
 | W8 第 16.7 节 | 对 270 条漏检按第 16.7 节分三类；30 条人工答案与 OCR 文本比对，算字符级的编辑距离比例 | 文件齐全；`ocr-chunks.csv` 的行数与 1589 一致，或者已说明差异 |
 | W8 第 16.8 节 | 逐个对照任务 JSON 里的 `status`、`attempts`、`error`；从 `memory.csv` 取 `worker` 组的峰值 | 与第 16.8 节的预期逐条一致，才判为通过 |
+| W9（2026-11-23 添加） | 各小节末尾的“Claude 怎么判断”；17.3 读 `timeouts.json` 和输出原文；17.4 逐条比较 8 个结果目录的排名，换位处算分数相对差，核对 `config.json` 的 mapping hash 与 `git_dirty`；17.5 读日志、退出码、任务 CSV；17.6、17.7、17.18 对照截图与网络记录；17.9 解析 JUnit | 第 17.12 节的条件 |
 
 核对中发现的代码问题，Claude 不自己修，先报给 Barry（与第 2 节第 5 条相同）。
 
@@ -1416,7 +1439,7 @@ Copy-Item experiments\docvqa\datasets\document_map.csv "$out\missed\document_map
 - `bomb.docx`：parse 任务 `failed`、`attempts = 1`（这类错误不可重试，不浪费重试次数），`error` 是“解压后共 314573058 字节，超过上限 209715200 字节，拒绝解析（可能是 zip 炸弹）”；文档 `status` 为 `failed`。
 - `many.docx`：同上，`error` 是“压缩包内有 6001 个文件，超过上限 5000 个，拒绝解析”。
 - `huge.png`：同上，`error` 是“图片尺寸为 12000×9000，像素数超过上限 100000000，拒绝处理”；没有产生 ocr 和 embed 任务。
-- 对照组 `ffhv0228.jpg`：parse `succeeded`，产生了 ocr 和 embed 任务（因为 OCR Worker 和 CLIP 没开，它们停在 `pending` 是正常的）。
+- 对照组 `ffhv0228.jpg`：parse `succeeded`，产生了 ocr 和 embed 任务。OCR Worker 没开，ocr 任务停在 `pending`；embed 任务由通用 Worker 领取，CLIP 服务没开，会重试几次后标为 `failed`，这是设计行为（`CLAUDE.md`“启动 Worker”一条）。（2026-11-23 更正：原来写的是两个任务都停在 `pending`，第二轮实测 embed 为 `failed`，是这里写错了。）
 - `memory.csv` 里 `worker` 组的峰值不超过 500 MB（第一轮 W3 处理 500 张图时的峰值是 261.7 MB）；整个过程中通用 Worker 没有退出。
 - 如果错误原文、`attempts` 或状态与上面不同，照原样记下来，不要重试到符合预期为止。
 
@@ -1436,3 +1459,428 @@ Copy-Item experiments\docvqa\datasets\document_map.csv "$out\missed\document_map
 ### 16.10 怎样算测试成功
 
 按第 0.5 节的三条判定：执行方自查通过（第 16.9 节每条都打勾，报告里有命令、输出、退出码），原始数据齐全，Claude 核对通过（第 14.2 节的 W8 几行）。W8 里只有第 16.8 节有通过或失败之分；其余各节是测量，**数据完整、来源可查就算完成**，结论由 Claude 核对后写进核对记录和 `docs/untested.md`，作为 T27 和论文的依据。任何一项做不到，按第 9 节最后一句处理：写明卡在哪里，继续做不依赖它的部分。
+
+------------------------------------------------------------------------
+
+## 17. W9：第二轮没完成的项目与改良后的补测方案（2026-11-23 添加）
+
+来源：第二轮结果（`065e640`、`54d9760`，基线 `fd0b5eb`）的核对，记录在 `docs/changes/windows-2026-11-23-核对.md`。已经完成的不再重做；本节只安排**没完成的**、**判定标准要改的**、**发现了新问题的**几项。规则同 W6：只测量和核对，不改代码和配置文件；环境变量只在窗口里临时设；结果与预期不符时，记下现象和完整输出，问 Barry。原始数据放进 `output/windows-w9/`，报告写进 `windows任务报告.txt` 末尾新加的 W9 一节，或单独写 `output/windows-w9/summary.txt`。
+
+### 17.1 第二轮的结果与本节的安排
+
+| 原小节 | 第二轮结果 | 本节怎么处理 |
+|---|---|---|
+| W4 10.2 第 5 项场景①（停后端后刷新） | 跳到了登录页。这正是 T24x 修的问题，但 T24x 在 `fd0b5eb` 之后才提交，Windows 测的是修复前的代码 | 第 17.6 节在新基线上按 T24x 的新行为重测 |
+| W4 10.2 第 7 项（四个开关全关后 `ch` 残留） | 地址栏留着上一次的 `ch=image` | Barry 于 2026-11-25 决定保留现状（地址栏记的是最后一次真正执行的检索，刷新能恢复结果），不算偏差，**不测** |
+| W4 10.3 真实鼠标拖入 | 自动化工具不能跨窗口拖 | 第 17.7 节由 Barry 手动做 |
+| W5 11.5 连接超时 | 网络立刻回绝，测不到超时 | 第 17.3 节改用本地监听 |
+| W6 12.3 符号链接 | 执行方没有权限 | 第 17.9 节，Barry 本人 |
+| W6 12.4 第 10 步 | 排名与 W3 不完全相同；原判定标准（逐条相同）定错了 | 第 17.4 节按新标准重测，并补交结果目录 |
+| W6 12.7 OCR Ctrl+C | **未通过**：Windows 上正在识别的任务被打断 | 已由 T24aa 修复（2026-11-23，D52），按第 17.5 节重测，并加测通用 Worker |
+| W6 12.5 强制结束 Worker | 数据正确；但日志显示被强杀的 Worker 的子进程还在继续跑 | 已由 T24ab 修复（2026-11-23，D53），按第 17.5 节 C 验证 |
+| W6 12.9、12.10 真实文件 | 没有样本 | 第 17.10 节放宽样本的来源说明，由 Barry 自己制作 |
+| 第 0.2 节第 4 步的 `mapping-eol.txt` | 没交 | 第 17.2 节补交 |
+| W7 13.2 内存 | 合计峰值少算了 OCR 识别子进程（采样脚本的问题，Claude 已按原始数据重算为 5732.8 MB） | 不重测；以后的采样改用第 17.2 节的新脚本 |
+| W8 16.5 第一组的一次 300 秒超时 | 同一文档第二次 88 秒成功 | 第 17.8 节对这个文档单独重复测 |
+| W8 16.7 B 人工核对 | 没做 | 第 17.11 节，Barry 本人 |
+| W8 16.8 对照组 embed | 实际是重试后 `failed` | 这是设计行为，第 16.8 节的预期已更正，**不重测** |
+| T24v–T24z 登录页 | 在 `fd0b5eb` 之后提交，没有测过 | 第 17.6 节与真实后端联调 |
+
+**执行顺序（2026-11-25 重排：刚改过、影响最大的代码先验证；各节内容没有变）：**
+
+| 顺序 | 内容 | 谁做 | 依赖 | 预计耗时 |
+|---|---|---|---|---|
+| 1 | Barry 推送；Windows `git pull`，确认 T24aa–T24ag、T24ba–T24be、T24bh 都在（见下面的更新说明） | Barry、GPT | — | 15 分钟 |
+| 2 | 第 17.2 节：换行符核对、前端三项命令、backend / shared / OCR Worker 全套测试（含从没运行过的 12 项集成测试）。**集成测试有失败就先停下报给 Barry**，不做第 3、4 步 | GPT | 1 | 1.5 小时 |
+| 3 | 第 17.15 节：重试间隔；接着第 17.16 节：批量放回队列。这里要用的 `docmgr_w9`、前缀 `w9_`、新的存储目录在这一步新建（`alembic upgrade head`） | GPT | 2 | 50 分钟 |
+| 4 | 第 17.5 节：Ctrl+C、强制结束后的子进程、循环脚本 | GPT | 2 | 50 分钟 |
+| 5 | 第 17.4 节：12.4 第 10 步重测；接着第 17.17 节：检索服务停掉时 `repair` 的提示 | GPT | 2 | 70 分钟 |
+| 6 | 第 17.6 节：登录页与停机刷新 | GPT | 2 | 1 小时 |
+| 7 | 第 17.18 节：界面更新（T24ba–T24be，接着第 17.6 节用同一套 `docmgr_ui`） | GPT | 2、6 | 2 小时 |
+| 8 | 第 17.14 节：OCR Worker 数与崩溃（会吃满内存，不和别的测量同时跑） | GPT | 2 | 2 小时 |
+| 9 | 第 17.3 节：连接超时 | GPT | 1 | 20 分钟 |
+| 10 | 第 17.8 节：300 秒超时的文档（`docmgr_w9` 已被第 3 步用过，改用新建的 `docmgr_w9c`、前缀 `w9c_`） | GPT | 2 | 40 分钟 |
+| 11 | 按第 14.1 节整理 `output/windows-w9/`、提交；Barry 推送，大文件另交 | GPT、Barry | 全部 | 30 分钟 |
+
+**Barry 本人的四项**不依赖上表，随时可以做，建议顺序：第 17.9 节符号链接（20 分钟，最先做）→ 第 17.10 节真实文件（可以和 T25 收集数据一起）→ 第 17.7 节鼠标拖入（10 分钟左右）→ 第 17.11 节 30 条核对（40 分钟）。
+
+**2026-11-25 更新（第五轮，核对见 `docs/changes/windows-2026-11-25-核对.md`）：** 第五轮测的是旧代码 `54d9760`，**上表各项除了“第 16.8 节对照组”都还没有做**，仍按上面的顺序执行；先 `git pull`，`git log --oneline | Select-String "T24aa|T24ab|T24ac|T24ad|T24ae|T24af|T24ag|T24ba|T24bb|T24bc|T24bd|T24be|T24bh"` 要能各找到一条。第五轮的 OCR 崩溃复现见第 17.14 节，要重做。已经完成的：`docker-compose.yml`、OpenSearch 的 Dockerfile（还差后端 `/health` 的输出，以及 `down` 之后数据卷保留，可以顺手补上，存到 `output/windows-w9/docker/`）。
+
+### 17.2 基线、公用脚本、新的内存采样脚本
+
+1. `git pull`，确认是快进，记下提交号写进 `output/windows-w9/git-head.txt`（第 14.1 节的格式）。这个提交要包含 T24v–T24z（`git log --oneline | Select-String T24z` 能找到）。
+2. 补做第 0.2 节第 4 步的核对，输出存成 `output/windows-w9/mapping-eol.txt`：
+
+   ```powershell
+   git ls-files --eol -- shared/text_index/mappings backend/app/modules/vector_index/mappings
+   Get-FileHash shared\text_index\mappings\*.json, backend\app\modules\vector_index\mappings\*.json -Algorithm SHA256
+   ```
+
+   预期：三行都是 `i/lf w/lf attr/text eol=lf`；SHA-256 开头为 `be91f8071d05`（doc_meta）、`0c7937251bab`（chunks）、`c984e85b889b`（image_vectors）。不一致就按第 0.2 节第 4 步先删再签出，然后再导出一次。
+3. 新基线上有前端改动（T24v–T24z、T24bb–T24be）、任务接口改动（T24ba）和 Worker 改动（T24aa、T24ab、T24ac、T24ad）以及一个新命令（T24ae）、一处命令行提示（T24af，**2026-11-25 更正：原来写“只有前端代码变了”已过时**）。在 `frontend/` 下运行三项命令，输出存成 `frontend-typecheck.txt`、`frontend-test.txt`、`frontend-build.txt`。预期：类型检查、构建成功，单元测试 32 个文件 378 项全部通过（Mac 上 T24bh 的结果；**2026-11-25 更正：原来写 17 个文件 207 项，是 T24ba 之前的数**）。如果这次拉到的提交里已经有 Ctrl+C 的修复（第 17.5 节），再按第 12.2 节重跑 backend、shared、OCR Worker 的测试，JUnit 存到 `output/windows-w9/`。
+4. 第 16.2 节的公用函数（`Q`、`Export`、`Wait-Tasks`、`Start-Ocr`）照用，只把 `$out` 改成 `"$repo\output\windows-w9"`。
+5. **新的内存采样脚本。** 第 13.2、16.2 节的脚本把 OCR 识别子进程归进了 `python_other`：子进程是 multiprocessing 启动的，命令行里没有 `ocr_worker`。新脚本沿着父进程往上找，并且每次只调用一次 CIM，所以采样更快：
+
+   ```powershell
+   Set-Content -Encoding utf8 "<仓库外的目录>\sample_w9.ps1" -Value @'
+   param([string]$Out, [string]$Stop, [double]$Interval = 1)
+   "time,group,pid,working_set_mb,private_mb" | Out-File -Encoding utf8 $Out
+   function Group-Of($p, $byId) {
+     $cur = $p
+     for ($i = 0; $i -lt 6 -and $cur; $i++) {
+       $c = "$($cur.CommandLine)"
+       if ($cur.Name -eq 'postgres.exe') { return 'postgresql' }
+       if ($cur.Name -eq 'java.exe') { return 'opensearch' }
+       if ($cur.Name -eq 'node.exe') { return 'node' }
+       if ($c -match 'uvicorn') { return 'api' }
+       if ($c -match '-m\s+ocr_worker') { if ($i -eq 0) { return 'ocr_worker' } else { return 'ocr_engine' } }
+       if ($c -match '-m\s+clip_service') { return 'clip_service' }
+       if ($c -match '-m\s+app\.worker') { if ($i -eq 0) { return 'worker' } else { return 'worker_child' } }
+       $cur = $byId[[int]$cur.ParentProcessId]
+     }
+     return 'python_other'
+   }
+   while (-not (Test-Path -LiteralPath $Stop)) {
+     $t0 = Get-Date; $now = $t0.ToString('o')
+     $procs = @(Get-CimInstance Win32_Process -Property ProcessId, ParentProcessId, Name, CommandLine, WorkingSetSize, PrivatePageCount)
+     $byId = @{}; foreach ($p in $procs) { $byId[[int]$p.ProcessId] = $p }
+     $lines = @(foreach ($p in $procs) {
+       if ($p.Name -in @('postgres.exe', 'java.exe', 'python.exe', 'node.exe')) {
+         "$now,$(Group-Of $p $byId),$($p.ProcessId),{0:F1},{1:F1}" -f ($p.WorkingSetSize / 1MB), ($p.PrivatePageCount / 1MB)
+       }
+     })
+     $avail = (Get-CimInstance Win32_OperatingSystem -Property FreePhysicalMemory).FreePhysicalMemory / 1KB
+     $cpu = (Get-CimInstance Win32_PerfFormattedData_PerfOS_Processor -Filter "Name='_Total'").PercentProcessorTime
+     $lines += "$now,system_available,0,{0:F1},0" -f $avail
+     $lines += "$now,cpu_total_percent,0,$cpu,0"
+     $lines | Out-File -Append -Encoding utf8 $Out
+     $wait = $Interval - ((Get-Date) - $t0).TotalSeconds
+     if ($wait -gt 0) { Start-Sleep -Milliseconds ([int]($wait * 1000)) }
+   }
+   '@
+   ```
+
+   用法同第 16.2 节：`powershell -NoProfile -ExecutionPolicy Bypass -File "<仓库外的目录>\sample_w9.ps1" -Out <文件> -Stop <停止文件>`。识别子进程归在 `ocr_engine` 组，解析子进程归在 `worker_child` 组。用之前先空跑 30 秒，确认相邻两次采样的间隔不超过 3 秒，并把这 30 秒的输出存成 `sampler-selftest.csv`。
+
+6. **内存上限提示与网页图标（T24ag，2026-11-25 添加）。** W9 里任何一次用通用 Worker 处理 5 个以上任务时，把它的启动日志存成 `worker-startup.log`：`Select-String "内存上限|限制子进程的内存"` 应当只在启动时命中 1 行（“当前系统不支持限制子进程的内存”），任务处理期间没有。第 17.6 节打开前端时，网络记录里不应有 `favicon.ico`，`favicon.svg` 返回 200，浏览器标签上有图标。
+
+### 17.3 连接超时（改良 W5 第 11.5 节）
+
+**为什么改：** 第二轮 `10.255.255.1` 被网络立刻回绝（约 1.9 秒报 `OperationalError`），根本没走到超时。改成在本机起一个**只接受连接、从不回应**的监听：客户端连得上，但等不到数据库的应答，只能靠 `connect_timeout` 结束。Claude 在 Mac 上用 psycopg 试过：设 3 秒、5 秒，分别在 3.0、5.0 秒报 `ConnectionTimeout`。
+
+1. 在仓库外写监听脚本，在一个单独的窗口里运行（main 环境的标准库就够，不需要新依赖）：
+
+   ```powershell
+   Set-Content -Encoding utf8 "<仓库外的目录>\blackhole.py" -Value @'
+   import socket, sys
+   port = int(sys.argv[1])
+   s = socket.socket()
+   s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+   s.bind(('127.0.0.1', port))
+   s.listen(50)
+   print('blackhole listening on', port, flush=True)
+   held = []
+   while True:
+       c, _ = s.accept()
+       held.append(c)  # 只接受，不回应，也不关闭
+   '@
+   .\.venv-main\Scripts\python -I "<仓库外的目录>\blackhole.py" 55999
+   ```
+
+2. 另开一个窗口：`$env:DATABASE_URL = "postgresql://w9:w9@127.0.0.1:55999/w9"`（用户名、密码随便写，不要用真实的），然后按第 11.5 节的计时写法做原表的 4 步（通用 Worker 默认、设 3 秒，OCR Worker 设 5 秒、20 秒）。每步的完整输出存成 `timeout-<步骤>.txt`，耗时和退出码汇总到 `timeouts.json`。
+3. 做完后在监听窗口按 Ctrl+C 结束它。
+
+**预期：** 第 1 步约 10 秒、第 2 步约 3 秒结束，退出码 1，输出“Worker 无法连接数据库（ConnectionTimeout）……”；第 3、4 步先加载模型，再分别等约 5 秒、20 秒，退出码 1，两步的耗时差约 15 秒，输出“OCR Worker 无法连接数据库（ConnectionTimeout）……”。四步的耗时与设定值相差都在 2 秒以内，才判为通过。
+
+### 17.4 一致性修复之后的检索结果（改良 W6 第 12.4 节第 10 步）
+
+**为什么改：** 第二轮 B2 有 110 / 500 条排名与 W3 不同，但指标几乎不变（nDCG@10 差 −0.0002）。删除文档或重写片段时，OpenSearch 不会马上清掉旧的文档，只是标记为“已删除”，等段合并时才真正清掉；而 BM25 的统计值（文档总数、平均长度、词频）把这些已删除的文档也算进去。W3 的 B2 是在 reocr（每个 OCR 任务都先删后写）之后跑的，12.4 又删了一个文档的片段再重建，两次的“已删除文档数”不同，分数有微小差别，分数接近的文档就会换位置。所以“与 W3 逐条相同”这条标准定错了。新标准分三条：**同一索引状态下连续两次结果完全相同**；**指标与 W3 只差很小的量**；**能用合并前后的对比说明原因**。
+
+在 `docmgr_docvqa`、`docvqa_` 上做（第 12.4 节修复后的状态，不要再造不一致），所有 Worker 停着，CLIP 服务开着（B3 要用）。在 `backend/` 下：
+
+1. 记下索引状态，存成 `index-before.txt`：
+
+   ```powershell
+   curl.exe -s "http://127.0.0.1:9200/_cat/indices/docvqa_*?v&h=index,docs.count,docs.deleted,segments.count"
+   ```
+
+2. 先 `git status --porcelain > ..\output\windows-w9\git-status-before-runs.txt`，然后各跑两次，依次记为 R1、R2：
+
+   ```powershell
+   ..\.venv-main\Scripts\python -m app.modules.experiments --root ..\experiments\docvqa run --config ..\experiments\configs\B2.json
+   ..\.venv-main\Scripts\python -m app.modules.experiments --root ..\experiments\docvqa run --config ..\experiments\configs\B2.json
+   ..\.venv-main\Scripts\python -m app.modules.experiments --root ..\experiments\docvqa run --config ..\experiments\configs\B3.json
+   ..\.venv-main\Scripts\python -m app.modules.experiments --root ..\experiments\docvqa run --config ..\experiments\configs\B3.json
+   ```
+
+3. 只对 `docvqa_` 的三个索引清掉已删除的文档（这是 OpenSearch 的段合并，不改数据、不删索引）：
+
+   ```powershell
+   foreach ($i in 'docvqa_chunks', 'docvqa_doc_meta', 'docvqa_image_vectors') { curl.exe -s -X POST "http://127.0.0.1:9200/$i/_forcemerge?only_expunge_deletes=true" }
+   ```
+
+   等几秒，再执行第 1 步的命令，存成 `index-after.txt`。
+4. 再跑一次 B2、一次 B3，记为 R3。
+5. 把这 6 个结果目录，加上第二轮 12.4 的两个目录（`20261122T105621.715980Z_B2_bca3b6`、`20261122T105723.742460Z_B3_e0a936`），一起打成 `w9-runs.zip`（大于 5 MB 就另交），SHA-256 写进 `SHA256SUMS.txt`。
+
+**预期：**
+- `index-before.txt` 里 `docvqa_chunks` 的 `docs.deleted` 大于 0，`index-after.txt` 里是 0（或明显变小）；
+- B2 的 R1 与 R2、B3 的 R1 与 R2，500 条查询的排名逐条完全相同；
+- R3 允许与 R1 不同；
+- R1、R2、R3 的 P@10、R@10、nDCG@10 与 W3 同配置相差都不超过 0.01；
+- 退出码都是 0，`complete` 都是 true。
+
+**Claude 怎么判断：** 逐条比较排名；对排名变了的查询，从 `results.jsonl` 取换位的两个文档在通道内的分数，算相对差。如果换位都发生在分数相对差很小（例如小于 1%）的地方，就确认“已删除文档影响统计值”这个解释成立。同时核对 8 个目录 `config.json` 里三个 mapping 的 SHA-256（应为第 17.2 节第 2 步的 LF 版本）和 `git_dirty`（对照 `git-status-before-runs.txt` 解释）。
+
+### 17.5 Ctrl+C 重测（T24aa 修复之后）
+
+**为什么：** 第二轮 12.7 发现，Windows 上 OCR Worker 识别途中按 Ctrl+C，主进程等待识别子进程时抛 `InterruptedError`，当前任务被记成一次失败、放回队列，Worker 以退出码 1 结束，不符合 D34“处理完当前任务后退出”。Claude 复核代码时又发现，通用 Worker 有同样的等待写法，而且它的子进程没有忽略 Ctrl+C，在任何系统上都会把正在解析的文件记成一次失败。这两处已由 **T24aa**（2026-11-23，D52）修复：等待被打断时接着等，通用 Worker 的子进程也忽略 Ctrl+C。先确认拉到的提交包含 T24aa（`git log --oneline | Select-String T24aa`），并按第 17.2 节第 3 步重跑 backend、shared、OCR Worker 的测试（backend 应多出 `test_worker_runner.py` 的 4 项，其中 1 项在 Windows 上跳过；OCR Worker 应多出 `test_engine_process.py` 的 4 项，其中 1 项跳过），再做这一节。
+
+**为了留下原始输出，Worker 改在 `cmd` 窗口里运行**，把日志重定向到文件（PowerShell 的管道会干扰 Ctrl+C）：
+
+A. **OCR Worker**（`docmgr_w6`，同第 12.7 节）：先 `reocr --yes`（`--root` 为 docvqa60 目录），再新开一个 **cmd** 窗口，设好与第 6.1 节相同的环境变量（`set DATABASE_URL=...` 等），然后在 `services\ocr_worker` 下：
+
+```bat
+..\..\env_check\.venv-ocr\Scripts\python -m ocr_worker 2> ..\..\output\windows-w9\ctrlc-ocr.log
+echo exit=%ERRORLEVEL%
+```
+
+在另一个窗口看 `ctrlc-ocr.log`，出现“开始 OCR 任务”后记下任务 id，回到 cmd 窗口按一次 Ctrl+C。等它退出，把 `exit=` 那一行存进 `ctrlc-ocr-exit.txt`，再导出这个任务：`Export 'docmgr_w6' "SELECT id, status, attempts, error, started_at, finished_at FROM processing_tasks WHERE id = '<任务 id>'" 'output/windows-w9/ctrlc-ocr-task.csv'`。之后照常启动 OCR Worker 把剩下的做完。
+
+B. **通用 Worker**（`docmgr_w6`）：用第 12.6 节的 `big3000.pdf` 再上传一次（不设超时变量，它要解析几十秒）。在 cmd 窗口的 `backend` 下：
+
+```bat
+..\.venv-main\Scripts\python -m app.worker 2> ..\output\windows-w9\ctrlc-worker.log
+echo exit=%ERRORLEVEL%
+```
+
+日志出现这个文档的“开始任务”后按一次 Ctrl+C，同样记下退出码、导出任务。
+
+**预期：** 日志出现停止提示（OCR Worker 是“收到信号 2，处理完当前任务后退出”，通用 Worker 是“收到信号 SIGINT，完成当前任务后退出”）；当前任务**照常做完**：`succeeded`、`attempts = 1`、`error` 为空；Worker 在这之后退出，不再领新任务；日志里没有 `InterruptedError`、`KeyboardInterrupt`。退出码：两个 Worker 都是 130（OCR Worker 原来是 0，T24ac 改为 130，D54）。第二轮 12.7 记录的退出码 1 不能由代码解释，这次如果又看到 130 以外的值，照实记录，并写明是怎么启动的。
+
+**C. 强制结束 Worker，子进程应当跟着退出**（T24ab，`docmgr_w6`，2026-11-23 添加）。先确认拉到的提交包含 T24ab；`test_worker_runner.py`、`test_engine_process.py` 里的 `test_child_exits_when_the_parent_is_killed` 各 1 项应当在 Windows 上通过（不跳过）。然后分别对通用 Worker（再上传一次 `big3000.pdf`）和 OCR Worker（`reocr --yes` 之后）做：
+
+1. 启动 Worker，看到“开始任务”（或“开始 OCR 任务”）后，记下主进程 PID、任务 id，并列出它的子进程：
+
+   ```powershell
+   Get-CimInstance Win32_Process -Filter "ParentProcessId = <主进程 PID>" | Select-Object ProcessId, ParentProcessId, CommandLine | Format-List | Out-File -Encoding utf8 "$out\kill-<worker>-children.txt"
+   ```
+
+   虚拟环境里的 `python.exe` 可能是启动器，真正的 Worker 是它的子进程；以日志里领取者标识中的 PID 为准。
+2. `Stop-Process -Id <主进程 PID> -Force`，等 3 秒，再用 `Get-Process -Id <子进程 PID> -ErrorAction SilentlyContinue` 逐个查第 1 步列出的 `spawn_main` 子进程，输出存成 `kill-<worker>-after.txt`（没有输出就写“无”）。
+3. 重新启动一个 Worker，等任务被回收重做，导出这个任务（同 A 的 `Export`，文件名 `kill-<worker>-task.csv`）。
+
+**预期：** 第 2 步 3 秒后子进程都已不在；被杀 Worker 的日志里没有 `BrokenPipeError`；第 3 步任务最终 `succeeded`、`attempts = 2`，同一文档没有重复的 OCR 任务（`SELECT document_id, payload::text, count(*) FROM processing_tasks WHERE task_type = 'ocr' GROUP BY 1, 2 HAVING count(*) > 1` 为 0 行）。
+
+**D. 在循环脚本里按 Ctrl+C**（T24ac，2026-11-23 添加）。A、B 两步直接运行 Worker，不套循环；这一步专门验证循环。在 `services\ocr_worker` 下用 `run_ocr_worker_loop.ps1` 启动（`-StopFile` 指向一个不存在的文件），看到“OCR 模型已加载”后按一次 Ctrl+C，等 60 秒。**预期：** Worker 打印“收到信号 2……”后退出，循环随之结束，60 秒内没有再出现“OCR 模型已加载”，也没有残留的 `-m ocr_worker` 进程（`Get-CimInstance Win32_Process | Where-Object CommandLine -match '-m ocr_worker'`）。窗口输出存成 `ctrlc-loop.txt`。
+
+### 17.6 登录页与停机刷新（T24v–T24z、W4 第 10.2 节第 5 项场景①）
+
+**为什么：** T24v–T24z 只对着临时模拟后端检查过（`docs/untested.md` 第 4 节“T24v–T24z”）；W4 场景①在第二轮测的是 T24x 之前的代码。在 W4 的 `docmgr_ui` 上，用 `npm run dev` 的前端做。每一步截图存到 `output/windows-w9/login/`，同时用浏览器开发者工具把这一步的网络请求导出成 HAR（或者至少记下请求地址和状态码）。
+
+| # | 操作 | 预期 |
+|---|---|---|
+| 1 | 登录后停掉后端，在文件页按 F5 刷新；再在检索页（`/search?q=合同`）刷新一次 | 都跳到登录页：文件页是首页，地址是 `/login`；检索页带 `redirect=/search?q=合同`（编码后）。本地令牌**还在**（开发者工具 → Application → Local Storage），卡片上方显示“暂时连不上服务器，登录状态已保留……”和“重试”；**不**同时显示 T24z 的提示 |
+| 2 | 重新启动后端，点“重试” | 不用输密码，直接回到第 1 步之前的页面 |
+| 3 | 停掉 PostgreSQL（后端开着），刷新文件页 | `/api/auth/me` 返回 503，同样保留令牌并显示第 1 步的提示；再清掉令牌打开 `/login`：显示 T24z 的“后端已启动，但数据库不可用……”和“重新检查”；记下打开页面到提示出现大约几秒 |
+| 4 | 启动 PostgreSQL，点“重新检查” | 提示消失 |
+| 5 | 停掉后端，清掉令牌，打开 `/login` | 显示“连不上后端服务，现在无法登录……”；启动后端后点“重新检查”，提示消失 |
+| 6 | 用错误的密码登录 | 按钮上方红色提示“用户名或密码错误”，几秒后仍在；改一下密码框，提示收起 |
+| 7 | 注册模式下用已存在的用户名注册 | 提示“这个用户名已被注册……”；切回登录模式，提示收起 |
+| 8 | 新开一个窗口设 `$env:ACCESS_TOKEN_EXPIRE_SECONDS = "60"`，在这个窗口重启后端；登录，打开 `/search?q=合同` 并检索一次，等 70 秒后再点“检索” | 回到登录页，地址带 `redirect=/search?q=合同`（编码后），本地令牌已清除；重新登录后回到检索页，检索框里是“合同”。做完关掉这个窗口，用原来的设置重启后端 |
+| 9 | 已登录时直接打开 `/login?redirect=/search` | 直接进入 `/search`，不停在登录页 |
+| 10 | 未登录时打开 `/login?redirect=/\evil.com`，登录 | 登录后回到首页 `/`，地址栏不出现 `evil.com` |
+| 11 | 退出登录。开发者工具 → Network 勾选 Preserve log，限速选 Slow 3G（或 Slow 4G）；在登录页填好正确的用户名和密码，光标留在密码框，**快速连按两次回车**；登录完成后把限速改回 No throttling（2026-11-23 添加，T24w） | Network 里 `POST /api/auth/login` **只有一条**；进入文件页。如果两次回车之间页面已经跳走，加大限速再试一次 |
+
+**Claude 怎么判断：** 对照截图和网络记录逐条看；第 3 步的耗时作为 T24z“数据库连不上时提示晚一点出现”的实测数据。全部符合，才从 `docs/untested.md` 删掉“T24v–T24z”一节的对应行，以及第 4 节“前端与真实后端的联调”里登录页的部分。
+
+### 17.7 鼠标从资源管理器真实拖入（W4 第 10.3 节，Barry 手动）
+
+自动化工具不能把文件从一个窗口拖到另一个窗口，所以由 Barry 手动做。准备：`npm run dev` 的前端、W4 的 `docmgr_ui`，资源管理器打开第 10.3 节的样本目录（一个 PDF、一张图片、一个不支持的文件，例如 `.txt`）。
+
+1. 浏览器打开文件页，按 F12 打开开发者工具，切到“网络”标签页，勾选“保留日志”。
+2. 用鼠标把 PDF 拖进上传区：拖到区内时区域高亮；在区内的文字上来回拖几下，高亮不应该闪烁消失；松开后开始上传。
+3. 同时拖入图片和 `.txt`：图片上传成功，`.txt` 显示拒绝原因。
+4. 截三张图：拖动时高亮、上传记录、拒绝原因，存到 `output/windows-w9/drag/`；网络标签页里右键 → “以 HAR 格式保存”，存成 `drag.har`（保存前看一眼，不要包含其他网站的请求）。
+
+**预期：** 两个支持的文件 `POST /api/documents` 返回 201，`.txt` 在前端就被拒绝或后端返回 415，页面显示的原因与第 10.3 节一致。
+
+### 17.8 第一组那次 300 秒超时（W8 第 16.5 节）
+
+**为什么：** 第 16.5 节第一组里，文档 `f35fbcc2`（249 行文字）第一次识别超过 300 秒被终止，第二次 88 秒就成功了。只开一个 Worker、CPU 约 40%，不像是资源不够。要看它是偶发，还是这张图本身有时会卡住。
+
+1. 在 `docmgr_w8b` 上：`SELECT id, filename FROM documents WHERE id = 'f35fbcc2-53bb-41e2-a74f-36ecabd0a75b';` 得到图片名；在第 16.5 节的 `docvqa-scale40\datasets\manifest.csv` 里找到它的行号，用 `make_subset.py` 单独生成一个 1 个文件的数据集 `docvqa-slow1`。
+2. 新建 `docmgr_w9c`、前缀 `w9c_`、新的存储目录，`alembic upgrade head`、`validate`、`import`，用 CLIP 服务和一个通用 Worker 做完 parse、embed 后停掉它们。
+3. 启动第 17.2 节的新采样脚本（输出 `slow1/memory.csv`）；启动**一个** OCR Worker，按第 16.4 节 A 的循环跑 **15 轮**，每轮导出 `slow1/r<NN>.csv`。
+
+**预期：** 15 个 CSV，每个 1 行。如果有一轮超过 300 秒，记下是第几轮，并看 `memory.csv` 里那段时间 `ocr_engine` 组的内存和 CPU 有没有异常（例如内存持续上涨、CPU 降到接近 0）。**Claude 怎么判断：** 统计 15 轮的耗时分布；没有一轮超过 200 秒，就记为偶发，写进论文局限；超时能复现，就作为 OCR 的问题报给 Barry。
+
+### 17.9 8 项符号链接测试（W6 第 12.3 节，Barry 本人）
+
+做法与第 12.3 节完全相同，那里的命令可以直接复制。两点提醒：
+- “开发人员模式”打开后要**注销再登录**，`whoami /priv` 里出现 `SeCreateSymbolicLinkPrivilege` 才算生效；不想改系统设置，就用“以管理员身份运行”的 PowerShell。
+- 只跑这 8 项，JUnit 存成 `output/windows-w9/symlink-backend.xml`、`symlink-shared.xml`，`whoami /priv` 那一行存成 `symlink-priv.txt`。
+
+预期：backend 6 passed、shared 2 passed。
+
+### 17.10 真实文件的解析与 OCR（W6 第 12.9、12.10 节，Barry 准备样本）
+
+步骤和核对方法都按第 12.9、12.10 节。第二轮没做的原因是没有样本，这里说清楚“真实样本”指什么，让准备工作变简单：
+
+- “真实”指**由真实的软件或设备产生**，不是指内容必须是别人的文档。Barry 自己在 Microsoft Word 里新建一份文档，打几段字、插一个表格、存盘，就是合格的“Word 保存的文件”；Excel 同理（多个工作表、合并单元格、一个公式，存盘前让公式算出结果）。不能用 AI 或脚本生成文件来代替。
+- 有文本层的 PDF：在 Word 里“另存为 PDF”就是一份中文 PDF；双栏的可以用任意公开论文的 PDF。
+- 扫描 PDF：打印一页公开的文字，用手机扫描 App 或打印机的扫描功能存成 PDF。
+- 手机照片：拍公开的海报、书的版权页，其中一张竖着拍；直接从手机传到电脑，不要截图、不要压缩。
+- 截图：一张带中文文字的系统设置页面截图，不要有个人信息。
+- 人工抄录：第 12.9 节要求的 4 段，每段 50–200 字，照着原图抄。
+
+`sources.csv` 的 `made_by` 写 Barry，`source` 写“自制（Word 2021 保存）”“手机拍摄（型号）”之类。按第 12.9 节，原文件也要交回。
+
+### 17.11 30 条漏检查询的人工核对（W8 第 16.7 节 B，Barry 本人）
+
+做法不变，见第 16.7 节 B。Claude 已经按自动规则把 270 条分好类（核对记录第 3 节）：14 条查询太泛、33 条内容词都在 OCR 文本里、223 条有内容词不在 OCR 文本里。这 30 条人工答案用来区分最后一类里，哪些是 OCR 漏认了、哪些是图上本来就没有这些词。
+
+### 17.14 OCR Worker 数与崩溃：按正确的方法重做（2026-11-25 添加）
+
+**为什么：** 2026-11-25 的第五轮复现了 `0xC0000005`，但编排脚本用 `$workers.ProcessId` 停 Worker，而 `Start-Process -PassThru` 返回的对象只有 `.Id`，**每一轮的 Worker 都没停掉**，标称“单 Worker”的第 9 轮实际有 9 个在跑（核对见 `docs/changes/windows-2026-11-25-核对.md` 第 2 节）。重新统计后看到：活着的 Worker 不超过 4 个时没有失败，5 个以上每轮都崩。这一节用干净的步骤确认，并补上当时没有采集的**提交内存**（页面文件用量），判断内存耗尽是不是原因。
+
+**方法上的三条硬要求：** 停进程用 `.Id`；每一轮开始前先**数清活着的 OCR Worker**，不为 0 就先全部停掉、等 10 秒再数；每一轮只测一种 Worker 数。测试期间其他程序（浏览器、Docker 之外的服务）保持不变，并记下可用内存的起始值。
+
+**准备：** 数据集用第 16.4 节的 `docvqa-crash4`，数据库与前缀用新的 `docmgr_w9b`、`w9b_`。在新基线（包含 T24aa–T24ac）上做。**先停掉平时常开的 OCR Worker**，只保留 PostgreSQL、OpenSearch、CLIP。采样用第 17.2 节的新脚本，把每次采样最后的 `cpu_total_percent` 一行之前加一行（提交内存，单位 MB，`commit_used` 与 `commit_limit`）：
+
+```powershell
+$os = Get-CimInstance Win32_OperatingSystem -Property TotalVirtualMemorySize, FreeVirtualMemory, FreePhysicalMemory
+$lines += "$now,commit_limit,0,{0:F1},0" -f ($os.TotalVirtualMemorySize / 1KB)
+$lines += "$now,commit_free,0,{0:F1},0" -f ($os.FreeVirtualMemory / 1KB)
+```
+
+**步骤：** Worker 数 N = 1、2、3、4、5、6，每种 5 轮（共 30 轮）。每一轮：
+
+```powershell
+function Count-Ocr { @(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match '-m ocr_worker' -and $_.Name -eq 'python.exe' }).Count }
+function Stop-AllOcr { Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match '-m ocr_worker' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }; Start-Sleep -Seconds 10 }
+# 每轮开头
+if ((Count-Ocr) -ne 0) { Stop-AllOcr }
+"round=<N>-<r> before=$(Count-Ocr) time=$(Get-Date -Format o)" | Out-File -Append -Encoding utf8 "$out\worker-count.txt"
+# 启动 N 个：Start-Ocr（第 16.2 节），用返回对象的 .Id 停止
+# 等 4 个 OCR 任务全部结束 → 导出 CSV → Stop-AllOcr → 再写一行 after=$(Count-Ocr)
+```
+
+注意 `python.exe -m ocr_worker` 在虚拟环境里有启动器和真正的进程两个，`Count-Ocr` 的数要除以 2 理解；日志里“OCR 模型已加载”的份数才是真正的 Worker 数，两者对照写进报告。**可用内存低于 300 MB 或出现“页面文件太小”就停止这一组**，照实记录停在哪一轮，不要继续加压。
+
+**预期：** 30 个 CSV（停止的组除外），每个 4 行；`worker-count.txt` 每轮 before、after 都是 0；`memory.csv` 覆盖全程、间隔不超过 3 秒，有 `commit_free`、`commit_limit`、`system_available`。不设通过线。
+
+**Claude 怎么判断：** 按实际 Worker 数统计失败数；看每次失败前 10 秒的 `commit_free`，如果失败都集中在提交内存将尽的时刻、充足时没有失败，就确认“内存耗尽”；得出建议的 Worker 上限，写进 T30。
+
+### 17.15 失败任务的重试间隔（T24ad，2026-11-25 添加）
+
+**为什么：** 失败的任务原来马上又被领走，CLIP 停十几秒就会让图片永久没有向量。T24ad 让失败过的任务按“上一次尝试的开始时间 + 30 秒 / 120 秒”再领（D55）。SQL 在 Mac 上没有跑过。
+
+1. **集成测试**（随第 17.2 节第 3 步的 backend 测试一起跑）：`tests/integration/test_task_queue.py` 里 T24ad 的 8 项应全部通过，不跳过。
+2. **CLIP 短暂不可用后自己恢复**（`docmgr_w9`，CLIP 服务先不开）：启动后端和一个通用 Worker，上传一张图片，记下时间。等 embed 任务第 1 次失败后（`attempts = 1`、`error` 为 ClipUnavailable），启动 CLIP 服务。每 5 秒导出一次这个任务，直到它结束：
+
+   ```powershell
+   Q 'docmgr_w9' "SELECT now(), status, attempts, started_at, error FROM processing_tasks WHERE task_type = 'embed' ORDER BY created_at DESC LIMIT 1" | Out-File -Append -Encoding utf8 "$out\retry\embed.txt"
+   ```
+
+3. **CLIP 一直不开**：另传一张图片，同样导出，直到 `failed`。
+
+**预期：** 第 2 步：第 1 次失败后，距它的 `started_at` 不到 30 秒时不会出现第 2 次尝试；CLIP 起来后的下一次尝试成功，任务 `succeeded`。第 3 步：相邻两次尝试的 `started_at` 相差不少于 30 秒、120 秒，第 3 次失败后 `failed`，从第 1 次开始到 `failed` 约 150 秒（加上每次尝试的几秒）。轮询间隔 2 秒，所以允许多出几秒。
+
+**Claude 怎么判断：** 逐行看 `embed.txt` 的时间和 `attempts`，两次间隔都不短于设定值才判为通过；同时确认等待期间别的任务照常被处理。
+
+### 17.16 把失败的任务成批放回队列（T24ae，2026-11-25 添加）
+
+**为什么：** CLIP 关得久了，期间的 embed 任务试完 3 次就是 `failed`，恢复后也不会自己再试。T24ae 新增了一个命令来补救（D56）。数据库部分在 Mac 上没有跑过。
+
+1. **集成测试**（随 backend 测试一起跑）：`tests/integration/test_requeue_failed_db.py` 3 项应全部通过，不跳过。
+2. **全过程**（接着第 17.15 节第 3 步，那里已经有一个 `failed` 的 embed 任务；再多传 2 张不同的图片，等它们也 `failed`）。在 `backend\` 下，先不启动 CLIP：
+
+   ```powershell
+   ..\.venv-main\Scripts\python -m app.modules.documents requeue-failed --type embed
+   ```
+
+   然后启动 CLIP 服务，再加 `--yes` 执行一次；等任务处理完，再不加 `--yes` 执行一次。三次的输出和退出码存成 `retry\requeue-1.txt` 到 `requeue-3.txt`。前后各导出一次 embed 任务的 `id, status, attempts, error`，以及 `image_embeddings` 的条数；最后 `consistency check --json`。
+
+**预期：** 第 1 次列出 3 个任务，原因是 ClipUnavailable，没有改动（导出与之前相同）；第 2 次“已放回队列 3 个”，之后 3 个都 `succeeded`、`attempts = 1`，向量条数加 3；第 3 次“没有需要放回队列的 embed 任务”；三次退出码都是 0；一致性检查没有问题。
+
+**Claude 怎么判断：** 对照三次输出与前后两次导出，全部符合才判为通过。
+
+### 17.17 检索服务停掉时 repair 的提示（T24af，2026-11-25 添加）
+
+接着第 17.4 节做，`docmgr_docvqa`、`docvqa_`，只演练和看提示，不改数据。先 `check` 一次，确认没有不一致（有的话先停下问 Barry），再停掉 OpenSearch，在 `backend\` 下依次执行，输出（标准输出和标准错误都要）与退出码存成 `repair-down-1.txt` 到 `repair-down-3.txt`：
+
+```powershell
+..\.venv-main\Scripts\python -m app.modules.consistency repair --fix index
+..\.venv-main\Scripts\python -m app.modules.consistency repair --fix index --fix temp-files
+..\.venv-main\Scripts\python -m app.modules.consistency repair --fix temp-files
+```
+
+**预期：** 第 1 条只说“没有检查索引，index 这次不会修复”，**没有**“没有需要修复的问题”，退出码 1；第 2 条另有一行“其余所选类别（temp-files）下没有需要修复的问题”，退出码 1；第 3 条只有“所选类别下没有需要修复的问题”，退出码 0。做完重新启动 OpenSearch。逐条一致才判为通过。
+
+### 17.18 界面更新：失败原因、任务面板、中英文与配色、检索动效（T24ba–T24be，2026-11-25 添加）
+
+**为什么：** T24ba–T24be 在 Mac 上只对着“真实 FastAPI 应用 + SQLite 替身”检查过：任务状态是脚本改的，检索结果是注入的，没有真实的 PostgreSQL、Worker、OpenSearch、CLIP、OCR（`docs/untested.md` 第 4 节“T24ba–T24be”）。W4 的界面结果基于改动前的界面，本节一并重测。
+
+**准备：** 接着第 17.6 节，用 W4 的 `docmgr_ui`（前缀 `ui_`）、`npm run dev` 的前端，界面语言先用中文、默认配色。账号要三个：普通用户 A、普通用户 B、管理员。截图存到 `output/windows-w9/ui/`（`01.png` 起编号，一步多张时 `01a.png`、`01b.png`），网络记录存成 HAR。
+
+生成两个样本（放在仓库外的目录，不提交；口令是测试用的）：
+
+```powershell
+Set-Content -Encoding utf8 "<仓库外的目录>\make_ui_samples.py" -Value @'
+import pathlib, sys
+import pymupdf
+d = pathlib.Path(sys.argv[1])
+doc = pymupdf.open(); doc.new_page().insert_text((72, 100), "x")
+doc.save(d / "locked.pdf", encryption=pymupdf.PDF_ENCRYPT_AES_256, user_pw="test-pw", owner_pw="test-owner")
+s = pymupdf.open()
+for i in range(6):
+    t = pymupdf.open(); p = t.new_page(width=600, height=800)
+    p.insert_text((60, 120), f"W9 sample page {i + 1}", fontsize=40)
+    q = s.new_page(width=600, height=800); q.insert_image(q.rect, pixmap=p.get_pixmap(dpi=150))
+s.save(d / "scan6.pdf", deflate=True)
+'@
+.venv-main\Scripts\python "<仓库外的目录>\make_ui_samples.py" "<仓库外的目录>"
+```
+
+| # | 操作 | 预期 |
+|---|---|---|
+| 1 | 停掉 CLIP 服务，A 上传一张图片，打开它的“处理详情”等着，直到图像向量失败（T24ad 的间隔，约 2 分半） | 等待期间显示“第 n/3 次失败，等待再次处理”和原因；最后是“失败”“已尝试 3/3 次”“原因：CLIP 服务连接失败（…）”。图片能正常预览，预览页有黄色提示“图像向量生成失败，图像语义检索暂时搜不到这张图片。” |
+| 2 | 启动 CLIP 服务，点“重试失败项” | 提示“已放回队列 1 项，等待处理”；Worker 日志里**几秒内**就领走（不等 30 秒）；成功后提示自己消失。开图像通道能搜到这张图片 |
+| 3 | A 上传 `scan6.pdf`，启动一个 OCR Worker，有 2 页成功后按 Ctrl+C 停掉；新窗口设 `$env:OCR_WORKER_TASK_TIMEOUT_SECONDS = "0.2"` 再启动，等其余页都失败（约 3 分钟；如果还能成功就改成 0.05），停掉并关掉这个窗口。用原来的设置启动 OCR Worker，打开预览页的“抽取文本”停在那里，点“重试失败项” | 失败时提示“6 项 OCR 识别中有 n 项失败……”，详情里是“共 6 项：成功 a，失败 n”“原因：识别超时（超过 0.2 秒），已终止（n 项）”。重试后标题旁显示“OCR 识别进行中：x/6”；有页完成后出现“OCR 有新的识别结果 点此刷新”，**点了才更新**，不自己跳动；全部完成后提示消失。检索 `sample` 能搜到 |
+| 4 | A 上传 `locked.pdf` | 列表显示“解析失败”和“查看原因”；详情是“已尝试 1/3 次”“原因：PDF 已加密，需要口令才能读取，无法解析”和“系统判定重试无用……”。预览页的“抽取文本”写“文件解析失败，没有抽取文本” |
+| 5 | A 把 `locked.pdf` 共享给 B。模拟一个没有预料到的错误：`Q 'docmgr_ui' "UPDATE processing_tasks SET error = 'FileNotFoundError: [Errno 2] No such file or directory: ''C:\srv\docmgr\a.pdf''' WHERE task_type = 'parse' AND document_id = '<它的 id>'"`（只改这个测试库）。A、B、管理员各打开一次处理详情，并把 `GET /api/documents/<id>/tasks` 的应答存成 `tasks-a.json`、`tasks-b.json`、`tasks-admin.json` | A、B 看到“原因：系统内部错误（FileNotFoundError）”，两个应答里**都没有** `srv`；B **没有**重试按钮，提示“只有文件的上传者和管理员可以重试”；管理员看到原文（T24ba） |
+| 6 | A 在 `locked.pdf` 的处理详情里点“重试”，立刻点侧栏“检索”，在检索页停 30 秒看网络面板 | 离开之后没有 `/api/documents` 和 `/tasks` 的请求；回到文件页状态正确（T24bb、T24bd） |
+| 7 | 网络限速 Slow 3G，文件页快速依次点“共享给我的”“我上传的” | 最后显示的是“我上传的”文件，与选中的按钮一致（T24bb） |
+| 8 | 文件列表 → 打开文件甲 → 返回列表 → 打开文件乙；在浏览器的后退按钮上长按（或右键），直接选甲那一条 | 地址和页面内容都是甲（T24bb） |
+| 9 | 同第 17.6 节第 8 步，把令牌有效期设为 60 秒重启后端；A 登录并打开检索页，停掉后端，刷新检索页（显示“登录状态已保留”）；等到登录满 70 秒，启动后端。先在表单里填好 B 的用户名和密码，限速 Slow 3G，点“重试”后马上按回车登录 | 进入的是 B，没有被退回登录页，本地令牌还在；再点几个页面都正常（T24bb）。做完用原来的设置重启后端 |
+| 10 | 检索页：① 快速改词并连按回车；② 连点“检索”按钮三下；③ 检索中改一次开关（都在 Slow 3G 下做） | 检索中扫描区写“正在检索…”，结果到了写“正在整理结果…”，没有文件计数（T24bh）。① 只显示最后一个词的结果，前面的请求是 canceled；② 只有 1 条 `POST /api/search`；③ 同第 10.2 节第 8 项的新预期 |
+| 11 | 停掉 OpenSearch 后检索；启动后点扫描区的“重试” | 红色“检索服务暂时不可用”，**不是**“没有找到匹配的文件”；重试后正常显示结果 |
+| 12 | 打开检索页，按 Tab 把焦点移到右下角“EN”，停 5 秒等启动动画重新播放，按回车 | 语言切换为英文，焦点仍在“EN”上，没有跳到检索框；再点“中”切回 |
+| 13 | 切到 English，把登录页、文件页、共享对话框、删除确认框、处理详情、预览页、检索结果看一遍；切回中文 | 除了后端返回的文字（失败原因等）、文件名、正文和按钮“中”，没有中文；分页、确认框也跟着切换；没有文字溢出或被截断 |
+| 14 | 配色：选靛紫 + 深色，看文件页、处理详情、检索结果、预览页；按 F5；再点“恢复默认” | 文字都看得清；刷新后保持；恢复默认后与原来的海蓝浅色一致 |
+| 15 | 窗口宽约 1280、768、375 各一次，文件页（20 条以上）、预览页、检索结果都滚到底 | 右下角的语言、配色按钮不压住分页和其他按钮，没有横向滚动条 |
+| 16 | Windows 设置 → 辅助功能 → 视觉效果 → 关闭“动画效果”，刷新登录页和检索页；做完改回 | 没有启动动画，logo 和待机只有静止画面；检索可用，结果正常 |
+| 17 | `npm run build` 后 `npm run preview`，打开 `/motion-lab` | 回到首页或登录页；`dist\assets` 里没有 `MotionLabView`（开发模式下能打开，是正常的） |
+| 18 | 第 10–15 步在 Chrome、Edge 各看一遍，装了 Firefox 的话也看；按第 10.5 节的清单重截论文用的图，另加：处理详情、预览页失败提示、英文界面、深色界面各一张 | 报告里写明浏览器版本；新图放 `docs/screenshots/windows-<执行日期>-t24b/` |
+
+**Claude 怎么判断：** 对照截图和网络记录逐条看；第 2 步的领取时间读 Worker 日志；第 5 步在三个应答里搜 `srv`；全部符合，才从 `docs/untested.md` 删掉“T24ba–T24be”的对应行。30 秒检索超时、低配机器的帧率、读屏软件、中文输入法组字时按回车不在本节，仍是未测试。
+
+### 17.12 验收标准
+
+- [ ] 17.2：`git-head.txt` 的提交包含 T24z；`mapping-eol.txt` 三行 LF、hash 与 Mac 一致；前端三项命令的输出都在；`sampler-selftest.csv` 相邻采样间隔不超过 3 秒
+- [ ] 17.3：四步耗时与设定值相差不超过 2 秒，都报 `ConnectionTimeout`、退出码 1
+- [ ] 17.4：`index-before.txt`、`index-after.txt`、`git-status-before-runs.txt`、`w9-runs.zip`（8 个目录）都在；R1 与 R2 逐条相同；指标与 W3 相差不超过 0.01
+- [ ] 17.5（修复之后）：A、B 两个任务都是 `succeeded`、`attempts = 1`，退出码都是 130，日志里没有 `InterruptedError`、`KeyboardInterrupt`；C 的两个 Worker 强制结束 3 秒后子进程都不在，任务 `succeeded`、`attempts = 2`，没有重复的 OCR 任务；D 的循环在按 Ctrl+C 后结束、没有重新拉起
+- [ ] 17.6：11 步都有截图和网络记录（第 11 步的网络记录里能数出登录请求的条数），结果逐条对照了预期
+- [ ] 17.18：18 步都有截图，第 2、3、5、6、7、9、10 步有网络记录，第 5 步有接口应答原文；结果逐条对照了预期；新截图在 `docs/screenshots/windows-<日期>-t24b/`
+- [ ] 17.7：三张截图和 `drag.har`
+- [ ] 17.8：15 个 CSV 和 `memory.csv`
+- [ ] 17.9：backend 6 passed、shared 2 passed，`symlink-priv.txt` 在
+- [ ] 17.10：样本、`sources.csv`、三个 JSON、原文件、4 段人工抄录都交回
+- [ ] 17.11：`missed30-answers.tsv` 填完 30 行
+- [ ] 全程没有改代码和配置文件；`output/windows-w9/` 有 `git-head.txt`、`commands.txt`、`SHA256SUMS.txt`
+
+### 17.13 怎样算测试成功
+
+仍按第 0.5 节的三条判定。本节里有通过或失败之分的是 17.3、17.4、17.5、17.6、17.7、17.9、17.18；其余是测量或样本，**数据完整、来源可查就算完成**，结论由 Claude 核对后写进核对记录和 `docs/untested.md`。哪一项做不到，写明卡在哪里，继续做不依赖它的部分。**SHA-256 请对仓库里提交的文件算**（提交之后再算，或者统一换成 LF 后再算）：第二轮有 291 个文本文件的 hash 是对 CRLF 签出的工作区文件算的，Claude 要先换成 CRLF 才能对上。

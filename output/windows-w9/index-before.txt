@@ -1,0 +1,4 @@
+index                docs.count docs.deleted segments.count
+docvqa_chunks              1589            6              3
+docvqa_image_vectors        500            3              6
+docvqa_doc_meta             500            2              7

@@ -6,7 +6,10 @@
 
     while true; do ../../env_check/.venv-ocr/bin/python -m ocr_worker || break; done
 
-退出码：0 正常退出；1 配置或模型有问题（重新拉起也没用，外层循环应当停下）。
+收到 SIGTERM / Ctrl-C 时，做完手头的任务再退出（退出码 130，上面的循环随之结束）。
+
+退出码：0 处理满任务数，应当重新拉起；1 配置、模型或数据库有问题（重新拉起也没用，外层循环
+应当停下）；130 收到停止信号。与通用 Worker 相同（T24ac）。
 """
 
 import functools
@@ -80,6 +83,7 @@ def main() -> int:
         worker_id=worker_id,
         lease_seconds=settings.ocr_worker_lease_seconds,
         connect_timeout_seconds=connect_timeout,
+        retry_delays=settings.retry_delays,
     )
     store = PgStore(settings.database_url, connect_timeout_seconds=connect_timeout)
     try:
@@ -145,7 +149,8 @@ def main() -> int:
         engine.close()
         queue.reset()
         store.reset()
-    return 0
+    # 不能返回 0：外层循环把 0 当作“做满任务数，重新拉起”，按了 Ctrl-C 反而马上又启动（T24ac）
+    return 130 if stop_requested else 0
 
 
 if __name__ == "__main__":

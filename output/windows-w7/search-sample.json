@@ -1,0 +1,24 @@
+{
+  "hits": [],
+  "channels": [
+    {
+      "channel": "meta",
+      "status": "ok",
+      "took_ms": 39,
+      "detail": null
+    },
+    {
+      "channel": "text",
+      "status": "ok",
+      "took_ms": 46,
+      "detail": null
+    },
+    {
+      "channel": "image",
+      "status": "ok",
+      "took_ms": 152,
+      "detail": null
+    }
+  ],
+  "took_ms": 158
+}

@@ -60,7 +60,7 @@ const emptyText = computed(() => {
   return kind.value === 'text' ? m().preview.noText : m().preview.noTextScan
 })
 
-// ---- 处理任务：失败提示、重试、处理完自动刷新（任务状态与重试 P4）----
+// ---- 处理任务：失败提示、重试、处理完自动刷新（T24bd）----
 
 const showTasks = ref(false)
 // 抽取文本组件（两处用法同一时间只会有一个）；没打开过“抽取文本”标签页时为 null

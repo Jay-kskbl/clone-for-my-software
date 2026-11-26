@@ -1,4 +1,4 @@
-// 登录页的错误文字（登录页结构优化 L6）：按错误码给出当前语言的说明，没列出的错误码显示后端原文。
+// 登录页的错误文字（T24y，T24bc 起随界面语言）：按错误码给出当前语言的说明，没列出的错误码显示后端原文。
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { ApiError } from '../../src/api/client'

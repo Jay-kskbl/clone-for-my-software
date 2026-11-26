@@ -1,0 +1,842 @@
+[
+  {
+    "step": "00-favicon",
+    "time": "2026-11-25T12:15:11.063Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/client.ts",
+    "status": 200
+  },
+  {
+    "step": "00-favicon",
+    "time": "2026-11-25T12:15:11.091Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/auth.ts",
+    "status": 200
+  },
+  {
+    "step": "00-favicon",
+    "time": "2026-11-25T12:15:11.610Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/health.ts",
+    "status": 200
+  },
+  {
+    "step": "00-favicon",
+    "time": "2026-11-25T12:15:11.611Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/favicon.svg",
+    "status": 200
+  },
+  {
+    "step": "00-favicon",
+    "time": "2026-11-25T12:15:12.156Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/favicon.svg",
+    "status": 200
+  },
+  {
+    "step": "01",
+    "time": "2026-11-25T12:15:12.299Z",
+    "method": "POST",
+    "url": "http://127.0.0.1:5173/api/auth/login",
+    "status": 200
+  },
+  {
+    "step": "01",
+    "time": "2026-11-25T12:15:12.310Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/api/auth/me",
+    "status": 200
+  },
+  {
+    "step": "01",
+    "time": "2026-11-25T12:15:12.424Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/documents.ts",
+    "status": 200
+  },
+  {
+    "step": "01",
+    "time": "2026-11-25T12:15:12.481Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/tasks.ts",
+    "status": 200
+  },
+  {
+    "step": "01",
+    "time": "2026-11-25T12:15:12.566Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/favicon.svg",
+    "status": 200
+  },
+  {
+    "step": "01",
+    "time": "2026-11-25T12:15:12.570Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/api/documents?page=1&page_size=20",
+    "status": 200
+  },
+  {
+    "step": "01",
+    "time": "2026-11-25T12:15:13.339Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/health",
+    "status": 502
+  },
+  {
+    "step": "01",
+    "time": "2026-11-25T12:15:14.401Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/client.ts",
+    "status": 304
+  },
+  {
+    "step": "01",
+    "time": "2026-11-25T12:15:14.406Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/auth.ts",
+    "status": 304
+  },
+  {
+    "step": "01",
+    "time": "2026-11-25T12:15:14.676Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/api/auth/me",
+    "status": 502
+  },
+  {
+    "step": "01",
+    "time": "2026-11-25T12:15:14.676Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/api/auth/me",
+    "status": 502
+  },
+  {
+    "step": "01",
+    "time": "2026-11-25T12:15:14.676Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/favicon.svg",
+    "status": 200
+  },
+  {
+    "step": "01",
+    "time": "2026-11-25T12:15:14.676Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/health.ts",
+    "status": 304
+  },
+  {
+    "step": "01",
+    "time": "2026-11-25T12:15:14.678Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/health",
+    "status": 502
+  },
+  {
+    "step": "01",
+    "time": "2026-11-25T12:15:14.678Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/favicon.svg",
+    "status": 200
+  },
+  {
+    "step": "01",
+    "time": "2026-11-25T12:15:15.310Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/client.ts",
+    "status": 304
+  },
+  {
+    "step": "01",
+    "time": "2026-11-25T12:15:15.345Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/auth.ts",
+    "status": 304
+  },
+  {
+    "step": "01",
+    "time": "2026-11-25T12:15:15.589Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/api/auth/me",
+    "status": 502
+  },
+  {
+    "step": "01",
+    "time": "2026-11-25T12:15:15.589Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/favicon.svg",
+    "status": 200
+  },
+  {
+    "step": "01",
+    "time": "2026-11-25T12:15:15.590Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/api/auth/me",
+    "status": 502
+  },
+  {
+    "step": "01",
+    "time": "2026-11-25T12:15:15.590Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/health.ts",
+    "status": 304
+  },
+  {
+    "step": "01",
+    "time": "2026-11-25T12:15:15.594Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/health",
+    "status": 502
+  },
+  {
+    "step": "01",
+    "time": "2026-11-25T12:15:15.594Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/favicon.svg",
+    "status": 200
+  },
+  {
+    "step": "02",
+    "time": "2026-11-25T12:15:21.360Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/api/auth/me",
+    "status": 200
+  },
+  {
+    "step": "02",
+    "time": "2026-11-25T12:15:21.418Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/documents.ts",
+    "status": 304
+  },
+  {
+    "step": "02",
+    "time": "2026-11-25T12:15:21.419Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/search.ts",
+    "status": 200
+  },
+  {
+    "step": "02",
+    "time": "2026-11-25T12:15:21.479Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/favicon.svg",
+    "status": 200
+  },
+  {
+    "step": "02",
+    "time": "2026-11-25T12:15:21.507Z",
+    "method": "POST",
+    "url": "http://127.0.0.1:5173/api/search",
+    "status": 200
+  },
+  {
+    "step": "03",
+    "time": "2026-11-25T12:15:22.319Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/health",
+    "status": "FAILED:net::ERR_ABORTED"
+  },
+  {
+    "step": "03",
+    "time": "2026-11-25T12:15:22.343Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/client.ts",
+    "status": 304
+  },
+  {
+    "step": "03",
+    "time": "2026-11-25T12:15:22.381Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/auth.ts",
+    "status": 304
+  },
+  {
+    "step": "03",
+    "time": "2026-11-25T12:15:22.624Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/api/auth/me",
+    "status": 200
+  },
+  {
+    "step": "03",
+    "time": "2026-11-25T12:15:22.624Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/favicon.svg",
+    "status": 200
+  },
+  {
+    "step": "03",
+    "time": "2026-11-25T12:15:22.624Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/documents.ts",
+    "status": 304
+  },
+  {
+    "step": "03",
+    "time": "2026-11-25T12:15:22.633Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/tasks.ts",
+    "status": 304
+  },
+  {
+    "step": "03",
+    "time": "2026-11-25T12:15:22.649Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/api/documents?page=1&page_size=20",
+    "status": 200
+  },
+  {
+    "step": "03",
+    "time": "2026-11-25T12:15:25.231Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/client.ts",
+    "status": 304
+  },
+  {
+    "step": "03",
+    "time": "2026-11-25T12:15:25.241Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/auth.ts",
+    "status": 304
+  },
+  {
+    "step": "03",
+    "time": "2026-11-25T12:15:25.508Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/favicon.svg",
+    "status": 200
+  },
+  {
+    "step": "03",
+    "time": "2026-11-25T12:15:50.629Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/api/auth/me",
+    "status": "FAILED:net::ERR_ABORTED"
+  },
+  {
+    "step": "03",
+    "time": "2026-11-25T12:15:50.667Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/client.ts",
+    "status": 200
+  },
+  {
+    "step": "03",
+    "time": "2026-11-25T12:15:50.694Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/auth.ts",
+    "status": 200
+  },
+  {
+    "step": "03",
+    "time": "2026-11-25T12:15:50.987Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/health.ts",
+    "status": 200
+  },
+  {
+    "step": "03",
+    "time": "2026-11-25T12:15:50.987Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/favicon.svg",
+    "status": 200
+  },
+  {
+    "step": "03",
+    "time": "2026-11-25T12:15:55.377Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/health",
+    "status": 200
+  },
+  {
+    "step": "04",
+    "time": "2026-11-25T12:15:58.544Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/health",
+    "status": 200
+  },
+  {
+    "step": "05",
+    "time": "2026-11-25T12:16:00.349Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/client.ts",
+    "status": 200
+  },
+  {
+    "step": "05",
+    "time": "2026-11-25T12:16:00.380Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/auth.ts",
+    "status": 200
+  },
+  {
+    "step": "05",
+    "time": "2026-11-25T12:16:00.627Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/health.ts",
+    "status": 200
+  },
+  {
+    "step": "05",
+    "time": "2026-11-25T12:16:00.628Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/favicon.svg",
+    "status": 200
+  },
+  {
+    "step": "05",
+    "time": "2026-11-25T12:16:00.633Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/health",
+    "status": 502
+  },
+  {
+    "step": "05",
+    "time": "2026-11-25T12:16:08.200Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/health",
+    "status": 200
+  },
+  {
+    "step": "06",
+    "time": "2026-11-25T12:16:08.920Z",
+    "method": "POST",
+    "url": "http://127.0.0.1:5173/api/auth/login",
+    "status": 401
+  },
+  {
+    "step": "07",
+    "time": "2026-11-25T12:16:14.358Z",
+    "method": "POST",
+    "url": "http://127.0.0.1:5173/api/auth/register",
+    "status": 409
+  },
+  {
+    "step": "08",
+    "time": "2026-11-25T12:16:21.130Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/client.ts",
+    "status": 200
+  },
+  {
+    "step": "08",
+    "time": "2026-11-25T12:16:21.181Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/auth.ts",
+    "status": 200
+  },
+  {
+    "step": "08",
+    "time": "2026-11-25T12:16:21.448Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/health.ts",
+    "status": 200
+  },
+  {
+    "step": "08",
+    "time": "2026-11-25T12:16:21.448Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/favicon.svg",
+    "status": 200
+  },
+  {
+    "step": "08",
+    "time": "2026-11-25T12:16:21.627Z",
+    "method": "POST",
+    "url": "http://127.0.0.1:5173/api/auth/login",
+    "status": 200
+  },
+  {
+    "step": "08",
+    "time": "2026-11-25T12:16:21.637Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/api/auth/me",
+    "status": 200
+  },
+  {
+    "step": "08",
+    "time": "2026-11-25T12:16:21.646Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/documents.ts",
+    "status": 200
+  },
+  {
+    "step": "08",
+    "time": "2026-11-25T12:16:21.658Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/tasks.ts",
+    "status": 200
+  },
+  {
+    "step": "08",
+    "time": "2026-11-25T12:16:21.702Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/health",
+    "status": "FAILED:net::ERR_ABORTED"
+  },
+  {
+    "step": "08",
+    "time": "2026-11-25T12:16:21.702Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/api/documents?page=1&page_size=20",
+    "status": "FAILED:net::ERR_ABORTED"
+  },
+  {
+    "step": "08",
+    "time": "2026-11-25T12:16:21.702Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/favicon.svg",
+    "status": "FAILED:net::ERR_ABORTED"
+  },
+  {
+    "step": "08",
+    "time": "2026-11-25T12:16:21.759Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/client.ts",
+    "status": 200
+  },
+  {
+    "step": "08",
+    "time": "2026-11-25T12:16:21.765Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/auth.ts",
+    "status": 200
+  },
+  {
+    "step": "08",
+    "time": "2026-11-25T12:16:22.043Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/api/auth/me",
+    "status": 200
+  },
+  {
+    "step": "08",
+    "time": "2026-11-25T12:16:22.054Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/documents.ts",
+    "status": 304
+  },
+  {
+    "step": "08",
+    "time": "2026-11-25T12:16:22.054Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/favicon.svg",
+    "status": 200
+  },
+  {
+    "step": "08",
+    "time": "2026-11-25T12:16:22.054Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/health.ts",
+    "status": 200
+  },
+  {
+    "step": "08",
+    "time": "2026-11-25T12:16:22.054Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/search.ts",
+    "status": 200
+  },
+  {
+    "step": "08",
+    "time": "2026-11-25T12:16:22.083Z",
+    "method": "POST",
+    "url": "http://127.0.0.1:5173/api/search",
+    "status": 200
+  },
+  {
+    "step": "08",
+    "time": "2026-11-25T12:16:24.485Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/health",
+    "status": 200
+  },
+  {
+    "step": "08",
+    "time": "2026-11-25T12:17:33.611Z",
+    "method": "POST",
+    "url": "http://127.0.0.1:5173/api/search",
+    "status": 401
+  },
+  {
+    "step": "08",
+    "time": "2026-11-25T12:17:33.632Z",
+    "method": "POST",
+    "url": "http://127.0.0.1:5173/api/search",
+    "status": 401
+  },
+  {
+    "step": "08",
+    "time": "2026-11-25T12:17:33.657Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/favicon.svg",
+    "status": 200
+  },
+  {
+    "step": "08",
+    "time": "2026-11-25T12:17:34.297Z",
+    "method": "POST",
+    "url": "http://127.0.0.1:5173/api/auth/login",
+    "status": 200
+  },
+  {
+    "step": "08",
+    "time": "2026-11-25T12:17:34.304Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/api/auth/me",
+    "status": 200
+  },
+  {
+    "step": "08",
+    "time": "2026-11-25T12:17:34.318Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/favicon.svg",
+    "status": 200
+  },
+  {
+    "step": "08",
+    "time": "2026-11-25T12:17:34.326Z",
+    "method": "POST",
+    "url": "http://127.0.0.1:5173/api/search",
+    "status": 200
+  },
+  {
+    "step": "08",
+    "time": "2026-11-25T12:17:35.364Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/health",
+    "status": 502
+  },
+  {
+    "step": "08",
+    "time": "2026-11-25T12:17:35.365Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/health",
+    "status": 502
+  },
+  {
+    "step": "08",
+    "time": "2026-11-25T12:17:35.365Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/health",
+    "status": 502
+  },
+  {
+    "step": "09",
+    "time": "2026-11-25T12:17:41.388Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/client.ts",
+    "status": 200
+  },
+  {
+    "step": "09",
+    "time": "2026-11-25T12:17:41.438Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/auth.ts",
+    "status": 200
+  },
+  {
+    "step": "09",
+    "time": "2026-11-25T12:17:41.690Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/api/auth/me",
+    "status": 200
+  },
+  {
+    "step": "09",
+    "time": "2026-11-25T12:17:41.690Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/favicon.svg",
+    "status": 200
+  },
+  {
+    "step": "09",
+    "time": "2026-11-25T12:17:41.690Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/documents.ts",
+    "status": 200
+  },
+  {
+    "step": "09",
+    "time": "2026-11-25T12:17:41.690Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/search.ts",
+    "status": 200
+  },
+  {
+    "step": "09",
+    "time": "2026-11-25T12:17:41.690Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/health.ts",
+    "status": 200
+  },
+  {
+    "step": "09",
+    "time": "2026-11-25T12:17:41.705Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/favicon.svg",
+    "status": 200
+  },
+  {
+    "step": "10",
+    "time": "2026-11-25T12:17:42.392Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/health",
+    "status": "FAILED:net::ERR_ABORTED"
+  },
+  {
+    "step": "10",
+    "time": "2026-11-25T12:17:42.452Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/client.ts",
+    "status": 200
+  },
+  {
+    "step": "10",
+    "time": "2026-11-25T12:17:42.458Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/auth.ts",
+    "status": 200
+  },
+  {
+    "step": "10",
+    "time": "2026-11-25T12:17:42.758Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/health.ts",
+    "status": 304
+  },
+  {
+    "step": "10",
+    "time": "2026-11-25T12:17:42.759Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/favicon.svg",
+    "status": 200
+  },
+  {
+    "step": "10",
+    "time": "2026-11-25T12:17:42.888Z",
+    "method": "POST",
+    "url": "http://127.0.0.1:5173/api/auth/login",
+    "status": 200
+  },
+  {
+    "step": "10",
+    "time": "2026-11-25T12:17:42.896Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/api/auth/me",
+    "status": 200
+  },
+  {
+    "step": "10",
+    "time": "2026-11-25T12:17:42.908Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/documents.ts",
+    "status": 200
+  },
+  {
+    "step": "10",
+    "time": "2026-11-25T12:17:42.917Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/tasks.ts",
+    "status": 200
+  },
+  {
+    "step": "10",
+    "time": "2026-11-25T12:17:42.951Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/favicon.svg",
+    "status": 200
+  },
+  {
+    "step": "10",
+    "time": "2026-11-25T12:17:42.965Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/api/documents?page=1&page_size=20",
+    "status": 200
+  },
+  {
+    "step": "11",
+    "time": "2026-11-25T12:17:43.580Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/health",
+    "status": "FAILED:net::ERR_ABORTED"
+  },
+  {
+    "step": "11",
+    "time": "2026-11-25T12:17:43.613Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/client.ts",
+    "status": 200
+  },
+  {
+    "step": "11",
+    "time": "2026-11-25T12:17:43.627Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/auth.ts",
+    "status": 200
+  },
+  {
+    "step": "11",
+    "time": "2026-11-25T12:17:43.883Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/health.ts",
+    "status": 200
+  },
+  {
+    "step": "11",
+    "time": "2026-11-25T12:17:43.884Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/favicon.svg",
+    "status": 200
+  },
+  {
+    "step": "11",
+    "time": "2026-11-25T12:17:46.285Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/health",
+    "status": 200
+  },
+  {
+    "step": "11",
+    "time": "2026-11-25T12:17:46.770Z",
+    "method": "POST",
+    "url": "http://127.0.0.1:5173/api/auth/login",
+    "status": 200
+  },
+  {
+    "step": "11",
+    "time": "2026-11-25T12:17:48.874Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/api/auth/me",
+    "status": 200
+  },
+  {
+    "step": "11",
+    "time": "2026-11-25T12:17:53.110Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/documents.ts",
+    "status": 200
+  },
+  {
+    "step": "11",
+    "time": "2026-11-25T12:17:57.783Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/src/api/tasks.ts",
+    "status": 200
+  },
+  {
+    "step": "11",
+    "time": "2026-11-25T12:17:58.280Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/api/documents?page=1&page_size=20",
+    "status": 200
+  },
+  {
+    "step": "11",
+    "time": "2026-11-25T12:17:58.285Z",
+    "method": "GET",
+    "url": "http://127.0.0.1:5173/favicon.svg",
+    "status": 200
+  }
+]

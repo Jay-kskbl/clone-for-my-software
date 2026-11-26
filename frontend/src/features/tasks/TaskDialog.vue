@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// 处理详情（任务状态与重试 P3）：一个文档处理到哪一步、为什么失败、重试。
+// 处理详情（T24bd）：一个文档处理到哪一步、为什么失败、重试。
 // 数据和轮询由使用它的页面提供（useDocumentTasks），这里只负责显示。
 import { computed } from 'vue'
 

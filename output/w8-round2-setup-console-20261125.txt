@@ -1,0 +1,17 @@
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+{
+  "files": 4,
+  "files_by_type": {
+    "image": 4
+  },
+  "queries": 4,
+  "queries_by_type": {
+    "text": 4
+  },
+  "qrels": 4,
+  "relevant_pairs": 4,
+  "queries_without_relevant": []
+}
+���� 4 ���ļ������� 0 ���滻�������ѱ�ľ��ĵ������ĵ���ɾ���������� 0 ���ѵ���ġ������� Worker �� OCR Worker ��ɴ�����
+W8_ROUND2_SETUP_READY

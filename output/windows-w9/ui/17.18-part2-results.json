@@ -1,0 +1,194 @@
+{
+  "part": 2,
+  "browsers": {
+    "chrome": "Google Chrome 158.0.8127.37",
+    "edge": "Microsoft Edge 158.0.4370.33",
+    "firefox": "not installed"
+  },
+  "steps": [
+    {
+      "step": 6,
+      "leakedPollingCount": 0,
+      "leakedReqs": [],
+      "backOnDocsOk": true
+    },
+    {
+      "step": 7,
+      "activeScope": "我上传的",
+      "hasOwnDocs": true,
+      "noSharedOnlyDoc": true
+    },
+    {
+      "step": 8,
+      "docAName": "w9-page-sample-12.pdf",
+      "docBName": "w9-page-sample-11.pdf",
+      "urlMatchedDocA": true,
+      "titleMatchedDocA": true,
+      "titleAfterJump": "w9-page-sample-12.pdf"
+    },
+    {
+      "step": 9,
+      "loggedInAs": "w9user_b",
+      "isUserB": true,
+      "stayedLoggedIn": true
+    },
+    {
+      "step": 10,
+      "part1_totalSearchReqs": 3,
+      "part1_canceledCount": 2,
+      "part1_finalUrlHasLastQuery": true,
+      "part2_tripleClickSearchCount": 1,
+      "part3_midToggleCanceled": 1
+    },
+    {
+      "step": 11,
+      "showedUnavailableNotEmpty": true,
+      "recoveredAfterRetry": true
+    },
+    {
+      "step": 12,
+      "focusedBeforeEnter": "EN",
+      "focusedAfterEnter": "EN",
+      "switchedToEnglish": true
+    },
+    {
+      "step": 13,
+      "enDocumentsHasEnglishHeader": true,
+      "enShareHasEnglish": true,
+      "enConfirmHasEnglish": true,
+      "enTasksHasEnglish": true,
+      "switchedBackToZh": true
+    },
+    {
+      "step": 14,
+      "darkActive": true,
+      "darkPersisted": true,
+      "resetToLight": true
+    },
+    {
+      "step": 15,
+      "viewports": [
+        {
+          "width": 1280,
+          "tag": "docs",
+          "overflow": false,
+          "overlapsPagination": false
+        },
+        {
+          "width": 1280,
+          "tag": "preview",
+          "overflow": false,
+          "overlapsPagination": false
+        },
+        {
+          "width": 1280,
+          "tag": "search",
+          "overflow": false,
+          "overlapsPagination": false
+        },
+        {
+          "width": 768,
+          "tag": "docs",
+          "overflow": false,
+          "overlapsPagination": false
+        },
+        {
+          "width": 768,
+          "tag": "preview",
+          "overflow": false,
+          "overlapsPagination": false
+        },
+        {
+          "width": 768,
+          "tag": "search",
+          "overflow": false,
+          "overlapsPagination": false
+        },
+        {
+          "width": 375,
+          "tag": "docs",
+          "overflow": false,
+          "overlapsPagination": false
+        },
+        {
+          "width": 375,
+          "tag": "preview",
+          "overflow": false,
+          "overlapsPagination": false
+        },
+        {
+          "width": 375,
+          "tag": "search",
+          "overflow": false,
+          "overlapsPagination": false
+        }
+      ]
+    },
+    {
+      "step": 16,
+      "reducedMotionMediaMatches": true,
+      "searchWorksUnderReducedMotion": true
+    },
+    {
+      "step": 17,
+      "hasMotionLabAsset": false,
+      "previewFinalUrl": "http://127.0.0.1:4173/login",
+      "previewRedirectedAway": true,
+      "devMotionUrl": "http://127.0.0.1:5173/motion-lab"
+    },
+    {
+      "step": 18,
+      "browsers": {
+        "chrome": "Google Chrome 158.0.8127.37",
+        "edge": "Microsoft Edge 158.0.4370.33",
+        "firefox": "not installed"
+      },
+      "swatchTitles": [
+        "Ocean",
+        "Teal",
+        "Violet",
+        "Amber",
+        "Rose",
+        "Forest",
+        "Custom color"
+      ],
+      "edgeDarkActive": true,
+      "edgeDarkPersisted": true,
+      "edgeViewports": [
+        {
+          "width": 1280,
+          "innerWidth": 1280,
+          "scrollWidth": 1280,
+          "overflow": false
+        },
+        {
+          "width": 768,
+          "innerWidth": 768,
+          "scrollWidth": 768,
+          "overflow": false
+        },
+        {
+          "width": 375,
+          "innerWidth": 375,
+          "scrollWidth": 375,
+          "overflow": false
+        }
+      ],
+      "thesisScreenshots": [
+        "dark-theme.png",
+        "documents.png",
+        "english-ui.png",
+        "login.png",
+        "narrow-layout.png",
+        "preview-failure-notice.png",
+        "preview-image-extracted-text.png",
+        "preview-pdf.png",
+        "search-ablation.png",
+        "search-all-channels.png",
+        "search-clip-degraded.png",
+        "search-idle.png",
+        "task-details.png"
+      ]
+    }
+  ]
+}

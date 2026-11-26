@@ -14,7 +14,7 @@ interface AuthState {
   /** 已经向后端确认过登录状态（无论结果如何）。路由守卫等它确认完再放行。 */
   ready: boolean
   /**
-   * 上一次确认登录状态时连不上服务器（登录页结构优化 L2）。这时本地令牌保留、ready 保持 false，
+   * 上一次确认登录状态时连不上服务器（T24x）。这时本地令牌保留、ready 保持 false，
    * 下一次导航或在登录页点“重试”时再确认；登录页据此显示提示。
    */
   unreachable: boolean
@@ -51,7 +51,7 @@ function cannotConfirm(error: unknown): boolean {
  * 路由守卫在每次导航前调用：本地有令牌就向后端确认它是否还有效，确认过一次之后直接返回。
  *
  * 只有后端明确说令牌无效（401）时才删除令牌。原来任何失败都删，后端重启或网络短暂断开时，
- * 用户一刷新页面就被退出了（问题 A1）。连不上时保留令牌，按“暂时未登录”处理，ready 不置位，
+ * 用户一刷新页面就被退出了。连不上时保留令牌，按“暂时未登录”处理，ready 不置位，
  * 下一次调用会重新确认。
  */
 export async function restoreSession(): Promise<void> {

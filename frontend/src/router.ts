@@ -25,12 +25,10 @@ export const router = createRouter({
       component: () => import('./views/PreviewView.vue'),
       meta: { requiresAuth: true },
     },
-    // 搜索动效演示页（克隆库 feat/search-motion 专用，不需要登录，不调用后端）
-    {
-      path: '/motion-lab',
-      name: 'motion-lab',
-      component: () => import('./features/search-motion/lab/MotionLabView.vue'),
-    },
+    // 搜索动效演示页（T24be，D60）：只在开发模式有，生产构建里没有；不需要登录，不调用后端
+    ...(import.meta.env.DEV
+      ? [{ path: '/motion-lab', name: 'motion-lab', component: () => import('./features/search-motion/lab/MotionLabView.vue') }]
+      : []),
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
   // 提供 scrollBehavior 后，由 vue-router 接管滚动位置（它会把浏览器的自动滚动恢复关掉）：
@@ -42,7 +40,7 @@ export const router = createRouter({
 
 // 这里只决定“显示哪个页面”。真正的权限控制在后端：每个接口都校验令牌和权限，
 // 即使有人绕过这段前端代码，也拿不到数据（GLOBAL §7.2）。
-// 决定规则在 features/login/redirect.ts（guardTarget），有单元测试
+// 决定规则在 features/login/redirect.ts（guardTarget，T24v），有单元测试
 router.beforeEach(async (to) => {
   await restoreSession()
   return guardTarget(to, auth.user !== null)

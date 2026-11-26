@@ -1,0 +1,6 @@
+{
+  "backend_status": 200,
+  "backend_body": "{\"status\":\"ok\",\"database\":{\"status\":\"ok\",\"detail\":null},\"opensearch\":{\"status\":\"ok\",\"detail\":\"集群状态为 yellow\"},\"clip_service\":{\"status\":\"ok\",\"detail\":null}}",
+  "clip_status": 200,
+  "clip_body": "{\"status\":\"ok\",\"model_name\":\"ViT-B-16\",\"model_version\":\"cn_clip-1.6.0-5997ef32c50d\",\"dim\":512,\"device\":\"cpu\"}"
+}

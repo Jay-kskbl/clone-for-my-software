@@ -1,0 +1,161 @@
+# Windows W9 测试报告（基线 e1d61eb5da8412ff138a371b5faf151358cfdbc5）
+
+执行日期：2026-11-25 ~ 2026-11-26
+测试机器：Windows（16 逻辑处理器，15.73 GiB / 16891371520 字节物理内存）
+Git 基线：`e1d61eb5da8412ff138a371b5faf151358cfdbc5`（包含 T24aa–T24ag、T24ba–T24be 全部提交）
+修改检查：全程未修改任何 `.md`、业务代码、测试代码或配置文件（`git diff --name-only` 为空）；未安装任何新依赖或工具；未执行 `git push`。
+
+---
+
+## 一、总览表
+
+| 节次 | 内容 | 结果 | 关键结论 / 偏差 |
+|---|---|---|---|
+| 17.2 | 基线、mapping 换行符、全套单测/集测、代码检查、真实模型/烟测、T24ag | 部分通过（含 1 项 Windows 实测失败 + 8 项已知符号链接） | mapping 3 文件已核验 LF 且 SHA-256 与 Mac 一致；前端 32 文件 376 项全过；`ruff check` 与 `format --check` 四目录 192 文件全过；shared 122 过 / 2 符号链接失败；ocr_worker main 81 过 / 5 跳过 / 0 失败、真实 PaddleOCR 4/4 通过；clip_service main 39 过 / 17 跳过、真实 Chinese-CLIP 通过；DocVQA 脚本 12/12 通过；`scripts/smoke/ocr_e2e.py` PASS；backend 1044 过 / 1 跳过 / 7 失败（6 符号链接 + 1 项真实失败 `test_database_address_is_hidden`）；T24ad 8 项与 T24ae 3 项数据库集测全过；T24ag 启动警告仅 1 次、`favicon.svg` 200 无 `favicon.ico` |
+| 17.1 Docker 补测 | `docker-compose.yml` 后端 `/health`、`auto_create_index` 与 `down` 后数据卷保留 | 通过 | `deploy/docker-compose.yml` 两容器 healthy；未建索引写入返回 HTTP 404 `index_not_found_exception`（确认 `action.auto_create_index=false`）；后端 `/health` 返回 HTTP 200（`database=ok`、`opensearch=ok`）；`docker compose down`（不带 `-v`）再 `up -d` 后 PG 表与迁移版本、OpenSearch 测试文档均完好保留（`pg_persisted=True, os_persisted=True`） |
+| 17.3 | 本地黑洞端口连接超时（55999） | 通过 | 4 步均报 `ConnectionTimeout`、退出码 1；Worker 默认(10s)=13.151s、3s=6.080s（差 7.071s；Windows Python 导入开销 2.243s，裸 psycopg 3s=3.005s）；OCR 5s=11.145s(等库 6.016s)、20s=26.234s(等库 21.147s，差 15.089s / 等库差 15.131s) |
+| 17.4 | 12.4 修复后检索可重复性与 `_forcemerge`（`docmgr_docvqa` / `docvqa_`） | 通过 | B2 R1 vs R2、B3 R1 vs R2 均 0/500 排名差异；指标与 W3 差 < 0.0005（上限 0.01）；`w9-runs.zip` 含 8 目录（2.46 MB）。注：`docvqa_chunks` 仅 6/1583 (0.38%) 删除文档，低于 Lucene 10% `expunge_deletes_allowed` 阈值，`_forcemerge?only_expunge_deletes=true` 未合并该段，故 R3 与 R1 也为 0/500 差异（已保留 segments 证据） |
+| 17.5 | Ctrl+C 优雅退出（A/B）、强杀子进程看门狗（C）、循环脚本（D）（`docmgr_w6`） | 通过 | A(OCR) 与 B(通用 Worker) 均为 `exit=130`、`succeeded`、`attempts=1`、无 `InterruptedError`/`KeyboardInterrupt`；C 强杀 3s 后 `spawn_main` 子进程均为“无”、0 次 `BrokenPipeError`、0 行重复 OCR 任务；D 循环脚本 Ctrl+C 后 `exit=0`、模型仅加载 1 次、60s 后残留进程 0 |
+| 17.6 | 登录页与停机刷新 11 步（`docmgr_ui`，Chrome 158.0.8127.37） | 10/11 + 3b 通过；**3a 发现真实 Bug** | 步骤 1、2、3b(4.768s)、4、5(0.329s)、6、7、8(60s 过期+等 70s)、9、10(`/\evil.com`)、11(Slow 3G 连按两次回车仅 1 条 POST) 全过；**步骤 3a 停 PostgreSQL 且后端保持运行时 `/api/auth/me` 永久挂起（>90s）未返回 503**，原因见下方 Bug 1 |
+| 17.8 | 单文档 `lzkg0078.jpg` 15 轮 OCR 重复计时（`docmgr_w9c` / `w9c_`） | 完成（测量） | 15/15 轮全部 `succeeded / attempts=1`，0 超时，0 轮 > 200s；耗时 52.53s–138.31s（中位 55.25s，均值 65.70s，P95 138.31s）；采样 1038 次，最大间隔 1.94s <= 3s。结论：W8 的 300s 超时属偶发 |
+| 17.14 | OCR Worker 并发 N=1..6 × 5 轮与提交内存采样（`docmgr_w9b` / `w9b_`） | 完成（测量） | 每轮 `before=0 / after=0`，`loaded_workers=N`；N=1/2/3 各 5 轮及 N=4 前 2 轮共 68/68 任务 `succeeded / 0 failed / 0 retried`；N=4 第 3 轮物理可用内存降至 236.4 MB（采样最低 20.4 MB）< 300 MB 红线按任务书安全停组；0 次 `0xC0000005` 崩溃事件 |
+| 17.15 | T24ad 失败重试退避（`docmgr_w9` / `w9_`） | 通过 | 集成测试 8/8 通过；步骤 2 第 1->2 次间隔 +30.90s (>=30s) 后成功；步骤 3 间隔 +31.08s (>=30s)、+121.29s (>=120s) 后第 3 次标 `failed` |
+| 17.16 | T24ae `requeue-failed` 批量重排（`docmgr_w9` / `w9_`） | 通过 | 集成测试 3/3 通过；演练列 3 个且无改动；`--yes` 放回 3 个后全 `succeeded (attempts=1)`，`image_embeddings` 1 -> 4；再次运行提示 0 个；三次退出码均为 0；一致性检查退出码 0（0 问题） |
+| 17.17 | T24af OpenSearch 停机时 `repair` 提示（`docmgr_docvqa` / `docvqa_`） | 通过 | 预检 exit 0 (0 问题)；停 OS 后：`--fix index` exit 1 且无“没有需要修复的问题”；`--fix index --fix temp-files` exit 1 且同时输出两行提示；`--fix temp-files` exit 0 |
+| 17.18 | T24ba–T24be 界面更新 18 步 + Chrome/Edge + 13 张论文图（`docmgr_ui`） | 18/18 全部通过 | Chrome 158.0.8127.37 跑完 1–18 步，Edge 158.0.4370.33 覆盖 10–15 步（Firefox 未安装、Safari 不可用）；第 5 步 A/B 应答均无 `srv`、B 无重试按钮、管理员见原文；1280/768/375 三宽 × 文档/预览/检索 9 组合均 0 横向滚动条、0 分页遮挡；13 张论文图保存在 `docs/screenshots/windows-2026-11-26-t24b/` |
+| 17.7 | 鼠标从资源管理器真实拖入 | 待 Barry 手动执行 | 自动化无法模拟跨窗口 OS 拖入，详见第五节清单 |
+| 17.9 | 8 项符号链接测试 | 待 Barry 本人终端执行 | 当前终端无 `SeCreateSymbolicLinkPrivilege`，详见第五节清单 |
+| 17.10 | 真实 Office/手机样本解析与 OCR + 人工抄录 | 待 Barry 准备真实样本 | 需 Barry 自制 Word/Excel/PDF/手机照/截图与 4 段抄录 |
+| 17.11 | 30 条 B2 漏检查询人工核对 | 待 Barry 本人执行 | 需人工看图抄录 `output/windows-w8/missed/missed30-answers.tsv` |
+
+---
+
+## 二、发现的两个 Windows 真实缺陷（仅记录，未改代码）
+
+### Bug 1：Windows 上 `psycopg 3.3.9`（libpq 180004）配合 `make_engine()` 缺省 `connect_timeout` 导致 PG 停机时 `/api/auth/me` 永久挂起（17.6 步骤 3a）
+- **复现步骤**：启动后端（`docmgr_ui`）与前端，登录后停止 PostgreSQL（`127.0.0.1:55432`），保持后端运行，在文件页按 F5 刷新。
+- **实测现象**：`/api/auth/me` 请求一直处于 Pending 状态超过 90 秒（测试脚本等待 25.1s 超时），既不返回 `503` 也不报错；但清空令牌直接访问 `/login` 时的 `/health` 检查（使用带超时的独立探活）在 **4.768 秒**即正确弹出 T24z“后端已启动，但数据库不可用……”提示。
+- **底层定位**（见 `output/windows-w9/login/psycopg-info.txt`）：
+  - 本机环境：`psycopg 3.3.9 (binary)`, `libpq 180004`。
+  - Windows 原生 `socket.connect(('127.0.0.1', 55432))` 在 2.013s 报 `WinError 10061`；但 `psycopg.connect(..., connect_timeout=10)` 不会因 `WSAECONNREFUSED` 立即失败，而是持续等待直到 `connect_timeout` 到期（10.008s 报 `ConnectionTimeout`）。
+  - `backend/app/db/session.py::make_engine()` 创建 SQLAlchemy 引擎时未传入 `connect_args={"connect_timeout": ...}`，在 Windows + psycopg 3.3.9 下导致连接已关闭的本地 PG 端口无限阻塞。
+- **建议修复方向**（待 Barry 确认后再改）：在 `make_engine()` 中通过 `connect_args={"connect_timeout": ...}` 配置合理连接超时（如 5–10 秒）。
+
+### Bug 2：`backend/tests/unit/test_task_errors.py::test_database_address_is_hidden` 在 Windows 失败（17.2）
+- **实测现象**：`pytest` 执行时该用例失败（见 `output/windows-w9/backend.xml` / `backend-pytest.txt`）。
+- **原因**：与 Bug 1 同源。测试向 `127.0.0.1:1` 发起 `connect_timeout=2` 的 `psycopg.connect`，在 Windows + psycopg 3.3.9 上触发 `ConnectionTimeout`（2 秒后抛 `connection timeout expired`），错误字符串里不包含 `"127.0.0.1"`，导致前置断言 `assert "127.0.0.1" in stored` 失败；业务函数 `public_task_error()` 脱敏逻辑本身无误。
+
+---
+
+## 三、各节详细结果与原始文件索引
+
+### 17.2 基线、换行符、全套测试与 T24ag
+- `git-head.txt`：HEAD 为 `e1d61eb5da8412ff138a371b5faf151358cfdbc5`；保留 Barry 原有未跟踪目录 `.playwright-cli/` 与 `output/real-data-runtime-20261125/`。
+- `mapping-eol.txt`：3 个 mapping JSON 均为 `i/lf w/lf attr/text eol=lf`，SHA-256 与 Mac 一致：
+  - `doc_meta.json`: `be91f8071d05831460e4b0bdad17c04312e55ce1c138ef0f67bd0a939b6a5688`
+  - `chunks.json`: `0c7937251bab45b8bfd360117137ef3524ebf368320f8cb8b78fd5713d78e4e9`
+  - `image_vectors.json`: `c984e85b889bf1067bd60537297615fc6ac307be9e7c1dd81fa3bad74bdf81e0`
+- 前端三项：`frontend-typecheck.txt` (exit 0)、`frontend-test.txt` (**32 files, 376 passed**, exit 0)、`frontend-build.txt` (exit 0)。
+- 后端/共享/OCR 测试（均针对全新空库 `docmgr_w9_test` 与运行中 OpenSearch 9200）：
+  - `shared.xml` / `shared-pytest.txt` / `shared-collect.txt`：**122 passed, 2 failed**（仅 2 项符号链接 `WinError 1314`）。
+  - `ocr_worker.xml` / `ocr-worker-pytest.txt`：**81 passed, 5 skipped, 0 failed**（4 项需 paddleocr + 1 项 POSIX SIGINT；`test_child_exits_when_the_parent_is_killed` 通过）。
+  - `backend.xml` / `backend-pytest.txt` / `backend-collect.txt`：**1044 passed, 7 failed, 1 skipped**（6 项符号链接 `WinError 1314` + 1 项 `test_database_address_is_hidden`；全部数据库集成测试含 T24ad 8 项、T24ae 3 项 100% 通过）。
+  - `clip_service.xml` / `clip-service-main-pytest.txt`：**39 passed, 17 skipped, 0 failed**；`clip-service-real.txt`（`.venv-clip` `unittest tests.test_real_clip`）：**OK (exit 0)**。
+  - `ocr-worker-real.txt`（`.venv-ocr` `unittest tests.test_real_ocr`）：**4 passed (6.666s, exit 0)**。
+  - `ruff.txt`：`backend/`（134 文件）、`shared/`（26 文件）、`services/ocr_worker/`（21 文件）、`services/clip_service/`（11 文件）`ruff check .` 与 `ruff format --check .` 全部通过（0 错误）。
+  - `docvqa-script-pytest.txt`：`scripts/datasets/tests/test_docvqa_import.py` **12 passed (exit 0)**。
+  - `ocr-smoke.txt`：`scripts/smoke/ocr_e2e.py` 在 `docmgr_w9_test` 上 **PASS (exit 0)**，记录 `ocr_results.params={'pdf_dpi': None, 'max_pixels': 100000000, 'min_confidence': 0.0}`。
+- `sampler-selftest.csv`：`sample_w9.ps1` 空跑 30 秒，相邻间隔均 <= 3 秒。
+- `worker-startup.log`（T24ag）：通用 Worker 连续处理 10+ 任务期间，内存上限不支持提示仅在启动时输出 1 次。
+- `favicon.svg`（T24ag）：17.6 中记录 `<link href="/favicon.svg">`，返回 `200 image/svg+xml`，0 条 `favicon.ico` 请求。
+
+### 17.1 Docker Compose 补充验证（`output/windows-w9/docker/`）
+- 文件：`compose-up1.log`、`compose-ps-up1.txt`、`auto-create-index-check.txt`、`alembic-upgrade.txt`、`backend-health.json`、`compose-down1.log`、`compose-up2.log`、`compose-ps-up2.txt`、`volume-persistence.txt`、`compose-down-final.log`、`run-docker.log`。
+- 结果：
+  - `docker compose --env-file .env -f deploy/docker-compose.yml up -d` 启动 `postgres:16.6` 与 `docmgr-opensearch:2.19.1-smartcn`，均进入 `healthy`。
+  - `POST /w9_autocreate_probe/_doc` 返回 HTTP `404`（`index_not_found_exception`），实证 `action.auto_create_index: "false"` 生效。
+  - 后端连接容器 PG + OpenSearch 后 `GET /health` 返回 HTTP `200`：`{"status":"degraded","database":{"status":"ok","detail":null},"opensearch":{"status":"ok","detail":"集群状态为 yellow"},"clip_service":{"status":"unavailable","detail":"ConnectTimeout"}}`（未启动 CLIP 属预期）。
+  - `docker compose down`（不带 `-v`）后 `docmgr_pgdata` 与 `docmgr_osdata` 卷保留；重新 `up -d` 后 PG 迁移版本 `0002`、探针表记录与 OpenSearch 探针索引文档全部保留（`pg_persisted=True, os_persisted=True`）；测试后已清理探针数据并 `down`。
+
+### 17.3 本地黑洞端口连接超时（127.0.0.1:55999）
+- 文件：`timeout-1-worker-default.txt` .. `timeout-4-ocr-20s.txt`、`timeouts.json`。
+- 实测耗时（热缓存空闲态）：
+  1. `app.worker` 默认(10s)：`13.151s`，exit 1，`ConnectionTimeout`
+  2. `app.worker` 3s：`6.080s`，exit 1，`ConnectionTimeout`（步 1−步 2 = `7.071s` vs 预期 7s；Windows Python 导入 `app.worker.__main__` 固定开销 `2.243s`，裸 `psycopg.connect(connect_timeout=3)` 实测 `3.005s`）
+  3. `ocr_worker` 5s：总耗时 `11.145s`（模型加载后等库 `6.016s`），exit 1，`ConnectionTimeout`
+  4. `ocr_worker` 20s：总耗时 `26.234s`（模型加载后等库 `21.147s`），exit 1，`ConnectionTimeout`（步 4−步 3 = `15.089s`，等库差 `15.131s` vs 预期 15s）
+
+### 17.4 检索可重复性与 `_forcemerge`（`docmgr_docvqa` / `docvqa_`）
+- 文件：`index-before.txt`、`index-after.txt`、`forcemerge-response.txt`、`docvqa-chunks-segments.txt`、`git-status-before-runs.txt`、`17.4-runs.json`、`17.4-verify.txt`、`w9-runs.zip`（2.46 MB，含第二轮 12.4 的 2 个目录 + 本轮 R1/R2/R3 的 6 个目录）。
+- 结果：
+  - B2 R1 vs R2 排名差异：`0 / 500`；B3 R1 vs R2 排名差异：`0 / 500`。
+  - 指标对比 W3：B2 nDCG@10 = `0.33813` vs W3 `0.33835`（差 `-0.00022`），P@10 = `0.0424` vs `0.0424`，R@10 = `0.424` vs `0.424`；B3 nDCG@10 = `0.15518` vs W3 `0.15565`（差 `-0.00047`），P@10 = `0.0244` vs `0.0246`，R@10 = `0.244` vs `0.246`。均远小于 0.01 上限。
+  - `_forcemerge?only_expunge_deletes=true` 现象：`index-before.txt` 中 `docvqa_chunks docs.deleted=6`、`docvqa_image_vectors=3`、`docvqa_doc_meta=2`；执行后 `docvqa_image_vectors` 降至 `2`，`docvqa_chunks` 仍为 `6`（`docvqa-chunks-segments.txt` 显示 6 条删除落在 1583 文档的 `_1am` 段中，占比 0.38% < Lucene 默认 10% `expunge_deletes_allowed` 阈值），因此 R3 与 R1 也完全一致（0/500 差异）。所有 6 个新目录 `complete=true`，`git_commit=e1d61eb...`。
+
+### 17.5 Ctrl+C、强杀子进程看门狗、循环脚本（`docmgr_w6`）
+- A. OCR Worker Ctrl+C：`ctrlc-ocr.log`、`ctrlc-ocr-exit.txt`（`exit=130`）、`ctrlc-ocr-task.csv`（`succeeded, attempts=1, error=""`），无 `InterruptedError` / `KeyboardInterrupt`。
+- B. 通用 Worker Ctrl+C：`ctrlc-worker.log`、`ctrlc-worker-exit.txt`（`exit=130`）、`ctrlc-worker-task.csv`（`succeeded, attempts=1, error=""`），无 `InterruptedError` / `KeyboardInterrupt`。
+- C. 强杀主进程看门狗：
+  - 通用 Worker：`kill-worker-children.txt`、`kill-worker-after.txt`（3 秒后：`无`）、`kill-worker-task.csv`（`succeeded, attempts=2`），0 次 `BrokenPipeError`。
+  - OCR Worker：`kill-ocr-children.txt`（真主进程 PID 4952，子进程 `spawn_main` PID 15392）、`kill-ocr-after.txt`（3 秒后：`无`）、`kill-ocr-dup-check.txt`（重复 OCR 任务查询 `0 rows`），0 次 `BrokenPipeError`。注：首次强杀回收任务 `24f0e6f7` 为 `succeeded, attempts=2`；为确保 `kill-ocr-children.txt` 严格记录真 Worker 而非 venv 启动器重跑一次后，任务 `d9c4c090` 因首轮残留替换 Worker 曾抢占而记为 `succeeded, attempts=3`（最终 `kill-ocr-task.csv` 如实保留 `d9c4c090` 原始记录）。
+- D. 循环脚本 `run_ocr_worker_loop.ps1`：`ctrlc-loop.txt`（`wrapper_exit=0`，`OCR 模型已加载` 仅 1 次，退出后等待 60 秒残留 `-m ocr_worker` 进程数为 `0`）。
+
+### 17.6 登录页与停机刷新（`docmgr_ui`）
+- 目录：`output/windows-w9/login/`（17 张 PNG 截图、已脱敏 `login-17.6.har`、`network-log.json`、`17.6-results.json`、`psycopg-info.txt`、`run-17.6.log`）。
+- 浏览器：`Google Chrome 158.0.8127.37`。
+- 逐项结果：步骤 1、2、3b（`4.768s` 出现 T24z 数据库不可用提示）、4、5（`0.329s` 出现后端不可用提示并点重新检查恢复）、6、7、8（60s 令牌 + 70s 等待后重定向保留 `redirect` 并清令牌）、9、10（`/\evil.com` 回 `/`）、11（Slow 3G 快速连按两次回车仅发 1 条 `POST /api/auth/login`）全部通过；步骤 3a 检出 Bug 1（见第二节）。
+
+### 17.8 300 秒超时文档 15 轮重复测（`docmgr_w9c` / `w9c_`）
+- 目标文档：`f35fbcc2-53bb-41e2-a74f-36ecabd0a75b` -> `lzkg0078.jpg`（`docvqa-scale40` 索引 8）。
+- 文件：`output/windows-w9/slow1/r01.csv` .. `r15.csv`、`memory.csv`、`summary.json`、`logs/ocr-slow1.err.log`、`run-17.8.log`。
+- 15 轮耗时（秒，全部 `succeeded / attempts=1`）：
+  - R01 `138.31`, R02 `52.53`, R03 `54.25`, R04 `53.89`, R05 `54.10`, R06 `53.79`, R07 `64.24`, R08 `127.94`, R09 `53.69`, R10 `55.56`, R11 `55.81`, R12 `55.79`, R13 `55.25`, R14 `55.43`, R15 `54.96`
+  - 统计：最小 `52.53s`，中位 `55.25s`，均值 `65.70s`，P95 `138.31s`，最大 `138.31s`，`>200s` 为 `0` 轮。
+- 内存采样：`1038` 个采样点，跨度 `1048.8s`，P95 间隔 `1.02s`，最大间隔 `1.94s <= 3s`，系统最低可用物理内存 `5067.1 MB`，OCR 进程工作集峰值 `1577.9 MB`。
+- 结论：未复现 300s 超时，W8 首次超时属于偶发现象。
+
+### 17.14 OCR Worker 并发数与内存/崩溃重测（`docmgr_w9b` / `w9b_`）
+- 数据集：`docvqa-crash4`（4 张图），仅保留 PostgreSQL + OpenSearch + CLIP，使用 `sample_w9b.ps1`（含 `commit_limit`、`commit_free`、`system_available`、`ocr_worker`、`ocr_engine`）。
+- 文件：`output/windows-w9/crash-n/machine.txt`、`worker-count.txt`、`memory.csv`、`n1-r1.csv`..`n4-r3.csv`（18 个 CSV，每个 4 行）、`logs/`、`crash-events.txt`（0 事件）、`summary.json`、`run-17.14.log`。
+- 起始内存：总物理 `16891371520` B (15.73 GiB)，起始物理可用 `6577.6 MB`，提交上限 `27884.9 MB`（运行中动态扩展至 `28926.6 MB`），起始提交剩余 `15141.3 MB`。
+- 分组实测结果（所有轮次 `before=0, after=0, loaded_workers=N`）：
+  - **N=1**（5 轮，20 任务）：`20/20 succeeded`，0 失败 0 重试；单任务中位 `20.3s`（最大 `31.1s`），单轮跨度 `77.5–91.8s`；最低物理可用 `2370.8 MB`，最低提交剩余 `9339.8 MB`，OCR 峰值工作集 `1647.1 MB` / 私有提交 `2287.4 MB`。
+  - **N=2**（5 轮，20 任务）：`20/20 succeeded`，0 失败 0 重试；单任务中位 `28.3s`（最大 `47.3s`），单轮跨度 `61.0–67.0s`；最低物理可用 `2236.1 MB`，最低提交剩余 `8364.3 MB`，OCR 峰值工作集 `2400.5 MB` / 私有提交 `4284.3 MB`。
+  - **N=3**（5 轮，20 任务）：`20/20 succeeded`，0 失败 0 重试；单任务中位 `28.2s`（最大 `45.5s`），单轮跨度 `46.5–47.9s`；最低物理可用 `1835.4 MB`，最低提交剩余 `6034.0 MB`，OCR 峰值工作集 `3376.8 MB` / 私有提交 `6432.6 MB`。
+  - **N=4**（完成 r1–r2，r3 触发红线中止）：r1–r2 `8/8 succeeded`（跨度 `41.4s / 60.8s`），0 失败 0 重试；r3 运行期间物理可用内存最低跌至 `20.4 MB`（轮询检查捕获 `236.4 MB < 300 MB`），提交剩余最低 `3536.6 MB`，OCR 峰值工作集 `4289.8 MB` / 私有提交 `7318.8 MB`，脚本按 §17.14 硬性要求立即中止该轮并停止向 N=5/N=6 加压（r3 导出时 4 个任务尚在 `processing`，随后全部 Worker 清理干净 `after=0`）。
+- 采样质量：`1455` 个采样点，跨度 `1479.2s`，P95 间隔 `1.02s`（正常稳态 <= 1.5s；仅在 N=4 r3 物理内存耗尽换页瞬间出现 `max_gap=9.23s`）。
+- 结论建议（T30）：单 OCR Worker 约占 2.0–2.2 GB 私有提交内存。在 16 GB Windows 机器同时运行 PG + OpenSearch + CLIP 时，推荐上限 **N=2 ~ 3**（N=3 吞吐较 N=1 提速约 1.75× 且留有 >1.8 GB 物理余量）；N >= 4 将耗尽物理内存并引发剧烈换页（第五轮出现 `0xC0000005` 实际系脚本漏停导致 5+ Worker 叠加耗尽内存所致）。
+
+### 17.15 & 17.16 退避重试与批量重排（`docmgr_w9` / `w9_`）
+- 文件：`output/windows-w9/retry/`（`embed.txt`、`embed-step2.txt`、`embed-step3.txt`、`requeue-1.txt`..`requeue-3.txt`、`embeddings-before.txt`、`embeddings-after.txt`、`after-requeue.csv`、`consistency-after.json`）。
+- 17.15 步骤 2：第 1 次失败后等待 `+30.90s`（>=30s）触发第 2 次并成功（CLIP 已恢复）。
+- 17.15 步骤 3：CLIP 全程关闭，尝试间隔 `+31.08s`（>=30s）、`+121.29s`（>=120s），第 3 次失败后标 `failed (attempts=3)`。
+- 17.16：第 1 次演练列出 3 个 ClipUnavailable 且无变更（exit 0）；启动 CLIP 后 `--yes` 放回 3 个（exit 0），3 个全部 `succeeded (attempts=1)`，`image_embeddings` 从 `1` 增至 `4`；第 3 次提示无待放回任务（exit 0）；`consistency-after.json` 退出码 0（0 问题）。
+
+### 17.17 OpenSearch 停机时 `repair` 提示（`docmgr_docvqa` / `docvqa_`）
+- 文件：`repair-down-precheck.json`、`repair-down-1.txt`..`repair-down-3.txt`。
+- 三条命令的提示与退出码（1、1、0）与 §17.17 预期逐字一致。
+
+### 17.18 界面更新 18 步与论文截图（`docmgr_ui`）
+- 浏览器：`Google Chrome 158.0.8127.37`（完整 1–18 步），`Microsoft Edge 158.0.4370.33`（10–15 步交叉验证）；Firefox 未安装，Safari 不可用。
+- 文件：`output/windows-w9/ui/`（全部步骤截图 `01a`..`18-edge-375.png`、`17.18-part1-results.json`、`17.18-part2-results.json`、`tasks-a.json`、`tasks-b.json`、`tasks-admin.json`、`17-dist-assets.txt`、`ui-part2-api.har`、`ui-edge.har`、Worker/OCR 日志）。
+- 大文件另交：`ui-part2.har`（5.80 MB > 5 MB）已按 §14.1 打包为 `w9-extra.zip`（位于仓库外 `w9-data/w9-extra.zip`，SHA-256 记入 `SHA256SUMS.txt`），仓库内保留精简 API HAR `ui/ui-part2-api.har`。
+- 论文截图目录：`docs/screenshots/windows-2026-11-26-t24b/`（13 张 PNG）：
+  `login.png`, `documents.png`, `search-idle.png`, `search-all-channels.png`, `search-ablation.png`, `search-clip-degraded.png`, `preview-pdf.png`, `preview-image-extracted-text.png`, `narrow-layout.png`, `task-details.png`, `preview-failure-notice.png`, `english-ui.png`, `dark-theme.png`。
+
+---
+
+## 四、脱敏与仓库洁净度检查
+
+- 全目录扫描 `output/windows-w9/`：0 处真实密码、0 处 JWT、0 处真实数据库连接串泄漏（仅 `backend.xml` 含单测夹具字符串 `postgresql+psycopg://docmgr:pw`）。
+- 所有文本文件均统一为 UTF-8（无 BOM）+ LF 换行符后再计算 `SHA256SUMS.txt`（满足 §17.13）。
+- `output/windows-w9/` 内单文件均严格 < 5 MB；`git diff --name-only` 为空。
+
+---
+
+## 五、待 Barry 手动完成的 4 项（不依赖上述结果）
+
+1. **17.9 符号链接 8 项测试（最优先，约 20 分钟）**：在“开发人员模式（注销重登）”或“管理员身份运行的 PowerShell”下运行 `whoami /priv | Select-String SeCreateSymbolicLink` 存 `output/windows-w9/symlink-priv.txt`，并重跑 6 项 backend + 2 项 shared 符号链接用例输出 `symlink-backend.xml`、`symlink-shared.xml`。
+2. **17.10 真实样本解析与 OCR + 人工抄录（可结合 T25）**：自制 Word / Excel / 文本 PDF / 扫描 PDF / 手机照（含竖拍）/ 截图及 4 段人工抄录，导出 3 份 JSON 与 `sources.csv`。
+3. **17.7 资源管理器真实鼠标拖入（约 10 分钟）**：在 `docmgr_ui` + `npm run dev` 下手动拖入 PDF、图片与 `.txt`，保存 3 张截图与 `drag.har` 到 `output/windows-w9/drag/`。
+4. **17.11 30 条 B2 漏检查询人工核对（约 40 分钟）**：按 `output/windows-w8/missed/missed30.tsv` 照原图填写并保存 UTF-8 TSV `output/windows-w8/missed/missed30-answers.tsv`。

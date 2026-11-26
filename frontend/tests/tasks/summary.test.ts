@@ -1,4 +1,4 @@
-// 任务汇总（任务状态与重试 P2）
+// 任务汇总（T24bd）
 import { describe, expect, it } from 'vitest'
 
 import type { TaskType } from '../../src/api/types'

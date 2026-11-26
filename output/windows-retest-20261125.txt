@@ -1,0 +1,138 @@
+Windows 未完成项复测记录
+======================
+
+复测日期：2026-11-25（Asia/Shanghai）
+仓库：C:\Users\lenovo\Desktop\my-software-main\_gh_upload
+代码基线：54d9760
+说明：backend、shared、frontend、services、scripts、deploy 与 W8 基线
+      fd0b5eb 完全相同；54d9760 只增加结果汇总和校验文件。
+      本次没有修改任何 .md 文件，没有修改业务代码或配置。
+
+一、本次实际通过的测试
+----------------------
+
+1. backend 单元测试
+   713 passed，6 deselected，0 failed
+   6 项 deselect 正是本次单独复测的符号链接测试。
+   使用 PYTHONPATH 指向 _gh_upload，避免导入旧工作区的 shared 包。
+
+2. shared
+   106 passed，2 deselected，0 failed
+   2 项 deselect 正是本次单独复测的符号链接测试。
+
+3. OCR Worker 主环境
+   71 passed，4 skipped，0 failed
+   4 项因主环境没有 PaddleOCR 而跳过。
+
+4. OCR Worker 真实模型环境
+   4 passed，0 failed
+
+5. CLIP 服务主环境
+   39 passed，17 skipped，0 failed
+   17 项因主环境没有 torch / cn_clip / PIL 而跳过。
+
+6. CLIP 服务真实模型环境
+   17 passed，0 failed
+
+7. 前端
+   10 个测试文件、93 项测试通过。
+   类型检查通过。
+   生产构建通过。
+
+二、符号链接测试现状
+--------------------
+
+backend 6 项：
+  tests/unit/test_consistency.py::test_symlinks_are_never_treated_as_stored_files
+  tests/unit/test_storage.py::test_file_symlink_pointing_outside_rejected
+  tests/unit/test_storage.py::test_directory_symlink_pointing_outside_rejected[year]
+  tests/unit/test_storage.py::test_directory_symlink_pointing_outside_rejected[document]
+  tests/unit/test_storage.py::test_put_refuses_to_write_through_directory_symlink
+  tests/unit/test_storage.py::test_symlinked_temp_directory_refused_at_startup
+
+shared 2 项：
+  tests/test_storage_keys.py::test_symlinked_directory_is_rejected
+  tests/test_storage_keys.py::test_symlinked_file_is_rejected
+
+结果：
+  backend 6 failed，shared 2 failed。
+  8 项都停在测试准备阶段，尚未进入业务代码。
+
+错误：
+  OSError: [WinError 1314] 客户端没有所需的特权。
+
+权限检查：
+  当前用户 barry-zou\lenovo 在 Administrators 组中，但当前令牌是
+  Medium Mandatory Level，组属性为“Group used for deny only”。
+  whoami /priv 没有 SeCreateSymbolicLinkPrivilege。
+
+管理员复测尝试：
+  Start-Process -Verb RunAs 返回退出码 4，UAC 未提供管理员令牌，
+  pytest 没有启动。该退出码不是测试失败。
+
+结论：
+  代码没有新增失败；仍需要 Barry 确认 UAC，或在开发人员模式/管理员终端
+  中运行这 8 项。不能改用 junction，因为测试验证的正是符号链接逃逸。
+
+三、依赖与环境结论
+------------------
+
+主环境：
+  Python 3.14.0，pip check 通过。
+
+OCR 环境：
+  Python 3.13.14，PaddleOCR 3.7.0、PaddlePaddle 3.3.1，
+  模型存在，pip check 通过。
+  Paddle 提示没有 ccache；ccache 只影响编译速度，不影响当前测试。
+
+CLIP 环境：
+  Python 3.13.14，torch 2.15.0+cpu，真实模型 17 项通过。
+  pip check 报告 cn-clip 1.6.0 声明 lmdb==1.3.0，而当前安装为 3.0.0。
+  这不影响现有真实 CLIP 测试，但属于依赖元数据不一致。若要建立完全可复现的
+  新环境，应固定一个兼容组合或确认 cn-clip 是否允许 lmdb 3.x；本次没有
+  擅自降级共享环境。
+
+前端：
+  node 24.13.0、npm 11.6.2，声明依赖均已解析；
+  npm ls 显示的部分 extraneous 包来自复用的上级 node_modules，不影响构建。
+
+Docker：
+  未安装 docker 命令。
+  .tools\downloads\Docker Desktop Installer.exe 已存在，版本 4.99.0.245822，
+  大小 623969712 字节。
+
+WSL/Linux：
+  wsl.exe 存在，但没有发现已安装的 WSL 发行版。
+  因此 Linux 专属 RLIMIT_AS 内存上限仍无法在 Windows 侧验证。
+
+Office/WPS：
+  Microsoft Word 16.0.20625.20108 和 Excel 16.0.20625.20108 已安装。
+  WPS 未发现；任务书对 WPS 的要求是“机器上有 WPS 时”提供一份，因此
+  当前只缺 Barry 提供真实 Word/Excel 样本和人工抄录。
+
+浏览器：
+  Google Chrome 与 Microsoft Edge 可用；
+  Firefox 未安装，Safari 在 Windows 上不可用。
+
+四、仍需人工或其他环境完成
+--------------------------
+
+1. W6 12.3：8 项符号链接测试，需要 UAC 确认或开发人员模式。
+2. W6 12.9：需要的真实 Office/文本 PDF/扫描 PDF/手机照片/截图及来源记录，
+   以及扫描 PDF、两张照片和截图的 50–200 字人工抄录。
+3. W6 12.10：依赖第 12.9 节的真实样本。
+4. W8 16.7B：Barry 需对照 30 张原图填写 missed30-answers.tsv。
+5. W4 10.3：资源管理器到浏览器的真实跨窗口鼠标拖拽。
+6. Docker/compose 容器测试：需安装 Docker Desktop；安装后可能还要启用 WSL2
+   并重启。
+7. Linux RLIMIT_AS：需可用的 WSL/Linux 环境。
+
+五、是否必须安装
+----------------
+
+当前已经执行的所有 Python、OCR、CLIP、前端测试都不需要再安装包。
+
+若还要完成剩余部署类测试，必须安装 Docker Desktop；安装包已经在仓库的
+.tools\downloads 下。安装属于系统级改动，需要 Barry 明确同意并完成 UAC。
+
+Firefox 是可选覆盖项；WPS、Safari 不是当前机器的必要前置条件。

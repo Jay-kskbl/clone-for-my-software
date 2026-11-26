@@ -1,0 +1,90 @@
+
+   Id StartTime           WS_MB Path
+   -- ---------           ----- ----
+ 1168 2026/11/25 13:37:39 24.50 C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\python.exe
+ 3116 2026/11/25 13:34:41 24.70 C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\python.exe
+ 3204 2026/11/25 13:37:41 81.30 C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\python.exe
+ 3616 2026/11/25 13:37:41 83.00 C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\python.exe
+ 6352 2026/11/25 13:37:39  2.80 C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Scripts\python.…
+ 7816 2026/11/25 13:34:41  2.80 C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Scripts\python.…
+ 8024 2026/11/25 13:37:06 24.70 C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\python.exe
+ 8900 2026/11/25 13:36:06  2.80 C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Scripts\python.…
+12748 2026/11/25 13:33:35 24.90 C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\python.exe
+14100 2026/11/25 13:36:06 24.50 C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\python.exe
+17648 2026/11/25 13:33:35 25.00 C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\python.exe
+18632 2026/11/25 13:36:06 24.50 C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\python.exe
+19488 2026/11/25 13:34:41  2.80 C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Scripts\python.…
+19804 2026/11/25 13:33:35 24.90 C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\python.exe
+20020 2026/11/25 13:37:39  2.80 C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Scripts\python.…
+20028 2026/11/25 13:37:06 24.70 C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\python.exe
+20068 2026/11/25 13:33:29  2.80 C:\Users\lenovo\Desktop\my-software-main\_gh_upload\.venv-main\Scripts\python.exe
+20300 2026/11/25 13:34:41  2.80 C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Scripts\python.…
+24868 2026/11/25 13:33:35 24.90 C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\python.exe
+25072 2026/11/25 13:36:06  2.80 C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Scripts\python.…
+25500 2026/11/25 13:37:57 92.20 C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\python.exe
+25900 2026/11/25 13:37:05  2.80 C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Scripts\python.…
+27412 2026/11/25 13:33:35  2.80 C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Scripts\python.…
+27688 2026/11/25 13:36:06  2.80 C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Scripts\python.…
+28512 2026/11/25 13:33:35  2.80 C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Scripts\python.…
+29864 2026/11/25 13:37:05  2.80 C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Scripts\python.…
+30392 2026/11/25 13:37:41 82.20 C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\python.exe
+30716 2026/11/25 13:37:06 24.60 C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\python.exe
+31320 2026/11/25 13:34:41 24.60 C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\python.exe
+31400 2026/11/25 13:36:06 24.50 C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\python.exe
+31632 2026/11/25 13:37:39  2.80 C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Scripts\python.…
+31868 2026/11/25 13:34:41 24.70 C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\python.exe
+32188 2026/11/25 13:34:41  2.80 C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Scripts\python.…
+32696 2026/11/25 13:36:08 81.80 C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\python.exe
+32708 2026/11/25 13:36:08 82.60 C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\python.exe
+32796 2026/11/25 13:34:41 24.90 C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\python.exe
+33272 2026/11/25 13:37:05  2.80 C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Scripts\python.…
+33528 2026/11/25 13:37:39 24.50 C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\python.exe
+33816 2026/11/25 13:33:35  2.80 C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Scripts\python.…
+33960 2026/11/25 13:38:02 74.30 C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\python.exe
+34084 2026/11/25 13:33:35  2.80 C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Scripts\python.…
+34424 2026/11/25 13:36:07 80.70 C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\python.exe
+35680 2026/11/25 13:37:39 24.50 C:\Users\lenovo\Desktop\my-software-main\my-software-main\.tools\Python313\python.exe
+
+STOP PID=1168 TIME=2026-11-25T14:29:12.0432527+08:00
+STOP PID=3116 TIME=2026-11-25T14:29:12.0526819+08:00
+STOP PID=3204 TIME=2026-11-25T14:29:12.0559227+08:00
+STOP PID=3616 TIME=2026-11-25T14:29:12.0588412+08:00
+STOP PID=6352 TIME=2026-11-25T14:29:12.0647384+08:00
+STOP PID=7816 TIME=2026-11-25T14:29:12.0673448+08:00
+STOP PID=8024 TIME=2026-11-25T14:29:12.0704821+08:00
+STOP PID=8900 TIME=2026-11-25T14:29:12.0743398+08:00
+STOP PID=12748 TIME=2026-11-25T14:29:12.0794930+08:00
+STOP PID=14100 TIME=2026-11-25T14:29:12.0855037+08:00
+STOP PID=17648 TIME=2026-11-25T14:29:12.0906487+08:00
+STOP PID=18632 TIME=2026-11-25T14:29:12.0948262+08:00
+STOP PID=19488 TIME=2026-11-25T14:29:12.0986579+08:00
+STOP PID=19804 TIME=2026-11-25T14:29:12.1036941+08:00
+STOP PID=20020 TIME=2026-11-25T14:29:12.1137919+08:00
+STOP PID=20028 TIME=2026-11-25T14:29:12.1184020+08:00
+STOP PID=20068 TIME=2026-11-25T14:29:12.1233086+08:00
+STOP PID=20300 TIME=2026-11-25T14:29:12.1267946+08:00
+STOP PID=24868 TIME=2026-11-25T14:29:12.1319195+08:00
+STOP PID=25072 TIME=2026-11-25T14:29:12.1360483+08:00
+STOP PID=25500 TIME=2026-11-25T14:29:12.1412937+08:00
+STOP PID=25900 TIME=2026-11-25T14:29:12.1467877+08:00
+STOP PID=27412 TIME=2026-11-25T14:29:12.1511353+08:00
+STOP PID=27688 TIME=2026-11-25T14:29:12.1580583+08:00
+STOP PID=28512 TIME=2026-11-25T14:29:12.1615034+08:00
+STOP PID=29864 TIME=2026-11-25T14:29:12.1643916+08:00
+STOP PID=30392 TIME=2026-11-25T14:29:12.1692254+08:00
+STOP PID=30716 TIME=2026-11-25T14:29:12.1736643+08:00
+STOP PID=31320 TIME=2026-11-25T14:29:12.1778323+08:00
+STOP PID=31400 TIME=2026-11-25T14:29:12.1810727+08:00
+STOP PID=31632 TIME=2026-11-25T14:29:12.1854371+08:00
+STOP PID=31868 TIME=2026-11-25T14:29:12.1899121+08:00
+STOP PID=32188 TIME=2026-11-25T14:29:12.1952602+08:00
+STOP PID=32696 TIME=2026-11-25T14:29:12.2018158+08:00
+STOP PID=32708 TIME=2026-11-25T14:29:12.2060856+08:00
+STOP PID=32796 TIME=2026-11-25T14:29:12.2087428+08:00
+STOP PID=33272 TIME=2026-11-25T14:29:12.2128557+08:00
+STOP PID=33528 TIME=2026-11-25T14:29:12.2159761+08:00
+STOP PID=33816 TIME=2026-11-25T14:29:12.2184398+08:00
+STOP PID=33960 TIME=2026-11-25T14:29:12.2223915+08:00
+STOP PID=34084 TIME=2026-11-25T14:29:12.2253400+08:00
+STOP PID=34424 TIME=2026-11-25T14:29:12.2278673+08:00
+STOP PID=35680 TIME=2026-11-25T14:29:12.2300796+08:00

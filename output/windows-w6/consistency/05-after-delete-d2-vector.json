@@ -1,0 +1,20 @@
+{
+  "index_available": true,
+  "index_error": null,
+  "issues": [
+    {
+      "kind": "chunks_missing_in_index",
+      "document_id": "3d0f07a0-5548-4402-88cd-88f78e416d66",
+      "detail": "数据库里有 3 个片段不在 chunks 索引里，这部分内容搜不到",
+      "repair": "index",
+      "target": null
+    },
+    {
+      "kind": "vector_missing_in_index",
+      "document_id": "ec0b7fd4-3d29-42a4-a5dc-a68b89aa6685",
+      "detail": "图片 ec0b7fd4-3d29-42a4-a5dc-a68b89aa6685 已有向量，但不在向量索引里，图像检索搜不到它",
+      "repair": "index",
+      "target": null
+    }
+  ]
+}

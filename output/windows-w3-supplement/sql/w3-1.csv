@@ -1,0 +1,4 @@
+task_type,status,attempts,count
+embed,succeeded,1,500
+ocr,succeeded,1,500
+parse,succeeded,1,500

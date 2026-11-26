@@ -1,6 +1,6 @@
 # 未测试清单（Not Tested）
 
-更新日期：2026-11-21（20:40 按 Windows 第一轮（W1–W3，执行者 Codex，基线 `8fb5830`）的核对结果更新：删除第 1、3 节的 T24g 1 项、T24i 2 项（Windows `output/windows-w1/backend.xml` 中通过），删除第 4 节已由 W3 原始数据证实的 4 行、改写 7 行，第 7 节新增 7.3；核对见 `docs/changes/windows-2026-11-21-核对.md`。同日 14:37 补登 T24p 漏登的一项，并注明 T24d、T24k、T24l、T24m、T24o 的条目已排进 `windows任务书.md` W5；同日稍早，T24s 完成后登记前端界面优化的 3 项未验证性质，见第 4 节“T24s 前端界面优化”；自动化测试的合计不变。同日稍早：按 T24k–T24n 的提交修正汇总数字和 Windows 未覆盖范围，没有运行任何测试。再上一次：2026-11-19 T24i 完成后，按 Barry 批准整理，并删除 Windows 第二轮已通过的 38 项）
+更新日期：2026-11-25（T24ag 登记 1 行，T24af 改 2 行、删 1 行；T24ae 登记 3 项、T24ad 登记 8 项未运行的集成测试和各自的实测；同日稍早按 Windows 第五轮的核对结果改写 Docker、Dockerfile、`RLIMIT_AS`、OCR 崩溃 6 行，第 7.4 节加 2 行，见 `docs/changes/windows-2026-11-25-核对.md`；这一轮没有测新代码）。再上一次：2026-11-23（按 Windows 第四轮（W4–W8，执行者 Codex，基线 `fd0b5eb`）的核对结果更新：第 4 节删除已验证的 14 行、改写 16 行，第 6.2 节删去 OS-6，第 7.2 节改写 2 行，第 7.3 节删 2 行、改写 3 行，新增第 7.4 节；核对见 `docs/changes/windows-2026-11-23-核对.md`。再上一次：2026-11-21（20:40 按 Windows 第一轮（W1–W3，执行者 Codex，基线 `8fb5830`）的核对结果更新：删除第 1、3 节的 T24g 1 项、T24i 2 项（Windows `output/windows-w1/backend.xml` 中通过），删除第 4 节已由 W3 原始数据证实的 4 行、改写 7 行，第 7 节新增 7.3；核对见 `docs/changes/windows-2026-11-21-核对.md`。同日 14:37 补登 T24p 漏登的一项，并注明 T24d、T24k、T24l、T24m、T24o 的条目已排进 `windows任务书.md` W5；同日稍早，T24s 完成后登记前端界面优化的 3 项未验证性质，见第 4 节“T24s 前端界面优化”；自动化测试的合计不变。同日稍早：按 T24k–T24n 的提交修正汇总数字和 Windows 未覆盖范围，没有运行任何测试。再上一次：2026-11-19 T24i 完成后，按 Barry 批准整理，并删除 Windows 第二轮已通过的 38 项）
 
 这里列出**已经写好但从未实际执行过**的测试，以及其他没有经过验证的性质。
 规则来自 GLOBAL.md“测试执行限制与代码验证要求”：跑不了的测试不强行执行、不安装工具，
@@ -24,7 +24,10 @@
 
 | 任务 | 测试文件 | 未测试项数 | 原因 | 代码复核 |
 |---|---|---|---|---|
-| **合计** | | **0** | | 本机 backend 跳过的 229 项 = 2026-11-16 通过的 188 项 + 2026-11-19 通过的 38 项 + 2026-11-21 通过的 3 项（T24g 1 项、T24i 2 项）。注意三轮基于不同的提交，T24k 之后的代码还没有在 Windows 上跑过（第 7.2 节） |
+| T24ad | `backend/tests/integration/test_task_queue.py`（新增 8 项） | 8 | 需要 PostgreSQL，本机没有 | 已复核（见 `docs/changes/T24ad.md`） |
+| T24ae | `backend/tests/integration/test_requeue_failed_db.py` | 3 | 需要 PostgreSQL，本机没有 | 已复核（见 `docs/changes/T24ae.md`） |
+| T24ba | `backend/tests/integration/test_documents.py::test_only_admin_sees_the_raw_failure_reason` | 1 | 需要 PostgreSQL，本机没有；2026-11-25 在 SQLite 替身上通过，不能代替 | 已复核（见 `docs/changes/T24ba.md`） |
+| **合计** | | **12** | | 本机 backend 跳过的 229 项 = 2026-11-16 通过的 188 项 + 2026-11-19 通过的 38 项 + 2026-11-21 通过的 3 项（T24g 1 项、T24i 2 项）。注意几轮基于不同的提交。2026-11-23 Windows 第四轮（W6 12.2）在 `fd0b5eb` 上又跑了一遍全部 950 项，除 6 项符号链接外都通过；之后只改了前端（T24v–T24z） |
 
 T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器）和 T12（切分）不需要数据库，它们的测试全部在本机执行并通过，没有未测试项。
 
@@ -38,7 +41,7 @@ T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器�
 
 括号里的数字是该测试的参数化用例数，未标注的为 1。
 
-目前没有写好但从未运行的自动化测试。（2026-11-21 20:40：原来这里的 T24g `test_preflight_reports_mixed_ocr_models`、T24i `test_reocr_requeues_finished_ocr_tasks_of_the_current_version`、`test_reocr_refuses_while_parse_or_ocr_tasks_are_unfinished` 在 Windows 第一轮通过，已删除。）
+T24ad（2026-11-25）的 8 项：`test_failed_task_waits_for_the_delay_of_its_attempt`、`test_last_delay_is_reused_for_further_attempts`、`test_waiting_task_does_not_block_other_tasks`、`test_no_delay_means_immediate_retry`（2）、`test_non_retryable_failure_is_final_at_once`、`test_reclaimed_task_does_not_wait_again`、`test_manual_retry_does_not_wait`。T24ae 的 3 项：`test_requeue_failed_db.py` 全部（`test_dry_run_changes_nothing`、`test_only_failed_tasks_of_the_type_are_requeued`、`test_ocr_tasks_of_an_old_version_are_left_alone`）。除此之外没有写好但从未运行的自动化测试。（2026-11-21 20:40：原来这里的 T24g `test_preflight_reports_mixed_ocr_models`、T24i `test_reocr_requeues_finished_ocr_tasks_of_the_current_version`、`test_reocr_refuses_while_parse_or_ocr_tasks_are_unfinished` 在 Windows 第一轮通过，已删除。）
 
 ## 4. 不是测试、但同样没有验证过的性质
 
@@ -46,32 +49,28 @@ T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器�
 |---|---|---|
 | Worker 子进程的内存上限 | 用 `RLIMIT_AS` 实现，只在 Linux 上有效；开发机是 macOS，内核基本不执行这个限制 | `decisions.md` D16 |
 | 后端连上真实数据库后的整体运行 | **部分验证（2026-11-19 Windows 第二轮）。** Windows 上用真实 PostgreSQL、OpenSearch、OCR Worker、CLIP 服务走通了注册、登录、上传、状态轮询、下载、OCR 检索、删除、共享与取消共享、CLIP 检索与降级。macOS 本机仍没有跑过 | DEVPLAN §5“Windows 第二轮补测” |
-| `deploy/docker-compose.yml` | 只校验过语法，容器从未启动 | DEVPLAN §5 T01 |
-| 前端与真实后端的联调 | **未测试。** 本机没有 PostgreSQL，真实后端的登录、上传等接口跑不起来。T10 的页面是对着一个临时写的模拟接口在浏览器里检查的（模拟接口按 `api.md` 的结构应答，不是项目代码，没有提交）。前端与真实后端之间的不一致——字段名、状态码、multipart 的细节——这种检查发现不了。T16 的检索页、预览页和抽取文本接口同样只对着模拟接口检查过（检索、PDF 跳页、Word 跳到命中段、图片、503 与空结果的区分），从未与真实后端和真实 OpenSearch 联调。T24s 改了全部页面的布局，检索页新调用 `GET /health`，同样只对着模拟后端检查过（见下面“T24s 前端界面优化”） | DEVPLAN §5 T10、T16、T24s |
-| 前端页面组件的自动化测试 | 没有写，项目里也没有组件测试工具（加装需要 Barry 同意）。前端单元测试（T10 时 48 项，2026-11-21 T24n 时 70 项，T24s 时 93 项）只覆盖接口封装、格式化、摘要清洗、位置格式和检索通道的纯函数（T24s 的 `utils/channels.ts`）；登录页、文件列表、共享对话框、检索页、预览页、PDF 查看器只做过人工浏览器检查 | DEVPLAN §5 T10、T16 |
+| `deploy/docker-compose.yml` | **基本验证（2026-11-25 Windows 第五轮，`docs/changes/windows-2026-11-25-核对.md`）：** Docker Desktop 上 `config -q` 通过，PostgreSQL 16.6 与 OpenSearch 两个容器启动并 healthy，解析、向量、OCR 任务在这两个容器上跑过（端口改用 55433、9201）。没有用后端 `/health` 查看的记录；`down`、数据卷保留没有验证 | DEVPLAN §5 T01 |
+| 前端与真实后端的联调 | **大部分已验证（2026-11-23 Windows 第四轮，W4–W8，基线 `fd0b5eb`，核对见 `docs/changes/windows-2026-11-23-核对.md`）：** W4 在真实后端、真实 CLIP 服务上核对了文件页（五列、来源、筛选空态）、拖拽区之外的上传与自动刷新、共享对话框、检索页（`ch` 参数、改开关自动重查、三格名次、RRF 融合分、耗时、CLIP 在线 / 降级 / 恢复）、预览页返回，W5 11.6 核对了生产构建。仍未验证：T24v–T24z 的登录页（见下面“T24v–T24z”一节；W4 测的是这些提交之前的代码）、真实鼠标拖入（`windows任务书.md` 第 17.6、17.7 节） | DEVPLAN §5 T10、T16、T24s |
+| 前端页面组件的自动化测试 | 没有写，项目里也没有组件测试工具（加装需要 Barry 同意）。前端单元测试（T10 时 48 项，2026-11-21 T24n 时 70 项，T24s 时 93 项，2026-11-23 T24z 时 205 项）只覆盖接口封装、格式化、摘要清洗、位置格式和检索通道的纯函数（T24s 的 `utils/channels.ts`），以及 T24v–T24z 从登录页抽出的纯函数（跳转规则、会话恢复、表单规则、提交流程、错误文字、服务状态，`tests/login/`、`tests/auth.test.ts`）；登录页的组件本身（`LoginForm.vue` 等）、文件列表、共享对话框、检索页、预览页、PDF 查看器只做过人工浏览器检查 | DEVPLAN §5 T10、T16、T24v–T24z |
 | PDF 预览在真实文件上的表现 | **部分验证。** 2026-11-19 Windows 第二轮发现中文 PDF 预览空白（pdf.js 没有配置 CMap 等资源），修复后用一份真实中文 PDF 在真实后端上看到正常显示（截图 `docs/screenshots/windows-2026-11-19/pdf-preview-e2e-fixed.png`）。修复后的预览在 macOS 浏览器里没有看过；扫描件、加密、接近 50 MB 的 PDF 仍没有试过 | `decisions.md` D29 |
 | 真实后端经开发代理的访问 | **部分验证。** T05–T10 核查时启动了真实后端（数据库地址指向不存在的端口）和真实的前端开发代理，用 curl 验证了不需要数据库的路径：健康检查、数据库不可用返回 503、未登录 401、参数校验 422、未登录上传（multipart 经代理）401、超大上传 413。需要数据库的路径（登录成功之后的一切）仍未验证 | DEVPLAN §5 核查记录 |
-| Windows 上的运行 | 2026-11-16 跑过 backend 728 项；2026-11-19 第二轮跑到 T24f（`50b244b`）的代码：backend 923 项中 6 项、shared 2 项因 WinError 1314 失败（普通权限，第 7 节），其余通过。2026-11-21 第三轮（W1，执行者 Codex，基线 `8fb5830`，含 T24g–T24i）：backend 938 项中 6 项、shared 105 项中 2 项仍因 WinError 1314 失败，其余通过，用例与 Mac 在同一提交上收集到的完全相同。T24k 之后的代码没有在 Windows 上跑过（排进 `windows任务书.md` W6 第 12.2 节） | DEVPLAN §5“T00–T19 补测”“Windows 第二轮补测” |
-| 管理员视角的前端 | 模拟接口里没有管理员账号，页面上“管理员”标记和“管理员可见”来源没有实际显示过 | — |
+| Windows 上的运行 | 2026-11-23 Windows 第四轮（W6 12.2，基线 `fd0b5eb`）：backend 950 项中 6 项、shared 108 项中 2 项因 WinError 1314 失败，其余通过，收集到的用例与 Mac 在同一提交上完全相同；OCR Worker、CLIP（含真实模型）、前端 93 项、ruff 都通过。之前三轮的情况见 DEVPLAN §5。`fd0b5eb` 之后只改了前端（T24v–T24z），在 Windows 上没有跑过（`windows任务书.md` 第 17.2 节） | DEVPLAN §5“T00–T19 补测”“Windows 第二轮补测” |
 | PDF 解析器在真实文件上的表现 | T09 的测试用 PyMuPDF 现场生成的 PDF；没有用真实的扫描件、多栏排版、带表格或带水印的 PDF 验证过，阈值 20 也没有实验依据 | `decisions.md` D20 |
 | Word、Excel、图片解析器在真实文件上的表现 | T11 的测试文件是用 python-docx、openpyxl、PyMuPDF 现场生成的；没有用 Microsoft Word / Excel / WPS 实际保存的文件、手机或相机拍的照片验证过。尤其是 Excel 公式的缓存值，测试里是手工改 XML 模拟的 | `decisions.md` D24 |
-| 解析超时对真实解析器的作用 | 超时在 Worker 子进程边界执行，机制本身有测试（`test_worker_runner.py`）；但解析器要到 T14 才接入 Worker，“一个真的卡住的解析被杀掉”还没有端到端跑过 | `decisions.md` D24 |
 | mapping 文件随安装包发布 | T17 起 mapping 在 `shared/text_index/mappings/`，`shared/pyproject.toml` 声明了 package-data（`shared.text_index` 下的 `mappings/*.json`）。两个环境都是 editable 安装，没有做过普通安装来验证文件确实被打包。验证方法：在一个临时虚拟环境里 `pip install ./shared`（会联网下载依赖，按规则先征得同意），然后确认 `site-packages/shared/text_index/mappings/` 下有两个 JSON 文件 | `decisions.md` D26、D30 |
 | B0–B2 实验 | **流程已验证（2026-11-21 Windows 第一轮 W3）：** 用 DocVQA 500 张英文扫描页在真实 PostgreSQL、OpenSearch 上跑通了导入、处理和运行，Claude 用 `results.jsonl` 独立重算的指标与 `metrics.json` 一致。DocVQA 只有英文文字型查询，数字不能当论文结论；**正式评测数据集和标注仍然没有**（T25） | `decisions.md` D32 |
-| 一致性检查对真实 OpenSearch 的操作 | 索引扫描（`search_after` 分页）、结构检查（`_mapping`、`_settings` 的返回结构）、单个文档重建和 `rebuild-indices` 全部重建都从未在真实 OpenSearch 上运行过；单元测试和集成测试里的应答是按文档写的。T24o 扩大了结构比较的范围（字段的 12 个键、分析配置逐项），如果真实 OpenSearch 返回了 mapping 文件里没有写、它自己补上的键，会误报“结构不一致”，新建索引后先跑一次 `check` 确认没有问题。（2026-11-21 14:37：新建索引后的检查、人为制造结构差异、`rebuild-indices` 全部重建已排进 `windows任务书.md` 第 11.3 节 W5，只用 `w5_` 前缀的索引；单个文档重建和 `search_after` 分页在有数据时才走到，W5 不覆盖） | `decisions.md` D31 |
-| 一致性检查在真实数据上的运行 | **部分验证：** W3 报告 500 个文档上 `check` 退出码 0、3.45 秒，但没有交回原始输出；`repair` 在真实数据上没跑过；误报率、内存没有数据。排进 `windows任务书.md` W6 第 12.4、12.11 节 | `decisions.md` D31 |
+| 一致性检查对真实 OpenSearch 的操作 | **已验证（2026-11-23 Windows 第四轮，W4–W8，基线 `fd0b5eb`，核对见 `docs/changes/windows-2026-11-23-核对.md`）：** W5 11.3 在真实 OpenSearch 上做了新建索引后的检查（没有误报）、人为制造结构差异、`rebuild-indices` 与 `--force` 重建；W6 12.4 在 500 个文档上做了单个文档重建（片段与向量）、孤立文件删除，修复后计数不变。检索服务不可用时 `repair` 多打的一行误导提示，T24af 已修，待任务书第 17.17 节看实际输出 | `decisions.md` D31 |
 | OCR 在真实文件上的表现 | 只用 PyMuPDF 现场生成的扫描版 PDF 页、图片和空白图验证过；没有真实扫描件、手机照片、多栏排版、竖排或手写文字 | `decisions.md` D30 |
 | OCR 子进程的内存上限 | `OCR_WORKER_MEMORY_LIMIT_MB` 用 `RLIMIT_AS` 实现，只在 Linux 上有效；本机（macOS）启动时打印“无法设置识别子进程的内存上限”，只受超时保护。没有在 Linux 上验证过 | `decisions.md` D16、D30 |
-| `deploy/opensearch/Dockerfile` | 从未构建过。安装 analysis-smartcn 需要联网 | `decisions.md` D26 |
-| `deploy/docker-compose.yml` 的语法 | 只用 macOS 自带的 Ruby 读过一遍 YAML，确认结构和 `build`、`image` 两项能读出来；没有用 `docker compose config` 校验过（本机没有 Docker），compose 自己的规则没有检查 | — |
-| smartcn 的切分效果 | A13 选定时没有任何实测数据，切分是否合理、对 B0–B2 的影响要到阶段五 | `decisions.md` A13 |
+| `deploy/opensearch/Dockerfile` | **已构建（2026-11-25 Windows 第五轮）：** 镜像 `docmgr-opensearch:2.19.1-smartcn` 构建成功，`_cat/plugins` 显示 analysis-smartcn 2.19.1，集群 green。只在这一台机器上构建过 | `decisions.md` D26 |
+| `deploy/docker-compose.yml` 的语法 | 已由 `docker compose config -q` 校验（2026-11-25 Windows 第五轮，退出码 0）。macOS 上没有 Docker，仍只用 Ruby 读过 YAML | — |
+| smartcn 的切分效果 | **英文部分有数据（2026-11-23 Windows 第四轮，W4–W8，基线 `fd0b5eb`，核对见 `docs/changes/windows-2026-11-23-核对.md`）：** W8 16.6 实测 smartcn 对英文转小写、做 Porter 词干化、不去停用词、在标点处切开（详见核对记录第 3 节）。中文切分对 B0–B2 的影响仍要到阶段五（T25 之后） | `decisions.md` A13 |
 | `action.auto_create_index: "false"` | 只写进了 `deploy/docker-compose.yml`，没有在真实 OpenSearch 上确认它生效、也没有确认它不影响 `ensure_indices` 显式建索引 | `decisions.md` D27 |
 | cleanup 硬删除与续租的配合 | 硬删除后任务记录被级联删除，父进程的下一次续租会把子进程按“租约丢失”终止。代码把硬删除放在最后一步来规避，但真实时序没有观察过 | `decisions.md` D27 |
 | 切分参数对检索效果的影响 | 默认 500 字、重叠 50 字是经验值。“片段长度、重叠、是否给 Excel 片段补表头”对 B1、B2 的影响要到阶段五才有数据 | `decisions.md` D25 |
-| zip 与像素上限的默认值 | 200 MB、5000 个条目、1 亿像素都是经验值；没有用接近上限的真实大文件测过解析时的内存和耗时 | `decisions.md` D24 |
+| zip 与像素上限的默认值 | 200 MB、5000 个条目、1 亿像素都是经验值。**拒绝路径已验证（2026-11-23 Windows 第四轮，W4–W8，基线 `fd0b5eb`，核对见 `docs/changes/windows-2026-11-23-核对.md`）：** W8 16.8 在 Windows（没有内存上限）上用真实 Worker 处理了解压后 314 MB 的 docx、6001 个文件的 docx、12000×9000 的 PNG，三个都在解析前被拒绝、`attempts=1`，Worker 峰值 123.6 MB。接近上限但合法的真实大文件的内存和耗时仍没有测 | `decisions.md` D24 |
 | smartcn 下的高亮效果 | 摘要是否落在命中词附近、长度是否接近 `SEARCH_SNIPPET_CHARS`，没有实际看过 | `decisions.md` D28 |
-| `scripts/smoke/ocr_e2e.py`（N01 烟测，2026-11-19 放进仓库） | 原版在 2026-11-16 Windows 补测中 PASS；放进仓库时改了解释器路径、连接串来源和清理逻辑（D39），改写后没有实际运行（本机没有 PostgreSQL 和 OpenSearch）。只验证了 ruff 检查、能编译、缺 `TEST_DATABASE_URL` 时退出码 2。T24h 加了 `ocr_results.params` 检查，`check_ocr_params` 只对假的数据库连接试过 7 种情况 | `decisions.md` D39 |
-| IK 分词、并发内存 | T00 环境实测中仍未完成的部分：IK（没有匹配 OpenSearch 2.19.1 的版本）和 OS-6。OpenSearch 启动、smartcn 分词、BM25 与精确向量检索已在 2026-11-16 Windows 补测中完成 | 第 6 节 |
+| IK 分词 | T00 环境实测中仍未完成的部分：IK（没有匹配 OpenSearch 2.19.1 的版本）。OS-6（并发内存）已由 W7 13.2 完成：六组进程同时运行 15 分钟，合计峰值 5732.8 MB、最低可用内存 886.6 MB（Claude 按原始数据重算） | 第 6 节 |
 
 ### T20 CLIP 服务（2026-11-17 登记）
 
@@ -80,36 +79,31 @@ T20 的测试都在本机实际运行过（接口测试 39 项，真实模型测
 | 项目 | 说明 | 记录位置 |
 |---|---|---|
 | CPU 以外的设备 | `CLIP_DEVICE=mps`、`cuda` 从未运行；只核对过“选了不支持的设备就报错退出”的代码 | `decisions.md` D33 |
-| 其他操作系统 | 只在 macOS（arm64）上运行过。Windows、Linux 没有测，clip 环境也没有在别的机器上按 requirements.txt 重建过 | `decisions.md` D33 |
-| 跨机器的向量一致性 | 同一输入向量稳定只在同一进程里验证过；不同机器、不同 torch 版本之间是否逐位相同没有验证 | `decisions.md` D33 |
-| 后端 `/health` 对着真实 CLIP 服务 | 后端的检查只看 `GET /health` 是否 200，已用 curl 确认服务返回 200；没有同时启动后端实际看一次 `clip_service: ok` | `api.md` §3、§9.1 |
+| 其他操作系统 | macOS（arm64）、Windows（W1、W6 12.2 真实模型 17 项通过，W7 13.1 跨机器向量一致）都运行过；Linux 没有测 | `decisions.md` D33 |
 | 真实图片 | 测试图片都是现场生成的纯色或色块图。真实照片、带 EXIF 的手机照片、渐进式 JPEG、接近 50 MB 的大图没有测 | — |
-| 并发与长时间运行 | 没有并发压测，没有长时间运行观察内存；吞吐和内存留给 T27 | DEVPLAN T27 |
-| 端口被占用 | 没有测；按 uvicorn 的行为会报错退出 | — |
-| OCR 与 CLIP 同时运行的内存（OS-6） | 现在 CLIP 服务已有，可以补测，尚未做 | 第 6 节 |
+| 并发与长时间运行 | **部分数据（2026-11-23 Windows 第四轮，W4–W8，基线 `fd0b5eb`，核对见 `docs/changes/windows-2026-11-23-核对.md`）：** W7 13.3 在 OCR 负载下连续 400 次检索，图像通道全部 ok；没有并发压测，没有长时间运行观察内存；吞吐和内存留给 T27 | DEVPLAN T27 |
 
 ### T15–T19 复核修正（2026-11-17 登记，见 `decisions.md` D34）
 
 | 项目 | 原因 | 代码复核 |
 |---|---|---|
-| `consistency repair` 在检索服务不可用时的提示与退出码 1 | 命令要连数据库，本机没有 | 已复核；没有自动化测试 |
+| `consistency repair` 在检索服务不可用时的提示 | 退出码 1 已验证（2026-11-23 Windows 第四轮，W6 12.4 第 3 步）。多打的误导提示 T24af 已修，有单元测试；停掉真实 OpenSearch 后的新输出没有看过（任务书第 17.17 节） | 已复核 |
 | `consistency repair --fix index`、`rebuild-indices` 给解析失败的文档写回 `doc_meta` | 完整路径需要 PostgreSQL；`reindex_document` 本身有单元测试（已通过） | 已复核 |
-| OCR 识别子进程忽略 Ctrl-C | 没有在终端里对着正在识别的 Worker 实际按过 | 已复核；子进程启动与识别的现有测试（含 ocr 环境真实识别 4 项）通过 |
+| OCR Worker 按 Ctrl-C 时完成当前任务再退出 | **已修复（T24aa，D52），Windows 上待重测。** 原来：**未通过（2026-11-23 Windows 第四轮，W4–W8，基线 `fd0b5eb`，核对见 `docs/changes/windows-2026-11-23-核对.md`）：** W6 12.7 在 Windows 上按 Ctrl+C，主进程等待识别子进程时抛 `InterruptedError`，当前任务被记一次失败并放回队列，Worker 退出码 1。T24aa 让等待循环遇到 `InterruptedError` 时接着等，有单元测试（模拟被打断，已通过）；真实按键按 `windows任务书.md` 第 17.5 节重测。macOS 上没有对着真实 Worker 按过（本机没有 PostgreSQL） | 已复核 |
 | PDF 预览的绘制排队 | 只对着临时模拟接口、用一份 5 页的测试 PDF 检查过；没有自动化测试 | 已复核 |
 
 ### T21 图片向量与向量索引（2026-11-19 登记，见 `decisions.md` D35）
 
 | 项目 | 说明 | 记录位置 |
 |---|---|---|
-| embed 端到端 | **基本验证（2026-11-21 W3）：** 500 张图片经 parse → embed → 写索引后，B3、clip-only 等 6 个配置的运行完整、`clip_model` 为当前权重、图像通道给出了排名（clip-only P@10 0.0142，原始结果已核对）。未核对：`image_embeddings` 的条数与“同内容只编码一次”（没有 SQL 导出，W6 第 12.5、12.11 节补交） | `decisions.md` D35 |
-| 一致性检查的向量部分 | 向量相关的采集、5 种新检测项、`embeddings` 修复和带向量的重建从未在真实数据和真实 OpenSearch 上运行过；只有单元测试（假对象） | `decisions.md` D35 |
+| 一致性检查的向量部分 | **部分验证（2026-11-23 Windows 第四轮，W4–W8，基线 `fd0b5eb`，核对见 `docs/changes/windows-2026-11-23-核对.md`）：** W6 12.4 在真实数据上检出“向量不在向量索引里”，`--fix index` 按数据库重建后检查干净。其余 4 种向量检测项和 `embeddings` 修复类别仍只有单元测试 | `decisions.md` D35 |
 
 ### T22 检索 v2：图像通道（2026-11-19 登记，见 `decisions.md` D36）
 
 | 项目 | 说明 | 记录位置 |
 |---|---|---|
-| 并行线程在真实负载下的表现 | 图像通道在单独线程里执行，单元测试只覆盖功能；没有在真实后端、并发请求下观察线程、连接和耗时 | `decisions.md` D36 |
-| 3 秒查询超时是否合适 | **部分数据（2026-11-21 W3）：** 空闲时 B3 类配置共 7 × 1500 次检索没有一次图像通道不可用，整次检索 P50 约 100 ms、P95 约 125 ms（B2 约 22 / 31 ms）。OCR、embed 批量运行时排队多久没有量过（`windows任务书.md` W7 第 13.3 节），留给 T27 | `decisions.md` D36 |
+| 并行线程在真实负载下的表现 | **部分数据（2026-11-23 Windows 第四轮，W4–W8，基线 `fd0b5eb`，核对见 `docs/changes/windows-2026-11-23-核对.md`）：** W7 13.3 在 OCR 负载下连续 200 次检索（间隔 0.5 秒），图像通道全部 ok，总耗时 P50 200 ms、P95 279 ms。没有多个请求同时发出的并发测试 | `decisions.md` D36 |
+| 3 秒查询超时是否合适 | **有数据（2026-11-23 Windows 第四轮，W4–W8，基线 `fd0b5eb`，核对见 `docs/changes/windows-2026-11-23-核对.md`）：** OCR 负载下图像通道耗时 P50 195.5 ms、P95 275.1 ms，空闲时 66.0 / 171.1 ms，400 次都没有超时。embed 批量运行时（CLIP 服务同时在编码图片）的排队没有量过，留给 T27 | `decisions.md` D36 |
 
 ### T23 前端 v2（2026-11-19 登记，见 `decisions.md` D37）
 
@@ -117,7 +111,7 @@ T20 的测试都在本机实际运行过（接口测试 39 项，真实模型测
 
 | 项目 | 说明 | 记录位置 |
 |---|---|---|
-| 与真实后端、真实 CLIP 服务联调 | 缩略图（真实下载接口、真实图片大小）、图片证据、通道标记和图像通道降级提示，都没有在真实后端 + 真实 CLIP 服务 + OpenSearch 上看过 | `decisions.md` D37 |
+| 与真实后端、真实 CLIP 服务联调 | **已验证（通道部分）（2026-11-23 Windows 第四轮，W4–W8，基线 `fd0b5eb`，核对见 `docs/changes/windows-2026-11-23-核对.md`）：** W4 核对了通道标记、三格名次、CLIP 停服降级与恢复。图片缩略图、图片证据在真实后端上的显示只看了截图，没有逐项核对 | `decisions.md` D37 |
 | 检索页组件的自动化测试 | `SearchView.vue` 没有组件测试；开关、地址栏、缩略图显示只靠浏览器手动检查 | `decisions.md` D37 |
 
 ### T24f 预览页“抽取文本”标签页（2026-11-19 登记，见 `decisions.md` D45）
@@ -132,9 +126,7 @@ T20 的测试都在本机实际运行过（接口测试 39 项，真实模型测
 
 T24p 完成时 DEVPLAN §5 写了这一项未测试，但当时没有登记到本文件，2026-11-21 14:37 补登。
 
-| 项目 | 说明 | 代码复核 |
-|---|---|---|
-| 生产构建产物没有在浏览器里打开过 | T24p 只在开发服务器上逐页检查过（控制台没有“Failed to resolve component”警告）；`npm run build` 生成的 `dist/` 没有在浏览器里打开。生产构建里 Vue 不打印这条警告，漏注册的组件只会原样留成不认识的标签。已排进 `windows任务书.md` 第 11.6 节 W5（`npm run preview`，2026-11-21 14:37 添加） | 已复核：开发与生产用同一份 `element.ts` / `element-components.ts`；`element.test.ts` 扫描全部 `.vue` 核对注册（已通过）。Vite 8.3.8 的 `preview.proxy` 默认取 `server.proxy`，preview 也会转发 `/api`、`/health` |
+没有剩余项。（2026-11-23：W5 11.6 用 `npm run preview` 打开了生产构建，上传、检索、PDF / 图片 / Word 预览都正常，没有未解析的 `<el-…>` 标签；已删除。）
 
 ### T24s 前端界面优化（2026-11-21 登记，见 `docs/changes/T24s.md`、`decisions.md` D48）
 
@@ -142,42 +134,34 @@ T24p 完成时 DEVPLAN §5 写了这一项未测试，但当时没有登记到�
 
 | 项目 | 说明 | 代码复核 |
 |---|---|---|
-| 与真实后端联调 | 本机没有 PostgreSQL / OpenSearch，只用了模拟后端。要核对：`GET /health` 的真实应答与 CLIP 服务状态的显示；检索响应 `channels` 里各通道的 `status`、`took_ms` 与汇总行、三格名次（未命中 / 未开启 / 不可用）的显示；RRF 融合分；拖拽上传经真实上传接口的成功与拒绝 | 已复核：`HealthResponse`、`ComponentStatus` 与 `backend/app/api/health.py` 的字段一致，`/health` 依赖不可用时也返回 200（所以显示“不可用”而不是“状态未知”）；`ChannelStatus` 与 `search/schemas.py` 的 `ChannelStatusOut` 一致；文字通道关闭时不传 `source_types`，与 api.md §7.1“`source_types` 为空列表返回 422”相符 |
+| 与真实后端联调 | **已验证（2026-11-23 Windows 第四轮，W4–W8，基线 `fd0b5eb`，核对见 `docs/changes/windows-2026-11-23-核对.md`）：** W4 第 10.2 节逐项核对通过（`/health` 与 CLIP 状态、各通道 `status` 与 `took_ms`、三格名次、RRF 融合分、上传成功）。偏差两处：停后端后刷新跳登录页（T24x 已修，待第 17.6 节重测）；四个开关全关后地址栏保留上一次的 `ch`（Barry 定为保留现状，不算偏差） | 已复核 |
 | 用鼠标从系统文件管理器真实拖入文件 | 本次是用脚本派发 drop 事件模拟的；真实拖放时浏览器给出的 `dataTransfer.files`、拖到子元素上时的 dragleave 没有实际看过 | 已复核：`onDrop` 取 `event.dataTransfer.files` 交给与点击选择相同的上传队列；dragenter、dragover 都 `preventDefault`（否则浏览器会直接打开文件）；dragleave 只在真正离开拖放区时取消高亮 |
-| Chrome 以外的浏览器 | 只在内置浏览器（Chrome 内核）里看过；Safari、Edge、Firefox 的显示效果没有看过 | 已复核：样式里用到的较新特性只有 `min()`、`:focus-visible`、flex 的 `gap` 和 CSS 变量，当前版本的这几种浏览器都支持；没有用 `:has()`、`color-mix()`、容器查询。要留意一处：`onDragLeave` 靠 `relatedTarget` 判断是否真正离开拖放区，有的浏览器（例如部分 Safari 版本）拖动事件的 `relatedTarget` 可能为 null，那样拖过区内文字时高亮会闪一下，不影响放下文件后的上传 |
+| Chrome 以外的浏览器 | **Edge 已看（2026-11-23 Windows 第四轮，W4–W8，基线 `fd0b5eb`，核对见 `docs/changes/windows-2026-11-23-核对.md`）：** W4 在 Chrome 157、Edge 158 上看过，400 px 窄窗正常。Firefox（那台机器没装）、Safari 没有看过 | 已复核：样式里用到的较新特性只有 `min()`、`:focus-visible`、flex 的 `gap` 和 CSS 变量；`onDragLeave` 依赖的 `relatedTarget` 在部分 Safari 版本可能为 null，只会让高亮闪一下 |
 
-### 登录页结构优化 L1–L8（克隆库 `feat/search-motion`，2026-11-22 登记，见 `docs/changes/login-page.md`）
+### T24v–T24z 登录页修复移植（2026-11-22 登记，见 `docs/changes/T24v.md` 起）
 
-只在克隆库里做，不在 DEVPLAN 中。已执行并通过：类型检查；前端 22 个文件 255 项单元测试（新增 85 项）；生产构建；浏览器检查（开发服务器 + 一个临时写的模拟后端，只应答 `/api/auth/*`、`/health`、`/api/documents`，没有提交）。模拟后端上走通了：登录后回到原页面、令牌过期后带原地址回登录页、连不上时保留令牌并在恢复后点“重试”直接进入、注册成功但登录失败、连续提交只发一次、表单内错误提示与中英文切换、窄屏布局、打开登录页时的服务状态提示（后端连不上、数据库不可用、恢复后重新检查）。
-
-| 项目 | 说明 | 代码复核 |
-|---|---|---|
-| 与真实后端联调（PostgreSQL） | 2026-11-25 在真实 FastAPI 应用 + SQLite 替身上全部走通（`docs/changes/new-feature-verification.md`），**PostgreSQL 上仍未测**。原来的说明：本机没有 PostgreSQL，以上流程只对着模拟后端走过。模拟后端按 `docs/api.md` §4 的结构应答，但不是项目代码；真实后端的错误码、状态码与模拟是否完全一致没有核对 | 已复核：用到的错误码（`INVALID_CREDENTIALS`、`USERNAME_TAKEN`、`UNAUTHENTICATED`、`DATABASE_UNAVAILABLE`、`VALIDATION_ERROR`、`INTERNAL_ERROR`）与 `backend/app/core/errors.py`、`backend/app/api/errors.py` 逐个对照过 |
-| L8 对着真实后端的 `/health` | 只对着模拟后端和“没有后端”两种情况看过；数据库直接拒绝连接时 `/health` 应当很快返回；数据库主机连不上（不应答）时要等连接超时（`health_check_timeout_seconds`）才返回，提示会晚一点出现。两种情况的实际耗时都没有测 | 已复核：检查在页面挂载后异步进行，不阻塞表单；`database.status` 的取值与 `backend/app/api/health.py` 一致 |
-| 真机手机浏览器 | 窄屏布局只在内置浏览器里模拟 375×600、375×812、640×560 看过 | 已复核：只加了一条 `max-width: 720px` 的底部内边距 |
-| 读屏软件 | 表单内提示用 `el-alert`（`role="alert"`）、卡片标题改为 `h2`，只检查了 DOM 属性，没有用 VoiceOver 等实际听过 | — |
-
-### 任务状态与重试 P1–P4（克隆库 `feat/search-motion`，2026-11-23 登记，见 `docs/changes/task-panel.md`）
-
-只在克隆库里做，不在 DEVPLAN 中，也不计入第 1 节的合计。
+从克隆库 `feat/search-motion` 的登录页结构优化 L1–L8 移植，只改前端。每个任务都执行了类型检查、单元测试、生产构建，并对着临时模拟后端（scratchpad 里的 Node 脚本，按 `docs/api.md` 应答，不在仓库里）在内置浏览器里检查过。以下没有验证。已排进 `windows任务书.md` 第 17.6 节 W9（2026-11-23 添加，第 11 步“连按回车只发一次”同日补上）：停机刷新保留令牌与重试、数据库不可用、T24z 两种提示与耗时、表单内错误、令牌 60 秒过期后回原页面、已登录打开登录页、`/\evil.com`、连按回车。**没有安排**的三项，原因：“已注册但登录失败”在真实环境里很难让登录恰好在注册之后失败；“网络发出去没有应答时切换页面要等多久”和“数据库主机不应答时 `/health` 的耗时”需要专门搭不应答的地址，等 17.3 的本地监听做法验证过再议；读屏软件朗读需要 Barry 本人用讲述人或 VoiceOver 听，没有排期。做完后按报告删除或改写下表对应行：
 
 | 项目 | 说明 | 代码复核 |
 |---|---|---|
-| 与真实后端联调 | 处理详情、重试、预览页自动刷新只对着临时模拟后端走过（按 `docs/api.md` §5.1、§6 应答，没有提交）。真实后端上的完整流程没有走过：停掉 CLIP 服务 → 上传图片 → embed 任务失败 → 打开 CLIP 服务 → 点“重试失败项” → 图像检索能搜到；杀掉 OCR Worker → 扫描件部分页失败 → 重试 → OCR 文字能搜到 | 已复核：`Task` 的字段与 `TaskOut` 一致；重试只调现有的 `POST /api/tasks/{id}/retry`；409 的错误码与 `TaskNotRetryableError` 一致 |
-| 上百页的真实扫描件 | 模拟过 40 个 OCR 任务。任务接口不分页，几百个任务时一次返回的大小、每 3 秒刷新一次的开销没有量过 | 未实测，按字段长度估算每个任务约 300 字节、500 页约 150 KB；都结束后不再刷新 |
-| 管理员看到的原文 | 2026-11-25 用管理员令牌调接口，返回的是原文（SQLite 替身）；管理员登录后的**界面**没有实际看过 | 已复核：前端原样显示 `error`，按文字插值输出，不用 `v-html` |
-| Chrome 以外的浏览器、真机、读屏软件 | 只在内置浏览器（Chrome 内核）里看过；窄屏用 375×812 模拟；`aria-live` 只检查了 DOM | — |
-| 组件自动化测试 | `TaskDialog.vue` 没有组件测试（项目里没有组件测试工具），靠浏览器手动检查。`useDocumentTasks.ts` 自 2026-11-25（V1）起有 4 项 | 已复核：判断、文字、重试、轮询都在有单元测试的纯逻辑里 |
-| P1 集成测试 `test_documents.py::test_only_admin_sees_the_raw_failure_reason` | 1 项，PostgreSQL 上**未运行**：本机没有 PostgreSQL。2026-11-25 原样搬到 SQLite 替身上运行通过，不能代替。本机 backend 因此跳过 230 项（229 + 这 1 项） | 已复核：三个任务接口都只经过 `to_task_out`，该函数有单元测试（已通过）；被共享者走 `list_document_tasks` 同一路径 |
+| T24v 与真实后端联调 | 令牌过期后带原地址回登录页、已登录打开登录页按 `redirect` 返回，只对着模拟后端走过（模拟方式是让模拟后端的令牌全部失效）。真实后端的 401 `UNAUTHENTICATED`、令牌按 `ACCESS_TOKEN_EXPIRE_SECONDS` 真正过期没有试过；补测时可以把这个值临时调成 60 秒 | 已复核：失效回调只在 `status === 401 && code === 'UNAUTHENTICATED'` 时调用（`api/client.ts`），与 `backend/app/core/errors.py` 的 `UNAUTHENTICATED` 一致；登录接口自己的 401（`INVALID_CREDENTIALS`）不触发 |
+| T24w 与真实后端联调 | 注册、注册后自动登录、“已注册但登录失败”、连按回车只发一次，只对着模拟后端走过（“登录失败”是让模拟后端在注册后的第一次登录返回 503 造出来的）。真实后端的 409 `USERNAME_TAKEN`、422 `VALIDATION_ERROR` 的应答没有试过 | 已复核：`register` / `login` 的请求体与 `docs/api.md` §4 一致；表单规则的边界（用户名 3–32、`[A-Za-z0-9_.-]`，密码 8–128 个字符）与 api.md §4.2 一致 |
+| T24x 与真实后端联调 | “连不上时保留令牌、恢复后点重试直接进入”只对着模拟后端走过（真正停掉模拟后端时 Vite 开发代理返回 502，模拟后端恢复后令牌仍在其内存里）。真实后端重启（它签发的令牌在重启后仍然有效，取决于 `JWT_SECRET` 不变）、数据库不可用时 `/api/auth/me` 的 503、网络“发出去没有应答”时切换页面要等多久，都没有试过 | 已复核：`cannotConfirm` 只看 `ApiError.status`（0 或 ≥ 500），与 `api/client.ts` 对网络错误（status 0）、502–504（`UNAVAILABLE`）、后端错误结构（503 `DATABASE_UNAVAILABLE`、500 `INTERNAL_ERROR`）的转换一致；401 仍删令牌 |
+| T24y 与真实后端联调、读屏软件 | 表单内的错误提示只对着模拟后端看过（409、422、502、503 都是模拟后端造的）；`el-alert` 的 `role="alert"` 只检查了 DOM 属性，没有用 VoiceOver 等实际听过 | 已复核：5 个错误码与 `backend/app/core/errors.py`、`backend/app/api/errors.py` 一致；没列出的错误码显示后端原文，不会显示空白 |
+| T24z 对着真实后端的 `/health` | 只对着模拟后端（正常、数据库不可用、真正停掉）看过。数据库直接拒绝连接时 `/health` 应当很快返回；数据库主机连不上（不应答）时要等连接超时（`health_check_timeout_seconds`，默认 2 秒）才返回，提示会晚一点出现。两种情况的实际耗时都没有测 | 已复核：检查在页面挂载后异步进行，不阻塞表单，检查完之前不显示提示；`database.status` 的取值（`ok` / `unavailable`）与 `backend/app/api/health.py` 一致 |
 
-### 新功能联测 V1–V4（克隆库 `feat/search-motion`，2026-11-25 登记，见 `docs/changes/new-feature-verification.md`）
+### T24ba–T24be 克隆库前端整体放入（2026-11-25 登记，见 `docs/changes/T24ba.md` 起）
+
+已执行：每个任务的类型检查、单元测试、生产构建；浏览器（Chrome 内核）对着**真实的 FastAPI 应用 + SQLite 替身**检查（只替换引擎、列类型和 `/health` 的数据库探测，没有提交）。替身不等于 PostgreSQL。
 
 | 项目 | 说明 | 代码复核 |
 |---|---|---|
-| 真实的 PostgreSQL、Worker、OpenSearch、CLIP、OCR | 联测用的是真实 FastAPI + SQLite，任务状态由脚本改动，检索结果是注入的（OpenSearch 没启动的 503 是真实的） | 已复核：V1–V4 只改前端，用到的接口和错误码没有变 |
-| `DocumentsView.vue`、`PreviewView.vue`、`SearchView.vue`、`App.vue` 的改动 | 没有组件自动化测试，修复前后在浏览器里各测一次；判断逻辑（`LatestRun`、`Refresher`、`takesFocusOnKey`）有单元测试 | 已复核 |
-| Safari、Firefox、Edge，真机触屏 | 只在内置浏览器（Chrome 内核）里测。启动动画的焦点判断依赖 `document.activeElement`：Safari 点击按钮后不给按钮焦点，表现为“没有焦点”，按键仍会进入检索框，与修复前相同 | 已复核 |
-| 中文输入法组字时按回车 | 没有实际输入法，未测。没有自己处理回车键，走浏览器的表单提交，组字中的回车不会提交 | 已复核 |
+| 真实的 PostgreSQL、Worker、OpenSearch、CLIP、OCR | 任务状态由脚本改动，检索结果是注入的（OpenSearch 没启动时的 503 是真实的）。任务领取、真实处理过程没有参与 | 已复核：用到的接口和错误码没有变 |
+| Windows、Safari、Firefox、Edge、真机触屏、读屏软件 | 都没有看过。Windows 第四轮的界面结果（W4 10.2、截图 `windows-2026-11-23-t24s`）基于改动前的界面，要重测 | — |
+| T24bc 中英文、配色 | 只在内置浏览器里看过；翻译没有请人校对 | 已复核：`i18n.test.ts` 保证两套文字结构一致、英文里没有中文；存储读写失败时用默认值 |
+| T24bd 任务面板 | 真实 Worker 上的完整流程没有走过：停掉 CLIP → 上传图片 → embed 失败 → 打开 CLIP → 点重试 → 图像检索能搜到；停掉 OCR Worker → 扫描件部分页失败 → 重试 → OCR 文字能搜到。T24ad 的重试间隔期间只看过造出来的 `pending`。任务接口不分页，几百个任务时的大小和 3 秒一次的开销没有量过。`TaskDialog.vue` 没有组件测试；管理员登录后的界面没有看过 | 已复核：字段与 `TaskOut` 一致；重试只调现有的 `POST /api/tasks/{id}/retry`，它清空 `started_at`，不受重试间隔限制 |
+| T24be 搜索动效 | 30 秒超时、低配机器上的帧率、系统真正打开“减少动态效果”（只有演示页的强制开关和代码复核）没有测。`scanLoader.ts`、`launchAnimation.ts` 操作 DOM 和 Canvas，没有单元测试，靠浏览器检查；中文输入法组字时按回车没有测 | 已复核：状态机、时间轴、请求会话、待机计时、焦点判断都是有单元测试的纯逻辑；组字中的回车不会触发表单提交 |
+| T24bb 登录竞态、文件列表、预览页 | 三个 `.vue` 没有组件测试（没有组件测试工具），在浏览器里修改前后各测一次 | 已复核：判断在 `auth.ts`、`client.ts`、`LatestRun` 里，有单元测试 |
 
 ### T24e 文本预览排序（2026-11-19 登记，见 `decisions.md` D44）
 
@@ -187,24 +171,15 @@ T24p 完成时 DEVPLAN §5 写了这一项未测试，但当时没有登记到�
 
 ### T24d rebuild-indices --force（2026-11-19 登记，见 `decisions.md` D43）
 
-| 项目 | 说明 | 代码复核 |
-|---|---|---|
-| 对真实 OpenSearch 执行 `--fix rebuild-indices --force --yes` | 计划、演练、参数校验和命令行流程都有单元测试（假的采集和 apply，已通过）；真正删除并重建三个索引的 `rebuild_indices()` 原来就没在真实 OpenSearch 上跑过（第 4 节“一致性检查对真实 OpenSearch 的操作”），本任务没有改它。（2026-11-21 14:37：已排进 `windows任务书.md` 第 11.3 节 W5 第 9 步） | 已复核：强制项与检查发现的重建项走同一个 `apply()` 分支 |
+没有剩余项。（2026-11-23：W5 11.3 第 9 步在真实 OpenSearch 上执行了 `--fix rebuild-indices --force` 的演练与 `--yes`，之后检查干净；已删除。）
 
 ### T24l Worker 启动时检查数据库迁移（2026-11-21 登记，见 `docs/changes/T24l.md`）
 
-下面两行已排进 `windows任务书.md` 第 11.4 节 W5（2026-11-21 14:37 添加）：空库、只升到 `0001` 的库、升到最新的库上各启动一次两个 Worker。
-
-| 项目 | 说明 | 代码复核 |
-|---|---|---|
-| 通用 Worker 的迁移版本检查在真实 PostgreSQL 上 | 空库时 `SELECT version_num FROM alembic_version` 应抛 `UndefinedTable` 并给出“还没有建表”；已迁移的库应通过。单元测试只用了假连接 | 已复核：连接是 autocommit，查询失败不会留下中断的事务；连接用完即关 |
-| OCR Worker 的列检查在真实 PostgreSQL 上 | `information_schema.columns` 查询、`current_schema()`、`ANY(%(tables)s)` 传列表；单元测试只用了假连接 | 已复核：列清单与 backend 模型的一致性有单元测试（已通过） |
+没有剩余项。（2026-11-23：两行都已由 W5 11.4 验证：空库、只升到 `0001` 的库上两个 Worker 都以退出码 1 结束并给出正确提示，升到 `0002` 后正常启动；已删除。）
 
 ### T24i 重新 OCR（2026-11-19 登记，见 `decisions.md` D47）
 
-| 项目 | 说明 | 代码复核 |
-|---|---|---|
-| 放回队列后真实 OCR Worker 重新识别 | **基本验证（2026-11-21 W3）：** 500 个 OCR 任务 `reocr --yes` 后重新识别完成，前后两次 B2 的 500 × 3 条排名逐条相同（原始结果已核对）；OCR 片段数前后都是 1589 只有报告，没有原始导出（W6 第 12.11 节补交）。2 项集成测试已在 Windows 第一轮通过，已从本行删除 | 已复核 |
+没有剩余项。（2026-11-23：W6 12.11 交回了 W3 的 SQL 与索引计数，reocr 前后 OCR 片段都是 1589、没有重复；W6 12.7 又在 60 个文档上 reocr 一次，全部重新识别成功；已删除。）
 
 ### T24g OCR 模型检查（2026-11-19 登记，见 `decisions.md` D46）
 
@@ -286,7 +261,6 @@ T24p 完成时 DEVPLAN §5 写了这一项未测试，但当时没有登记到�
 | 编号 | 项目 | 用什么测 | 要回答的问题 | 影响 |
 |---|---|---|---|---|
 | OS-2 | 中文分词对比：IK（standard 与 smartcn 已于 2026-11-16 在 Windows 上对比：smartcn 22 词，standard 34 个单字） | 同上 | 附录 A13 选哪个分词器 | T13 的 mapping，`deploy/docker-compose.yml` 的镜像 |
-| OS-6 | 四个组件同时运行时的总内存与 swap | `env_check/04_mem_snapshot.py` | 一台机器能否同时运行全部组件 | 开发时是否按需启停 CLIP |
 | OS-7 | 项目自己的 `deploy/docker-compose.yml` 能否启动，`/health` 是否报告 OpenSearch 为 ok | Docker + 后端 | T01 的 compose 文件和健康检查在真实容器上是否正确 | T01 |
 
 OS-1 至 OS-6 与 `env_check/未测试/清单.md` 的 1–6 项一一对应。OS-1、OS-3、OS-4、OS-5、OS-8、OS-9、OS-10 已在 2026-11-16 Windows 补测中完成并从上表删除（2026-11-19 整理）；A14 已由 Barry 于 2026-11-19 确定不启用。下面第 6.4 节的步骤原样保留，供在别的机器上复跑。
@@ -508,12 +482,12 @@ cd <项目目录> && docker compose --env-file .env -f deploy/docker-compose.yml
 
 | 项目 | 说明 | 记录位置 |
 |---|---|---|
-| Docker 与 compose | Windows 上 Docker Desktop 未安装（需要 UAC，可能还需 WSL2）：`docker compose config`、`deploy/docker-compose.yml` 启动、`deploy/opensearch/Dockerfile` 构建、容器里的完整服务拓扑都没有测（同第 4 节和 OS-7） | 第 4 节、第 6 节 |
+| Docker 与 compose | Windows 上已装 Docker Desktop 4.99.0，两个服务容器启动成功（同第 4 节两行）。后端、Worker 没有容器化，仍在主机上运行 | 第 4 节、第 6 节 |
 | 正式检索评测 | `experiments/` 仍是 0 个文件、0 条查询、0 条 qrels，B0–B3 没有正式指标。2026-11-21 W2、W3 用 `vidore/docvqa_test_subsampled`（500 张英文扫描页，在 `experiments/docvqa/`）只做了流程验证 | 第 4 节“B0–B2 实验”“T24 B3” |
-| `RLIMIT_AS` 内存上限 | 只在 Linux 有效；Windows 上没有 WSL/Linux，仍未验证（同第 4 节两行） | `decisions.md` D16、D30 |
-| 并发、长时间运行、吞吐、峰值内存 | Windows 上只用 5 个样本确认 PostgreSQL、OpenSearch、OCR、CLIP 能同时运行，并做了基础内存检查；没有并发压测和长时间观察（OS-6 只算部分完成） | DEVPLAN T27 |
+| `RLIMIT_AS` 内存上限 | **部分验证（2026-11-25 Windows 第五轮的 Linux 容器）：** 两个 `_limit_memory` 能设上限（256 MB），超限申请得到 `MemoryError`。跑的是为 Python 3.9 改过的副本和桩依赖；真实解析、真实 OCR 下默认值（通用 2048 MB、OCR 3072 MB）够不够没有测 | `decisions.md` D16、D30；`docs/changes/windows-2026-11-25-核对.md` |
+| 并发、长时间运行、吞吐、峰值内存 | **部分数据（2026-11-23 Windows 第四轮，W4–W8，基线 `fd0b5eb`，核对见 `docs/changes/windows-2026-11-23-核对.md`）：** W7 13.2 六组进程同时运行的内存（合计峰值 5732.8 MB）；W8 16.5 用 40 张图比较了 1、2、4 个 OCR Worker（4.327 张/分钟最高，但每张耗时和 CPU 争抢也最高）。没有长时间运行观察 | DEVPLAN T27 |
 | 极端真实文件 | 已用 6 个真实样本（中文 PDF、Word、Excel、相机 JPEG、PaddleOCR 示例图、一个 PDF 模糊测试样本）；接近 50 MB 的 PDF、加密 PDF、多栏/表格/水印/竖排/手写扫描件、Office/WPS 实际保存的复杂文件、超大图片、渐进式 JPEG、超限压缩包都没有测 | 第 4 节解析器、OCR 各行 |
-| T24g 之后的代码 | 这一轮基于 `50b244b`。（2026-11-21 20:40：第三轮 W1 基于 `8fb5830`，已覆盖 T24g、T24h、T24i。）仍不含 2026-11-21 的 T24k（Worker 连接超时）、T24l（Worker 启动时检查迁移）、T24m（pdf.js 资源同步检查）、T24n（文件列表标签换行），以及之后的 T24o–T24s（T24s 是前端界面优化）。T24k–T24n 只在 macOS 本机跑过单元测试；T24k 的连接超时实测只在 macOS 主环境做过（连不可达地址，不设超时 75.0 秒、设 2 秒 2.0 秒报错），OCR Worker 在 ocr 环境只验证了能导入，没有实际连过。（2026-11-21 14:37：T24k 连不通的地址上的超时已排进 `windows任务书.md` 第 11.5 节 W5；T24m 的资源核对在 `core.autocrlf=true` 时可能因换行符失败，W1 之前先做第 11.2 节的预检。T24t 已加 `.gitattributes`（`frontend/public/pdfjs/** -text`），并在 macOS 上用 `core.autocrlf=true` 的模拟签出验证过：重新签出后 15 个文本文件保持 LF，202 个文件 sha256 都与仓库一致；真实 Windows 签出仍待 W5 第 11.2 节。已签出成 CRLF 的工作区拉到 T24t 后要执行一次 `git checkout -- frontend/public/pdfjs`） | 第 3 节、第 4 节；`docs/changes/T24k.md`–`T24n.md` |
+| T24g 之后的代码 | **已覆盖到 `fd0b5eb`（2026-11-23 Windows 第四轮，W4–W8，基线 `fd0b5eb`，核对见 `docs/changes/windows-2026-11-23-核对.md`）：** W5 11.2–11.4、11.6 与 W6 12.2 在 `fd0b5eb` 上覆盖了 T24k–T24u；T24k 的连接超时因网络立刻回绝没有测到，改用本地监听重测（`windows任务书.md` 第 17.3 节）。`fd0b5eb` 之后的 T24v–T24z 没有在 Windows 上跑过 | 第 3 节、第 4 节 |
 | 修复后的 PDF 预览在 macOS 上 | `PdfViewer.vue` 新增 `cMapUrl`、`standardFontDataUrl`、`wasmUrl`、`iccUrl`，资源在 `frontend/public/pdfjs/`；只在 Windows 上看过，macOS 浏览器里没有看过；生产构建后资源路径（`BASE_URL`）在 macOS 上也没有检查 | DEVPLAN §5“Windows 第二轮补测” |
 | 余弦分数的绝对值 | `test_vector_index_live.py` 原来断言完全相同方向得 2.0，OpenSearch 2.19.1 实际为 1.0；测试改为只断言排序和严格递减。分数只用于通道内排名，不影响 RRF，但 `search_vectors` 文档里原来写的“1 + 余弦相似度”与实测不符，已改为“范围由版本决定” | `decisions.md` D35 |
 
@@ -524,8 +498,28 @@ cd <项目目录> && docker compose --env-file .env -f deploy/docker-compose.yml
 | 项目 | 说明 | 后续 |
 |---|---|---|
 | 8 项符号链接测试 | 仍因 WinError 1314 失败（同第 7.1 节）：执行方的沙箱账号没有 `SeCreateSymbolicLinkPrivilege`，提权返回退出码 4 | `windows任务书.md` W6 第 12.3 节，由 Barry 本人的终端运行 |
-| 实验记录的 mapping hash 跨机器不一致 | `config.json` 的三个 mapping SHA-256 与仓库文件不符；把仓库文件换成 CRLF 后完全吻合，即 Windows 按 `core.autocrlf=true` 签出了 CRLF。内容没问题，但两台机器的实验记录不能用这个 hash 判断索引结构是否相同 | T24u（2026-11-21）已在 `.gitattributes` 里把三个 mapping 设为 `text eol=lf`，macOS 上用 `core.autocrlf=true` 的模拟签出验证过；真实 Windows 签出待 `windows任务书.md` 第 0.2 节第 4 步，之后 W6 的 `config.json` 由 Claude 核对 hash |
-| `git_dirty: true` | W3 的 11 个结果目录都记录工作区不干净；很可能是执行前已有的 6 个未跟踪文件，没有当时的输出确认 | W6 第 12.11 节说明；任务书第 2 节第 11 条要求以后先保证工作区干净 |
-| OCR 子进程访问违例 | 两张图片的 OCR 子进程以 `0xC0000005` 退出，4 个 OCR Worker 同时运行时 3 次重试都失败，单个 Worker 时手动重试成功；没有日志 | W6 第 12.11 节补交日志 |
-| W3 处理过程的数字 | 任务数、OCR 片段 1589、一致性检查、峰值内存、OCR 每任务 53.57 秒只有报告，没有原始数据 | W6 第 12.11 节补交 |
-| 第一轮没有覆盖 | T24k 之后的代码；W4、W5 | W5、W6 第 12.2 节、W4 |
+| 实验记录的 mapping hash 跨机器不一致 | T24u 已改 `.gitattributes`。第二轮没有交回第 0.2 节第 4 步的 `mapping-eol.txt`，W6 的实验结果目录也没有交回，Windows 上的 LF 签出仍没有核对 | `windows任务书.md` 第 17.2、17.4 节 |
+| `git_dirty: true` | 第二轮的实验结果目录没有交回，仍无法确认 | `windows任务书.md` 第 17.4 节要求交回并记下运行前的 `git status` |
+| OCR 子进程访问违例 | **2026-11-25 复现并查清了条件：** 同样 4 张图，活着的 OCR Worker 不超过 4 个时 24 个任务没有失败，5 个以上每轮都崩，最多时 4 个全部失败；日志里有“页面文件太小”和 `MemoryError`，可用内存都不到 2000 MB。判断为系统内存（提交内存）耗尽，没有崩溃转储，`0xC0000005` 与内存的因果是推断。那一轮的编排脚本没有停掉前面的 Worker，要按任务书第 17.14 节重做 | `docs/changes/windows-2026-11-25-核对.md` §2 |
+
+### 7.4 Windows 第四轮（2026-11-23，W4–W8）的发现
+
+执行者 Codex，基线 `fd0b5eb`。核对见 `docs/changes/windows-2026-11-23-核对.md`。
+
+| 项目 | 说明 | 后续 |
+|---|---|---|
+| 8 项符号链接测试 | 仍因 WinError 1314 失败（同第 7.1 节） | `windows任务书.md` 第 17.9 节，由 Barry 本人运行 |
+| OCR Worker 按 Ctrl+C 打断当前任务（Windows） | `services/ocr_worker/ocr_worker/engine_process.py` 的等待循环在主线程调用 `Connection.poll()`；Windows 上这个调用等待时会同时等 Ctrl+C 事件，收到后直接抛 `InterruptedError`，循环没有捕获。W6 12.7 实测：任务被记一次失败、放回队列，Worker 退出码 1 | T24aa（D52）已修复，有单元测试；Windows 上按任务书第 17.5 节重测后删除本行 |
+| 通用 Worker 按 Ctrl+C 打断当前任务（未实测） | `backend/app/worker/runner.py` 有同样的 `poll()` 等待；而且子进程没有忽略 SIGINT（D34 只改了 OCR 子进程），任何系统上按 Ctrl+C，子进程都会收到 `KeyboardInterrupt`，被当作一次可重试的失败。代码复核发现，没有实际按过 | T24aa（D52）已修复（子进程忽略 SIGINT，等待被打断时接着等），有单元测试；Windows 上按任务书第 17.5 节 B 实测后删除本行 |
+| Worker 被强制结束后子进程继续跑 | W6 12.5 的日志里，被强杀的 Worker 的子进程照常跑完任务才报 `BrokenPipeError`。T24ab（D53）已修，强杀父进程的测试在 macOS 上通过；Windows 上、真实 Worker 上没有验证 | 任务书第 17.5 节 C 通过后删除本行 |
+| OCR Worker 在循环脚本里按 Ctrl+C | T24ac（D54）已改为收到停止信号返回 130；macOS 上用真实信号验证过 bash、zsh 循环都能停下（模型与数据库是假的）。Windows 的 `run_ocr_worker_loop.ps1` 里没有按过 | 任务书第 17.5 节 D 通过后删除本行 |
+| 一致性修复后检索排名与修复前不完全相同 | W6 12.4：B2 有 110 / 500 条完整排名变化，指标几乎不变。很可能是 BM25 统计值包含已删除但未合并的文档。原判定标准（逐条相同）不对 | 任务书第 17.4 节按新标准重测 |
+| 连接超时（T24k）没有测到 | 那台机器的网络立刻回绝 `10.255.255.1` | 任务书第 17.3 节改用本地监听；方法已在 Mac 上验证（3 秒、5 秒都准确超时） |
+| T24aa、T24ab、T24ac 与 T24v–T24z | 第五轮（2026-11-25）测的代码是 `54d9760`，不含这些改动；任务书 W9 基本没有开始 | 任务书第 17 节 |
+| Worker 数与提交内存的关系 | 第五轮没有采集提交内存（页面文件用量），只有可用物理内存；可用内存 626 MB 时仍有一轮没有失败 | 任务书第 17.14 节 |
+| 失败任务的重试间隔（T24ad，D55） | 领取条件的 SQL 没有在真实 PostgreSQL 上运行过；CLIP 短暂不可用后 embed 能否自己恢复没有实测 | 任务书第 17.2、17.15 节 |
+| 失败任务成批放回队列（T24ae，D56） | CLIP 关闭一段时间、恢复后用命令补齐向量的全过程没有实测 | 任务书第 17.16 节 |
+| 内存上限提示只打一次、网页图标（T24ag） | Windows 上启动 Worker 处理若干任务后的日志没有看过；Safari、Firefox 的图标没有看过 | 任务书第 17.2 节第 6 条 |
+| OCR 单次超过 300 秒 | W8 16.5 第一组，文档 `f35fbcc2` 第一次识别超过 300 秒被终止，第二次 88 秒成功 | 任务书第 17.8 节重复 15 轮 |
+| 采样脚本把 OCR 识别子进程归错组 | 任务书第 13.2、16.2 节的脚本按命令行归组，multiprocessing 启动的识别子进程被归进 `python_other`。W7 的合计峰值因此少算约 3 GB，已按原始数据更正；W8 16.5 汇总里的内存数字同样受影响 | 任务书第 17.2 节换成按父进程归组的新脚本 |
+| 真实文件、人工核对、真实拖拽 | W6 12.9、12.10，W8 16.7 B，W4 10.3 都需要 Barry 本人准备或操作，这一轮没做 | 任务书第 17.7、17.10、17.11 节 |

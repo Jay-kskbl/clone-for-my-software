@@ -1,4 +1,4 @@
-// 只认最后一次（新功能联测 V1）：文件列表同时有几次加载时，只有最后一次的结果、定时器算数。
+// 只认最后一次（T24bb）：文件列表同时有几次加载时，只有最后一次的结果、定时器算数。
 import { expect, it } from 'vitest'
 
 import { LatestRun } from '../src/utils/latestRun'

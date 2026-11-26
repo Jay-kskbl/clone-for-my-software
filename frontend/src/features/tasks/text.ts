@@ -1,4 +1,4 @@
-// 处理详情里的文字（任务状态与重试 P3）：步骤名、状态、说明、重试结果。
+// 处理详情里的文字（T24bd）：步骤名、状态、说明、重试结果。
 // 每次显示时按当前语言生成。失败原因来自后端，切到英文时仍是中文（与其他后端文字相同）。
 import { errorMessage } from '../../api/client'
 import type { TaskType } from '../../api/types'

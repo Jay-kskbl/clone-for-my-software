@@ -1,4 +1,4 @@
-// 处理详情的文字（任务状态与重试 P3）
+// 处理详情的文字（T24bd）
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { ApiError } from '../../src/api/client'

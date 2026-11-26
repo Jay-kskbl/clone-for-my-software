@@ -44,7 +44,7 @@ export interface RequestOptions {
   query?: Query
   /** 普通对象按 JSON 发送；FormData 原样发送（上传文件用）。 */
   body?: unknown
-  /** 取消请求用（检索被新的检索覆盖、超时）；取消时原样抛出 AbortError，不转成网络错误 */
+  /** 取消请求用（换文档、离开页面等）；取消时原样抛出 AbortError，不转成网络错误（T24bd） */
   signal?: AbortSignal
 }
 
@@ -98,7 +98,7 @@ export async function requestRaw(path: string, options: RequestOptions = {}): Pr
       signal: options.signal,
     })
   } catch (error) {
-    // 主动取消不是网络故障：交给调用方自己判断（它知道是被覆盖还是超时）
+    // 主动取消不是网络故障：交给调用方自己判断
     if (options.signal?.aborted) throw error
     throw new ApiError(0, 'NETWORK', m().api.network)
   }
@@ -107,7 +107,7 @@ export async function requestRaw(path: string, options: RequestOptions = {}): Pr
 
   const error = await toApiError(response)
   // 登录接口自己的 401（密码错误）不算“登录状态失效”。等待期间令牌已经换了（重新登录了）也不算：
-  // 那是旧令牌的 401，与现在的登录状态无关（新功能联测 V4）
+  // 那是旧令牌的 401，与现在的登录状态无关（T24bb）
   if (error.status === 401 && error.code === 'UNAUTHENTICATED' && getToken() === token) onUnauthenticated?.()
   throw error
 }

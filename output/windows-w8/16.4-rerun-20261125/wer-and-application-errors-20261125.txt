@@ -1,0 +1,98 @@
+
+TimeCreated      : 2026/11/25 11:43:20
+Id               : 1001
+ProviderName     : Windows Error Reporting
+LevelDisplayName : 信息
+Message          : 故障存储段 1411804235551460564，类型 5
+                   事件名称: CameraStartupFailureEvent
+                   响应: 不可用
+                   Cab ID: 0
+                   
+                   问题签名:
+                   P1: unknown
+                   P2: CameraStartupTimedOut
+                   P3: 0x800705b4
+                   P4: 
+                   P5: 
+                   P6: 
+                   P7: 
+                   P8: 
+                   P9: 
+                   P10: 
+                   
+                   附加文件:
+                   \\?\C:\ProgramData\Microsoft\Windows\WER\Temp\WER.9b4b49d2-e96c-4573-a8c5-3db9e0962374.tmp.WERInternalMetadata.xml
+                   
+                   可在此处获取这些文件:
+                   \\?\C:\ProgramData\Microsoft\Windows\WER\ReportArchive\NonCritical_unknown_af1093e042789f1b7116da9be79dffc590f7b6b1_00000000_66cc0e2b-816d-4957-bad7-28fed840823f
+                   
+                   分析符号: 
+                   重新检查解决方案: 0
+                   报告 ID: 66cc0e2b-816d-4957-bad7-28fed840823f
+                   报告状态: 268435552
+                   哈希存储段: 11b5c36cd88aca569397bc78e06fccd4nCab GUID: 0
+
+TimeCreated      : 2026/11/25 11:43:17
+Id               : 1001
+ProviderName     : Windows Error Reporting
+LevelDisplayName : 信息
+Message          : 故障存储段 ，类型 0
+                   事件名称: CameraStartupFailureEvent
+                   响应: 不可用
+                   Cab ID: 0
+                   
+                   问题签名:
+                   P1: unknown
+                   P2: CameraStartupTimedOut
+                   P3: 0x800705b4
+                   P4: 
+                   P5: 
+                   P6: 
+                   P7: 
+                   P8: 
+                   P9: 
+                   P10: 
+                   
+                   附加文件:
+                   
+                   可在此处获取这些文件:
+                   \\?\C:\ProgramData\Microsoft\Windows\WER\ReportQueue\NonCritical_unknown_af1093e042789f1b7116da9be79dffc590f7b6b1_00000000_66cc0e2b-816d-4957-bad7-28fed840823f
+                   
+                   分析符号: 
+                   重新检查解决方案: 0
+                   报告 ID: 66cc0e2b-816d-4957-bad7-28fed840823f
+                   报告状态: 100
+                   哈希存储段: nCab GUID: 0
+
+TimeCreated      : 2026/11/25 11:42:55
+Id               : 1001
+ProviderName     : Windows Error Reporting
+LevelDisplayName : 信息
+Message          : 故障存储段 ，类型 0
+                   事件名称: CameraStartupFailureEvent
+                   响应: 不可用
+                   Cab ID: 0
+                   
+                   问题签名:
+                   P1: unknown
+                   P2: CameraStartupTimedOut
+                   P3: 0x800705b4
+                   P4: 
+                   P5: 
+                   P6: 
+                   P7: 
+                   P8: 
+                   P9: 
+                   P10: 
+                   
+                   附加文件:
+                   
+                   可在此处获取这些文件:
+                   NULL
+                   
+                   分析符号: 
+                   重新检查解决方案: 0
+                   报告 ID: 66cc0e2b-816d-4957-bad7-28fed840823f
+                   报告状态: 1074003968
+                   哈希存储段: nCab GUID: 0
+

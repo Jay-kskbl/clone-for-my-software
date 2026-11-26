@@ -38,8 +38,41 @@ class RaisingEngine(EchoEngine):
         raise RuntimeError("识别库内部错误")
 
 
+class CtrlCEngine(EchoEngine):
+    """识别途中收到 Ctrl-C（在终端里按下时信号也会发到识别子进程）。子进程应当忽略它。"""
+
+    def recognize(self, image: RenderedImage) -> list[RecognizedLine]:
+        import signal
+
+        os.kill(os.getpid(), signal.SIGINT)
+        time.sleep(0.2)
+        return super().recognize(image)
+
+
+class HeartbeatEngine(EchoEngine):
+    """识别时每 0.05 秒写一个字节，最多 60 秒：文件停止变长就说明子进程已经不在了。"""
+
+    def __init__(self, path: str) -> None:
+        self._path = path
+
+    def recognize(self, image: RenderedImage) -> list[RecognizedLine]:
+        with open(self._path, "ab", buffering=0) as f:
+            for _ in range(1200):
+                f.write(b".")
+                time.sleep(0.05)
+        return []
+
+
+def heartbeat_engine(path: str) -> HeartbeatEngine:
+    return HeartbeatEngine(path)
+
+
 def echo_engine() -> EchoEngine:
     return EchoEngine()
+
+
+def ctrl_c_engine() -> CtrlCEngine:
+    return CtrlCEngine()
 
 
 def slow_engine() -> SlowEngine:

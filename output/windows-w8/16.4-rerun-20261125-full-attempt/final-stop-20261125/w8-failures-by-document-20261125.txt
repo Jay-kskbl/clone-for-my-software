@@ -1,0 +1,8 @@
+
+document_id                          failed_occurrences last_error
+-----------                          ------------------ ----------
+296aa52b-b461-4ad8-bb7e-5c38cd52ca19                  2 EngineStartError: OCR 妯″瀷鍔犺浇澶辫触锛歁emoryError: 
+35b1fdc2-61cc-45fd-a983-e1444de00661                  3 璇嗗埆瀛愯繘绋嬪紓甯搁€€鍑猴紙閫€鍑虹爜 3221225477锛?2026-11-25…
+60262f9d-5ccc-497a-8649-3a4fe2afff59                  3 璇嗗埆瀛愯繘绋嬪紓甯搁€€鍑猴紙閫€鍑虹爜 3221225477锛?2026-11-25…
+7586cc8e-1c65-44ed-8962-0da5ae52d8d6                  4 MemoryError: 
+

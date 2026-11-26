@@ -1,0 +1,65 @@
+2026-11-22 19:03:15,018 INFO app.worker Worker Barry-Zou:6728:1d3d1c3c 启动，可处理的任务类型：['cleanup', 'embed', 'parse']
+2026-11-22 19:03:15,030 INFO app.worker.loop 开始任务 b5ba6850-4c8c-47cd-b094-3acda630c3d6（类型 parse，文档 a66584b6-3daf-4913-a30c-31d64f53a003，第 1/3 次尝试）
+当前系统不支持设置内存上限，本任务只受超时保护
+2026-11-22 19:03:19,824 INFO app.worker.loop 开始任务 6ccb7b10-8a71-4696-9c46-d43cf8b6679c（类型 parse，文档 c862f6b3-eab1-465a-8a9b-aa744e916c79，第 1/3 次尝试）
+当前系统不支持设置内存上限，本任务只受超时保护
+2026-11-22 19:03:23,823 INFO app.worker.loop 开始任务 d9db53a2-0ddf-481d-8909-1f6c1af1ad45（类型 parse，文档 29e76469-9d2a-4f7d-8c81-7591b71a0be3，第 1/3 次尝试）
+当前系统不支持设置内存上限，本任务只受超时保护
+2026-11-22 19:03:27,547 INFO app.worker.loop 开始任务 d508b74a-34b4-4cce-9108-9483ed15f134（类型 parse，文档 33b6f67a-9cd6-43b8-b863-fe90fe46febf，第 1/3 次尝试）
+当前系统不支持设置内存上限，本任务只受超时保护
+2026-11-22 19:03:31,330 INFO app.worker.loop 开始任务 c969a43c-36f8-417e-af65-eb2979a8d6a8（类型 parse，文档 30be9167-589e-4c7a-9196-9ff54dbb917f，第 1/3 次尝试）
+当前系统不支持设置内存上限，本任务只受超时保护
+2026-11-22 19:03:36,006 INFO app.worker.loop 开始任务 3bf138b7-7d19-44c6-9aad-982dd054a215（类型 parse，文档 0eee952c-aa4f-4285-8860-6d5d5ba16871，第 1/3 次尝试）
+当前系统不支持设置内存上限，本任务只受超时保护
+2026-11-22 19:03:40,484 INFO app.worker.loop 开始任务 d8c03139-3242-48ad-8c23-80f930d159f1（类型 parse，文档 4790c290-0b92-4f76-a1a6-c8066f351167，第 1/3 次尝试）
+当前系统不支持设置内存上限，本任务只受超时保护
+2026-11-22 19:03:45,417 INFO app.worker.loop 开始任务 a545b267-6144-4f64-8fa5-0bdeef209f95（类型 parse，文档 a98ea63f-a1d8-4518-91be-f715fb53248e，第 1/3 次尝试）
+当前系统不支持设置内存上限，本任务只受超时保护
+2026-11-22 19:03:49,879 INFO app.worker.loop 开始任务 0ecc2359-a0db-4b91-ba9c-d220470ded21（类型 parse，文档 d1102b39-2ba9-40c6-8bcd-1e08714ff2d5，第 1/3 次尝试）
+当前系统不支持设置内存上限，本任务只受超时保护
+2026-11-22 19:03:54,365 INFO app.worker.loop 开始任务 a4e7fbbd-434a-4ff1-b07f-8403a49f4c06（类型 parse，文档 6e5db8b5-3cd8-46d1-9ca7-cc313ff6b25c，第 1/3 次尝试）
+当前系统不支持设置内存上限，本任务只受超时保护
+2026-11-22 19:03:59,126 INFO app.worker.loop 开始任务 add86ded-4c6f-47e5-9f33-e5ee66e6564b（类型 parse，文档 7523200a-6df3-4699-ac18-88dcbafa7aed，第 1/3 次尝试）
+当前系统不支持设置内存上限，本任务只受超时保护
+2026-11-22 19:04:04,398 INFO app.worker.loop 开始任务 7a984fd0-09ab-4919-985e-2b9e9d3374f1（类型 parse，文档 eab84418-3068-45d8-928a-2532da88469c，第 1/3 次尝试）
+当前系统不支持设置内存上限，本任务只受超时保护
+2026-11-22 19:04:09,004 INFO app.worker.loop 开始任务 7ac18385-ef01-4869-bb99-6540d540f0a1（类型 parse，文档 0558e7e2-5b25-42d7-ba90-e8dee79d9a24，第 1/3 次尝试）
+当前系统不支持设置内存上限，本任务只受超时保护
+2026-11-22 19:04:13,724 INFO app.worker.loop 开始任务 a9391618-be5e-4e70-8156-2f93d0b838c5（类型 parse，文档 e96cdb29-d6a0-42fe-9788-208f8ce66cf3，第 1/3 次尝试）
+当前系统不支持设置内存上限，本任务只受超时保护
+2026-11-22 19:04:18,682 INFO app.worker.loop 开始任务 105cd197-e7eb-44a6-904a-7e45fd13e942（类型 parse，文档 3b0891d2-a52c-4efe-86e8-699da07f364e，第 1/3 次尝试）
+当前系统不支持设置内存上限，本任务只受超时保护
+2026-11-22 19:04:23,484 INFO app.worker.loop 开始任务 b5647fe1-be95-42c2-bb6a-74ad045aef1e（类型 parse，文档 6be8f0f5-814f-4b02-815f-445998a525e1，第 1/3 次尝试）
+当前系统不支持设置内存上限，本任务只受超时保护
+2026-11-22 19:04:28,047 INFO app.worker.loop 开始任务 ea646899-d802-49f1-bc72-4d1773034828（类型 parse，文档 1ba324b3-3b40-480c-9d19-944c89559352，第 1/3 次尝试）
+当前系统不支持设置内存上限，本任务只受超时保护
+2026-11-22 19:04:32,841 INFO app.worker.loop 开始任务 b25248de-dc41-4c32-86cc-19cee30c2d23（类型 parse，文档 d9799af1-dd9a-472e-b8ac-d857c2c3ba0e，第 1/3 次尝试）
+当前系统不支持设置内存上限，本任务只受超时保护
+2026-11-22 19:04:37,716 INFO app.worker.loop 开始任务 cbd61255-43d6-407d-a00c-37df77452650（类型 parse，文档 2fa1b784-0be6-4ac3-be46-8bf00770a422，第 1/3 次尝试）
+当前系统不支持设置内存上限，本任务只受超时保护
+2026-11-22 19:04:42,307 INFO app.worker.loop 开始任务 6f527361-ae51-4354-bc00-1276772bab9a（类型 parse，文档 a41c3b91-2e6f-406b-93bf-372008b3648a，第 1/3 次尝试）
+当前系统不支持设置内存上限，本任务只受超时保护
+2026-11-22 19:04:47,539 INFO app.worker.loop 开始任务 58f217bd-cd0b-44d6-8aa3-4b96a7f5939f（类型 parse，文档 c9d109f9-fd49-4e69-8d3e-a2e232bae1c9，第 1/3 次尝试）
+当前系统不支持设置内存上限，本任务只受超时保护
+2026-11-22 19:04:52,457 INFO app.worker.loop 开始任务 7d233d64-a0ab-47e7-bbc4-1f25097b7a67（类型 parse，文档 a498149a-6eea-480a-89cc-7922931906bd，第 1/3 次尝试）
+当前系统不支持设置内存上限，本任务只受超时保护
+2026-11-22 19:04:57,896 INFO app.worker.loop 开始任务 17a34b97-4a7f-4349-8035-4da478ecb4c7（类型 parse，文档 b9e7adf2-219d-4676-b55f-021e4efc049a，第 1/3 次尝试）
+当前系统不支持设置内存上限，本任务只受超时保护
+Process SpawnProcess-23:
+Traceback (most recent call last):
+  File "C:\Users\lenovo\AppData\Local\Programs\Python\Python314\Lib\multiprocessing\process.py", line 320, in _bootstrap
+    self.run()
+    ~~~~~~~~^^
+  File "C:\Users\lenovo\AppData\Local\Programs\Python\Python314\Lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\Desktop\my-software-main\_gh_upload\backend\app\worker\runner.py", line 80, in _child_main
+    conn.send(None)
+    ~~~~~~~~~^^^^^^
+  File "C:\Users\lenovo\AppData\Local\Programs\Python\Python314\Lib\multiprocessing\connection.py", line 212, in send
+    self._send_bytes(_ForkingPickler.dumps(obj))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\AppData\Local\Programs\Python\Python314\Lib\multiprocessing\connection.py", line 295, in _send_bytes
+    ov, err = _winapi.WriteFile(self._handle, buf, overlapped=True)
+              ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+BrokenPipeError: [WinError 232] 管道正在被关闭。

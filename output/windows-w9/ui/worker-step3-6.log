@@ -1,0 +1,10 @@
+2026-11-26 09:40:06,120 WARNING app.worker 当前系统不支持限制子进程的内存（只有 Linux 支持），任务只受超时保护
+2026-11-26 09:40:06,120 INFO app.worker Worker Barry-Zou:8836:4335c004 启动，可处理的任务类型：['cleanup', 'embed', 'parse']
+2026-11-26 09:40:06,126 INFO app.worker.loop 开始任务 8aefe6d4-0f90-4e00-af7d-ee72e5f13d87（类型 embed，文档 562e78ee-030e-4844-9f43-08f68e7e7756，第 2/3 次尝试）
+2026-11-26 09:40:10,849 WARNING app.worker.loop 任务 8aefe6d4-0f90-4e00-af7d-ee72e5f13d87 失败（ClipUnavailable: CLIP 服务连接失败（ConnectError）），新状态：pending
+2026-11-26 09:40:18,861 INFO app.worker.loop 开始任务 e382095b-0608-45b6-9ee4-6eeb81de9d8a（类型 parse，文档 ca24264d-aa43-4802-817a-1db78c40ab65，第 1/3 次尝试）
+2026-11-26 09:42:07,305 INFO app.worker.loop 开始任务 8aefe6d4-0f90-4e00-af7d-ee72e5f13d87（类型 embed，文档 562e78ee-030e-4844-9f43-08f68e7e7756，第 3/3 次尝试）
+2026-11-26 09:45:16,116 INFO app.worker.loop 开始任务 100754b3-74a5-425d-8eed-867b7450d4f1（类型 parse，文档 4c8075cc-d7c5-459f-91ba-e9626126c604，第 1/3 次尝试）
+2026-11-26 09:45:18,411 WARNING app.worker.loop 任务 100754b3-74a5-425d-8eed-867b7450d4f1 失败（ParseError: PDF 已加密，需要口令才能读取，无法解析），新状态：failed
+2026-11-26 09:45:30,427 INFO app.worker.loop 开始任务 100754b3-74a5-425d-8eed-867b7450d4f1（类型 parse，文档 4c8075cc-d7c5-459f-91ba-e9626126c604，第 1/3 次尝试）
+2026-11-26 09:45:32,776 WARNING app.worker.loop 任务 100754b3-74a5-425d-8eed-867b7450d4f1 失败（ParseError: PDF 已加密，需要口令才能读取，无法解析），新状态：failed

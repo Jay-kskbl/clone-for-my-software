@@ -1,0 +1,5 @@
+Exception: C:\Users\lenovo\Desktop\my-software-main\_gh_upload\output\run_w8_round2_ocr_stability_20261125.ps1:158
+Line |
+ 158 |  бн if ($reocrExit -ne 0) { throw "reocr failed for $mode round $round" }
+     |                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | reocr failed for single round 1

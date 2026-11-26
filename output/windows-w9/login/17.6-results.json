@@ -1,0 +1,93 @@
+{
+  "browser": "Google Chrome 158.0.8127.37",
+  "steps": [
+    {
+      "step": 1,
+      "url1a": "http://127.0.0.1:5173/login",
+      "hasToken1a": true,
+      "hasRetainedMsg1a": true,
+      "hasT24zMsg1a": false,
+      "url1b": "http://127.0.0.1:5173/login?redirect=/search?q=%25E5%2590%2588%25E5%2590%258C",
+      "hasToken1b": true,
+      "hasRetainedMsg1b": true,
+      "hasT24zMsg1b": false
+    },
+    {
+      "step": 2,
+      "urlAfterRetry": "http://127.0.0.1:5173/search?q=%E5%90%88%E5%90%8C",
+      "restoredWithoutPassword": true
+    },
+    {
+      "step": 3,
+      "step3aTimedOut": true,
+      "step3aWaitSeconds": 25.099,
+      "url3a": "http://127.0.0.1:5173/",
+      "hasToken3a": true,
+      "hasRetainedMsg3a": false,
+      "meStatuses": [
+        200
+      ],
+      "t24zDbUnavailableShown": true,
+      "hasRecheckBtn": true,
+      "t24zAppearSeconds": 4.768
+    },
+    {
+      "step": 4,
+      "dbWarningCleared": true
+    },
+    {
+      "step": 5,
+      "backendDownShown": true,
+      "appearSeconds": 0.329,
+      "clearedAfterRecheck": true
+    },
+    {
+      "step": 6,
+      "staysAfter4s": true,
+      "clearedOnEdit": true
+    },
+    {
+      "step": 7,
+      "usernameTakenShown": true,
+      "clearedOnSwitch": true
+    },
+    {
+      "step": 8,
+      "expiredRedirectUrl": "http://127.0.0.1:5173/login?redirect=/search?q=%25E5%2590%2588%25E5%2590%258C",
+      "tokenClearedOnExpire": true,
+      "reloginUrl": "http://127.0.0.1:5173/search?q=%E5%90%88%E5%90%8C",
+      "searchInputValue": "合同"
+    },
+    {
+      "step": 9,
+      "finalUrl": "http://127.0.0.1:5173/search",
+      "wentDirectToSearch": true
+    },
+    {
+      "step": 10,
+      "finalUrl": "http://127.0.0.1:5173/",
+      "landedOnHome": true,
+      "noEvilInUrl": true
+    },
+    {
+      "step": 11,
+      "postLoginCount": 1,
+      "finalUrl": "http://127.0.0.1:5173/",
+      "loginRequests": [
+        {
+          "step": "11",
+          "time": "2026-11-25T12:17:46.770Z",
+          "method": "POST",
+          "url": "http://127.0.0.1:5173/api/auth/login",
+          "status": 200
+        }
+      ]
+    }
+  ],
+  "favicon": {
+    "linkHref": "/favicon.svg",
+    "faviconSvgStatus": 200,
+    "faviconSvgType": "image/svg+xml",
+    "faviconIcoCount": 0
+  }
+}

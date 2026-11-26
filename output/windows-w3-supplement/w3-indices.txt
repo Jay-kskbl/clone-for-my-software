@@ -1,0 +1,4 @@
+index                docs.count creation.date.string
+docvqa_chunks              1589 2026-11-21T05:21:00.593Z
+docvqa_image_vectors        500 2026-11-21T05:52:27.394Z
+docvqa_doc_meta             500 2026-11-21T05:20:59.992Z

@@ -1,0 +1,70 @@
+W8 第 16.8 节记录：无内存上限时的畸形文件防护
+=============================================
+
+执行时间：2026-11-23（Asia/Shanghai）
+数据库：docmgr_w8b
+索引前缀：w8b_
+存储：storage/w8b-20261123
+
+生成文件
+--------
+
+- bomb.docx：306196 字节，解压后 314573058 字节
+- many.docx：712104 字节，6001 个文件
+- huge.png：105052 字节，12000×9000 像素
+
+上传结果
+--------
+
+四次上传都返回 HTTP 201：
+
+- bomb.docx
+- many.docx
+- huge.png
+- ffhv0228.jpg（正常对照组）
+
+三个畸形文件的解析结果：
+
+- bomb.docx：parse failed，attempts=1
+  error：ParseError: 解压后共 314573058 字节，超过上限 209715200 字节，拒绝解析（可能是 zip 炸弹）
+- many.docx：parse failed，attempts=1
+  error：ParseError: 压缩包内有 6001 个文件，超过上限 5000 个，拒绝解析
+- huge.png：parse failed，attempts=1
+  error：ParseError: 图片尺寸为 12000×9000，像素数超过上限 100000000，拒绝处理
+
+三个畸形文件都没有产生 OCR 或 embed 任务。
+
+对照组
+------
+
+ffhv0228.jpg：
+
+- parse succeeded，attempts=1
+- 产生了 OCR 和 embed 任务
+- OCR 仍为 pending（没有 OCR Worker）
+- embed 实际为 failed、attempts=3：
+  ClipUnavailable: CLIP 服务连接失败（ConnectError）
+
+任务书预期 embed 保持 pending，但通用 Worker 会领取 embed，在 CLIP 未启动时重试三次后标 failed。
+该差异已保留，没有为了让结果符合预期而修改代码或配置。
+
+内存
+----
+
+- worker 组工作集峰值：123.6 MB，低于 500 MB
+- 采样可用内存：全程充足，最低 7479.4 MB
+- 通用 Worker 没有因畸形文件退出
+
+原始文件
+--------
+
+- upload-bomb.docx.json
+- upload-many.docx.json
+- upload-huge.png.json
+- upload-control.json
+- bomb.docx-document.json、many.docx-document.json、huge.png-document.json、control-document.json
+- 对应四个 *-tasks.json
+- health.json
+- memory.csv、memory-peaks.json
+- worker.log
+- 16.8-generate.txt

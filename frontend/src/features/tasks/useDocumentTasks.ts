@@ -1,4 +1,4 @@
-// 一个文档的处理任务：加载、自动刷新、重试（任务状态与重试 P3）。
+// 一个文档的处理任务：加载、自动刷新、重试（T24bd）。
 // 文件列表的处理详情、预览页的提示条和详情共用，同一页面只有一份轮询。
 import { ElMessage } from 'element-plus'
 import { computed, onBeforeUnmount, reactive, ref, shallowRef } from 'vue'

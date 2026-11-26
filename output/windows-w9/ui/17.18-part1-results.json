@@ -1,0 +1,11 @@
+{
+  "part": 1,
+  "browser": "Google Chrome 158.0.8127.37",
+  "steps": [
+    { "step": 1, "docId": "e5d9c97d-59c0-46eb-9ff6-95e517c56abd", "sawWaitingRetry": true, "sawAttempt3Of3": true, "sawClipError": true, "previewImageRendered": true, "previewWarningShown": true },
+    { "step": 2, "requeuedToastShown": true, "warningAutoClearedSeconds": 0.29, "claimedFastUnder15s": true, "foundInImageSearch": true },
+    { "step": 3, "scanDocId": "ca24264d-aa43-4802-817a-1db78c40ab65", "succeededBeforeRetry": 2, "failedBeforeRetry": 4, "bannerMatches": true, "dialogSummaryMatches": true, "sawProgressNotice": true, "sawNewTextRefreshBanner": true, "afterRefreshHasPage6": true, "searchSampleHitScan6": true },
+    { "step": 4, "lockedDocId": "4c8075cc-d7c5-459f-91ba-e9626126c604", "listShowsFailedAndViewReason": true, "dialogShows1Of3EncryptedHopeless": true, "previewShowsNoExtractedText": true },
+    { "step": 5, "aSeesSanitized": true, "bSeesSanitizedNoRetryReadonly": true, "adminSeesRawPath": true }
+  ]
+}

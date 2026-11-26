@@ -1,0 +1,10 @@
+{
+  "node": 9.0,
+  "opensearch": 895.0,
+  "postgresql": 19.3,
+  "api": 85.4,
+  "system_available": 7759.3,
+  "cpu_total_percent": 100.0,
+  "ocr_worker": 72.3,
+  "python_other": 1610.0
+}

@@ -1,0 +1,6 @@
+HEAD: e1d61eb5da8412ff138a371b5faf151358cfdbc5
+STATUS:
+warning: could not open directory 'output/retest-shared-temp/': Permission denied
+?? .playwright-cli/
+?? output/real-data-runtime-20261125/
+?? output/windows-w9/

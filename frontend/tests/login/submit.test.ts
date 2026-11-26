@@ -1,4 +1,4 @@
-// 登录 / 注册的提交流程（登录页结构优化 L5）：先注册再登录、注册成功但登录失败、重复提交。
+// 登录 / 注册的提交流程（T24w）：先注册再登录、注册成功但登录失败、重复提交。
 import { describe, expect, it, vi } from 'vitest'
 
 import { singleFlight, submitCredentials, type SubmitDeps } from '../../src/features/login/submit'
@@ -50,7 +50,7 @@ describe('注册模式', () => {
     expect(d.login).not.toHaveBeenCalled()
   })
 
-  it('注册成功但登录失败：单独返回，页面据此切回登录模式（问题 A3）', async () => {
+  it('注册成功但登录失败：单独返回，页面据此切回登录模式', async () => {
     const { d } = deps({ login: vi.fn().mockRejectedValue(DOWN) })
     expect(await submitCredentials('register', CREDS, d)).toEqual({ kind: 'registered-not-signed-in', error: DOWN })
     expect(d.register).toHaveBeenCalledTimes(1)

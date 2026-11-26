@@ -8,11 +8,14 @@
 
 import logging
 import multiprocessing
+import signal
+import sys
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from multiprocessing.connection import Connection
 
+from shared.parent_watch import exit_when_parent_dies
 from shared.tasks import Task
 
 try:
@@ -47,14 +50,20 @@ class RunResult:
     retryable: bool = True
 
 
+def memory_limit_supported() -> bool:
+    """当前系统能不能限制子进程的内存。只有 Linux 能（D16）：Windows 没有 resource 模块；
+    macOS 上设置 RLIMIT_AS 会失败，内核也基本不执行它。"""
+    return resource is not None and sys.platform.startswith("linux")
+
+
 def _limit_memory(memory_limit_mb: int) -> None:
     """限制本进程（子进程）的地址空间。
 
-    局限：这个限制在 Linux 上有效；macOS 的内核基本不执行 RLIMIT_AS，设置可能失败或不起作用。
-    设置失败只记录警告，不让任务因此失败——超时仍然是有效的兜底。
+    不支持的系统上什么也不做、也不打印：每个任务一个子进程，在这里打印会刷满日志
+    （W3 的 500 个文件打了 1000 次），由 Worker 启动时说明一次（T24ag）。
+    支持却设置失败时只记录警告，不让任务因此失败——超时仍然是有效的兜底。
     """
-    if resource is None:
-        logger.warning("当前系统不支持设置内存上限，本任务只受超时保护")
+    if not memory_limit_supported():
         return
     limit = memory_limit_mb * 1024 * 1024
     try:
@@ -67,6 +76,13 @@ def _child_main(
     handler: Handler, task: Task, memory_limit_mb: int | None, conn: Connection
 ) -> None:
     """子进程入口：执行处理函数，把结果通过管道告诉父进程。"""
+    # 在终端里按 Ctrl-C 时，信号会同时发给父进程和本进程。父进程的约定是“完成当前任务后
+    # 退出”；本进程若也响应，KeyboardInterrupt 会被下面当作一次可重试的失败，正在处理的
+    # 文件白白记一次失败。所以这里忽略它，由父进程决定何时结束（与 OCR 识别子进程相同，
+    # D34；T24aa 补上）
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    # 父进程被强制结束时跟着退出，不留下没有超时、没有续租的孤儿（T24ab）
+    exit_when_parent_dies()
     try:
         if memory_limit_mb is not None:
             _limit_memory(memory_limit_mb)
@@ -80,6 +96,23 @@ def _child_main(
         conn.send(None)
     finally:
         conn.close()
+
+
+def _poll(conn: Connection, timeout: float) -> bool:
+    """等管道里有数据，最多 timeout 秒；返回是否有数据。
+
+    Windows 上主线程在 Connection.poll() 里等待时，按下 Ctrl-C 会让它直接抛 InterruptedError
+    （等待会同时等 Ctrl-C 事件，PEP 475 的自动重试不覆盖这条路径；macOS、Linux 上信号处理
+    函数返回后系统会自动接着等）。此时信号处理函数已经记下“完成当前任务后退出”，
+    这里只需接着等，不能让正在处理的任务被当成失败（T24aa）。
+    """
+    deadline = time.monotonic() + timeout
+    while True:
+        try:
+            return conn.poll(max(0.0, deadline - time.monotonic()))
+        except InterruptedError:
+            if time.monotonic() >= deadline:
+                return False
 
 
 def _kill(process: multiprocessing.process.BaseProcess) -> None:
@@ -117,7 +150,7 @@ def run_in_subprocess(
                 _kill(process)
                 return RunResult(ok=False, error=f"处理超时（超过 {timeout_seconds:g} 秒），已终止")
 
-            if parent_conn.poll(min(tick_seconds, remaining)):
+            if _poll(parent_conn, min(tick_seconds, remaining)):
                 try:
                     failure = parent_conn.recv()
                 except EOFError:

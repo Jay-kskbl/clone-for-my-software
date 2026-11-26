@@ -1,0 +1,9 @@
+
+rounds        : 16
+tasks         : 64
+succeeded     : 52
+failed        : 12
+attempts_gt1  : 27
+crashes       : 10
+memory_errors : 1
+

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// 登录页：只负责布局和组装（登录页结构优化 L4）。
+// 登录页：只负责布局和组装（T24w）。
 // 品牌区、登录卡片在 features/login/，跳转规则在 features/login/redirect.ts，表单规则在 rules.ts。
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -22,7 +22,7 @@ function goBack() {
   return router.push(safeRedirect(route.query.redirect))
 }
 
-// 服务状态（L8）：打开页面时查一次 GET /health，后端连不上或数据库不可用时提前说明；不轮询。
+// 服务状态（T24z）：打开页面时查一次 GET /health，后端连不上或数据库不可用时提前说明；不轮询。
 // 查完之前按“正常”处理，不显示任何提示，避免页面一打开就闪一下
 const service = ref<ServiceStatus>('ok')
 const checkService = singleFlight(async () => {
@@ -46,7 +46,7 @@ async function onRecheck() {
 
 onMounted(() => void checkService())
 
-// 打开页面时连不上服务器（L2）：本地令牌还在，服务恢复后点“重试”重新确认，成功就直接进入，不用再输密码
+// 打开页面时连不上服务器（T24x）：本地令牌还在，服务恢复后点“重试”重新确认，成功就直接进入，不用再输密码
 const retrying = ref(false)
 
 async function onRetry() {
@@ -68,11 +68,11 @@ async function onRetry() {
 <template>
   <div class="login">
     <LoginBrand>
-      <!-- 克隆库专用：星尘光球中间放文档图标（search-motion），一直转动。去掉这一段就显示静态图标 -->
+      <!-- 星尘光球中间放文档图标（T24be），一直转动。去掉这一段就显示静态标志 -->
       <template #logo><StardustLogo /></template>
     </LoginBrand>
     <LoginForm :after-sign-in="goBack">
-      <!-- 两条提示只显示一条：本地有令牌但连不上（L2）时，“登录状态已保留”更要紧，它的“重试”也会更新服务状态 -->
+      <!-- 两条提示只显示一条：本地有令牌但连不上（T24x）时，“登录状态已保留”更要紧，它的“重试”也会更新服务状态 -->
       <el-alert v-if="auth.unreachable" type="warning" :closable="false" show-icon class="login-status">
         <template #title>{{ m().login.unreachable }}</template>
         <el-button size="small" :loading="retrying" class="login-status-action" @click="onRetry">
@@ -102,7 +102,7 @@ async function onRetry() {
 
 /*
  * 右下角浮动的“语言 / 配色”按钮（App.vue，高 44 px，离底边 12–20 px，宽 144 px）在窄屏上会盖住卡片底部的
- * “没有账号？注册”（L7 实测 375 px 宽时盖住约 21×11 px，英文更多）。窗口宽于约 708 px 时按钮在卡片右边，
+ * “没有账号？注册”（克隆库实测 375 px 宽时盖住约 21×11 px，英文更多）。窗口宽于约 708 px 时按钮在卡片右边，
  * 不会重叠；更窄时页面底部多留出按钮的高度，滚到底时注册链接一定在按钮上方。不改 App.vue 的按钮。
  */
 @media (max-width: 720px) {

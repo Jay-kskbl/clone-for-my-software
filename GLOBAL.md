@@ -91,7 +91,7 @@
 
 | 层次 | 方案 | 约束 |
 |---|---|---|
-| 前端 | Vue 3、TypeScript、Element Plus | 页面清晰、交互完整，不做复杂动画 |
+| 前端 | Vue 3、TypeScript、Element Plus | 页面清晰、交互完整，不做复杂动画（例外：检索动效、中英文切换、配色，Barry 于 2026-11-25 批准，见 `docs/decisions.md` D60；不再增加新的） |
 | 后端 | Python、FastAPI | 采用分层、模块化结构 |
 | 关系数据库 | **PostgreSQL（已确定）** | 唯一的关系数据库；同时承担任务队列（见下方"后台任务"） |
 | 检索引擎 | OpenSearch | 用于 BM25 和向量检索；中文分词方案须在环境验证阶段确定（候选：官方 analysis-smartcn、社区 IK 插件，后者须与 OpenSearch 版本严格匹配），analyzer 配置纳入版本管理 |

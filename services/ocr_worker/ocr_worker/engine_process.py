@@ -20,6 +20,7 @@ from typing import Any
 
 from pydantic import TypeAdapter
 from shared.contracts import OcrLocator
+from shared.parent_watch import exit_when_parent_dies
 
 from ocr_worker.engine import Engine, RecognizedLine
 from ocr_worker.rendering import render
@@ -59,6 +60,23 @@ class EngineStartError(Exception):
     """识别子进程没能启动（模型加载失败或超时）。"""
 
 
+def _poll(conn: Connection, timeout: float) -> bool:
+    """等管道里有数据，最多 timeout 秒；返回是否有数据。
+
+    Windows 上主线程在 Connection.poll() 里等待时，按下 Ctrl-C 会让它直接抛 InterruptedError
+    （等待会同时等 Ctrl-C 事件，PEP 475 的自动重试不覆盖这条路径；macOS、Linux 上信号处理
+    函数返回后系统会自动接着等）。此时信号处理函数已经记下“处理完当前任务后退出”，
+    这里只需接着等，不能让正在识别的这一页被当成失败（D34、T24aa）。
+    """
+    deadline = time.monotonic() + timeout
+    while True:
+        try:
+            return conn.poll(max(0.0, deadline - time.monotonic()))
+        except InterruptedError:
+            if time.monotonic() >= deadline:
+                return False
+
+
 def _limit_memory(memory_limit_mb: int | None) -> None:
     if memory_limit_mb is None or resource is None:
         return
@@ -77,6 +95,8 @@ def _child_main(
     # 后退出”；本进程若也响应，正在识别的这一页会被打断并记成一次失败。所以这里忽略它，
     # 由父进程决定何时结束（关闭管道或直接 kill）
     signal.signal(signal.SIGINT, signal.SIG_IGN)
+    # 父进程被强制结束时跟着退出，不留下没有超时、占着约 3 GB 内存的孤儿（T24ab）
+    exit_when_parent_dies()
     try:
         _limit_memory(memory_limit_mb)
         engine = factory()
@@ -143,7 +163,7 @@ class EngineProcess:
         child_conn.close()
         self._process, self._conn = process, parent_conn
 
-        if not parent_conn.poll(self._load_timeout):
+        if not _poll(parent_conn, self._load_timeout):
             self._stop()
             raise EngineStartError(f"加载 OCR 模型超时（超过 {self._load_timeout:g} 秒）")
         try:
@@ -182,7 +202,7 @@ class EngineProcess:
                 return EngineResult(
                     ok=False, error=f"识别超时（超过 {timeout_seconds:g} 秒），已终止"
                 )
-            if self._conn.poll(min(tick_seconds, remaining)):
+            if _poll(self._conn, min(tick_seconds, remaining)):
                 try:
                     message = self._conn.recv()
                 except EOFError:

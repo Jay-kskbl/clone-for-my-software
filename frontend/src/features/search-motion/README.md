@@ -1,15 +1,15 @@
 # search-motion：搜索动效
 
-三个搜索动效：动画 1 待机、动画 2 启动（这两个用同一个图形：星尘光球）、动画 3 扫描加载。设计与验收要求见根目录 `SEARCH_MOTION_DEV_GUIDE.md`（下称“指南”），修改记录与验证情况见 `docs/changes/search-motion.md`。
+三个搜索动效：动画 1 待机、动画 2 启动（这两个用同一个图形：星尘光球）、动画 3 扫描加载。从克隆库 `~/Desktop/BARRY zou-search-motion` 的 `feat/search-motion` 放入（T24be），作为 GLOBAL §3.1 的例外，见 `docs/decisions.md` D60。没有引入任何依赖。
 
-只在克隆库 `feat/search-motion` 里，属于增强功能（GLOBAL.md §2 P4），没有进入 DEVPLAN。没有引入任何依赖。
+代码注释里的“指南”是克隆库根目录的 `SEARCH_MOTION_DEV_GUIDE.md`，修改经过见克隆库的 `docs/changes/search-motion.md`；两者都不在本仓库。与指南不同的地方：**结果一到就收拢，不等当前一轮播完**（指南 §6.1 要求播完）；启动动画循环播放。
 
 ## 目录
 
 | 目录 / 文件 | 作用 |
 |---|---|
 | `shared/` | 公共层：`easing`（缓动）、`reducedMotion`（减少动效，可订阅变化）、`tokens`（从 `--app-*` / `--el-*` 读颜色、监听主题）、`canvas`（全页唯一的 rAF 循环、高清屏画布）、`timers`（定时器集中清理）、`stardust`（星尘光球：粒子位置与画法，待机和启动共用） |
-| `messages.ts` | 动效文案（项目没有 i18n 库，集中在这里） |
+| `messages.ts` | 动效文案，从 `src/i18n` 取 |
 | `scan-loader/` | 动画 3：`machine`（纯函数状态机）、`scanLoader.ts/.css`（框架无关核心）、`searchSession`（请求与动画对接：取消、丢弃旧返回、30 s 超时）、`handle`、`ScanLoader.vue` |
 | `launch/` | 动画 2：`timeline`（纯函数时间轴、胶囊轮廓取点）、`loop`（没有输入时循环播放）、`launchAnimation`（Canvas 核心，懒加载）、`launch.css`、`useLaunchAnimation`（Vue 适配） |
 | `idle-spinner/` | 动画 1：`idleTracker`（待机计时）、`idleSpinner`（核心）、`IdleSpinner.vue` |
@@ -34,7 +34,7 @@
 - `useLaunchAnimation(inputRef, { placeholder, hasValue?, onFinish? })`，在 `setup` 里调用（首帧前要决定是否隐藏输入框）
 - `inputRef` 是 `el-input` 的组件 ref；`el-input` 上要加 `class="sm-launch-target"`，前缀图标（svg）会被照着画
 - 检索框为空时循环播放：一轮播完停 3 秒（期间有点击、按键、滚轮、触摸就重新计时）再播下一轮；输入框有内容或有焦点时停止，失焦且为空后重新开始。减少动效打开时不播
-- 用户按键或点击会立即结束当前这一轮并聚焦输入框（按下的字符进入输入框）；自然播完不聚焦。按键时别的控件有焦点（语言按钮、配色面板、通道开关等）则不抢焦点（`launch/focus.ts`，V2）
+- 用户按键或点击会立即结束当前这一轮并聚焦输入框（按下的字符进入输入框）；自然播完不聚焦。按键时别的控件有焦点（语言按钮、配色面板、通道开关等）则不抢焦点（`launch/focus.ts`，T24be）
 - `onFinish(reason)` 每轮结束都会调用，reason 为 `end` / `skip` / `layout` / `reduced` / `destroy`
 
 **待机动画（`IdleSpinner.vue`）**
@@ -66,12 +66,4 @@ onBeforeUnmount(() => session.cancel())
 
 ## 演示页
 
-克隆库里 Node 用主仓库的 `.tools/node`：
-
-```bash
-export PATH="/Users/davidlaid/Desktop/BARRY zou/.tools/node/bin:$PATH"
-cd frontend
-npx vite --host 127.0.0.1 --port 5174
-```
-
-然后打开 `http://127.0.0.1:5174/motion-lab`（不需要登录和后端）。页面上可以切换快速 / 慢速 / 报错 / 超时 / 连续搜索、暗色、减少动效（强制开关），重播启动动画，用“快速走查”参数（2 s 进入待机）看待机动画，并显示 rAF 登记数用来检查残留。
+只在开发模式有（`npm run dev`），打开 `http://127.0.0.1:5173/motion-lab`，不需要登录和后端；生产构建里没有这个路由。页面上可以切换快速 / 慢速 / 报错 / 超时 / 连续搜索、暗色、减少动效（强制开关），重播启动动画，用“快速走查”参数（2 s 进入待机）看待机动画，并显示 rAF 登记数用来检查残留。

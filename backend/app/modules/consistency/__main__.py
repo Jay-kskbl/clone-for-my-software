@@ -43,9 +43,18 @@ from app.core.errors import ConfigError
 from app.db.session import make_engine, make_session_factory
 from app.modules.consistency.analyze import DEFAULT_MIN_AGE_SECONDS, analyze
 from app.modules.consistency.collect import collect_db, collect_disk, collect_index
-from app.modules.consistency.model import REPAIR_KINDS, Issue, Snapshot
+from app.modules.consistency.model import (
+    REPAIR_INDEX,
+    REPAIR_KINDS,
+    REPAIR_REBUILD_INDICES,
+    Issue,
+    Snapshot,
+)
 from app.modules.consistency.repair import apply, plan
 from app.modules.storage import LocalStorage
+
+# 需要检索服务才能检查和修复的类别
+INDEX_KINDS = (REPAIR_INDEX, REPAIR_REBUILD_INDICES)
 
 
 def _print_issues(issues: list[Issue]) -> None:
@@ -132,25 +141,32 @@ def main(argv: list[str] | None = None) -> int:
 
             # 检索服务不可用时索引没有被检查，索引类的问题一条也不会出现在 issues 里。
             # 这时不能说“没有需要修复的问题”并返回 0：其余类别照常处理，最后以退出码 1 结束
-            index_skipped = not index.available and bool(
-                {"index", "rebuild-indices"} & set(args.fix)
+            skipped_kinds = (
+                [] if index.available else [k for k in INDEX_KINDS if k in set(args.fix)]
             )
+            index_skipped = bool(skipped_kinds)
             if index_skipped:
                 print(
                     f"检索服务不可用（{index.error}），没有检查索引，"
-                    "index、rebuild-indices 两类这次不会修复；检索服务恢复后请重新运行。",
+                    f"{'、'.join(skipped_kinds)} 这次不会修复；检索服务恢复后请重新运行。",
                     file=sys.stderr,
                 )
             # 检索服务不可用时不强制：重建需要检索服务，上面已经说明这次不修索引
             selected = plan(issues, args.fix, force_rebuild=args.force and index.available)
             if not selected:
-                print("所选类别下没有需要修复的问题。")
-                return 1 if index_skipped else 0
+                if not index_skipped:
+                    print("所选类别下没有需要修复的问题。")
+                    return 0
+                # 索引没检查过，不能笼统地说“没有需要修复的问题”；只对检查过的类别这样说（T24af）
+                checked = [k for k in REPAIR_KINDS if k in set(args.fix) - set(skipped_kinds)]
+                if checked:
+                    print(f"其余所选类别（{'、'.join(checked)}）下没有需要修复的问题。")
+                return 1
             print(f"将要修复 {len(selected)} 处：")
             for issue in selected:
                 where = f"[{issue.document_id}] " if issue.document_id else ""
                 print(f"- {issue.repair}：{issue.kind} {where}{issue.detail}")
-            if "rebuild-indices" in args.fix:
+            if "rebuild-indices" in args.fix and not index_skipped:
                 print(
                     "\n注意：重建索引前请先停掉通用 Worker 和 OCR Worker，重建期间检索结果不完整。"
                 )

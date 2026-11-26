@@ -1,0 +1,73 @@
+Windows W5 实测摘要
+==================
+
+执行日期：2026-11-22（Asia/Shanghai）
+代码基线：fd0b5ebf729cf6602447bf95012a6064a2fe270a（GitHub main）
+
+11.2 T24m 换行符预检
+---------------------
+
+- core.autocrlf：true，来源 file:C:/Program Files/Git/etc/gitconfig
+- T24t 的 .gitattributes 已存在：61678e1
+- 初始 frontend/public/pdfjs：202 个已跟踪文件，其中 15 个为 w/crlf
+- 普通 git checkout -- frontend/public/pdfjs 没有改写这 15 个文件
+- 按任务书的第 5 步，只删除这 15 个已跟踪文件后重新签出；结果 202 个文件，w/crlf=0
+- 未修改 core.autocrlf，未运行 npm run sync:pdfjs
+- npm test -- tests/pdfjs-assets.test.mjs：3/3 passed，退出码 0
+
+11.3 T24o 真实 OpenSearch 一致性修复
+------------------------------------
+
+- 使用 docmgr_w5、w5_、storage/w5-20261122
+- 01 check：退出码 2，报 doc_meta 和 chunks 缺失
+- 02 rebuild 演练：退出码 2，未改动
+- 03 rebuild --yes：退出码 0，创建 w5_doc_meta、w5_chunks、w5_image_vectors
+- 04 check：退出码 0，没有误报
+- 05 人为给 text 增加 search_analyzer=standard：acknowledged=true
+- 06 check：退出码 2，准确报出 search_analyzer 为 standard、应为未设置
+- 07 rebuild 演练/执行：退出码 2/0
+- 08 check：退出码 0
+- 09 --force 演练/执行：退出码 2/0，打印 forced_rebuild
+- 10 check：退出码 0；其他索引前后 Compare-Object 差异为 0 行
+
+11.4 T24l 空库和落后迁移
+------------------------
+
+- docmgr_w5_empty、未迁移：通用 Worker 退出码 1，提示没有 alembic_version；OCR Worker 加载模型后退出码 1，缺少 34 列
+- 仅升级到 0001：通用 Worker 退出码 1，提示数据库版本 0001、代码要求 0002；OCR Worker 退出码 1，缺少 ocr_results.params
+- 升级到 0002：两个 Worker 都正常启动，没有结构错误
+- 当前终端工具不能可靠向子进程发送 Ctrl+C；正常启动后的停机用终止对应进程完成，启动日志完整保留
+
+11.5 T24k 连接超时
+------------------
+
+- 目标地址 10.255.255.1:5432 在当前网络被立即拒绝，不是无响应超时
+- 通用 Worker 默认设置：1.9 秒，OperationalError，退出码 1
+- 通用 Worker 设置 3 秒：1.9 秒，OperationalError，退出码 1
+- OCR Worker 设置 5 秒：7.1 秒（含模型加载），OperationalError，退出码 1
+- OCR Worker 设置 20 秒：6.4 秒（含模型加载），OperationalError，退出码 1
+- 因网络立即拒绝，无法验证设定秒数是否生效；按任务书如实记为环境限制
+
+11.6 T24p 生产构建
+------------------
+
+- npm run typecheck、npm test、npm run build 均退出码 0；前端 93 项测试通过
+- npm run preview 在 http://127.0.0.1:4173 正常启动
+- 通过 preview 登录 w5admin 成功，说明 /api 代理到 8000 有效
+- 上传 w5-chinese.pdf、w5-preview.docx、w5-preview.png，三者都显示处理成功
+- 文件页：上传区、上传记录、三个筛选单选、刷新、表格、状态、分页和每页条数、操作按钮均存在
+- 共享对话框可打开；删除确认框可打开并取消，没有真删
+- 检索页：检索框、三组通道、初始提示、3 条结果、每条的通道名次和 RRF 融合分均存在
+- PDF：原文件画布 1487×2105，暗色像素 16047，缩放从 125% 生效；抽取文本正确
+- 图片：原图和 OCR 抽取文本正确
+- Word：抽取文本段落正确
+- 文件、检索、文档预览、登录页检查均无未解析的 <el-...> 组件
+- 控制台只有 favicon.ico 404；PDF 预览另有一条系统字体 Heiti 缺失提示
+
+原始证据
+--------
+
+- eol-precheck.txt、pdfjs-eol-before-checkout.txt、pdfjs-eol-final.txt
+- npm-test-pdfjs-assets-final.txt
+- consistency/ 下的各步骤原文与退出码
+- 11.4-*、11.5-*、preview-*、preview-runtime/

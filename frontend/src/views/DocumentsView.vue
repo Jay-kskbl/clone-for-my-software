@@ -52,8 +52,8 @@ const dragActive = ref(false)
 const inProgressCount = computed(() => documents.value.filter((d) => isInProgress(d.status)).length)
 
 let refreshTimer: ReturnType<typeof setTimeout> | undefined
-// 同时可能有几次加载（自动刷新、重试任务后的刷新、翻页）：只认最后一次。原来每次都会排一个定时器，
-// 后排的盖住先排的，先排的就清不掉了，离开页面后还在每 5 秒请求一次（新功能联测 V1）
+// 同时可能有几次加载（自动刷新、换筛选条件、翻页、重试任务后的刷新）：只认最后一次，离开页面后全部作废。
+// 原来先发后到的旧结果会盖掉新结果（选着“我上传的”却显示共享来的文件），没返回就离开时会一直每 5 秒请求（T24bb）
 const runs = new LatestRun()
 
 async function load(options: { silent?: boolean } = {}) {
