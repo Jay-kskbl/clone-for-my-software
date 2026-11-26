@@ -298,3 +298,74 @@ B2 复跑：
 - 没有跳过、放宽或改写这些测试。
 
 所有数字、耗时和失败均来自本轮实际执行，没有伪造结果。
+
+
+
+九、W9：新基线复测、改良补测与界面联调（2026-11-25 ~ 2026-11-26）
+--------------------------------------------------------------------
+
+执行基线：e1d61eb5da8412ff138a371b5faf151358cfdbc5（含 T24aa–T24ag、T24ba–T24be）
+约束核对：全程未修改任何 .md 文件、业务代码、测试代码或配置文件；未安装新依赖；
+原始数据、操作日志与命令记录均存放在 output/windows-w9/，并统一 LF 后生成 SHA256SUMS.txt。
+详细逐项报告见 output/windows-w9/summary.txt。
+
+1. 已完成的全部 W9 自动化与联调项目：
+   - 17.2 基线与全套复测：
+     * mapping 3 个 JSON 均为 LF 且 SHA-256 与 Mac 一致（mapping-eol.txt）。
+     * 前端 typecheck、test（32 文件 376 项全过）、build 全部退出码 0。
+     * ruff check 与 format --check 四核心目录 192 文件全部通过（ruff.txt）。
+     * shared 122 passed / 2 failed（符号链接 WinError 1314）；
+       ocr_worker main 81 passed / 5 skipped / 0 failed，真实 PaddleOCR 4/4 passed；
+       clip_service main 39 passed / 17 skipped / 0 failed，真实 Chinese-CLIP OK；
+       scripts/datasets 12/12 passed；scripts/smoke/ocr_e2e.py PASS；
+       backend 1044 passed / 1 skipped / 7 failed（6 项符号链接 + 1 项真实失败
+       test_database_address_is_hidden；T24ad 8 项与 T24ae 3 项数据库集测全部通过）。
+     * sample_w9.ps1 30 秒自测间隔 <= 3s；T24ag 启动警告仅 1 行，favicon.svg 返回 200。
+   - 17.1 Docker 补测（output/windows-w9/docker/）：
+     * deploy/docker-compose.yml 两容器 healthy；action.auto_create_index=false 实测返回 404；
+       后端 /health 返回 200（database=ok, opensearch=ok）；docker compose down（无 -v）
+       再 up -d 后 PG 与 OpenSearch 数据卷均完好保留（pg_persisted=True, os_persisted=True）。
+   - 17.3 本地黑洞端口连接超时（127.0.0.1:55999）：
+     * 4 步均报 ConnectionTimeout、退出码 1；Worker 默认 13.151s、3s 6.080s（差 7.071s；
+       Windows Python 导入开销 2.243s，裸 psycopg 3s=3.005s）；OCR 5s 11.145s(等库 6.016s)、
+       20s 26.234s(等库 21.147s，差 15.089s / 等库差 15.131s)。
+   - 17.4 一致性修复后检索可重复性与 _forcemerge（docmgr_docvqa / docvqa_）：
+     * B2/B3 的 R1 vs R2 均 0/500 排名差异，指标与 W3 差 < 0.0005（上限 0.01）；
+       w9-runs.zip（2.46 MB）含 8 个结果目录。docvqa_chunks 仅 6/1583(0.38%) 删除文档，
+       低于 Lucene 10% expunge_deletes_allowed 阈值，R3 与 R1 亦 0/500 差异。
+   - 17.5 Ctrl+C（A/B）、强杀子进程看门狗（C）、循环脚本（D）（docmgr_w6）：
+     * A/B 均 exit=130、succeeded、attempts=1、无 InterruptedError/KeyboardInterrupt；
+       C 强杀 3s 后 spawn_main 子进程均为“无”、0 次 BrokenPipeError、0 重复 OCR 任务；
+       D 循环脚本 Ctrl+C 后退出、模型仅加载 1 次、60s 后 0 残留进程。
+   - 17.6 登录页与停机刷新（docmgr_ui，Chrome 158.0.8127.37）：
+     * 步骤 1、2、3b(4.768s)、4、5(0.329s)、6、7、8(60s 令牌+等 70s)、9、10(/\evil.com)、
+       11(Slow 3G 连按两次回车仅 1 条登录 POST) 全部通过；步骤 3a 检出真实 Bug（见下）。
+   - 17.8 单文档 lzkg0078.jpg 15 轮 OCR 重复测（docmgr_w9c / w9c_）：
+     * 15/15 轮全部 succeeded / attempts=1，耗时 52.53s–138.31s（中位 55.25s、均值 65.70s、
+       P95 138.31s），0 轮 > 200s，最大采样间隔 1.94s <= 3s。结论：W8 的 300s 超时属偶发。
+   - 17.14 OCR Worker 并发 N=1..6 × 5 轮与提交内存采样（docmgr_w9b / w9b_）：
+     * N=1/2/3 各 5 轮及 N=4 前 2 轮共 68/68 任务全部 succeeded（0 失败 0 重试，0 次
+       0xC0000005）；N=4 第 3 轮物理可用内存跌至 236.4 MB（最低 20.4 MB）< 300 MB 红线，
+       按任务书要求安全停组。16 GB 机器推荐上限 N=2~3。
+   - 17.15 & 17.16 失败重试退避与 requeue-failed（docmgr_w9 / w9_）：
+     * 步骤 2 间隔 +30.90s 后恢复成功；步骤 3 间隔 +31.08s、+121.29s 后第 3 次标 failed；
+       requeue-failed 演练/--yes/复检退出码均 0，3 个任务全部 succeeded (attempts=1)，
+       image_embeddings 从 1 增至 4，一致性检查 exit 0（0 问题）。
+   - 17.17 OpenSearch 停机时 repair 提示（docmgr_docvqa / docvqa_）：
+     * 预检 exit 0；停机后三条命令提示与退出码（1、1、0）与预期逐字一致。
+   - 17.18 界面更新 18 步 + Edge 交叉验证 + 13 张论文图（docmgr_ui）：
+     * Chrome 158.0.8127.37 完成 1–18 步，Edge 158.0.4370.33 覆盖 10–15 步（Firefox 未安装，
+       Safari 不可用），18/18 全部通过；13 张论文图保存在 docs/screenshots/windows-2026-11-26-t24b/。
+
+2. 本轮实测发现的两个 Windows 真实缺陷（仅记录，未改代码）：
+   - Bug 1（17.6 步骤 3a）：本机 psycopg 3.3.9（libpq 180004）在 Windows 上连接已关闭的本地
+     PG 端口时不会因 WSAECONNREFUSED 立即失败，而 backend/app/db/session.py::make_engine()
+     未配置 connect_timeout，导致 PG 停机且后端在线时 /api/auth/me 永久挂起（>90s）不返回 503。
+   - Bug 2（17.2）：backend/tests/unit/test_task_errors.py::test_database_address_is_hidden
+     因同样机制触发 2s ConnectionTimeout（不含 "127.0.0.1"）导致前置断言失败。
+
+3. 明确留待 Barry 手动完成的 4 项（需本机特权或人工操作，未伪造）：
+   - 17.9：8 项符号链接测试（当前账号无 SeCreateSymbolicLinkPrivilege）。
+   - 17.10：真实 Office/手机样本解析与 OCR + 4 段人工抄录（任务书禁止脚本/AI 代造样本）。
+   - 17.7：资源管理器到浏览器的真实跨窗口鼠标拖入。
+   - 17.11：30 条 B2 漏检查询人工核对（output/windows-w8/missed/missed30-answers.tsv）。

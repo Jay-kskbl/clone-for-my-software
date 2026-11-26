@@ -1,0 +1,16 @@
+docker :  Container docmgr-opensearch-1 Stopping 
+At line:45 char:5
++     docker compose --env-file .env -f deploy/docker-compose.yml down  ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ( Container docmgr-opensearch-1 Stopping :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ Container docmgr-postgres-1 Stopping 
+ Container docmgr-postgres-1 Stopped 
+ Container docmgr-postgres-1 Removing 
+ Container docmgr-postgres-1 Removed 
+ Container docmgr-opensearch-1 Stopped 
+ Container docmgr-opensearch-1 Removing 
+ Container docmgr-opensearch-1 Removed 
+ Network docmgr_default Removing 
+ Network docmgr_default Removed 

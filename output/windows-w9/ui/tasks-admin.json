@@ -1,0 +1,16 @@
+{
+  "items": [
+    {
+      "id": "100754b3-74a5-425d-8eed-867b7450d4f1",
+      "document_id": "4c8075cc-d7c5-459f-91ba-e9626126c604",
+      "task_type": "parse",
+      "status": "failed",
+      "attempts": 1,
+      "max_attempts": 3,
+      "error": "FileNotFoundError: [Errno 2] No such file or directory: 'C:\\srv\\docmgr\\a.pdf'",
+      "created_at": "2026-11-26T09:45:14.155434+08:00",
+      "started_at": "2026-11-26T09:45:16.111844+08:00",
+      "finished_at": "2026-11-26T09:45:18.406217+08:00"
+    }
+  ]
+}

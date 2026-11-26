@@ -1,0 +1,1 @@
+SeCreateSymbolicLinkPrivilege             创建符号链接                       已禁用

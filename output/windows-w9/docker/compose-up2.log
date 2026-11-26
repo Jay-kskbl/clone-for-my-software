@@ -1,0 +1,18 @@
+docker :  Network docmgr_default Creating 
+At line:48 char:5
++     docker compose --env-file .env -f deploy/docker-compose.yml up -d ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ( Network docmgr_default Creating :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ Network docmgr_default Creating 
+ Network docmgr_default Created 
+ Network docmgr_default Created 
+ Container docmgr-postgres-1 Creating 
+ Container docmgr-opensearch-1 Creating 
+ Container docmgr-opensearch-1 Created 
+ Container docmgr-postgres-1 Created 
+ Container docmgr-postgres-1 Starting 
+ Container docmgr-opensearch-1 Starting 
+ Container docmgr-postgres-1 Started 
+ Container docmgr-opensearch-1 Started 

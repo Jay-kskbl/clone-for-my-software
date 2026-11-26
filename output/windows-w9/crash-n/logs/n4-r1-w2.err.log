@@ -1,0 +1,12 @@
+[32mCreating model: ('PP-OCRv5_mobile_det', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_det', None)[0m
+��Ϣ: ���ṩ��ģʽ�޷��ҵ��ļ���
+C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddle\utils\cpp_extension\extension_utils.py:712: UserWarning: No ccache found. Please be aware that recompiling all source files may be required. You can download and install ccache from: https://github.com/ccache/ccache/blob/master/doc/INSTALL.md
+  warnings.warn(warning_message)
+[32mCreating model: ('PP-OCRv5_mobile_rec', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_rec', None)[0m
+2026-11-26 10:32:39,224 INFO ocr_worker OCR 模型已加载：PP-OCRv5_mobile_det+PP-OCRv5_mobile_rec，paddleocr-3.7.0/det-afa1820c/rec-2460da90
+2026-11-26 10:32:39,908 INFO ocr_worker.loop 开始 OCR 任务 dd0073c0-a425-4282-8ef1-0623f9ea07b6（文档 8306aca0-a5c0-4192-bd53-8a97a0a2f240，第 1/3 次尝试）
+2026-11-26 10:33:05,683 INFO httpx HTTP Request: HEAD http://127.0.0.1:9200/w9b_doc_meta "HTTP/1.1 200 OK"
+2026-11-26 10:33:05,686 INFO httpx HTTP Request: HEAD http://127.0.0.1:9200/w9b_chunks "HTTP/1.1 200 OK"
+2026-11-26 10:33:05,752 INFO httpx HTTP Request: POST http://127.0.0.1:9200/w9b_chunks/_delete_by_query?refresh=true&conflicts=proceed "HTTP/1.1 200 OK"
+2026-11-26 10:33:05,812 INFO httpx HTTP Request: POST http://127.0.0.1:9200/_bulk?refresh=true "HTTP/1.1 200 OK"
+2026-11-26 10:33:05,814 INFO ocr_worker.loop 任务 dd0073c0-a425-4282-8ef1-0623f9ea07b6 完成（processed:37-lines:2-chunks）

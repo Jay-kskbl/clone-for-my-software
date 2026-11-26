@@ -1,0 +1,150 @@
+[2026-11-25 17:15:46] exit=0 | git rev-parse HEAD && git status --porcelain > output/windows-w9/git-head.txt
+[2026-11-25 17:15:46] exit=0 | git ls-files --eol + Get-FileHash mappings > output/windows-w9/mapping-eol.txt
+[2026-11-25 17:15:55] exit=0 | frontend: npm run typecheck
+[2026-11-25 17:16:01] exit=0 | frontend: npm test
+[2026-11-25 17:16:08] exit=0 | frontend: npm run build
+[2026-11-25 17:16:32] exit=0 | Remove-Item + git checkout -- mapping json files (17.2 step 2)
+[2026-11-25 17:16:32] exit=0 | Re-export output/windows-w9/mapping-eol.txt
+[2026-11-25 17:16:35] exit=0 | pg_ctl start on 127.0.0.1:55432
+[2026-11-25 17:17:32] exit=0 | sample_w9.ps1 30s selftest -> output/windows-w9/sampler-selftest.csv
+[2026-11-25 17:17:38] exit=1 | shared: pytest --junitxml=output/windows-w9/shared.xml
+[2026-11-25 17:17:51] exit=1 | services/ocr_worker: pytest --junitxml=output/windows-w9/ocr_worker.xml
+[2026-11-25 17:23:22] exit=0 | services/ocr_worker: pytest --basetemp=w9-data/pytest-tmp-ocr --junitxml=output/windows-w9/ocr_worker.xml
+[2026-11-25 17:23:23] exit=1 | shared: pytest --basetemp=w9-data/pytest-tmp-shared --junitxml=output/windows-w9/shared.xml
+[2026-11-25 17:49:05] exit=1 | 17.3 step1: app.worker default timeout (10s) against blackhole:55999
+[2026-11-25 17:49:11] exit=1 | 17.3 step2: app.worker WORKER_DB_CONNECT_TIMEOUT_SECONDS=3 against blackhole:55999
+[2026-11-25 17:49:25] exit=1 | 17.3 step3: ocr_worker OCR_WORKER_DB_CONNECT_TIMEOUT_SECONDS=5 against blackhole:55999
+[2026-11-25 17:49:52] exit=1 | 17.3 step4: ocr_worker OCR_WORKER_DB_CONNECT_TIMEOUT_SECONDS=20 against blackhole:55999
+[2026-11-25 17:56:45] exit=1 | backend: pytest (TEST_DATABASE_URL=postgresql://.../docmgr_w9_test, TEST_OPENSEARCH_URL=9200) --junitxml=output/windows-w9/backend.xml
+[2026-11-25 18:00:34] exit= | 17.3 step1 (clean): app.worker default timeout (10s) against blackhole:55999
+[2026-11-25 18:00:34] exit= | 17.3 step2 (clean): app.worker WORKER_DB_CONNECT_TIMEOUT_SECONDS=3 against blackhole:55999
+[2026-11-25 18:00:34] exit= | 17.3 step3 (clean): ocr_worker OCR_WORKER_DB_CONNECT_TIMEOUT_SECONDS=5 against blackhole:55999
+[2026-11-25 18:00:34] exit= | 17.3 step4 (clean): ocr_worker OCR_WORKER_DB_CONNECT_TIMEOUT_SECONDS=20 against blackhole:55999
+[2026-11-25 18:01:13] exit=1 | 17.3 step1 (clean): app.worker default timeout (10s) against blackhole:55999
+[2026-11-25 18:01:19] exit=1 | 17.3 step2 (clean): app.worker WORKER_DB_CONNECT_TIMEOUT_SECONDS=3 against blackhole:55999
+[2026-11-25 18:01:32] exit=1 | 17.3 step3 (clean): ocr_worker OCR_WORKER_DB_CONNECT_TIMEOUT_SECONDS=5 against blackhole:55999
+[2026-11-25 19:15:40] exit=1 | 17.3 clean step1: app.worker default (10s) -> timeout-1-worker-default.txt
+[2026-11-25 19:15:41] exit=1 | 17.3 clean step2: app.worker WORKER_DB_CONNECT_TIMEOUT_SECONDS=3 -> timeout-2-worker-3s.txt
+[2026-11-25 19:15:42] exit=1 | 17.3 clean step3: ocr_worker OCR_WORKER_DB_CONNECT_TIMEOUT_SECONDS=5 -> timeout-3-ocr-5s.txt
+[2026-11-25 19:15:43] exit=1 | 17.3 clean step4: ocr_worker OCR_WORKER_DB_CONNECT_TIMEOUT_SECONDS=20 -> timeout-4-ocr-20s.txt
+[2026-11-25 19:16:26] exit=1 | 17.3 step1: app.worker default (10s) against blackhole:55999
+[2026-11-25 19:16:32] exit=1 | 17.3 step2: app.worker WORKER_DB_CONNECT_TIMEOUT_SECONDS=3 against blackhole:55999
+[2026-11-25 19:16:47] exit=1 | 17.3 step3: ocr_worker OCR_WORKER_DB_CONNECT_TIMEOUT_SECONDS=5 against blackhole:55999
+[2026-11-25 19:17:13] exit=1 | 17.3 step4: ocr_worker OCR_WORKER_DB_CONNECT_TIMEOUT_SECONDS=20 against blackhole:55999
+[2026-11-25 19:18:39] exit=1 | 17.3 final step1: app.worker default (10s) against blackhole:55999
+[2026-11-25 19:18:45] exit=1 | 17.3 final step2: app.worker WORKER_DB_CONNECT_TIMEOUT_SECONDS=3 against blackhole:55999
+[2026-11-25 19:18:56] exit=1 | 17.3 final step3: ocr_worker OCR_WORKER_DB_CONNECT_TIMEOUT_SECONDS=5 against blackhole:55999
+[2026-11-25 19:19:23] exit=1 | 17.3 final step4: ocr_worker OCR_WORKER_DB_CONNECT_TIMEOUT_SECONDS=20 against blackhole:55999
+[2026-11-25 19:21:29] exit=0 | curl _cat/indices/docvqa_* -> output/windows-w9/index-before.txt
+[2026-11-25 19:21:57] exit=0 | git status --porcelain > output/windows-w9/git-status-before-runs.txt
+[2026-11-25 19:23:04] exit=0 | 17.4 B2-R1: experiments run --config B2.json (dir=20261125T112159.197656Z_B2_95a6de)
+[2026-11-25 19:24:01] exit=0 | 17.4 B2-R2: experiments run --config B2.json (dir=20261125T112306.035425Z_B2_e6f4c2)
+[2026-11-25 19:25:49] exit=0 | 17.4 B3-R1: experiments run --config B3.json (dir=20261125T112403.439186Z_B3_b3be3b)
+[2026-11-25 19:28:06] exit=0 | 17.4 B3-R2: experiments run --config B3.json (dir=20261125T112551.849690Z_B3_0dcb75)
+[2026-11-25 19:28:06] exit=0 | POST http://127.0.0.1:9200/docvqa_chunks/_forcemerge?only_expunge_deletes=true
+[2026-11-25 19:28:06] exit=0 | POST http://127.0.0.1:9200/docvqa_doc_meta/_forcemerge?only_expunge_deletes=true
+[2026-11-25 19:28:07] exit=0 | POST http://127.0.0.1:9200/docvqa_image_vectors/_forcemerge?only_expunge_deletes=true
+[2026-11-25 19:28:12] exit=0 | curl _cat/indices/docvqa_* -> output/windows-w9/index-after.txt
+[2026-11-25 19:28:33] exit=0 | 17.4 B2-R3: experiments run --config B2.json (dir=20261125T112814.521140Z_B2_e31adf)
+[2026-11-25 19:29:25] exit=0 | 17.4 B3-R3: experiments run --config B3.json (dir=20261125T112834.656976Z_B3_1117dc)
+[2026-11-25 19:29:25] exit=1 | verify_17_4.py: pack w9-runs.zip & verify rankings/metrics
+[2026-11-25 19:31:36] exit=0 | git rev-parse HEAD (e1d61eb) && git status --porcelain > output/windows-w9/git-head.txt
+[2026-11-25 19:31:54] exit=0 | 17.2(e1d61eb) frontend: npm run typecheck
+[2026-11-25 19:32:04] exit=0 | 17.2(e1d61eb) frontend: npm test
+[2026-11-25 19:32:11] exit=0 | 17.2(e1d61eb) frontend: npm run build
+[2026-11-25 19:32:15] exit=1 | 17.2(e1d61eb) shared: pytest --junitxml=output/windows-w9/shared.xml
+[2026-11-25 19:32:27] exit=0 | 17.2(e1d61eb) services/ocr_worker: pytest --junitxml=output/windows-w9/ocr_worker.xml
+[2026-11-25 19:35:14] exit=1 | 17.2(e1d61eb) backend new tests (T24ad/T24ae/T24af/T24ag)
+[2026-11-25 19:35:44] exit=0 | 17.17 precheck: consistency check --json (docmgr_docvqa, docvqa_)
+[2026-11-25 19:35:54] exit=1 | 17.17 repair-down-1: python -m app.modules.consistency repair --fix index
+[2026-11-25 19:36:00] exit=1 | 17.17 repair-down-2: python -m app.modules.consistency repair --fix index --fix temp-files
+[2026-11-25 19:36:05] exit=0 | 17.17 repair-down-3: python -m app.modules.consistency repair --fix temp-files
+[2026-11-25 19:38:11] exit=0 | 17.15: alembic upgrade head on docmgr_w9
+[2026-11-25 19:45:06] exit=0 | 17.16 requeue-1 (dry-run): documents requeue-failed --type embed
+[2026-11-25 19:45:18] exit=0 | 17.16 requeue-2 (--yes): documents requeue-failed --type embed --yes
+[2026-11-25 19:45:29] exit=0 | 17.16 requeue-3 (after): documents requeue-failed --type embed
+[2026-11-25 19:45:32] exit=0 | 17.16 consistency check --json (docmgr_w9, w9_)
+[2026-11-25 19:47:29] exit=0 | 17.5 A: experiments --root w6-data/docvqa60-20261122 reocr --yes
+[2026-11-25 19:47:42] exit=0 | 17.5 A: send CTRL_C_EVENT to OCR Worker console PID=25576 during task c2c62a92-b897-4545-802c-7b8c68ad86dd
+[2026-11-25 19:48:40] exit=0 | 17.5 B: send CTRL_C_EVENT to Generic Worker console PID=17044 during task d1c8f7a1-c670-424d-b8f3-4c281ae8f4ab
+[2026-11-25 19:48:47] exit=0 | 17.5 C-1: Stop-Process -Id 6920 -Force (generic worker)
+[2026-11-25 19:50:03] exit=0 | 17.5 C-2: Stop-Process -Id 3816 -Force (OCR worker)
+[2026-11-25 19:50:26] exit=1 | 17.2(e1d61eb) backend full pytest --junitxml=output/windows-w9/backend.xml
+[2026-11-25 19:51:50] exit=0 | 17.5 D: send CTRL_C_EVENT to run_ocr_worker_loop.ps1 console PID=18160
+[2026-11-25 19:53:30] exit=0 | 17.18 prep: make_ui_samples.py -> w9-data/locked.pdf, scan6.pdf
+[2026-11-25 19:53:39] exit=0 | 17.5 C-2 clean: Stop-Process -Id 4952 -Force (real OCR worker PID)
+[2026-11-25 20:06:02] exit=1 | 17.6: node w9-data/run_17_6.mjs (Chrome 11-step login & offline refresh)
+[2026-11-25 20:08:37] exit=1 | 17.6: node w9-data/run_17_6.mjs (Chrome 11-step login & offline refresh)
+[2026-11-25 20:10:19] exit=1 | 17.6 diag/run: node w9-data/run_17_6.mjs
+[2026-11-25 20:13:44] exit=1 | 17.6 full 11-step run: node w9-data/run_17_6.mjs
+[2026-11-25 20:18:02] exit=0 | 17.6 complete 11-step run (recording Step 3a hang & continuing 3b-11): node w9-data/run_17_6.mjs
+[2026-11-26 09:24:43] exit=1 | 17.18 Part 1 (Steps 1-6): node w9-data/run_17_18_part1.mjs
+[2026-11-26 09:30:19] exit=1 | 17.18 Part 1 (Steps 1-6): node w9-data/run_17_18_part1.mjs
+[2026-11-26 09:45:59] exit=1 | 17.18 Part 1 (Steps 3-6): node w9-data/run_17_18_part1.mjs
+[2026-11-26 09:48:01] exit=1 | 17.18 Part 2 (Steps 6-18 + Edge + Screenshots): node w9-data/run_17_18_part2.mjs
+[2026-11-26 09:51:33] exit=1 | 17.18 Part 2 (Steps 7-18 + Edge + Screenshots): node w9-data/run_17_18_part2.mjs
+[2026-11-26 09:52:36] exit=1 | 17.18 Part 2 (Steps 8-18 + Edge + Screenshots): node w9-data/run_17_18_part2.mjs
+[2026-11-26 09:54:04] exit=1 | 17.18 Part 2 (Steps 8-18 + Edge + Screenshots): node w9-data/run_17_18_part2.mjs
+[2026-11-26 09:59:01] exit=1 | 17.18 Part 2 (Steps 8-18 + Edge + Screenshots): node w9-data/run_17_18_part2.mjs
+[2026-11-26 10:00:50] exit=1 | 17.18 Part 2 (Steps 11b-18 + Edge + Thesis Screenshots): node w9-data/run_17_18_part2.mjs
+[2026-11-26 10:06:33] exit=1 | node w9-data/run_17_18_part2.mjs (17.18 Steps 11b-18, Edge, thesis shots)
+[2026-11-26 10:08:20] exit=0 | node w9-data/run_17_18_edge.mjs (17.18 Step 18 Edge & HAR sanitize)
+[2026-11-26 10:10:39] exit=0 | 17.14: alembic upgrade head on docmgr_w9b
+[2026-11-26 10:10:40] exit=0 | 17.14: experiments --root docvqa-crash4 validate
+[2026-11-26 10:10:42] exit=0 | 17.14: experiments --root docvqa-crash4 import
+[2026-11-26 10:13:00] exit=0 | 17.14 N=1 r=1 (loaded=1 failed=0 retried=0)
+[2026-11-26 10:14:45] exit=0 | 17.14 N=1 r=2 (loaded=1 failed=0 retried=0)
+[2026-11-26 10:16:24] exit=0 | 17.14 N=1 r=3 (loaded=1 failed=0 retried=0)
+[2026-11-26 10:18:06] exit=0 | 17.14 N=1 r=4 (loaded=1 failed=0 retried=0)
+[2026-11-26 10:19:48] exit=0 | 17.14 N=1 r=5 (loaded=1 failed=0 retried=0)
+[2026-11-26 10:21:11] exit=0 | 17.14 N=2 r=1 (loaded=2 failed=0 retried=0)
+[2026-11-26 10:22:34] exit=0 | 17.14 N=2 r=2 (loaded=2 failed=0 retried=0)
+[2026-11-26 10:23:56] exit=0 | 17.14 N=2 r=3 (loaded=2 failed=0 retried=0)
+[2026-11-26 10:25:23] exit=0 | 17.14 N=2 r=4 (loaded=2 failed=0 retried=0)
+[2026-11-26 10:26:45] exit=0 | 17.14 N=2 r=5 (loaded=2 failed=0 retried=0)
+[2026-11-26 10:27:52] exit=0 | 17.14 N=3 r=1 (loaded=3 failed=0 retried=0)
+[2026-11-26 10:29:02] exit=0 | 17.14 N=3 r=2 (loaded=3 failed=0 retried=0)
+[2026-11-26 10:30:12] exit=0 | 17.14 N=3 r=3 (loaded=3 failed=0 retried=0)
+[2026-11-26 10:31:19] exit=0 | 17.14 N=3 r=4 (loaded=3 failed=0 retried=0)
+[2026-11-26 10:32:29] exit=0 | 17.14 N=3 r=5 (loaded=3 failed=0 retried=0)
+[2026-11-26 10:33:33] exit=0 | 17.14 N=4 r=1 (loaded=4 failed=0 retried=0)
+[2026-11-26 10:34:54] exit=0 | 17.14 N=4 r=2 (loaded=4 failed=0 retried=0)
+[2026-11-26 10:35:37] exit=0 | 17.14 N=4 r=3 (loaded=4 failed=0 retried=0)
+[2026-11-26 10:36:17] exit=0 | 17.8: make_subset.py docvqa-scale40 docvqa-slow1 8 1 (lzkg0078.jpg)
+[2026-11-26 10:36:20] exit=0 | 17.8: alembic upgrade head on docmgr_w9c
+[2026-11-26 10:36:21] exit=0 | 17.8: experiments --root docvqa-slow1 validate
+[2026-11-26 10:36:22] exit=0 | 17.8: experiments --root docvqa-slow1 import
+[2026-11-26 10:39:22] exit=0 | 17.8 slow1 round 01/15 (status=succeeded dur=138.31s)
+[2026-11-26 10:40:19] exit=0 | 17.8 slow1 round 02/15 (status=succeeded dur=52.53s)
+[2026-11-26 10:41:17] exit=0 | 17.8 slow1 round 03/15 (status=succeeded dur=54.25s)
+[2026-11-26 10:42:14] exit=0 | 17.8 slow1 round 04/15 (status=succeeded dur=53.89s)
+[2026-11-26 10:43:12] exit=0 | 17.8 slow1 round 05/15 (status=succeeded dur=54.1s)
+[2026-11-26 10:44:09] exit=0 | 17.8 slow1 round 06/15 (status=succeeded dur=53.79s)
+[2026-11-26 10:45:16] exit=0 | 17.8 slow1 round 07/15 (status=succeeded dur=64.24s)
+[2026-11-26 10:47:30] exit=0 | 17.8 slow1 round 08/15 (status=succeeded dur=127.94s)
+[2026-11-26 10:48:27] exit=0 | 17.8 slow1 round 09/15 (status=succeeded dur=53.69s)
+[2026-11-26 10:49:25] exit=0 | 17.8 slow1 round 10/15 (status=succeeded dur=55.56s)
+[2026-11-26 10:50:25] exit=0 | 17.8 slow1 round 11/15 (status=succeeded dur=55.81s)
+[2026-11-26 10:51:26] exit=0 | 17.8 slow1 round 12/15 (status=succeeded dur=55.79s)
+[2026-11-26 10:52:24] exit=0 | 17.8 slow1 round 13/15 (status=succeeded dur=55.25s)
+[2026-11-26 10:53:25] exit=0 | 17.8 slow1 round 14/15 (status=succeeded dur=55.43s)
+[2026-11-26 10:54:23] exit=0 | 17.8 slow1 round 15/15 (status=succeeded dur=54.96s)
+[2026-11-26 11:01:03] exit=0 | python w9-data/finalize_w9.py (package w9-extra.zip, LF normalize, SHA256SUMS.txt)
+[2026-11-26 11:19:56] exit=1 | 17.2: ruff check & format --check (backend/shared/ocr_worker/clip_service/scripts/datasets)
+[2026-11-26 11:20:00] exit=0 | 17.2: clip_service pytest (main env)
+[2026-11-26 11:20:00] exit=1 | 17.2: clip_service pytest (.venv-clip real model)
+[2026-11-26 11:20:00] exit=1 | 17.2: ocr_worker pytest (.venv-ocr real PaddleOCR)
+[2026-11-26 11:20:40] exit=0 | 17.2: scripts/smoke/ocr_e2e.py (docmgr_w9_test)
+[2026-11-26 11:21:44] exit=0 | 17.2: ruff check && ruff format --check (4 dirs per CLAUDE.md)
+[2026-11-26 11:22:00] exit=0 | 17.2: clip_service unittest tests.test_real_clip (.venv-clip)
+[2026-11-26 11:22:07] exit=0 | 17.2: ocr_worker unittest tests.test_real_ocr (.venv-ocr)
+[2026-11-26 11:22:09] exit=0 | 17.2: pytest scripts/datasets/tests/test_docvqa_import.py
+[2026-11-26 11:23:27] exit=0 | 17.1 docker: docker compose --env-file .env -f deploy/docker-compose.yml up -d
+[2026-11-26 11:23:51] exit=0 | 17.1 docker: verify action.auto_create_index=false (HTTP 404)
+[2026-11-26 11:23:53] exit=0 | 17.1 docker: alembic upgrade head against Docker PG
+[2026-11-26 11:23:59] exit=0 | 17.1 docker: GET /health on Docker PG+OpenSearch (HTTP 200)
+[2026-11-26 11:24:01] exit=0 | 17.1 docker: docker compose down (no -v)
+[2026-11-26 11:24:01] exit=0 | 17.1 docker: docker compose up -d (second start)
+[2026-11-26 11:24:26] exit=0 | 17.1 docker: docker compose down (cleanup)
+[2026-11-26 11:35:41] exit=0 | 17.1 docker volume persistence re-check (pg=True os=True)
+[2026-11-26 11:37:15] exit=0 | python w9-data/finalize_w9.py (package w9-extra.zip, LF normalize, SHA256SUMS.txt)

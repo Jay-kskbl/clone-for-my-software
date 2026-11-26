@@ -261,3 +261,49 @@ Barry 随后要求把当前测试和修改部分全部上传，故补充上传�
 - 远端 26 个新提交和 W4-W7 任务书成功合入。
 - 本地 W1-W3 报告、测试记录、脚本、日志和结果压缩包全部保留。
 - Codex 没有手工创建或修改任何 .md；任务书由 Git 合并更新。
+
+
+
+十三、W9 执行与 GitHub 上传留痕（2026-11-25 ~ 2026-11-26）
+------------------------------------------------------------
+
+执行基线：e1d61eb5da8412ff138a371b5faf151358cfdbc5（origin/main）
+执行范围：windows任务书.md 第 17 节全部可自动化与联调项（17.1 Docker 补测、17.2、17.3、
+17.4、17.5、17.6、17.8、17.14、17.15、17.16、17.17、17.18）。
+
+1. 修改与不动清单：
+   - 未修改或新建任何 .md 文件。
+   - 未修改任何业务代码、测试代码、迁移脚本、索引 mapping 或 .env 配置文件。
+   - 未安装任何新依赖包或工具（复用已有 Python 虚拟环境、Playwright、Chrome、Edge、Docker）。
+   - 仅将三个 mapping JSON 按 0.2 第 4 步/17.2 第 2 步重签出为 LF（与 Git 索引一致，git diff 为空）。
+   - 未触碰 Barry 既有未跟踪目录 .playwright-cli/ 与 output/real-data-runtime-20261125/。
+   - 临时编排脚本与测试数据全部放在仓库外 w9-data/，不进入 Git。
+
+2. 新增与更新的仓库文件（纳入本次 W9 提交并推送至 origin/main）：
+   - output/windows-w9/（全部测试原始数据、JUnit XML、CSV、JSON、日志、截图、HAR、
+     docker/ 补测证据、summary.txt、operation-log.txt、commands.txt、LF 规范化后的 SHA256SUMS.txt；
+     单文件均严格 < 5 MB）
+   - docs/screenshots/windows-2026-11-26-t24b/（13 张论文 PNG 截图）
+   - windows任务报告.txt（末尾追加第九节 W9 汇总）
+   - windows任务执行留痕.txt（末尾追加本节留痕）
+
+3. 大文件另交包（按 14.1 不进 Git，SHA-256 已写入 output/windows-w9/SHA256SUMS.txt）：
+   - c:\Users\lenovo\Desktop\my-software-main\w9-data\w9-extra.zip（含完整脱敏版 ui/ui-part2.har，
+     原文件 5.80 MB > 5 MB，压缩后约 294 KB；仓库内另留精简 API 版 ui/ui-part2-api.har）
+
+4. 数据库与服务隔离说明：
+   - 17.2 集测与烟测使用专用库 docmgr_w9_test；17.15/17.16 使用 docmgr_w9 / w9_；
+     17.14 使用 docmgr_w9b / w9b_；17.8 使用 docmgr_w9c / w9c_；17.4/17.17 复用 docmgr_docvqa /
+     docvqa_；17.5 复用 docmgr_w6 / w6_；17.6/17.18 复用 docmgr_ui / ui_；17.1 Docker 补测
+     在容器独立卷上完成并已清理探针表/索引后 docker compose down。主库未受污染。
+
+5. 安全与校验：
+   - 全量扫描 output/windows-w9/、windows任务报告.txt、windows任务执行留痕.txt：
+     0 处真实密码、0 处 JWT 令牌、0 处真实数据库连接串泄漏。
+   - 所有文本产物已按 17.13 统一转换为 UTF-8（无 BOM）+ LF 后计算 SHA256SUMS.txt 并逐条复核一致。
+
+6. 仍需 Barry 手动完成的 4 项（不阻塞本轮 W9 自动化结果上传）：
+   - 17.9 符号链接 8 项测试（需开发人员模式注销重登或管理员 PowerShell）
+   - 17.10 真实 Office/手机样本与 4 段人工抄录
+   - 17.7 资源管理器跨窗口真实鼠标拖入
+   - 17.11 30 条 B2 漏检查询人工核对

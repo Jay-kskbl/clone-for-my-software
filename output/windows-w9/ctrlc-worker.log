@@ -1,0 +1,5 @@
+2026-11-25 19:48:38,098 WARNING app.worker 当前系统不支持限制子进程的内存（只有 Linux 支持），任务只受超时保护
+2026-11-25 19:48:38,098 INFO app.worker Worker Barry-Zou:25248:5b35f388 启动，可处理的任务类型：['cleanup', 'embed', 'parse']
+2026-11-25 19:48:38,105 INFO app.worker.loop 开始任务 d1c8f7a1-c670-424d-b8f3-4c281ae8f4ab（类型 parse，文档 933b6170-3940-402c-963d-67fd05ded7bf，第 1/3 次尝试）
+2026-11-25 19:48:39,874 INFO app.worker 收到信号 SIGINT，完成当前任务后退出
+2026-11-25 19:48:42,755 INFO app.worker Worker Barry-Zou:25248:5b35f388 退出，共处理 1 个任务

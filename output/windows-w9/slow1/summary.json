@@ -1,0 +1,107 @@
+[
+    {
+        "round":  1,
+        "status":  "succeeded",
+        "attempts":  "1",
+        "duration_s":  138.31,
+        "error":  ""
+    },
+    {
+        "round":  2,
+        "status":  "succeeded",
+        "attempts":  "1",
+        "duration_s":  52.53,
+        "error":  ""
+    },
+    {
+        "round":  3,
+        "status":  "succeeded",
+        "attempts":  "1",
+        "duration_s":  54.25,
+        "error":  ""
+    },
+    {
+        "round":  4,
+        "status":  "succeeded",
+        "attempts":  "1",
+        "duration_s":  53.89,
+        "error":  ""
+    },
+    {
+        "round":  5,
+        "status":  "succeeded",
+        "attempts":  "1",
+        "duration_s":  54.1,
+        "error":  ""
+    },
+    {
+        "round":  6,
+        "status":  "succeeded",
+        "attempts":  "1",
+        "duration_s":  53.79,
+        "error":  ""
+    },
+    {
+        "round":  7,
+        "status":  "succeeded",
+        "attempts":  "1",
+        "duration_s":  64.24,
+        "error":  ""
+    },
+    {
+        "round":  8,
+        "status":  "succeeded",
+        "attempts":  "1",
+        "duration_s":  127.94,
+        "error":  ""
+    },
+    {
+        "round":  9,
+        "status":  "succeeded",
+        "attempts":  "1",
+        "duration_s":  53.69,
+        "error":  ""
+    },
+    {
+        "round":  10,
+        "status":  "succeeded",
+        "attempts":  "1",
+        "duration_s":  55.56,
+        "error":  ""
+    },
+    {
+        "round":  11,
+        "status":  "succeeded",
+        "attempts":  "1",
+        "duration_s":  55.81,
+        "error":  ""
+    },
+    {
+        "round":  12,
+        "status":  "succeeded",
+        "attempts":  "1",
+        "duration_s":  55.79,
+        "error":  ""
+    },
+    {
+        "round":  13,
+        "status":  "succeeded",
+        "attempts":  "1",
+        "duration_s":  55.25,
+        "error":  ""
+    },
+    {
+        "round":  14,
+        "status":  "succeeded",
+        "attempts":  "1",
+        "duration_s":  55.43,
+        "error":  ""
+    },
+    {
+        "round":  15,
+        "status":  "succeeded",
+        "attempts":  "1",
+        "duration_s":  54.96,
+        "error":  ""
+    }
+]

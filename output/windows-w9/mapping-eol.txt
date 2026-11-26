@@ -1,0 +1,7 @@
+i/lf    w/lf    attr/text eol=lf      	backend/app/modules/vector_index/mappings/image_vectors.json
+i/lf    w/lf    attr/text eol=lf      	shared/text_index/mappings/chunks.json
+i/lf    w/lf    attr/text eol=lf      	shared/text_index/mappings/doc_meta.json
+
+0c7937251bab45b8bfd360117137ef3524ebf368320f8cb8b78fd5713d78e4e9  C:/Users/lenovo/Desktop/my-software-main/_gh_upload/shared/text_index/mappings/chunks.json
+be91f8071d05831460e4b0bdad17c04312e55ce1c138ef0f67bd0a939b6a5688  C:/Users/lenovo/Desktop/my-software-main/_gh_upload/shared/text_index/mappings/doc_meta.json
+c984e85b889bf1067bd60537297615fc6ac307be9e7c1dd81fa3bad74bdf81e0  C:/Users/lenovo/Desktop/my-software-main/_gh_upload/backend/app/modules/vector_index/mappings/image_vectors.json

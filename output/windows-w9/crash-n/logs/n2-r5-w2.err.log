@@ -1,0 +1,18 @@
+[32mCreating model: ('PP-OCRv5_mobile_det', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_det', None)[0m
+��Ϣ: ���ṩ��ģʽ�޷��ҵ��ļ���
+C:\Users\lenovo\Desktop\my-software-main\_gh_upload\env_check\.venv-ocr\Lib\site-packages\paddle\utils\cpp_extension\extension_utils.py:712: UserWarning: No ccache found. Please be aware that recompiling all source files may be required. You can download and install ccache from: https://github.com/ccache/ccache/blob/master/doc/INSTALL.md
+  warnings.warn(warning_message)
+[32mCreating model: ('PP-OCRv5_mobile_rec', 'C:\\Users\\lenovo\\Desktop\\my-software-main\\_gh_upload\\models\\ocr\\PP-OCRv5_mobile_rec', None)[0m
+2026-11-26 10:25:31,320 INFO ocr_worker OCR 模型已加载：PP-OCRv5_mobile_det+PP-OCRv5_mobile_rec，paddleocr-3.7.0/det-afa1820c/rec-2460da90
+2026-11-26 10:25:31,772 INFO ocr_worker.loop 开始 OCR 任务 5f524832-a676-4a97-9e44-1ddffd26473f（文档 3a097089-d428-4447-b920-ef59697ccca4，第 1/3 次尝试）
+2026-11-26 10:26:13,346 INFO httpx HTTP Request: HEAD http://127.0.0.1:9200/w9b_doc_meta "HTTP/1.1 200 OK"
+2026-11-26 10:26:13,349 INFO httpx HTTP Request: HEAD http://127.0.0.1:9200/w9b_chunks "HTTP/1.1 200 OK"
+2026-11-26 10:26:13,429 INFO httpx HTTP Request: POST http://127.0.0.1:9200/w9b_chunks/_delete_by_query?refresh=true&conflicts=proceed "HTTP/1.1 200 OK"
+2026-11-26 10:26:13,496 INFO httpx HTTP Request: POST http://127.0.0.1:9200/_bulk?refresh=true "HTTP/1.1 200 OK"
+2026-11-26 10:26:13,499 INFO ocr_worker.loop 任务 5f524832-a676-4a97-9e44-1ddffd26473f 完成（processed:65-lines:4-chunks）
+2026-11-26 10:26:13,501 INFO ocr_worker.loop 开始 OCR 任务 dd0073c0-a425-4282-8ef1-0623f9ea07b6（文档 8306aca0-a5c0-4192-bd53-8a97a0a2f240，第 1/3 次尝试）
+2026-11-26 10:26:32,805 INFO httpx HTTP Request: HEAD http://127.0.0.1:9200/w9b_doc_meta "HTTP/1.1 200 OK"
+2026-11-26 10:26:32,807 INFO httpx HTTP Request: HEAD http://127.0.0.1:9200/w9b_chunks "HTTP/1.1 200 OK"
+2026-11-26 10:26:32,871 INFO httpx HTTP Request: POST http://127.0.0.1:9200/w9b_chunks/_delete_by_query?refresh=true&conflicts=proceed "HTTP/1.1 200 OK"
+2026-11-26 10:26:32,930 INFO httpx HTTP Request: POST http://127.0.0.1:9200/_bulk?refresh=true "HTTP/1.1 200 OK"
+2026-11-26 10:26:32,933 INFO ocr_worker.loop 任务 dd0073c0-a425-4282-8ef1-0623f9ea07b6 完成（processed:37-lines:2-chunks）

@@ -1,0 +1,97 @@
+[2026-11-25 17:15:45] === START W9 (17.2) ===
+[2026-11-25 17:15:46] Checked port 55432: NOT LISTENING
+[2026-11-25 17:16:08] 17.2 frontend done: typecheck=0 test=0 build=0
+[2026-11-25 17:16:32] Created w9-data/sample_w9.ps1 and w9-data/blackhole.py
+[2026-11-25 17:16:35] Checked PG databases on 127.0.0.1:55432
+[2026-11-25 17:17:02] Stopped pre-existing worker PID=4784
+[2026-11-25 17:17:02] Stopped pre-existing worker PID=6016
+[2026-11-25 17:17:02] Stopped pre-existing worker PID=31716
+[2026-11-25 17:17:02] Stopped pre-existing worker PID=26884
+[2026-11-25 17:17:32] 17.2 sampler selftest: 22 ticks, max_gap=8.906s
+[2026-11-25 17:29:47] Created fresh empty DB docmgr_w9_test (docmgr_test had leftover tables)
+[2026-11-25 17:48:52] === START W9 17.3 (Connection Timeout with blackhole:55999) ===
+[2026-11-25 17:48:53] Started blackhole.py on 127.0.0.1:55999 PID=12760
+[2026-11-25 17:49:52] Stopped blackhole.py PID=12760
+[2026-11-25 17:49:52] === DONE W9 17.3 (ocr_diff=11.935s) ===
+[2026-11-25 17:56:45] 17.2 backend full pytest exit=1
+[2026-11-25 17:57:02] === 17.2 COMPLETED & PAUSED PER BARRY'S REQUEST (backend: 948 passed, 6 symlink failed, 1 skipped; shared: 107 passed, 2 symlink failed; ocr_worker: 79 passed, 5 skipped; frontend: 205 passed) ===
+[2026-11-25 18:00:33] === START W9 17.3 CLEAN RUN (idle system, blackhole:55999) ===
+[2026-11-25 18:00:34] Started blackhole.py on 127.0.0.1:55999 PID=15016
+[2026-11-25 18:00:34] Stopped blackhole.py PID=15016
+[2026-11-25 18:00:34] === DONE W9 17.3 CLEAN RUN (w10=0.042s, w3=0.05s, ocr5=0.049s/post=673.916s, ocr20=0.048s/post=662.489s, ocr_diff=-0.001s) ===
+[2026-11-25 18:00:59] === START W9 17.3 CLEAN RUN (Direct Start-Process, blackhole:55999) ===
+[2026-11-25 18:01:01] Started blackhole.py on 127.0.0.1:55999 PID=22248
+[2026-11-25 19:15:35] === RESUME W9: START CLEAN 17.3 (blackhole:55999) ===
+[2026-11-25 19:15:39] Started blackhole.py PID=22760 on 127.0.0.1:55999
+[2026-11-25 19:15:43] Stopped blackhole.py PID=22760
+[2026-11-25 19:15:44] === DONE CLEAN 17.3: s1=1.118s s2=1.027s s3=1.044s s4=1.042s ocr_diff=-0.002s ===
+[2026-11-25 19:16:12] 17.3 rerun: started blackhole.py PID=7684 on 127.0.0.1:55999
+[2026-11-25 19:17:13] Stopped blackhole.py PID=7684
+[2026-11-25 19:17:13] === DONE 17.3: s1=14.094s s2=6.024s s3=15.142s s4=26.156s ocr_diff=11.014s ===
+[2026-11-25 19:19:23] === DONE FINAL 17.3: s1=13.151s s2=6.08s (diff=7.071s) s3=11.145s (wait=6.016s) s4=26.234s (wait=21.147s, diff=15.089s) ===
+[2026-11-25 19:20:38] === START W9 17.4 (Consistency-repair search repeatability & forcemerge) ===
+[2026-11-25 19:21:28] Services ready for 17.4: OpenSearch=ok, CLIP=ok
+[2026-11-25 19:29:25] === DONE W9 17.4 (verify exit=1) ===
+[2026-11-25 19:31:36] === DETECTED NEW HEAD e1d61eb (pulled T24ad-T24ag, T24ba-T24bg) -> RE-VERIFYING 17.2 ===
+[2026-11-25 19:35:14] 17.2(e1d61eb) precheck done: fe=(0,0,0) shared=1 ocr=0 new_int=1
+[2026-11-25 19:35:40] === START W9 17.17 (Consistency repair when OpenSearch down, T24af) ===
+[2026-11-25 19:35:44] 17.17 stopped OpenSearch PID=10404
+[2026-11-25 19:36:05] === DONE W9 17.17 ===
+[2026-11-25 19:37:25] === START W9 17.15 & 17.16 (Retry backoff T24ad + requeue-failed T24ae + worker-startup.log T24ag) ===
+[2026-11-25 19:38:11] Started w9 API PID=17180 and Generic Worker PID=9208
+[2026-11-25 19:38:42] 17.15 step2 uploaded img0=ffhv0228.jpg doc=25c6fa82-434e-4934-8f5e-924ede937ea8 at 2026-11-25T19:38:42.7847610+08:00
+[2026-11-25 19:39:15] CLIP started & ready PID=14772
+[2026-11-25 19:39:25] 17.15 step2 finished: 2026-11-25 19:39:25.669331+08|succeeded|2|2026-11-25 19:39:20.378027+08|
+[2026-11-25 19:39:27] Stopped CLIP service
+[2026-11-25 19:39:27] 17.15 step3 uploaded img1=ffjw0228.jpg doc=a8b8d917-ec74-414e-8828-bc985da1bac2 at 2026-11-25T19:39:27.9824381+08:00
+[2026-11-25 19:42:10] 17.15 step3 finished: 2026-11-25 19:42:10.817198+08|failed|3|2026-11-25 19:42:04.873434+08|ClipUnavailable: CLIP 服务连接失败（ConnectError）
+[2026-11-25 19:42:10] 17.16 uploaded img2=fgbd0079.jpg (a209cdbc-115c-4b44-86fe-9047a98d64e4) and img3=fgfl0228.jpg (cfc1dfd7-1bc0-44eb-ab31-5494e0961e9d), waiting for both to reach failed
+[2026-11-25 19:45:16] CLIP started & ready PID=16276
+[2026-11-25 19:45:32] === DONE W9 17.15 & 17.16 & 17.2.6 (T24ag match count=1, consistency exit=0) ===
+[2026-11-25 19:45:34] Stopped CLIP service
+[2026-11-25 19:47:27] === START W9 17.5 (A/B Ctrl+C, C Force-Kill Watchdog, D Loop Ctrl+C) ===
+[2026-11-25 19:48:04] 17.5 A done: task=c2c62a92-b897-4545-802c-7b8c68ad86dd exit=exit=130
+
+[2026-11-25 19:48:35] 17.5 B uploaded big3000.pdf doc=933b6170-3940-402c-963d-67fd05ded7bf parse_task=d1c8f7a1-c670-424d-b8f3-4c281ae8f4ab
+[2026-11-25 19:48:43] 17.5 B done: task=d1c8f7a1-c670-424d-b8f3-4c281ae8f4ab exit=exit=130
+
+[2026-11-25 19:49:52] 17.5 C-1 done: realPID=6920 after3s=无
+
+[2026-11-25 19:50:26] 17.2(e1d61eb) backend full pytest done exit=1
+[2026-11-25 19:51:40] 17.5 C-2 done: realPID=3816 after3s=ALIVE: PID=25380 Name=conhost
+ dup=0 rows (no duplicates)
+
+[2026-11-25 19:52:50] 17.5 D done: wrapper=exit=0 loaded_count=1 leftover=0
+[2026-11-25 19:52:50] === DONE W9 17.5 ===
+[2026-11-25 19:55:57] 17.5 C-2 clean done: realPID=4952 children=15392 after3s=无
+ BrokenPipe=(w:0,o:0)
+[2026-11-25 19:58:46] === START W9 17.6 (Login page & offline refresh 11 steps, docmgr_ui) ===
+[2026-11-25 20:06:02] === DONE W9 17.6 exit=1 ===
+[2026-11-25 20:08:37] === DONE W9 17.6 exit=1 ===
+[2026-11-25 20:10:19] === DONE W9 17.6 exit=1 ===
+[2026-11-25 20:13:44] === DONE W9 17.6 exit=1 ===
+[2026-11-25 20:15:00] 17.6 diagnostic: psycopg: 3.3.9 pq: binary libpq: 180004 (socket.connect refused in 2.013s; psycopg.connect(timeout=10) hit ConnectionTimeout in 10.008s; make_engine has no connect_timeout -> /api/auth/me hangs >90s when PG stopped)
+[2026-11-25 20:18:02] === DONE W9 17.6 exit=0 ===
+[2026-11-25 20:18:25] === 17.6 COMPLETED & PAUSED PER BARRY'S REQUEST (10/11 steps + Step 3b passed; Step 3a recorded real hang >90s when PG stopped due to make_engine missing connect_timeout + psycopg 3.3.9 binary/libpq 180004 on Windows) ===
+[2026-11-26 09:24:20] === START W9 17.18 PART 1 (Steps 1-6) ===
+[2026-11-26 09:24:43] === DONE W9 17.18 PART 1 exit=1 ===
+[2026-11-26 09:30:19] === DONE W9 17.18 PART 1 exit=1 ===
+[2026-11-26 09:46:00] === DONE W9 17.18 PART 1 (Steps 3-6) exit=1 ===
+[2026-11-26 09:46:27] === START W9 17.18 PART 2 (Steps 6-18 + Edge + Thesis Screenshots) ===
+[2026-11-26 09:48:01] === DONE W9 17.18 PART 2 exit=1 ===
+[2026-11-26 09:51:33] === DONE W9 17.18 PART 2 exit=1 ===
+[2026-11-26 09:52:36] === DONE W9 17.18 PART 2 exit=1 ===
+[2026-11-26 09:54:04] === DONE W9 17.18 PART 2 exit=1 ===
+[2026-11-26 09:59:01] === DONE W9 17.18 PART 2 exit=1 ===
+[2026-11-26 10:00:50] === DONE W9 17.18 PART 2 exit=1 ===
+[2026-11-26 10:04:26] START W9 17.18 part 2 (Steps 11b-18, Edge, thesis screenshots)
+[2026-11-26 10:06:33] END W9 17.18 part 2 exit=1
+[2026-11-26 10:08:20] END W9 17.18 Edge exit=0
+[2026-11-26 10:10:14] === START W9 17.14 (OCR Worker scaling N=1..6 x 5 rounds on docmgr_w9b) ===
+[2026-11-26 10:35:48] === DONE W9 17.14 (18 rounds recorded) ===
+[2026-11-26 10:36:17] === START W9 17.8 (15-round slow-doc lzkg0078.jpg OCR test on docmgr_w9c) ===
+[2026-11-26 10:54:24] === DONE W9 17.8 (15 rounds recorded) ===
+[2026-11-26 11:01:03] Finalize W9: package >5MB HAR into w9-extra.zip, normalize text files to LF, generate SHA256SUMS.txt, run secret & size audit
+[2026-11-26 11:23:08] === START W9 17.1 Docker supplemental checks (health, auto_create_index, volume persistence) ===
+[2026-11-26 11:24:26] === DONE W9 17.1 Docker supplemental checks ===
+[2026-11-26 11:37:15] Finalize W9: package >5MB HAR into w9-extra.zip, normalize text files to LF, generate SHA256SUMS.txt, run secret & size audit

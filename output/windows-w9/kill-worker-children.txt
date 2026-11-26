@@ -1,0 +1,9 @@
+
+
+ProcessId       : 24796
+ParentProcessId : 6920
+CommandLine     : "C:\Users\lenovo\AppData\Local\Programs\Python\Python314\python.exe" "-c" "from multiprocessing.spawn
+                   import spawn_main; spawn_main(parent_pid=6920, pipe_handle=816)" "--multiprocessing-fork"
+
+
+

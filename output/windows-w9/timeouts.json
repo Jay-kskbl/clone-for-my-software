@@ -1,0 +1,47 @@
+{
+    "port":  55999,
+    "worker_import_overhead_s":  2.243,
+    "worker_step1_minus_step2_s":  7.071,
+    "ocr_step4_minus_step3_s":  15.089,
+    "ocr_db_wait_diff_s":  15.131,
+    "steps":  [
+                  {
+                      "step":  1,
+                      "name":  "worker-default",
+                      "expected_timeout_s":  10,
+                      "elapsed_s":  13.151,
+                      "exit_code":  1,
+                      "output_file":  "timeout-1-worker-default.txt"
+                  },
+                  {
+                      "step":  2,
+                      "name":  "worker-3s",
+                      "expected_timeout_s":  3,
+                      "elapsed_s":  6.08,
+                      "exit_code":  1,
+                      "output_file":  "timeout-2-worker-3s.txt"
+                  },
+                  {
+                      "step":  3,
+                      "name":  "ocr-5s",
+                      "expected_timeout_s":  5,
+                      "elapsed_s":  11.145,
+                      "db_wait_after_model_load_s":  6.016,
+                      "start_time":  "2026-11-25T19:18:45.5415416+08:00",
+                      "end_time":  "2026-11-25T19:18:56.6879399+08:00",
+                      "exit_code":  1,
+                      "output_file":  "timeout-3-ocr-5s.txt"
+                  },
+                  {
+                      "step":  4,
+                      "name":  "ocr-20s",
+                      "expected_timeout_s":  20,
+                      "elapsed_s":  26.234,
+                      "db_wait_after_model_load_s":  21.147,
+                      "start_time":  "2026-11-25T19:18:56.8114281+08:00",
+                      "end_time":  "2026-11-25T19:19:23.0458414+08:00",
+                      "exit_code":  1,
+                      "output_file":  "timeout-4-ocr-20s.txt"
+                  }
+              ]
+}

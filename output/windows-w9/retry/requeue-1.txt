@@ -1,0 +1,4 @@
+3 个文档的 3 个失败的 embed 任务，原因：
+- 3 个：ClipUnavailable: CLIP 服务连接失败（ConnectError）
+这是演练，没有改动任何数据。解决失败的原因之后，加 --yes 执行。
+exit=0

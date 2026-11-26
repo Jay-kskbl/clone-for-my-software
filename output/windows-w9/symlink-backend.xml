@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="6" failures="0" skipped="0" tests="6" time="2.552" timestamp="2026-11-26T11:25:44.436820+08:00" hostname="Barry-Zou"><testcase classname="tests.unit.test_consistency" name="test_symlinks_are_never_treated_as_stored_files" time="0.001"><error message="failed on setup with &quot;FileNotFoundError: [WinError 3] 系统找不到指定的路径。: 'c:\\Users\\lenovo\\Desktop\\my-software-main\\w9-data\\pytest-tmp-symlink\\backend'&quot;">self = WindowsPath('c:/Users/lenovo/Desktop/my-software-main/w9-data/pytest-tmp-symlink/backend')
+mode = 448, parents = False, exist_ok = False
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+&gt;           os.mkdir(self, mode)
+E           FileNotFoundError: [WinError 3] 系统找不到指定的路径。: 'c:\\Users\\lenovo\\Desktop\\my-software-main\\w9-data\\pytest-tmp-symlink\\backend'
+
+..\..\..\..\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1016: FileNotFoundError</error></testcase><testcase classname="tests.unit.test_storage" name="test_file_symlink_pointing_outside_rejected" time="0.001"><error message="failed on setup with &quot;FileNotFoundError: [WinError 3] 系统找不到指定的路径。: 'c:\\Users\\lenovo\\Desktop\\my-software-main\\w9-data\\pytest-tmp-symlink\\backend'&quot;">self = WindowsPath('c:/Users/lenovo/Desktop/my-software-main/w9-data/pytest-tmp-symlink/backend')
+mode = 448, parents = False, exist_ok = False
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+&gt;           os.mkdir(self, mode)
+E           FileNotFoundError: [WinError 3] 系统找不到指定的路径。: 'c:\\Users\\lenovo\\Desktop\\my-software-main\\w9-data\\pytest-tmp-symlink\\backend'
+
+..\..\..\..\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1016: FileNotFoundError</error></testcase><testcase classname="tests.unit.test_storage" name="test_directory_symlink_pointing_outside_rejected[year]" time="0.001"><error message="failed on setup with &quot;FileNotFoundError: [WinError 3] 系统找不到指定的路径。: 'c:\\Users\\lenovo\\Desktop\\my-software-main\\w9-data\\pytest-tmp-symlink\\backend'&quot;">self = WindowsPath('c:/Users/lenovo/Desktop/my-software-main/w9-data/pytest-tmp-symlink/backend')
+mode = 448, parents = False, exist_ok = False
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+&gt;           os.mkdir(self, mode)
+E           FileNotFoundError: [WinError 3] 系统找不到指定的路径。: 'c:\\Users\\lenovo\\Desktop\\my-software-main\\w9-data\\pytest-tmp-symlink\\backend'
+
+..\..\..\..\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1016: FileNotFoundError</error></testcase><testcase classname="tests.unit.test_storage" name="test_directory_symlink_pointing_outside_rejected[document]" time="0.001"><error message="failed on setup with &quot;FileNotFoundError: [WinError 3] 系统找不到指定的路径。: 'c:\\Users\\lenovo\\Desktop\\my-software-main\\w9-data\\pytest-tmp-symlink\\backend'&quot;">self = WindowsPath('c:/Users/lenovo/Desktop/my-software-main/w9-data/pytest-tmp-symlink/backend')
+mode = 448, parents = False, exist_ok = False
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+&gt;           os.mkdir(self, mode)
+E           FileNotFoundError: [WinError 3] 系统找不到指定的路径。: 'c:\\Users\\lenovo\\Desktop\\my-software-main\\w9-data\\pytest-tmp-symlink\\backend'
+
+..\..\..\..\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1016: FileNotFoundError</error></testcase><testcase classname="tests.unit.test_storage" name="test_put_refuses_to_write_through_directory_symlink" time="0.001"><error message="failed on setup with &quot;FileNotFoundError: [WinError 3] 系统找不到指定的路径。: 'c:\\Users\\lenovo\\Desktop\\my-software-main\\w9-data\\pytest-tmp-symlink\\backend'&quot;">self = WindowsPath('c:/Users/lenovo/Desktop/my-software-main/w9-data/pytest-tmp-symlink/backend')
+mode = 448, parents = False, exist_ok = False
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+&gt;           os.mkdir(self, mode)
+E           FileNotFoundError: [WinError 3] 系统找不到指定的路径。: 'c:\\Users\\lenovo\\Desktop\\my-software-main\\w9-data\\pytest-tmp-symlink\\backend'
+
+..\..\..\..\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1016: FileNotFoundError</error></testcase><testcase classname="tests.unit.test_storage" name="test_symlinked_temp_directory_refused_at_startup" time="0.001"><error message="failed on setup with &quot;FileNotFoundError: [WinError 3] 系统找不到指定的路径。: 'c:\\Users\\lenovo\\Desktop\\my-software-main\\w9-data\\pytest-tmp-symlink\\backend'&quot;">self = WindowsPath('c:/Users/lenovo/Desktop/my-software-main/w9-data/pytest-tmp-symlink/backend')
+mode = 448, parents = False, exist_ok = False
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+&gt;           os.mkdir(self, mode)
+E           FileNotFoundError: [WinError 3] 系统找不到指定的路径。: 'c:\\Users\\lenovo\\Desktop\\my-software-main\\w9-data\\pytest-tmp-symlink\\backend'
+
+..\..\..\..\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1016: FileNotFoundError</error></testcase></testsuite></testsuites>

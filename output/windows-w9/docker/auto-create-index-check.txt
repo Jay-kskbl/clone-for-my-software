@@ -1,0 +1,3 @@
+POST http://127.0.0.1:9200/w9_autocreate_probe/_doc
+HTTP_STATUS=404
+{"error":{"root_cause":[{"type":"index_not_found_exception","reason":"no such index [w9_autocreate_probe]","index":"w9_autocreate_probe","resource.id":"w9_autocreate_probe","resource.type":"index_expression","index_uuid":"_na_"}],"type":"index_not_found_exception","reason":"no such index [w9_autocreate_probe]","index":"w9_autocreate_probe","resource.id":"w9_autocreate_probe","resource.type":"index_expression","index_uuid":"_na_"},"status":404}
