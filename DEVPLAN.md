@@ -246,6 +246,7 @@ BARRY zou/
 - [x] **T24ae 把失败的 embed、ocr 任务成批放回队列**（R2 的 b，Barry 于 2026-11-25 批准“做 T24ae”）：`python -m app.modules.documents requeue-failed --type embed|ocr [--yes]`，默认演练。见 D56
 - [x] **T24af 检索服务不可用时，repair 不再说“没有需要修复的问题”**（R3，Barry 于 2026-11-25 批准“先做 R3”）：只对检查过的类别这样说
 - [x] **T24ag 内存上限提示只打一次、网页图标**（R4 的前两处，Barry 于 2026-11-25 批准“先做 R4”）：不支持的系统上由 Worker 启动时说明一次；加 `favicon.svg`
+- [x] **T24al 图像通道把查询编码和向量检索分开计时**（来自 `docs/changes/2026-11-26-后端优化分析.md` 第 4 项，Barry 于 2026-11-26 要求按计划书在克隆库修改；编号接主仓库的 T24ak）：检索日志 `channels.image` 多 `encode_ms`、`vector_ms` 两项，接口应答不变。计划书其余五项按建议不改代码
 
 ### 插入任务：克隆库前端整体放入（2026-11-25 Barry 批准，T25 之前做）
 
@@ -265,6 +266,7 @@ BARRY zou/
 - [ ] **T25 冻结数据集与标注**：查询总数、各类型数量、qrels 数量写进 `experiments/README.md`；冻结后不再修改
 - [ ] **T26 质量实验**：B0–B3 和消融，每组重复运行，保存全部原始结果
 - [ ] **T27 性能实验**：查询延迟 P50/P95（每个通道分别统计）、索引构建时间、OCR 每页耗时、CLIP 吞吐、各组件内存
+  - 另加三条测量（2026-11-26 后端审查，见 §4 和 `docs/changes/2026-11-26-后端优化分析.md`）：① OCR Worker 和 embed 任务都在运行时检索，读 `search_logs.channels` 里图像通道的 `status`、`took_ms`、`encode_ms`；③ Windows 上每个任务的子进程固定开销；④ 图像通道耗时拆成 `encode_ms`、`vector_ms`（T24al 起写进检索日志），说明 W3 里 clip-only 的 96 ms 花在哪里
 - [ ] **T28 分析**：图表、按查询类型分层的结论、失败案例分析、负面结果和局限性
 
 ### 阶段六：论文与答辩（W16–W20）
@@ -382,7 +384,8 @@ BARRY zou/
   - ① CLIP 服务一次只算一个请求：锁只包住前向计算，一个通用 Worker 同时最多只有一个 embed 请求在排队；W3 共 9,000 次图像通道检索，降级 0 次（P95 112 ms，超时 3 s）。不改。T27 加测一组：OCR Worker 和 embed 任务都在运行时检索，读 `search_logs.channels` 的 `status`、`took_ms`
   - ② 非管理员的可访问 document_id 全部作为 `terms` 过滤，三个通道各带一份：500 个文档时每次约 57 KB；`index.max_terms_count` 默认 65,536，超过时检索返回 503。这是附录 A12 的代价，写进论文“局限与改进”
   - ③ 每个任务 spawn 一个子进程：本机（Apple M4）固定开销约 0.36 s；W3 中不在关键路径上（OCR 约占 1 小时 52 分）。不改。**未测试（Not Tested）：** Windows 上的开销
-  - ④ meta、text 两个通道依次执行：并行最多省约 2 ms，开了图像通道时省 0 ms（clip-only P50 96 ms）。不改；T27 前再决定要不要在 `channels.search_image` 里把编码和向量检索分开计时
+  - ④ meta、text 两个通道依次执行：并行最多省约 2 ms，开了图像通道时省 0 ms（clip-only P50 96 ms）。不改；~~T27 前再决定要不要在 `channels.search_image` 里把编码和向量检索分开计时~~（T24al 已做：检索日志 `channels.image` 多 `encode_ms`、`vector_ms`）
+  - 待议（T24al 记录）：实验运行器的 `results.jsonl` 只记每条查询的总耗时和各通道状态，不记各通道耗时。T27 按通道统计时现在要读 `search_logs`；要直接从 `results.jsonl` 算，需另开任务让运行器把各通道的 `took_ms` 和图像通道的两个阶段写进去。由 Barry 决定
   - ⑤ 写索引一律 `refresh=true`：这是 D26 的正确性前提（按条件删除只删得到已刷新的数据）；W3 平均每秒约 0.3 次刷新。不改
   - ⑥ 每个任务开头 `ensure_indices`：parse、ocr、cleanup 各 2 个 HEAD，embed 1 个；W3 约 2,500 个。保持（D27）
 
@@ -468,3 +471,4 @@ BARRY zou/
 | T24bf | 2026-11-25 | 7b64449 | Barry 于 2026-11-25 批准（“批准，用建议选项”）；不带 🔒。只改文档：`docs/test.md` 补 T24ba–T24be 的结果，更正 T24bd 的变异项数。Windows 任务书单列为 T24bg，等 Barry 看过草稿 |
 | T24bg | 2026-11-25 | c82b33c | Barry 于 2026-11-25 批准（“按草稿改”）；不带 🔒。只改文档。与草稿不同：W4 第 10.2、10.5 节只加注不改原文（W4 已在旧界面上执行过）；造失败的三步换成做得到的办法（截断的 docx 上传时就被拒绝，改用加密 PDF；改存储目录得到的是项目自己的错误，改为在测试库里直接改 `error`；强杀 OCR Worker 太慢且不保证部分失败，改为缩短识别超时）。已执行：任务书里的样本脚本原样运行，`locked.pdf` 解析失败且不可重试、`scan6.pdf` 产生 6 个 OCR 目标；引用的界面文字逐条在代码里找到。**未测试（Not Tested）**：第 17.18 节本身要在 Windows 上执行。修改记录 `docs/changes/T24bg.md` |
 | T24bh | 2026-11-25 | 74c950d | Barry 于 2026-11-25 批准（“改”）；不带 🔒。扫描区的“正在打开文件…”“正在阅读第 n / 6 个文件”合并为“正在检索…”，“正在整理答案…”改为“正在整理结果…”（英文同改）：6 是卡片数，系统也不打开文件、不生成答案（GLOBAL §8.1、§13）。只改前端文字，没有改后端、接口、附录 A，没有新依赖。已执行：测试先改，改之前 3 项失败；类型检查；前端 32 个文件 378 项通过（新增 2 项，检查中英文里没有计数和“阅读、打开、答案”）；生产构建里没有旧文字；浏览器对着真实 FastAPI + SQLite 替身：6 秒的检索跨两轮动画，中文依次是“正在检索…”“正在整理结果…”，英文对应，出错提示不变。后端没有改动，没有重跑。**未测试（Not Tested）**：同 T24be。修改记录 `docs/changes/T24bh.md` |
+| T24al | 2026-11-26 | （待填） | Barry 于 2026-11-26 要求按 `docs/changes/2026-11-26-后端优化分析.md` 优化、先在克隆库改；不带 🔒；只改克隆库，没有同步主仓库。计划书六项的建议都是不改代码：第 1、3 项的测量写进 T27，第 2 项留给论文局限，第 5、6 项不动；唯一的代码改动是第 4 项留下的分开计时。`channels.search_image` 把 CLIP 编码和向量检索分别计时（`ImageTimings`，用 `finally` 记录，阶段中途失败也记得下来）；`service.py` 的 `ChannelReport` 加 `stages`，新增 `_channels_log`，图像通道开启时检索日志 `channels.image` 多 `encode_ms`、`vector_ms`（没走到的为 null），其余通道和接口应答不变。没有改表结构、索引、接口、配置、附录 A，没有新依赖。已执行：`backend/` 821 passed、241 skipped（新增 10 项单元测试）；ruff 通过；用修改前的代码跑，新增 10 项中 9 项失败（剩下一项检查接口应答不变）。shared、OCR Worker、CLIP 服务、前端没有改动，没有重跑。**未测试（Not Tested）**：`test_search_db.py::test_clip_service_down_degrades_to_text_search` 新增的 2 条断言（需要 PostgreSQL）；真实 CLIP 和 OpenSearch 上两个阶段的实际数字，已登记 `docs/untested.md`。修改记录 `docs/changes/T24al.md` |

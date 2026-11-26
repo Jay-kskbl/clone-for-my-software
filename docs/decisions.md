@@ -1005,6 +1005,8 @@ Barry 要求由 Fable 5.2 重新查看 Opus 5.5 写的 T15–T19 并修正不足
 
 **默认开关。** `SEARCH_CHANNEL_IMAGE_ENABLED` 仍默认 `false`，留到 T23、T24 再定。
 
+**分阶段计时（T24al，2026-11-26）。** 检索日志 `channels.image` 另记 `encode_ms`（调 CLIP 编码查询的往返，含在 CLIP 服务里排队）和 `vector_ms`（`search_vectors` 的往返），由 `channels.search_image` 用 `finally` 写进调用方传入的 `ImageTimings`，所以 CLIP 超时等中途失败时已经花掉的时间也记得下来，没走到的阶段为 `null`。只写日志，接口应答不变。用途是 T27：分清 W3 里 clip-only 的 96 ms 花在编码还是向量检索，以及边处理边检索时的降级是不是排队造成的（见 `docs/changes/2026-11-26-后端优化分析.md` 第 1、4 项）。
+
 **记录。** 检索日志的 `config` 新增 `image_model`（本次编码查询用的 `model_name`、`model_version`、`dim`；没开或没成功时为 `null`），`params` 新增 `image_timeout_seconds`。实验入口（`python -m app.modules.experiments run`）也创建同一种查询客户端传给检索，所以 B3 和 API 走同一套代码、同样的超时；通道开关仍来自实验配置。
 
 **局限。**

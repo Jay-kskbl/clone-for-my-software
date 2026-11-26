@@ -5,6 +5,7 @@ OpenSearch 和 CLIP 服务都用假的网络层代替；“可访问的文档集
 """
 
 import json
+import time
 import uuid
 from types import SimpleNamespace
 
@@ -16,6 +17,7 @@ from shared.text_index import OpenSearchClient
 from app.core.errors import RequestInvalidError, SearchUnavailableError
 from app.modules.clip import ClipClient
 from app.modules.search import SearchParams, SearchRequestData, params_from_settings, search
+from app.modules.search import channels as channels_module
 from app.modules.search import service as service_module
 
 A = uuid.UUID("aaaaaaaa-0000-4000-8000-000000000000")
@@ -76,10 +78,13 @@ class FakeOpenSearch:
         # 路径 → 要返回的错误应答（或要抛出的异常）
         self.failures: dict[str, object] = {}
         self.missing_indices: set[str] = set()
+        # 路径 → 应答前先等待的秒数（模拟慢查询）
+        self.delays: dict[str, float] = {}
 
     def handle(self, request: httpx.Request) -> httpx.Response:
         self.requests.append(request)
         path = request.url.path
+        time.sleep(self.delays.get(path, 0.0))
         failure = self.failures.get(path)
         if isinstance(failure, Exception):
             raise failure
@@ -131,9 +136,12 @@ class FakeClip:
         self.reply: object = None
         self.dim = 512
         self.requests: list[httpx.Request] = []
+        # 应答（或抛出异常）前先等待的秒数（模拟排队、编码耗时）
+        self.delay = 0.0
 
     def handle(self, request: httpx.Request) -> httpx.Response:
         self.requests.append(request)
+        time.sleep(self.delay)
         if isinstance(self.reply, Exception):
             raise self.reply
         if isinstance(self.reply, httpx.Response):
@@ -624,6 +632,129 @@ def test_log_records_the_clip_model_used(os_server, db, clip):
     (log,) = db.logs
     assert log["config"]["image_model"] == {**CLIP_MODEL, "dim": 512}
     assert log["config"]["params"]["image_timeout_seconds"] == 1.0
+
+
+# ---- 图像通道分阶段计时（T24al） ----
+
+
+def test_image_channel_times_encoding_and_vector_search_separately(os_server, db, clip):
+    clip.delay = 0.06
+    os_server.delays["/image_vectors/_search"] = 0.03
+    os_server.image_hits = [image_hit(B, 1.8)]
+
+    outcome = run(os_server, clip=clip, channels={"meta": False, "text": False, "image": True})
+
+    report = image_report(outcome)
+    assert report.status == "ok"
+    assert report.stages["encode_ms"] >= 60
+    assert 30 <= report.stages["vector_ms"] < report.stages["encode_ms"]
+    # 两个阶段都在通道总耗时之内（各自四舍五入，最多差 1 ms）
+    assert report.stages["encode_ms"] + report.stages["vector_ms"] <= report.took_ms + 1
+
+
+def test_clip_timeout_keeps_the_encoding_time_and_has_no_vector_time(os_server, db, clip):
+    clip.delay = 0.04
+    clip.reply = httpx.ReadTimeout("slow")
+    os_server.text_hits = [text_hit(A, 9.0)]
+
+    outcome = run(os_server, clip=clip, channels={"image": True})
+
+    report = image_report(outcome)
+    assert report.status == "unavailable"
+    # 排队或超时花掉的时间记在编码阶段，T27 据此判断降级是不是排在 embed 后面造成的
+    assert report.stages["encode_ms"] >= 40
+    assert report.stages["vector_ms"] is None
+
+
+def test_dimension_mismatch_stops_before_the_vector_search(os_server, db, clip):
+    clip.dim = 256
+
+    outcome = run(os_server, clip=clip, channels={"image": True})
+
+    stages = image_report(outcome).stages
+    assert isinstance(stages["encode_ms"], int)
+    assert stages["vector_ms"] is None
+
+
+def test_vector_index_failure_keeps_both_stage_times(os_server, db, clip):
+    os_server.delays["/image_vectors/_search"] = 0.03
+    os_server.failures["/image_vectors/_search"] = httpx.Response(
+        400, json={"error": {"type": "search_phase_execution_exception", "reason": "x"}}
+    )
+
+    outcome = run(os_server, clip=clip, channels={"image": True})
+
+    report = image_report(outcome)
+    assert report.status == "unavailable"
+    assert isinstance(report.stages["encode_ms"], int)
+    assert report.stages["vector_ms"] >= 30
+
+
+def test_unexpected_error_in_vector_search_still_keeps_both_stage_times(
+    os_server, db, clip, monkeypatch
+):
+    def broken(*args, **kwargs):
+        raise RuntimeError("bug")
+
+    monkeypatch.setattr(channels_module, "search_vectors", broken)
+
+    outcome = run(os_server, clip=clip, channels={"image": True})
+
+    report = image_report(outcome)
+    assert (report.status, report.detail) == ("unavailable", "图像检索出错")
+    assert isinstance(report.stages["encode_ms"], int)
+    assert isinstance(report.stages["vector_ms"], int)
+
+
+def test_without_a_clip_client_no_stage_is_reached(os_server, db):
+    outcome = run(os_server, channels={"image": True})
+
+    assert image_report(outcome).stages == {"encode_ms": None, "vector_ms": None}
+
+
+def test_log_adds_stage_times_only_to_the_image_channel(os_server, db, clip):
+    os_server.image_hits = [image_hit(B, 1.8)]
+
+    run(os_server, clip=clip, channels={"image": True})
+
+    (log,) = db.logs
+    channels = service_module._channels_log(log["reports"])
+    basic = {"status", "took_ms", "detail", "hits"}
+    assert set(channels["meta"]) == basic
+    assert set(channels["text"]) == basic
+    assert set(channels["image"]) == basic | {"encode_ms", "vector_ms"}
+    assert channels["image"]["encode_ms"] == log["reports"][2].stages["encode_ms"]
+    assert channels["image"]["vector_ms"] == log["reports"][2].stages["vector_ms"]
+
+
+def test_log_of_a_disabled_image_channel_keeps_the_old_shape(os_server, db):
+    run(os_server)
+
+    (log,) = db.logs
+    channels = service_module._channels_log(log["reports"])
+    assert channels["image"] == {"status": "disabled", "took_ms": 0, "detail": None, "hits": 0}
+
+
+def test_text_failure_logs_no_stage_times_for_the_image_channel_it_did_not_wait_for(
+    os_server, db, clip
+):
+    os_server.failures["/chunks/_search"] = httpx.ConnectError("down")
+
+    with pytest.raises(SearchUnavailableError):
+        run(os_server, clip=clip, channels={"image": True})
+
+    (log,) = db.logs
+    channels = service_module._channels_log(log["reports"])
+    assert "encode_ms" not in channels["image"]
+    assert "vector_ms" not in channels["image"]
+
+
+def test_api_response_does_not_expose_stage_times():
+    # 分阶段耗时只进检索日志，接口契约（docs/api.md §7）不变
+    from app.modules.search.schemas import ChannelStatusOut
+
+    assert "stages" not in ChannelStatusOut.model_fields
+    assert "encode_ms" not in ChannelStatusOut.model_fields
 
 
 # ---- 请求校验 ----

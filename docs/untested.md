@@ -1,6 +1,6 @@
 # 未测试清单（Not Tested）
 
-更新日期：2026-11-25（T24ag 登记 1 行，T24af 改 2 行、删 1 行；T24ae 登记 3 项、T24ad 登记 8 项未运行的集成测试和各自的实测；同日稍早按 Windows 第五轮的核对结果改写 Docker、Dockerfile、`RLIMIT_AS`、OCR 崩溃 6 行，第 7.4 节加 2 行，见 `docs/changes/windows-2026-11-25-核对.md`；这一轮没有测新代码）。再上一次：2026-11-23（按 Windows 第四轮（W4–W8，执行者 Codex，基线 `fd0b5eb`）的核对结果更新：第 4 节删除已验证的 14 行、改写 16 行，第 6.2 节删去 OS-6，第 7.2 节改写 2 行，第 7.3 节删 2 行、改写 3 行，新增第 7.4 节；核对见 `docs/changes/windows-2026-11-23-核对.md`。再上一次：2026-11-21（20:40 按 Windows 第一轮（W1–W3，执行者 Codex，基线 `8fb5830`）的核对结果更新：删除第 1、3 节的 T24g 1 项、T24i 2 项（Windows `output/windows-w1/backend.xml` 中通过），删除第 4 节已由 W3 原始数据证实的 4 行、改写 7 行，第 7 节新增 7.3；核对见 `docs/changes/windows-2026-11-21-核对.md`。同日 14:37 补登 T24p 漏登的一项，并注明 T24d、T24k、T24l、T24m、T24o 的条目已排进 `windows任务书.md` W5；同日稍早，T24s 完成后登记前端界面优化的 3 项未验证性质，见第 4 节“T24s 前端界面优化”；自动化测试的合计不变。同日稍早：按 T24k–T24n 的提交修正汇总数字和 Windows 未覆盖范围，没有运行任何测试。再上一次：2026-11-19 T24i 完成后，按 Barry 批准整理，并删除 Windows 第二轮已通过的 38 项）
+更新日期：2026-11-26（T24al 登记 1 项（已有集成测试新增的 2 条断言）和第 4 节 1 行；只改克隆库）。再上一次：2026-11-25（T24ag 登记 1 行，T24af 改 2 行、删 1 行；T24ae 登记 3 项、T24ad 登记 8 项未运行的集成测试和各自的实测；同日稍早按 Windows 第五轮的核对结果改写 Docker、Dockerfile、`RLIMIT_AS`、OCR 崩溃 6 行，第 7.4 节加 2 行，见 `docs/changes/windows-2026-11-25-核对.md`；这一轮没有测新代码）。再上一次：2026-11-23（按 Windows 第四轮（W4–W8，执行者 Codex，基线 `fd0b5eb`）的核对结果更新：第 4 节删除已验证的 14 行、改写 16 行，第 6.2 节删去 OS-6，第 7.2 节改写 2 行，第 7.3 节删 2 行、改写 3 行，新增第 7.4 节；核对见 `docs/changes/windows-2026-11-23-核对.md`。再上一次：2026-11-21（20:40 按 Windows 第一轮（W1–W3，执行者 Codex，基线 `8fb5830`）的核对结果更新：删除第 1、3 节的 T24g 1 项、T24i 2 项（Windows `output/windows-w1/backend.xml` 中通过），删除第 4 节已由 W3 原始数据证实的 4 行、改写 7 行，第 7 节新增 7.3；核对见 `docs/changes/windows-2026-11-21-核对.md`。同日 14:37 补登 T24p 漏登的一项，并注明 T24d、T24k、T24l、T24m、T24o 的条目已排进 `windows任务书.md` W5；同日稍早，T24s 完成后登记前端界面优化的 3 项未验证性质，见第 4 节“T24s 前端界面优化”；自动化测试的合计不变。同日稍早：按 T24k–T24n 的提交修正汇总数字和 Windows 未覆盖范围，没有运行任何测试。再上一次：2026-11-19 T24i 完成后，按 Barry 批准整理，并删除 Windows 第二轮已通过的 38 项）
 
 这里列出**已经写好但从未实际执行过**的测试，以及其他没有经过验证的性质。
 规则来自 GLOBAL.md“测试执行限制与代码验证要求”：跑不了的测试不强行执行、不安装工具，
@@ -27,7 +27,8 @@
 | T24ad | `backend/tests/integration/test_task_queue.py`（新增 8 项） | 8 | 需要 PostgreSQL，本机没有 | 已复核（见 `docs/changes/T24ad.md`） |
 | T24ae | `backend/tests/integration/test_requeue_failed_db.py` | 3 | 需要 PostgreSQL，本机没有 | 已复核（见 `docs/changes/T24ae.md`） |
 | T24ba | `backend/tests/integration/test_documents.py::test_only_admin_sees_the_raw_failure_reason` | 1 | 需要 PostgreSQL，本机没有；2026-11-25 在 SQLite 替身上通过，不能代替 | 已复核（见 `docs/changes/T24ba.md`） |
-| **合计** | | **12** | | 本机 backend 跳过的 229 项 = 2026-11-16 通过的 188 项 + 2026-11-19 通过的 38 项 + 2026-11-21 通过的 3 项（T24g 1 项、T24i 2 项）。注意几轮基于不同的提交。2026-11-23 Windows 第四轮（W6 12.2）在 `fd0b5eb` 上又跑了一遍全部 950 项，除 6 项符号链接外都通过；之后只改了前端（T24v–T24z） |
+| T24al | `backend/tests/integration/test_search_db.py::test_clip_service_down_degrades_to_text_search`（已有的 1 项，新增 2 条断言） | 1 | 需要 PostgreSQL，本机没有 | 已复核（见 `docs/changes/T24al.md`） |
+| **合计** | | **13** | | 本机 backend 跳过的 229 项 = 2026-11-16 通过的 188 项 + 2026-11-19 通过的 38 项 + 2026-11-21 通过的 3 项（T24g 1 项、T24i 2 项）。注意几轮基于不同的提交。2026-11-23 Windows 第四轮（W6 12.2）在 `fd0b5eb` 上又跑了一遍全部 950 项，除 6 项符号链接外都通过；之后只改了前端（T24v–T24z） |
 
 T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器）和 T12（切分）不需要数据库，它们的测试全部在本机执行并通过，没有未测试项。
 
@@ -41,7 +42,7 @@ T05（存储）、T09（PDF 解析器）、T11（Word、Excel、图片解析器�
 
 括号里的数字是该测试的参数化用例数，未标注的为 1。
 
-T24ad（2026-11-25）的 8 项：`test_failed_task_waits_for_the_delay_of_its_attempt`、`test_last_delay_is_reused_for_further_attempts`、`test_waiting_task_does_not_block_other_tasks`、`test_no_delay_means_immediate_retry`（2）、`test_non_retryable_failure_is_final_at_once`、`test_reclaimed_task_does_not_wait_again`、`test_manual_retry_does_not_wait`。T24ae 的 3 项：`test_requeue_failed_db.py` 全部（`test_dry_run_changes_nothing`、`test_only_failed_tasks_of_the_type_are_requeued`、`test_ocr_tasks_of_an_old_version_are_left_alone`）。除此之外没有写好但从未运行的自动化测试。（2026-11-21 20:40：原来这里的 T24g `test_preflight_reports_mixed_ocr_models`、T24i `test_reocr_requeues_finished_ocr_tasks_of_the_current_version`、`test_reocr_refuses_while_parse_or_ocr_tasks_are_unfinished` 在 Windows 第一轮通过，已删除。）
+T24ad（2026-11-25）的 8 项：`test_failed_task_waits_for_the_delay_of_its_attempt`、`test_last_delay_is_reused_for_further_attempts`、`test_waiting_task_does_not_block_other_tasks`、`test_no_delay_means_immediate_retry`（2）、`test_non_retryable_failure_is_final_at_once`、`test_reclaimed_task_does_not_wait_again`、`test_manual_retry_does_not_wait`。T24ae 的 3 项：`test_requeue_failed_db.py` 全部（`test_dry_run_changes_nothing`、`test_only_failed_tasks_of_the_type_are_requeued`、`test_ocr_tasks_of_an_old_version_are_left_alone`）。T24al（2026-11-26）的 1 项：`test_search_db.py::test_clip_service_down_degrades_to_text_search`，它以前在 Windows 上通过过，T24al 给它加了 2 条断言（`channels.image` 的 `encode_ms`、`vector_ms`），加了之后没有运行。除此之外没有写好但从未运行的自动化测试。（2026-11-21 20:40：原来这里的 T24g `test_preflight_reports_mixed_ocr_models`、T24i `test_reocr_requeues_finished_ocr_tasks_of_the_current_version`、`test_reocr_refuses_while_parse_or_ocr_tasks_are_unfinished` 在 Windows 第一轮通过，已删除。）
 
 ## 4. 不是测试、但同样没有验证过的性质
 
@@ -162,6 +163,12 @@ T24p 完成时 DEVPLAN §5 写了这一项未测试，但当时没有登记到�
 | T24bd 任务面板 | 真实 Worker 上的完整流程没有走过：停掉 CLIP → 上传图片 → embed 失败 → 打开 CLIP → 点重试 → 图像检索能搜到；停掉 OCR Worker → 扫描件部分页失败 → 重试 → OCR 文字能搜到。T24ad 的重试间隔期间只看过造出来的 `pending`。任务接口不分页，几百个任务时的大小和 3 秒一次的开销没有量过。`TaskDialog.vue` 没有组件测试；管理员登录后的界面没有看过 | 已复核：字段与 `TaskOut` 一致；重试只调现有的 `POST /api/tasks/{id}/retry`，它清空 `started_at`，不受重试间隔限制 |
 | T24be 搜索动效 | 30 秒超时、低配机器上的帧率、系统真正打开“减少动态效果”（只有演示页的强制开关和代码复核）没有测。`scanLoader.ts`、`launchAnimation.ts` 操作 DOM 和 Canvas，没有单元测试，靠浏览器检查；中文输入法组字时按回车没有测 | 已复核：状态机、时间轴、请求会话、待机计时、焦点判断都是有单元测试的纯逻辑；组字中的回车不会触发表单提交 |
 | T24bb 登录竞态、文件列表、预览页 | 三个 `.vue` 没有组件测试（没有组件测试工具），在浏览器里修改前后各测一次 | 已复核：判断在 `auth.ts`、`client.ts`、`LatestRun` 里，有单元测试 |
+
+### T24al 图像通道分阶段计时（2026-11-26 登记，见 `docs/changes/T24al.md`）
+
+| 项目 | 说明 | 代码复核 |
+|---|---|---|
+| 真实 CLIP 服务和 OpenSearch 上的 `encode_ms`、`vector_ms` | 只用假的网络层和等待时间测过；两个阶段在真实服务上的数字、两者之和与 `took_ms` 的差距都没有看过。留给 T27 | 已复核：计时只包住 `encode_text`、`search_vectors` 两次调用，用 `finally` 记录 |
 
 ### T24e 文本预览排序（2026-11-19 登记，见 `decisions.md` D44）
 

@@ -15,6 +15,7 @@ chunks 索引用 OpenSearch 的 collapse 按 document_id 折叠，每个文档�
 
 import html
 import logging
+import time
 import uuid
 from collections.abc import Collection, Sequence
 from dataclasses import dataclass
@@ -64,6 +65,24 @@ class ImageHits:
     hits: ChannelHits
     # 编码查询文本的模型，随检索日志记录（GLOBAL §4.3）
     model: ClipModel
+
+
+@dataclass
+class ImageTimings:
+    """图像通道两个阶段各自的耗时（毫秒），由 search_image 边执行边填写（T24al）。
+
+    encode_ms：调 CLIP 服务编码查询文本，含 HTTP 往返和在 CLIP 服务里排队的时间；
+    vector_ms：在 image_vectors 索引里精确检索，含 HTTP 往返（索引不存在时也含建索引）。
+    没有走到的阶段保持 None。由调用方创建并传入，所以阶段中途失败时，已经走过的阶段
+    （包括失败的那个阶段花掉的时间，例如 CLIP 超时）也记得下来。
+    """
+
+    encode_ms: int | None = None
+    vector_ms: int | None = None
+
+
+def _elapsed_ms(started: float) -> int:
+    return round((time.perf_counter() - started) * 1000)
 
 
 def _id_filter(document_ids: Collection[uuid.UUID] | None) -> list[dict[str, Any]]:
@@ -240,22 +259,31 @@ def search_image(
     *,
     document_ids: Collection[uuid.UUID] | None,
     depth: int,
+    timings: ImageTimings | None = None,
 ) -> ImageHits:
     """文本到图片的检索：查询文本 → CLIP 文本向量 → 精确检索最相似的图片。
 
     只和同一模型生成的图片向量比较（模型标识取自这次编码的应答）。
     任何故障都抛 ImageChannelUnavailable：图像通道是增强能力，它失败时由调用方降级为
     纯文本检索并标记（GLOBAL §12），而不是让整次检索失败，也不是当成“没有结果”。
+
+    timings：传入时把编码和向量检索两个阶段的耗时分别写进去（见 ImageTimings）。
     """
+    if timings is None:
+        timings = ImageTimings()
+    started = time.perf_counter()
     try:
         encoded = clip.encode_text(query)
     except ClipError as exc:
         raise ImageChannelUnavailable(exc.message) from exc
+    finally:
+        timings.encode_ms = _elapsed_ms(started)
     if encoded.model.dim != VECTOR_DIM:
         # 换了模型却没有改向量索引的 mapping 并重建：两边的向量不能比较
         raise ImageChannelUnavailable(
             f"CLIP 模型的向量维度（{encoded.model.dim}）与向量索引（{VECTOR_DIM}）不一致"
         )
+    started = time.perf_counter()
     try:
         found = search_vectors(
             client,
@@ -267,6 +295,8 @@ def search_image(
         )
     except TextIndexError as exc:
         raise ImageChannelUnavailable(f"向量索引检索失败：{exc.message}") from exc
+    finally:
+        timings.vector_ms = _elapsed_ms(started)
 
     ranking: list[tuple[uuid.UUID, float]] = []
     evidence: dict[uuid.UUID, Evidence] = {}

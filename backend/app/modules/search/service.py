@@ -68,6 +68,9 @@ class ChannelReport:
     took_ms: int = 0
     detail: str | None = None
     hits: int = 0
+    # 通道内各阶段的耗时（毫秒），只写进检索日志，不出现在接口应答里（T24al）。
+    # 目前只有图像通道有：{"encode_ms", "vector_ms"}，没有走到的阶段为 None
+    stages: dict[str, int | None] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -139,6 +142,24 @@ def _elapsed_ms(started: float) -> int:
     return round((time.perf_counter() - started) * 1000)
 
 
+def _channels_log(reports: Sequence[ChannelReport]) -> dict[str, dict[str, Any]]:
+    """检索日志的 channels 列：{通道: {status, took_ms, detail, hits, 各阶段耗时}}。
+
+    各阶段耗时（T24al）供 T27 拆分图像通道的耗时：编码查询（encode_ms）和向量检索
+    （vector_ms）分别花了多少。没有阶段的通道不多出字段，日志结构与以前相同。
+    """
+    return {
+        r.channel: {
+            "status": r.status,
+            "took_ms": r.took_ms,
+            "detail": r.detail,
+            "hits": r.hits,
+            **r.stages,
+        }
+        for r in reports
+    }
+
+
 def _write_log(
     session: Session,
     user: User,
@@ -154,15 +175,7 @@ def _write_log(
             user_id=user.id,
             query=query,
             config=config,
-            channels={
-                r.channel: {
-                    "status": r.status,
-                    "took_ms": r.took_ms,
-                    "detail": r.detail,
-                    "hits": r.hits,
-                }
-                for r in reports
-            },
+            channels=_channels_log(reports),
             results=[
                 {
                     "document_id": str(hit.document_id),
@@ -195,26 +208,34 @@ def _run_image(
     """图像通道。在工作线程里执行，不碰数据库会话（可访问集合事先查好传进来）。
 
     不抛异常：任何故障都变成 unavailable 状态（降级），由调用方照常返回文本类通道的结果。
+    无论成功还是降级，都记下编码、向量检索两个阶段各自的耗时（T24al）。
     """
     started = time.perf_counter()
+    timings = channel_queries.ImageTimings()
+
+    def report(status: ChannelState, **kwargs: Any) -> ChannelReport:
+        return ChannelReport(
+            "image",
+            status,
+            _elapsed_ms(started),
+            stages={"encode_ms": timings.encode_ms, "vector_ms": timings.vector_ms},
+            **kwargs,
+        )
+
     if clip is None:
-        return _ImageResult(ChannelReport("image", "unavailable", detail=_NO_CLIP_CLIENT))
+        return _ImageResult(report("unavailable", detail=_NO_CLIP_CLIENT))
     try:
         found = channel_queries.search_image(
-            clip, client, query, document_ids=document_ids, depth=depth
+            clip, client, query, document_ids=document_ids, depth=depth, timings=timings
         )
     except channel_queries.ImageChannelUnavailable as exc:
         logger.warning("图像通道不可用，本次降级为文本检索：%s", exc.message)
-        return _ImageResult(
-            ChannelReport("image", "unavailable", _elapsed_ms(started), detail=exc.message)
-        )
+        return _ImageResult(report("unavailable", detail=exc.message))
     except Exception:  # noqa: BLE001 —— 图像通道的意外错误也只降级，不拖垮整次检索
         logger.exception("图像通道出现意外错误，本次降级为文本检索")
-        return _ImageResult(
-            ChannelReport("image", "unavailable", _elapsed_ms(started), detail="图像检索出错")
-        )
+        return _ImageResult(report("unavailable", detail="图像检索出错"))
     return _ImageResult(
-        report=ChannelReport("image", "ok", _elapsed_ms(started), hits=len(found.hits.ranking)),
+        report=report("ok", hits=len(found.hits.ranking)),
         hits=found.hits,
         model={
             "model_name": found.model.model_name,

@@ -283,6 +283,9 @@ def test_clip_service_down_degrades_to_text_search(client, session, index, alice
     session.expire_all()
     (log,) = session.scalars(select(SearchLog)).all()
     assert log.channels["image"]["status"] == "unavailable"
+    # T24al：连不上 CLIP 时编码阶段的耗时照样写进日志，向量检索没有走到
+    assert isinstance(log.channels["image"]["encode_ms"], int)
+    assert log.channels["image"]["vector_ms"] is None
     assert log.config["image_model"] is None
 
 
