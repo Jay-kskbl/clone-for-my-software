@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- 后端总体流程结构图（2026-11-26）。直接用浏览器打开；没有网络时字体退回系统字体，内容不变。 -->
+<title>后端总体流程结构图</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column (~46rem) for prose; the four figures break out to 1080px and scroll sideways on phones. */
+:root {
+  --bg: #f3f5f8;
+  --surface: #ffffff;
+  --ink: #17202c;
+  --muted: #586274;
+  --line: #c2c9d5;
+  --rail: #e7ecf3;
+  --accent: #2351c0;
+  --accent-soft: #e1e9fb;
+  --warn: #965500;
+  --warn-soft: #faedd8;
+  --bad: #ae2419;
+  --bad-soft: #fae3e0;
+  --ok: #1b6f43;
+  --ok-soft: #dcf0e3;
+  --sans: "Inter", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", system-ui, sans-serif;
+  --mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11151c; --surface: #19202a; --ink: #e5e9f0; --muted: #9aa4b6; --line: #3a4453; --rail: #1e2531;
+    --accent: #84a8ff; --accent-soft: #1d2a46; --warn: #e3a64c; --warn-soft: #382a12; --bad: #f2897e; --bad-soft: #3b1c19;
+    --ok: #72d09b; --ok-soft: #163124; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11151c; --surface: #19202a; --ink: #e5e9f0; --muted: #9aa4b6; --line: #3a4453; --rail: #1e2531;
+  --accent: #84a8ff; --accent-soft: #1d2a46; --warn: #e3a64c; --warn-soft: #382a12; --bad: #f2897e; --bad-soft: #3b1c19;
+  --ok: #72d09b; --ok-soft: #163124; color-scheme: dark;
+}
+
+body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.75; }
+.wrap {
+  max-width: 1080px; margin: 0 auto;
+  padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 48px;
+}
+.prose { max-width: 46rem; }
+header { display: grid; gap: 12px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em; color: var(--muted); }
+h1 { font-size: 30px; line-height: 1.25; margin: 0; font-weight: 700; text-wrap: balance; }
+h2 { font-size: 21px; line-height: 1.35; margin: 0 0 6px; font-weight: 700; text-wrap: balance; }
+h3 { font-size: 16px; margin: 0 0 8px; font-weight: 600; }
+p { margin: 0; }
+.lead { color: var(--muted); }
+code, .mono { font-family: var(--mono); font-size: 0.88em; }
+code { background: var(--rail); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+
+nav.toc { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 14px; }
+nav.toc a { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; }
+nav.toc a:hover, nav.toc a:focus-visible { border-bottom-color: var(--accent); }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+
+section.fig-sec { display: grid; gap: 14px; scroll-margin-top: 24px; }
+figure { margin: 0; display: grid; gap: 12px; }
+.fig-scroll { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+.fig-scroll svg { display: block; width: 100%; min-width: 780px; height: auto; }
+figcaption { font-size: 14px; color: var(--muted); max-width: 46rem; }
+
+/* diagram marks */
+.d text { font-family: var(--sans); }
+.d .box { fill: var(--surface); stroke: var(--ink); stroke-width: 1.3; }
+.d .box-acc { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.8; }
+.d .note { fill: none; stroke: var(--line); stroke-width: 1.2; stroke-dasharray: 5 4; }
+.d .rail { fill: var(--rail); stroke: var(--line); stroke-width: 1; }
+.d .pill { fill: var(--surface); stroke: var(--line); stroke-width: 1; }
+.d .drop { stroke: var(--muted); stroke-width: 1.4; }
+.d .edge { fill: none; stroke: var(--muted); stroke-width: 1.4; }
+.d .head { fill: var(--muted); }
+.d .st { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.4; }
+.d .st-ok { fill: var(--ok-soft); stroke: var(--ok); stroke-width: 1.4; }
+.d .st-bad { fill: var(--bad-soft); stroke: var(--bad); stroke-width: 1.4; }
+.d .tt { fill: var(--ink); font-size: 13.5px; font-weight: 600; }
+.d .t { fill: var(--ink); font-size: 12.5px; }
+.d .s { fill: var(--muted); font-size: 11.5px; }
+.d .l { fill: var(--muted); font-size: 11.5px; }
+.d .acc { fill: var(--accent); }
+.d .bad { fill: var(--bad); font-size: 12px; }
+.d .warn { fill: var(--warn); font-size: 12px; }
+.d .mono { font-family: var(--mono); }
+
+/* review */
+.review { display: grid; gap: 22px; }
+.items { display: grid; gap: 0; border-top: 1px solid var(--line); }
+.item { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: 6px 20px; padding: 18px 0; border-bottom: 1px solid var(--line); }
+.item h3 { margin: 0 0 4px; }
+.item p + p { margin-top: 6px; }
+.item .k { color: var(--muted); font-weight: 600; margin-right: 4px; }
+.chip { display: inline-block; justify-self: start; align-self: start; font-size: 12px; line-height: 1.6; padding: 2px 9px; border-radius: 999px; font-weight: 600; white-space: nowrap; letter-spacing: 0.02em; }
+.chip.warn { background: var(--warn-soft); color: var(--warn); }
+.chip.acc { background: var(--accent-soft); color: var(--accent); }
+.chip.muted { background: var(--rail); color: var(--muted); }
+.chip.ok { background: var(--ok-soft); color: var(--ok); }
+.known { display: grid; gap: 8px; }
+.known ul { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; }
+.basis { font-size: 13.5px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 16px; }
+.num { font-variant-numeric: tabular-nums; }
+
+@media (max-width: 560px) {
+  h1 { font-size: 25px; }
+  .item { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<style>body{margin:0}img{max-width:100%}</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="prose">
+    <div class="eyebrow">feat/search-motion · 5df781b · 2026-11-26</div>
+    <h1>后端总体流程结构图</h1>
+    <p class="lead">四张图依次是：进程与存储、一份文件经过的任务、一次检索、任务状态机。图中的默认参数（超时、租约、重试间隔、RRF 的 k）取自 <code>backend/app/config.py</code>，延迟取自 W3（500 个文件）的实验记录。</p>
+    <nav class="toc" aria-label="目录">
+      <a href="#fig-1">图 1 进程与存储</a>
+      <a href="#fig-2">图 2 文件的任务链</a>
+      <a href="#fig-3">图 3 一次检索</a>
+      <a href="#fig-4">图 4 任务状态机</a>
+    </nav>
+  </header>
+
+  <!-- ===================== 图 1 ===================== -->
+  <section class="fig-sec" id="fig-1">
+    <h2 class="prose">图 1　进程与存储</h2>
+    <figure>
+      <div class="fig-scroll">
+        <svg class="d" viewBox="0 0 1040 362" role="img" aria-label="四个进程和三处存储：API 服务与两个 Worker 通过 PostgreSQL 任务表交接，CLIP 服务不连数据库。">
+          <defs>
+            <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="head"/></marker>
+          </defs>
+
+          <!-- storage rails -->
+          <rect class="rail" x="20" y="128" width="1000" height="60" rx="6"/>
+          <rect class="rail" x="20" y="208" width="1000" height="60" rx="6"/>
+          <rect class="rail" x="20" y="288" width="1000" height="60" rx="6"/>
+          <text class="tt" x="36" y="154">PostgreSQL</text>
+          <text class="s acc" x="36" y="173">任务表：API 写入，Worker 领取</text>
+          <text class="tt" x="36" y="234">文件存储</text>
+          <text class="s" x="36" y="253">STORAGE_ROOT</text>
+          <text class="tt" x="36" y="314">OpenSearch</text>
+          <text class="s" x="36" y="333">3 个索引</text>
+
+          <!-- drops: each process reaches every store it uses -->
+          <line class="drop" x1="310" y1="88" x2="310" y2="318"/>
+          <line class="drop" x1="760" y1="88" x2="760" y2="318"/>
+          <line class="drop" x1="950" y1="88" x2="950" y2="318"/>
+
+          <!-- processes -->
+          <rect class="box" x="20" y="20" width="140" height="68" rx="6"/>
+          <text class="tt" x="90" y="49" text-anchor="middle">前端</text>
+          <text class="s" x="90" y="69" text-anchor="middle">Vue 3 · 浏览器</text>
+
+          <rect class="box" x="220" y="20" width="180" height="68" rx="6"/>
+          <text class="tt" x="310" y="49" text-anchor="middle">API 服务</text>
+          <text class="s" x="310" y="69" text-anchor="middle">FastAPI · main 环境</text>
+
+          <rect class="box" x="470" y="20" width="130" height="68" rx="6"/>
+          <text class="tt" x="535" y="49" text-anchor="middle">CLIP 服务</text>
+          <text class="s" x="535" y="69" text-anchor="middle">clip 环境 · :8001</text>
+          <text class="s" x="535" y="108" text-anchor="middle">无状态，不连数据库</text>
+
+          <rect class="box" x="670" y="20" width="180" height="68" rx="6"/>
+          <text class="tt" x="760" y="49" text-anchor="middle">通用 Worker</text>
+          <text class="s" x="760" y="69" text-anchor="middle">main 环境 · 每任务一个子进程</text>
+
+          <rect class="box" x="880" y="20" width="140" height="68" rx="6"/>
+          <text class="tt" x="950" y="49" text-anchor="middle">OCR Worker</text>
+          <text class="s" x="950" y="69" text-anchor="middle">ocr 环境 · PaddleOCR</text>
+
+          <!-- calls between processes -->
+          <line class="edge" x1="160" y1="54" x2="217" y2="54" marker-end="url(#a1)"/>
+          <text class="l" x="189" y="46" text-anchor="middle">REST</text>
+          <text class="l" x="189" y="73" text-anchor="middle">JWT</text>
+
+          <line class="edge" x1="400" y1="54" x2="467" y2="54" marker-end="url(#a1)"/>
+          <text class="l" x="435" y="46" text-anchor="middle">编码查询</text>
+          <text class="l" x="435" y="73" text-anchor="middle">3 s 超时</text>
+
+          <line class="edge" x1="670" y1="54" x2="603" y2="54" marker-end="url(#a1)"/>
+          <text class="l" x="636" y="46" text-anchor="middle">编码图片</text>
+          <text class="l" x="636" y="73" text-anchor="middle">60 s 超时</text>
+
+          <!-- what each process does in each store -->
+          <rect class="pill" x="246" y="136" width="128" height="44" rx="6"/>
+          <text class="s" x="310" y="154" text-anchor="middle">文档 · 标签 · 共享</text>
+          <text class="s" x="310" y="171" text-anchor="middle">建任务 · 写检索日志</text>
+          <rect class="pill" x="230" y="216" width="160" height="44" rx="6"/>
+          <text class="s" x="310" y="234" text-anchor="middle">上传：临时文件→正式路径</text>
+          <text class="s" x="310" y="251" text-anchor="middle">下载：流式读出</text>
+          <rect class="pill" x="238" y="296" width="144" height="44" rx="6"/>
+          <text class="s" x="310" y="314" text-anchor="middle">查 doc_meta · chunks</text>
+          <text class="s" x="310" y="331" text-anchor="middle">查 image_vectors</text>
+
+          <rect class="pill" x="685" y="136" width="150" height="44" rx="6"/>
+          <text class="s" x="760" y="154" text-anchor="middle">领取、续租、回写任务</text>
+          <text class="s" x="760" y="171" text-anchor="middle">写片段 · 文档状态 · 向量</text>
+          <rect class="pill" x="684" y="216" width="152" height="44" rx="6"/>
+          <text class="s" x="760" y="234" text-anchor="middle">parse / embed 读原文件</text>
+          <text class="s" x="760" y="251" text-anchor="middle">cleanup 删文件</text>
+          <rect class="pill" x="680" y="296" width="160" height="44" rx="6"/>
+          <text class="s" x="760" y="314" text-anchor="middle">写 doc_meta · chunks</text>
+          <text class="s" x="760" y="331" text-anchor="middle">写 image_vectors · 删除</text>
+
+          <rect class="pill" x="895" y="136" width="110" height="44" rx="6"/>
+          <text class="s" x="950" y="154" text-anchor="middle">领取 ocr 任务</text>
+          <text class="s" x="950" y="171" text-anchor="middle">写 ocr_results</text>
+          <rect class="pill" x="902" y="216" width="96" height="44" rx="6"/>
+          <text class="s" x="950" y="234" text-anchor="middle">只读原文件</text>
+          <text class="s" x="950" y="251" text-anchor="middle">按页渲染</text>
+          <rect class="pill" x="890" y="296" width="120" height="44" rx="6"/>
+          <text class="s" x="950" y="314" text-anchor="middle">写 chunks</text>
+          <text class="s mono" x="950" y="331" text-anchor="middle">source_type=ocr</text>
+        </svg>
+      </div>
+      <figcaption>四个进程，三处存储。API 和两个 Worker 之间没有直接调用，只通过 PostgreSQL 的任务表交接；CLIP 服务不连数据库，只把查询文本和图片编码成向量。竖线穿过的每一层，写的是这个进程在那里读写什么。</figcaption>
+    </figure>
+  </section>
+
+  <!-- ===================== 图 2 ===================== -->
+  <section class="fig-sec" id="fig-2">
+    <h2 class="prose">图 2　一份文件经过的任务</h2>
+    <figure>
+      <div class="fig-scroll">
+        <svg class="d" viewBox="0 0 1040 386" role="img" aria-label="上传创建 parse 任务，parse 再为扫描页创建 ocr 任务、为图片创建 embed 任务；删除创建 cleanup 任务，按索引、文件、数据库记录的顺序删除。">
+          <defs>
+            <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="head"/></marker>
+          </defs>
+
+          <!-- upload -->
+          <rect class="box" x="20" y="30" width="230" height="160" rx="6"/>
+          <text class="tt" x="36" y="56">上传 · API 请求内</text>
+          <text class="t" x="36" y="82">1 写临时文件，算 sha256</text>
+          <text class="t" x="36" y="101">2 按文件魔数识别真实类型</text>
+          <text class="t" x="36" y="120">3 建 Document 与 parse 任务</text>
+          <text class="t" x="36" y="139">4 移到正式路径</text>
+          <text class="t" x="36" y="158">5 提交数据库</text>
+          <text class="s" x="36" y="178">任一步失败：回滚并删掉文件</text>
+
+          <line class="edge" x1="250" y1="110" x2="297" y2="110" marker-end="url(#a2)"/>
+          <text class="l" x="274" y="102" text-anchor="middle">提交</text>
+
+          <!-- parse -->
+          <rect class="box" x="300" y="30" width="250" height="160" rx="6"/>
+          <text class="tt" x="316" y="56">parse 任务 · 通用 Worker</text>
+          <text class="t" x="316" y="82">1 写 doc_meta</text>
+          <text class="t" x="316" y="101">2 解析、切分（纯计算）</text>
+          <text class="t" x="316" y="120">3 替换 body 片段，写 chunks</text>
+          <text class="t" x="316" y="139">4 复查文档未被删除</text>
+          <text class="t" x="316" y="158">5 置 succeeded，建后续任务</text>
+          <text class="s" x="316" y="178">失败按 30 s / 120 s 重试</text>
+          <text class="s acc" x="316" y="212">第 1 步后能按文件名搜到，第 3 步后能按正文搜到</text>
+
+          <line class="edge" x1="550" y1="62" x2="637" y2="62" marker-end="url(#a2)"/>
+          <text class="l" x="594" y="54" text-anchor="middle">扫描页、图片</text>
+          <line class="edge" x1="550" y1="160" x2="637" y2="160" marker-end="url(#a2)"/>
+          <text class="l" x="594" y="152" text-anchor="middle">仅图片</text>
+
+          <!-- ocr -->
+          <rect class="box" x="640" y="20" width="260" height="84" rx="6"/>
+          <text class="tt" x="656" y="46">ocr 任务 · OCR Worker · 每页一个</text>
+          <text class="t" x="656" y="70">渲染 → PaddleOCR 识别 → 切分</text>
+          <text class="t" x="656" y="89">写 ocr_results 与 chunks</text>
+          <text class="s acc" x="914" y="57">→ text 通道</text>
+          <text class="s acc" x="914" y="74">OCR 文字</text>
+
+          <!-- embed -->
+          <rect class="box" x="640" y="118" width="260" height="84" rx="6"/>
+          <text class="tt" x="656" y="144">embed 任务 · 通用 Worker</text>
+          <text class="t" x="656" y="168">按 sha256 去重，调 CLIP 编码</text>
+          <text class="t" x="656" y="187">写 image_embeddings 与向量索引</text>
+          <text class="s acc" x="914" y="164">→ image 通道</text>
+
+          <!-- delete -->
+          <rect class="box" x="20" y="250" width="230" height="120" rx="6"/>
+          <text class="tt" x="36" y="276">删除 · API 请求内</text>
+          <text class="t" x="36" y="302">1 写 deleted_at</text>
+          <text class="t" x="36" y="321">2 建 cleanup 任务</text>
+          <text class="t" x="36" y="340">3 两步同一事务提交</text>
+          <text class="s acc" x="36" y="359">提交后所有查询立即看不到它</text>
+
+          <line class="edge" x1="250" y1="310" x2="297" y2="310" marker-end="url(#a2)"/>
+          <text class="l" x="274" y="302" text-anchor="middle">提交</text>
+
+          <!-- cleanup -->
+          <rect class="box" x="300" y="250" width="250" height="120" rx="6"/>
+          <text class="tt" x="316" y="276">cleanup 任务 · 通用 Worker</text>
+          <text class="t" x="316" y="302">1 删 chunks、doc_meta</text>
+          <text class="t" x="316" y="321">2 删 image_vectors</text>
+          <text class="t" x="316" y="340">3 删原文件</text>
+          <text class="t" x="316" y="359">4 硬删除文档，级联删除任务本身</text>
+
+          <!-- note -->
+          <rect class="note" x="640" y="250" width="380" height="120" rx="6"/>
+          <text class="tt" x="656" y="276">删除为什么可以异步</text>
+          <text class="s" x="656" y="300">软删除一提交，检索返回前的数据库二次校验</text>
+          <text class="s" x="656" y="318">（图 3 第 4 步）就会把它过滤掉。cleanup 没跑完时，</text>
+          <text class="s" x="656" y="336">索引里的残留也不会出现在结果里。数据库记录最后</text>
+          <text class="s" x="656" y="354">才删，所以 cleanup 中途失败可以重试。</text>
+        </svg>
+      </div>
+      <figcaption>每个箭头都经过 <code>processing_tasks</code> 表交接：前一步提交之后，后一步的任务才能被领取，所以 Worker 看到 parse 任务时，文件一定已经在正式路径上。蓝字是这一步完成后，文件能被哪个检索通道搜到。</figcaption>
+    </figure>
+  </section>
+
+  <!-- ===================== 图 3 ===================== -->
+  <section class="fig-sec" id="fig-3">
+    <h2 class="prose">图 3　一次检索</h2>
+    <figure>
+      <div class="fig-scroll">
+        <svg class="d" viewBox="0 0 1040 326" role="img" aria-label="检索时 meta 和 text 通道在主线程依次执行，图像通道在工作线程同时执行；三路结果经 RRF 融合，再经数据库二次校验后返回。">
+          <defs>
+            <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="head"/></marker>
+          </defs>
+
+          <rect class="box" x="20" y="110" width="175" height="110" rx="6"/>
+          <text class="tt mono" x="36" y="136">POST /api/search</text>
+          <text class="t" x="36" y="162">1 校验请求，定通道</text>
+          <text class="t" x="36" y="181">查可访问 ID</text>
+          <text class="s" x="36" y="200">管理员不查、不过滤</text>
+
+          <path class="edge" d="M195,165 H215 V65 H237" marker-end="url(#a3)"/>
+          <path class="edge" d="M215,165 V255 H237" marker-end="url(#a3)"/>
+
+          <text class="l" x="240" y="20">2a 主线程，依次执行 · W3 实测 B2 P50 22 ms</text>
+          <rect class="box" x="240" y="30" width="160" height="70" rx="6"/>
+          <text class="tt" x="320" y="58" text-anchor="middle">meta 通道</text>
+          <text class="s" x="320" y="80" text-anchor="middle">doc_meta · 文件名、标签</text>
+          <line class="edge" x1="400" y1="65" x2="427" y2="65" marker-end="url(#a3)"/>
+          <rect class="box" x="430" y="30" width="160" height="70" rx="6"/>
+          <text class="tt" x="510" y="58" text-anchor="middle">text 通道</text>
+          <text class="s" x="510" y="80" text-anchor="middle">chunks · BM25 · 按文档折叠</text>
+
+          <text class="bad" x="240" y="146">meta 或 text 出错 → 整次返回 503，不给空结果</text>
+          <text class="warn" x="240" y="194">CLIP 或向量检索出错 → 只把图像通道标为不可用</text>
+
+          <rect class="box" x="240" y="220" width="160" height="70" rx="6"/>
+          <text class="tt" x="320" y="248" text-anchor="middle">CLIP 编码查询</text>
+          <text class="s" x="320" y="270" text-anchor="middle">HTTP · 3 s 超时</text>
+          <line class="edge" x1="400" y1="255" x2="427" y2="255" marker-end="url(#a3)"/>
+          <rect class="box" x="430" y="220" width="160" height="70" rx="6"/>
+          <text class="tt" x="510" y="248" text-anchor="middle">向量精确检索</text>
+          <text class="s" x="510" y="270" text-anchor="middle">image_vectors · 前置过滤</text>
+          <text class="l" x="240" y="314">2b 工作线程，与主线程同时执行 · W3 实测 B3 P50 100 ms</text>
+
+          <path class="edge" d="M590,65 H625 V148 H647" marker-end="url(#a3)"/>
+          <path class="edge" d="M590,255 H625 V182 H647" marker-end="url(#a3)"/>
+
+          <rect class="box" x="650" y="110" width="150" height="110" rx="6"/>
+          <text class="tt" x="666" y="136">3 RRF 融合</text>
+          <text class="t" x="666" y="162">k = 60</text>
+          <text class="s" x="666" y="181">只用名次，不比分数</text>
+          <text class="s" x="666" y="200">每通道取前 100 名</text>
+
+          <line class="edge" x1="800" y1="165" x2="837" y2="165" marker-end="url(#a3)"/>
+
+          <rect class="box-acc" x="840" y="95" width="180" height="140" rx="6"/>
+          <text class="tt" x="856" y="121">返回前</text>
+          <text class="t" x="856" y="147">4 数据库二次校验</text>
+          <text class="s acc" x="856" y="166">删除、取消共享即时生效</text>
+          <text class="t" x="856" y="190">5 取前 top_k</text>
+          <text class="t" x="856" y="214">6 写 search_logs</text>
+        </svg>
+      </div>
+      <figcaption>图像通道在单独的线程里和两个文本通道同时跑，总耗时取较慢的一路；W3 的数据里，开了图像通道后延迟主要花在 CLIP 编码上。蓝框第 4 步是“删除即时不可见、权限变更即时生效”的唯一保证（附录 A10）。</figcaption>
+    </figure>
+  </section>
+
+  <!-- ===================== 图 4 ===================== -->
+  <section class="fig-sec" id="fig-4">
+    <h2 class="prose">图 4　任务状态机</h2>
+    <figure>
+      <div class="fig-scroll">
+        <svg class="d" viewBox="0 0 1040 306" role="img" aria-label="任务从 pending 被领取进入 processing，成功进入 succeeded；失败时还有次数就按间隔回到 pending，否则进入 failed；租约过期的任务被回收；failed 可以手动放回 pending。">
+          <defs>
+            <marker id="a4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="head"/></marker>
+          </defs>
+
+          <text class="s" x="40" y="38">attempts 在领取时加一：Worker 崩溃、没来得及回写也算一次尝试</text>
+          <text class="s" x="40" y="56">parse 任务最终失败时，同一事务里把文档状态改为 failed</text>
+
+          <rect class="st" x="40" y="115" width="170" height="60" rx="30"/>
+          <text class="tt mono" x="125" y="141" text-anchor="middle">pending</text>
+          <text class="s" x="125" y="160" text-anchor="middle">等待领取</text>
+
+          <rect class="st" x="400" y="115" width="180" height="60" rx="30"/>
+          <text class="tt mono" x="490" y="141" text-anchor="middle">processing</text>
+          <text class="s" x="490" y="160" text-anchor="middle">持有租约</text>
+
+          <rect class="st-ok" x="800" y="30" width="180" height="60" rx="30"/>
+          <text class="tt mono" x="890" y="56" text-anchor="middle">succeeded</text>
+          <text class="s" x="890" y="75" text-anchor="middle">完成</text>
+
+          <rect class="st-bad" x="800" y="210" width="180" height="60" rx="30"/>
+          <text class="tt mono" x="890" y="236" text-anchor="middle">failed</text>
+          <text class="s" x="890" y="255" text-anchor="middle">保留失败原因</text>
+
+          <line class="edge" x1="210" y1="135" x2="397" y2="135" marker-end="url(#a4)"/>
+          <text class="l" x="304" y="111" text-anchor="middle">领取：SKIP LOCKED</text>
+          <text class="l" x="304" y="127" text-anchor="middle">attempts + 1，写 60 s 租约</text>
+
+          <line class="edge" x1="400" y1="158" x2="213" y2="158" marker-end="url(#a4)"/>
+          <text class="l" x="306" y="177" text-anchor="middle">失败且还有次数：隔 30 s / 120 s</text>
+          <text class="l" x="306" y="193" text-anchor="middle">租约过期被回收：立即可领</text>
+
+          <path class="edge" d="M465,115 C465,80 515,80 515,112" marker-end="url(#a4)"/>
+          <text class="l" x="490" y="74" text-anchor="middle">每 15 s 续租</text>
+
+          <path class="edge" d="M580,130 H690 V60 H797" marker-end="url(#a4)"/>
+          <text class="l" x="682" y="100" text-anchor="end">成功</text>
+
+          <path class="edge" d="M580,160 H690 V240 H797" marker-end="url(#a4)"/>
+          <text class="l" x="682" y="205" text-anchor="end">次数用完</text>
+          <text class="l" x="682" y="221" text-anchor="end">或不可重试</text>
+
+          <path class="edge" d="M890,270 V292 H125 V178" marker-end="url(#a4)"/>
+          <text class="l" x="507" y="285" text-anchor="middle">手动重试或 requeue-failed：attempts 清零，立即可领</text>
+        </svg>
+      </div>
+      <figcaption>规则全部写在 <code>shared/tasks.py</code> 的几条 SQL 里。Worker 崩溃时不需要别的代码介入：租约到期后，下一个来领任务的 Worker 会先把它回收。</figcaption>
+    </figure>
+  </section>
+
+</div>
+</body>
+</html>
